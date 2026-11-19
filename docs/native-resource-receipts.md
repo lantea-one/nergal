@@ -23,22 +23,26 @@ those bytes. This marker is not the nft process-owner flag or an authorization t
 ## Observation slice
 
 `NftTableObservation.Parse(json)` accepts at most 64 KiB of valid UTF-8 text and JSON
-depth 16. It requires native schema version 1 and exactly metadata, the tagged
-`inet nergal_filter` table and one empty `input` base chain of type filter, hook input,
+depth 16. It requires native schema version 1 with metadata, the tagged
+`inet nergal_filter` table and one `input` base chain of type filter, hook input,
 priority 0, with an explicit accept/drop policy. Table and chain handles must be
 positive integers. Marker text must be canonical and have nonempty UUIDs.
 
-Duplicate/unknown properties, flags, extra objects, rules, different hooks/families,
+Duplicate/unknown properties, flags, extra objects, unsupported rules, different hooks/families,
 missing fields, malformed identities and unknown schema versions are rejected. A
 failed result has no partial observation and a stable `ErrorCode`. Null input throws
 `ArgumentNullException`. Invalid input is never echoed in diagnostics.
 
-**This observer does not yet support the rule-bearing policies the compiler can
-emit.** It explicitly rejects them. It is an identity/reconciliation slice for the
-empty-chain watchdog resource, not a general import, decompiler or full backend driver.
+After the chain, the observer accepts ordered rules that match exactly one
+explicit `meta nfproto` equality (IPv4 or IPv6) and a terminal accept/drop. Each
+rule must have a distinct positive handle and belong to that input chain.
+An additional expression, counter, comment, address or transport match causes
+the entire snapshot to be refused. The immutable `Policy` reconstructs every
+accepted rule in order. See [ADR 0018](decisions/0018-family-rule-observations.md).
 
-`StateDigest` fingerprints a typed projection of the marker, both native handles,
-family/name, chain type/hook/priority and default verdict. JSON property order and
+`StateDigest` retains the original empty-chain projection for stored receipts.
+The rule-bearing projection includes the marker, table and chain handles, chain
+semantics and each rule's handle, family and verdict in order. JSON property order and
 validated tool version/release text do not alter enforcement identity. No accepted
 enforcement field is dropped. The parser cannot prove collection completeness: a
 trusted future agent must obtain a full table snapshot locally under its resource
@@ -47,7 +51,7 @@ lock, not accept filtered or browser-supplied JSON as host evidence. Observation
 Observation errors are `observation.tooLarge`, `observation.invalidJson`,
 `observation.duplicateProperty`, `observation.shape`, `observation.unsupportedObjects`,
 `observation.schema`, `observation.fields`, `observation.scope`, `observation.handle`,
-`observation.identity` and `observation.policy`.
+`observation.identity`, `observation.policy` and `observation.rule`.
 
 ## Expected receipt
 

@@ -138,7 +138,7 @@ public sealed partial class ApplyJournal
                 throw new JournalException("resource.receiptMismatch");
             }
 
-            var reconstructed = NftFilterCompiler.Compile(new FilterPolicy(1, actual.DefaultVerdict, []), actual.Identity);
+            var reconstructed = NftFilterCompiler.Compile(actual.Policy, actual.Identity);
             if (reconstructed.Candidate != enrollment.Value.Artifact)
             {
                 throw new JournalException("resource.baselineMismatch");

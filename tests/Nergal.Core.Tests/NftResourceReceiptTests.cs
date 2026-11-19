@@ -67,11 +67,62 @@ public sealed class NftResourceReceiptTests
         Assert.Equal(9UL, observation.ChainHandle);
         Assert.Equal(FilterVerdict.Accept, observation.DefaultVerdict);
         Assert.True(NftReceiptVerifier.Verify(Receipt(observation), observation, Boot, 42).IsMatch);
+        // Persisted schema-2 receipts for empty chains must survive this extension.
+        Assert.Equal("34ab8b04c9ef48d4fa0f057bb7ce700c1bb190cee6fdb006e1d45030687ee0c5", observation.StateDigest.Value);
         var digest = observation.StateDigest;
         Item(node, "chain")["policy"] = "drop";
         Assert.Equal(FilterVerdict.Accept, observation.DefaultVerdict);
         Assert.Equal(digest, observation.StateDigest);
         Assert.NotEqual(digest, NftTableObservation.Parse(node.ToJsonString()).Observation!.StateDigest);
+    }
+
+    private const string FamilyRule = """
+        {"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[
+        {"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"drop":null}]}}
+        """;
+
+    /// <summary>Both native order and rule handles bind the observation, independently of equivalent JSON presentation.</summary>
+    [Fact]
+    public void FamilyRules_PreserveOrderHandlesAndExactBaseline()
+    {
+        var node = JsonNode.Parse(Json)!;
+        var items = node["nftables"]!.AsArray();
+        var first = JsonNode.Parse(FamilyRule)!;
+        var second = JsonNode.Parse(FamilyRule.Replace("ipv4", "ipv6").Replace("10", "11").Replace("drop", "accept"))!;
+        items.Add(first);
+        items.Add(second);
+        NftTableObservation Read() => NftTableObservation.Parse(node.ToJsonString()).Observation!;
+        var original = Read();
+        Assert.Equal([new FilterRule(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Drop),
+            new FilterRule(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Accept)], original.Policy.Rules);
+        items.RemoveAt(3);
+        items.Add(first);
+        Assert.NotEqual(original.StateDigest, Read().StateDigest);
+        items.RemoveAt(4);
+        items.Insert(3, first);
+        Assert.Equal(original.StateDigest, Read().StateDigest);
+        first["rule"]!["handle"] = 11;
+        Reject(node.ToJsonString(), "observation.handle");
+        first["rule"]!["handle"] = 15;
+        Assert.NotEqual(original.StateDigest, Read().StateDigest);
+    }
+
+    /// <summary>Malformed scope, shared handles, additional effects and unfamiliar matching expressions reject the entire snapshot.</summary>
+    [Theory]
+    [InlineData("10", "9", "observation.handle")]
+    [InlineData("10", "0", "observation.handle")]
+    [InlineData("inet", "ip", "observation.scope")]
+    [InlineData("nfproto", "l4proto", "observation.rule")]
+    [InlineData("==", "!=", "observation.rule")]
+    [InlineData("ipv4", "other", "observation.rule")]
+    [InlineData("null", "false", "observation.rule")]
+    [InlineData("drop", "reject", "observation.rule")]
+    [InlineData("{\"drop\":null}", "{\"counter\":null},{\"drop\":null}", "observation.rule")]
+    public void FamilyRules_RejectUnsupportedSemantics(string from, string to, string code)
+    {
+        var node = JsonNode.Parse(Json)!;
+        node["nftables"]!.AsArray().Add(JsonNode.Parse(FamilyRule.Replace(from, to)));
+        Reject(node.ToJsonString(), code);
     }
 
     /// <summary>Property presentation and tool version strings do not change enforcement identity.</summary>

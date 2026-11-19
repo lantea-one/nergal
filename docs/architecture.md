@@ -74,7 +74,7 @@ Journal paths now verify effective UID ownership, regular node types, private mo
 and single file links. The disposable UID fixture tests filesystem denial for an
 unprivileged browser role; trusted parent paths remain required.
 
-Typed identity markers and a strict empty-chain observation/receipt comparator now
+Typed identity markers and a strict observation/receipt comparator for empty chains and family-wide terminal rules now
 bind boot, namespace, marker, handle and complete recognized state. They perform no
 host operations. Schema 2 of LocalState persists explicit trusted expected receipts
 and provides read-only reconciliation; bound-resource apply remains disabled. See

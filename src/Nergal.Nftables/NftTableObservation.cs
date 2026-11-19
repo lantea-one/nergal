@@ -6,19 +6,27 @@ using Nergal.Core.Policy;
 
 namespace Nergal.Nftables;
 
-/// <summary>Immutable native observation of one tagged table and empty input chain; never a claim of authority.</summary>
+/// <summary>Immutable native observation of one tagged table and supported ordered input rules; never a claim of authority.</summary>
 public sealed class NftTableObservation
 {
-    private NftTableObservation(NftTableIdentity identity, ulong tableHandle, ulong chainHandle, FilterVerdict defaultVerdict)
+    private NftTableObservation(NftTableIdentity identity, ulong tableHandle, ulong chainHandle, FilterVerdict defaultVerdict,
+        List<(ulong Handle, FilterRule Rule)> rules)
     {
         Identity = identity;
         TableHandle = tableHandle;
         ChainHandle = chainHandle;
-        DefaultVerdict = defaultVerdict;
-        StateDigest = CandidateDigest.FromText(string.Join('\n', "nergal-observation-v1", identity.Comment,
+        Policy = new(1, defaultVerdict, rules.Select(entry => entry.Rule));
+        var projection = new StringBuilder(string.Join('\n', rules.Count == 0 ? "nergal-observation-v1" : "nergal-observation-v2", identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture), chainHandle.ToString(CultureInfo.InvariantCulture),
             "inet", NftFilterCompiler.TableName, "input", "filter", "input", "0",
             defaultVerdict == FilterVerdict.Accept ? "accept" : "drop"));
+        foreach (var (handle, rule) in rules)
+        {
+            projection.Append('\n').Append(handle.ToString(CultureInfo.InvariantCulture))
+                .Append(rule.Family == IpFamily.IPv4 ? " ipv4 " : " ipv6 ")
+                .Append(rule.Verdict == FilterVerdict.Accept ? "accept" : "drop");
+        }
+        StateDigest = CandidateDigest.FromText(projection.ToString());
     }
 
     /// <summary>Gets the observed canonical marker; it must agree with protected expected enrollment.</summary>
@@ -28,12 +36,14 @@ public sealed class NftTableObservation
     /// <summary>Gets the positive native chain handle, included in the complete state fingerprint.</summary>
     public ulong ChainHandle { get; }
     /// <summary>Gets the observed unmatched-input decision.</summary>
-    public FilterVerdict DefaultVerdict { get; }
+    public FilterVerdict DefaultVerdict => Policy.DefaultVerdict;
+    /// <summary>Gets the immutable policy reconstructed from every recognized input rule in native order.</summary>
+    public FilterPolicy Policy { get; }
     /// <summary>Gets the deterministic fingerprint of all recognized enforcement/identity fields.</summary>
     public CandidateDigest StateDigest { get; }
 
-    /// <summary>Parses bounded native JSON without host access, accepting only the explicitly documented empty-chain identity slice.</summary>
-    /// <remarks>Unknown objects, fields, duplicate keys and rule-bearing tables fail closed. The trusted collector must supply a full table snapshot; omitted kernel objects cannot be detected from JSON alone.</remarks>
+    /// <summary>Parses bounded native JSON without host access, accepting empty chains and explicit family-wide terminal rules.</summary>
+    /// <remarks>Unknown objects, fields, duplicate keys and unsupported rule expressions fail closed. The trusted collector must supply a full table snapshot; omitted kernel objects cannot be detected from JSON alone.</remarks>
     /// <exception cref="ArgumentNullException">JSON is null.</exception>
     public static NftObservationResult Parse(string json)
     {
@@ -58,7 +68,7 @@ public sealed class NftTableObservation
             }
 
             var items = root.GetProperty("nftables").EnumerateArray().ToArray();
-            if (items.Length != 3 || !Properties(items[0], "metainfo") || !Properties(items[1], "table") || !Properties(items[2], "chain"))
+            if (items.Length < 3 || !Properties(items[0], "metainfo") || !Properties(items[1], "table") || !Properties(items[2], "chain"))
             {
                 return Deny("observation.unsupportedObjects");
             }
@@ -107,12 +117,46 @@ public sealed class NftTableObservation
                 return Deny("observation.policy");
             }
 
-            return new(new(identity, tableHandle, chainHandle, verdict == "accept" ? FilterVerdict.Accept : FilterVerdict.Drop), null);
+            var rules = new List<(ulong Handle, FilterRule Rule)>();
+            var handles = new HashSet<ulong> { chainHandle };
+            for (var index = 3; index < items.Length; index++)
+            {
+                if (!Properties(items[index], "rule")) { return Deny("observation.unsupportedObjects"); }
+                var rule = items[index].GetProperty("rule");
+                if (!Properties(rule, "family", "table", "chain", "handle", "expr")) { return Deny("observation.unsupportedObjects"); }
+                if (rule.GetProperty("family").GetString() != "inet" || rule.GetProperty("table").GetString() != NftFilterCompiler.TableName ||
+                    rule.GetProperty("chain").GetString() != "input") { return Deny("observation.scope"); }
+                if (!rule.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle))
+                { return Deny("observation.handle"); }
+                var parsed = ParseFamilyRule(rule.GetProperty("expr"));
+                if (parsed is null) { return Deny("observation.rule"); }
+                rules.Add((handle, parsed));
+            }
+            return new(new(identity, tableHandle, chainHandle, verdict == "accept" ? FilterVerdict.Accept : FilterVerdict.Drop, rules), null);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
         {
             return Deny("observation.invalidJson");
         }
+    }
+
+    private static FilterRule? ParseFamilyRule(JsonElement expressions)
+    {
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() != 2 ||
+            !Properties(expressions[0], "match")) { return null; }
+        var match = expressions[0].GetProperty("match");
+        if (!Properties(match, "op", "left", "right") || match.GetProperty("op").GetString() != "==") { return null; }
+        var left = match.GetProperty("left");
+        if (!Properties(left, "meta") || !Properties(left.GetProperty("meta"), "key") ||
+            left.GetProperty("meta").GetProperty("key").GetString() != "nfproto") { return null; }
+        var family = match.GetProperty("right").GetString();
+        if (family is not ("ipv4" or "ipv6")) { return null; }
+        var terminal = expressions[1];
+        var accept = Properties(terminal, "accept");
+        if ((!accept && !Properties(terminal, "drop")) ||
+            terminal.GetProperty(accept ? "accept" : "drop").ValueKind != JsonValueKind.Null) { return null; }
+        return new(family == "ipv4" ? IpFamily.IPv4 : IpFamily.IPv6, FilterProtocol.Any,
+            accept ? FilterVerdict.Accept : FilterVerdict.Drop);
     }
 
     private static NftObservationResult Deny(string code) => new(null, code);

@@ -32,3 +32,9 @@ supports only the empty-chain slice. Concurrent privileged writers, protected
 exclusive-creation proof, reboot recovery and production transport remain unimplemented.
 Migration is tested separately using actual private schema-1 databases and retained
 literal legacy event identifiers; no production/user journal is upgraded by this fixture.
+
+The family-rule scenario compiles and binds an ordered IPv4-drop/IPv6-accept
+baseline. It sends real loopback UDP packets before and after applying the
+synthetic candidate, inserts a first IPv4-accept rule and verifies both the
+changed packet outcome and protected receipt drift. A counter expression makes
+the observation unsupported. The original receipt and foreign tables survive.

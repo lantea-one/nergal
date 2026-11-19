@@ -1,6 +1,7 @@
 """Protected expected receipts plus actual kernel observations, inside fresh disposable namespaces."""
 import json
 import os
+import socket
 from pathlib import Path
 import subprocess
 import sys
@@ -48,7 +49,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
     def probe(mode, text=None, success=True, error=None):
         return run(['dotnet', assembly, mode, state], text, success, error)
 
-    candidate = probe('prepare')  # Protected intent exists before any exclusive resource creation.
+    candidate = probe('prepare-family' if scenario == 'family' else 'prepare')  # Protected intent exists before any exclusive resource creation.
     if scenario == 'collision':
         nft(probe('foreign'))
         before = run(['nft', '--stateless', 'list', 'ruleset'])
@@ -58,6 +59,33 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
         require(probe('receipt').strip() == 'UNBOUND', 'Foreign table was adopted')
         require(run(['nft', '--stateless', 'list', 'ruleset']) == before, 'Conflicting foreign resource changed')
         print('PASS: conflicting native resource is preserved and cannot be bound', flush=True)
+    elif scenario == 'family':
+        run(['ip', 'link', 'set', 'lo', 'up'])
+        def packet(family, address):
+            with socket.socket(family, socket.SOCK_DGRAM) as receiver, socket.socket(family, socket.SOCK_DGRAM) as sender:
+                receiver.bind((address, 0))
+                receiver.settimeout(0.5)
+                sender.sendto(b'fixture', receiver.getsockname())
+                try:
+                    return receiver.recv(32) == b'fixture'
+                except TimeoutError:
+                    return False
+
+        require(packet(socket.AF_INET, '127.0.0.1') and packet(socket.AF_INET6, '::1'), 'Loopback control failed')
+        nft(candidate, check=True)
+        nft(candidate)
+        probe('bind', observation())
+        require(json.loads(probe('verify', observation()))['IsMatch'], 'Ordered family baseline failed to bind')
+        require(not packet(socket.AF_INET, '127.0.0.1') and packet(socket.AF_INET6, '::1'), 'Family packet decisions differed')
+        receipt = probe('receipt')
+        nft('insert rule inet nergal_filter input meta nfproto ipv4 accept\n')
+        require(packet(socket.AF_INET, '127.0.0.1'), 'Inserted first verdict did not change IPv4 outcome')
+        require('state.drift' in json.loads(probe('verify', observation(), False))['ErrorCodes'], 'Ordered rule drift missed')
+        probe('bind', observation(), False, 'resource.baselineMismatch')
+        nft('add rule inet nergal_filter input meta nfproto ipv4 counter accept\n')
+        probe('verify', observation(), False, 'observation.rule')
+        require(probe('receipt') == receipt, 'Drift or unsupported expressions changed the stored receipt')
+        print('PASS: rule-bearing receipt matches dual-stack packet outcomes and detects ordered changes', flush=True)
     else:
         nft(candidate, check=True)
         nft(candidate)
