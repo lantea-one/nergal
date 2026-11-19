@@ -34,7 +34,8 @@ Bind this development build to loopback; it is not a secured administration endp
   fail-closed backend compatibility checks, artifact/ownership bindings and a pure
   confirmed-apply state model. No timers, persistence, network or host operations.
 - `Nergal.Nftables`: schema validation and deterministic create-only input-filter
-  candidates for the reserved `inet nergal_filter` table. No execution or host access.
+  candidates for the reserved `inet nergal_filter` table, typed identity markers and
+  limited native observation/receipt comparison. No execution or host access.
 - `Nergal.LocalState`: Linux SQLite journal with explicit bootstrap assertions,
   serialized transitions, exact artifact/revision persistence and effective-UID/type/
   mode/link checks. No kernel operations.
@@ -44,6 +45,8 @@ Bind this development build to loopback; it is not a secured administration endp
   invalid inputs and defensive snapshots.
 - `tests/integration/nftables`: opt-in real kernel and dual-stack packet checks
   in disposable user/network namespaces, including collision and foreign-table safety.
+- `tests/integration/ownership`: opt-in native identity, drift and cross-namespace
+  receipt checks for the limited empty-chain resource.
 - `tests/integration/isolation`: opt-in filesystem denial between distinct mapped
   local UIDs, without creating host accounts or changing firewalls.
 - `tests/integration/watchdog`: opt-in independent process/kill-point and real
@@ -54,7 +57,8 @@ Bind this development build to loopback; it is not a secured administration endp
 Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [architecture](docs/architecture.md), [policy contract](docs/policy.md),
 [compiler decision](docs/decisions/0002-filter-compiler.md),
-[confirmed-apply model](docs/confirmed-apply.md), [local journal](docs/local-journal.md)
+[confirmed-apply model](docs/confirmed-apply.md), [local journal](docs/local-journal.md),
+[native resource receipts](docs/native-resource-receipts.md)
 and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.

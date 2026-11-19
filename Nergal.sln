@@ -33,6 +33,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "isolation", "isolation", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nergal.Isolation.Fixture", "tests\integration\isolation\Nergal.Isolation.Fixture.csproj", "{E8E0BA71-6724-419F-8105-CF719D63DF30}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ownership", "ownership", "{A84DB3E1-640D-1527-7E4D-DC5BE0D58440}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nergal.Ownership.Fixture", "tests\integration\ownership\Nergal.Ownership.Fixture.csproj", "{19563999-C3C9-4AF4-A62D-C7814A7280D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -151,6 +155,18 @@ Global
 		{E8E0BA71-6724-419F-8105-CF719D63DF30}.Release|x64.Build.0 = Release|Any CPU
 		{E8E0BA71-6724-419F-8105-CF719D63DF30}.Release|x86.ActiveCfg = Release|Any CPU
 		{E8E0BA71-6724-419F-8105-CF719D63DF30}.Release|x86.Build.0 = Release|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Debug|x64.Build.0 = Debug|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Debug|x86.Build.0 = Debug|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Release|x64.ActiveCfg = Release|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Release|x64.Build.0 = Release|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Release|x86.ActiveCfg = Release|Any CPU
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -169,5 +185,7 @@ Global
 		{E17F9B30-3B00-42C4-8ECB-FF13D3D35CDF} = {83578BDA-7BBE-D78C-53A4-D057DAC72400}
 		{965C626E-FFE6-BA02-E5E7-0ADFD9E08749} = {28A6993C-471E-82FE-7D9E-AD3B1EC22BD9}
 		{E8E0BA71-6724-419F-8105-CF719D63DF30} = {965C626E-FFE6-BA02-E5E7-0ADFD9E08749}
+		{A84DB3E1-640D-1527-7E4D-DC5BE0D58440} = {28A6993C-471E-82FE-7D9E-AD3B1EC22BD9}
+		{19563999-C3C9-4AF4-A62D-C7814A7280D5} = {A84DB3E1-640D-1527-7E4D-DC5BE0D58440}
 	EndGlobalSection
 EndGlobal

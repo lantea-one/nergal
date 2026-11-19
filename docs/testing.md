@@ -83,6 +83,12 @@ foreign-owner rejection and shared-inode/FIFO refusal in disposable namespaces. 
 requires no host account/group changes or firewall access. Its README documents the
 trusted-parent boundary and sandbox-helper requirements.
 
+The native identity/receipt fixture is under tests/integration/ownership. Run
+`bash tests/integration/ownership/check.sh` after the Release build. It compares real
+kernel observations, detects policy drift and same-name/same-comment recreation, and
+rejects a receipt in a second real network namespace. It observes only the documented
+empty-chain slice and does not establish protected receipt persistence or enrollment.
+
 The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
 firewalld equivalence test. It is opt-in and is not part of dotnet test.

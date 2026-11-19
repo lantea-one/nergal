@@ -16,6 +16,19 @@ public static class NftFilterCompiler
     /// <exception cref="ArgumentNullException">The policy is null.</exception>
     public static CompilationResult Compile(FilterPolicy policy)
     {
+        return CompileCore(policy, null);
+    }
+
+    /// <summary>Compiles a create-only candidate with a typed identity marker; the marker is not ownership proof.</summary>
+    /// <exception cref="ArgumentNullException">Policy or identity is null.</exception>
+    public static CompilationResult Compile(FilterPolicy policy, NftTableIdentity identity)
+    {
+        ArgumentNullException.ThrowIfNull(identity);
+        return CompileCore(policy, identity);
+    }
+
+    private static CompilationResult CompileCore(FilterPolicy policy, NftTableIdentity? identity)
+    {
         ArgumentNullException.ThrowIfNull(policy);
         var errors = new List<PolicyDiagnostic>();
         if (policy.SchemaVersion != 1)
@@ -86,7 +99,13 @@ public static class NftFilterCompiler
         }
 
         // create fails on collision: neither an existing reserved table nor foreign tables are changed.
-        var text = new StringBuilder("create table inet " + TableName + "\n");
+        var text = new StringBuilder("create table inet " + TableName);
+        if (identity is not null)
+        {
+            text.Append(" { comment \"").Append(identity.Comment).Append("\"; }");
+        }
+
+        text.Append('\n');
         text.Append("add chain inet " + TableName + " input { type filter hook input priority 0; policy ")
             .Append(Verdict(policy.DefaultVerdict)).Append("; }\n");
         foreach (var draft in policy.Rules)

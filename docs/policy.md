@@ -55,6 +55,10 @@ The batch begins with `create table inet nergal_filter`, then adds a single inpu
 base chain at priority 0 and its ordered rules. It uses invariant numeric formatting
 and LF newlines. The compiler never returns partial output on validation failure.
 
+A separate typed identity overload adds a canonical owner/resource-birth marker;
+see [native resource receipts](native-resource-receipts.md) for its limited observation
+contract and why the marker alone is not ownership proof.
+
 The table name is reserved; it is not proof of existing-table ownership. An existing
 table with that name causes the native batch to fail atomically, regardless of its
 contents. No adoption, replacement, deletion or ruleset flush is emitted. Other
