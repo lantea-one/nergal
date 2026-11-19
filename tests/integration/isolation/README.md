@@ -1,4 +1,4 @@
-# Journal filesystem account isolation
+# Private store filesystem account isolation
 
 After the pinned SDK Release build:
 
@@ -24,8 +24,13 @@ Agent-side probes then verify explicit owner denial for the directory, database 
 all known SQLite sidecars, including with namespace-local DAC override privileges.
 Hard-linked database inodes and FIFO nodes are refused before SQLite opening. The
 original database bytes remain unchanged and reopen after fixture metadata is restored.
+The same reusable checks run independently for the local application-account store,
+including an explicitly provisioned synthetic administrator and real Identity
+verification. Namespace UID 0 represents each tested store owner in turn; this does
+not recommend sharing controller identity storage with the privileged agent account.
 No network traffic or firewall operations occur; the managed probe references only
-the local storage library. No credentials, host account data or topology are fixtures.
+local storage/Identity libraries. Only clearly synthetic application credentials are
+fixtures; no real credentials, host account data or topology are used.
 
 This establishes a filesystem boundary for distinct local UIDs in the tested setup.
 It does not establish browser authentication, transport authorization, hardened

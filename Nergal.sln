@@ -49,6 +49,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "local-status", "local-statu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nergal.LocalStatus.Fixture", "tests\integration\local-status\Nergal.LocalStatus.Fixture.csproj", "{24F288E2-AFF9-4C0E-B4C2-7EAFB4D29572}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nergal.Identity", "src\Nergal.Identity\Nergal.Identity.csproj", "{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -227,6 +229,18 @@ Global
 		{24F288E2-AFF9-4C0E-B4C2-7EAFB4D29572}.Release|x64.Build.0 = Release|Any CPU
 		{24F288E2-AFF9-4C0E-B4C2-7EAFB4D29572}.Release|x86.ActiveCfg = Release|Any CPU
 		{24F288E2-AFF9-4C0E-B4C2-7EAFB4D29572}.Release|x86.Build.0 = Release|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Debug|x64.Build.0 = Debug|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Debug|x86.Build.0 = Debug|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Release|x64.ActiveCfg = Release|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Release|x64.Build.0 = Release|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Release|x86.ActiveCfg = Release|Any CPU
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -253,5 +267,6 @@ Global
 		{F39A4D6B-1381-4501-AB3E-E3973CB9C7E5} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{4B8B247C-B3E1-C021-3FF4-1387EA3FA8C1} = {28A6993C-471E-82FE-7D9E-AD3B1EC22BD9}
 		{24F288E2-AFF9-4C0E-B4C2-7EAFB4D29572} = {4B8B247C-B3E1-C021-3FF4-1387EA3FA8C1}
+		{C04A43F8-E874-4C1D-95C5-5424A1B88C7D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

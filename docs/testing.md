@@ -47,6 +47,15 @@ real transactions, reopen/replay, content integrity, path protection, stale/reus
 operations and concurrent reservations/confirmation-timeout decisions. Process death
 and physical power-loss durability require additional integration evidence.
 
+The local administrator suite uses real Identity hashing and private SQLite stores,
+without HTTP, live credentials or creating host users. It tests explicit singleton
+bootstrap (including concurrent callers and the database constraint), absence of
+default/plaintext credentials, Unicode bounds, indistinguishable credential-denial
+results, serialized concurrent failures, persisted lockout/reset, schema mismatch,
+unsafe path denial, corrupt credential identifiers/hashes, unsupported security
+state and pre-reservation cancellation. Lockout expiry uses a persisted past
+deadline rather than a sleep. No browser session is issued.
+
 ## Integration and conformance tests
 
 Kernel behavior needs isolated integration tests. Tests must own a disposable
@@ -82,6 +91,10 @@ and newuidmap/newgidmap available. It tests actual distinct-UID filesystem denia
 foreign-owner rejection and shared-inode/FIFO refusal in disposable namespaces. It
 requires no host account/group changes or firewall access. Its README documents the
 trusted-parent boundary and sandbox-helper requirements.
+The same reusable conformance checks independently exercise application-account
+storage with synthetic credentials. Separate mapped UIDs prove direct-file denial,
+foreign-owner/sidecar rejection and shared-inode/FIFO refusal for both stores;
+fixture service-owner UID reuse is not a deployment recommendation.
 
 The native identity/receipt fixture is under tests/integration/ownership. Run
 `bash tests/integration/ownership/check.sh` after the Release build. It compares real

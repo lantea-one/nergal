@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Nergal.LocalState/Nergal.LocalState.csproj" />
+    <ProjectReference Include="..\..\src\Nergal.Identity\Nergal.Identity.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,8 +4,8 @@ from pathlib import Path
 import sys
 
 root = Path(sys.argv[1])
-state = root / 'agent'
-database = state / 'journal.db'
+state = root / sys.argv[2]
+database = state / sys.argv[3]
 replacement = root / 'browser' / 'replacement'
 assert os.geteuid() == 1, 'Browser UID drop failed'
 cap = next(line for line in Path('/proc/self/status').read_text().splitlines() if line.startswith('CapEff:'))
