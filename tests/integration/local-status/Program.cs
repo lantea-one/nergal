@@ -6,7 +6,7 @@ using Nergal.LocalState;
 using Nergal.LocalTransport;
 using Nergal.Nftables;
 
-if (!OperatingSystem.IsLinux() || args.Length != 5 || args[0] is not ("serve" or "overflow" or "slow"))
+if (!OperatingSystem.IsLinux() || args.Length != 5 || args[0] is not ("serve" or "overflow" or "slow" or "query" or "query-cancel"))
 {
     return 2;
 }
@@ -17,10 +17,37 @@ try
     var net = new FileInfo("/proc/self/ns/net").LinkTarget;
     var rootMap = File.ReadAllLines("/proc/self/uid_map").Select(line => line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
         .SingleOrDefault(fields => fields[0] == "0");
-    if (user is null || net is null || user == args[3] || net == args[4] || LinuxProcessIdentity.EffectiveUserId != 0 ||
+    if (user is null || net is null || user == args[3] || net == args[4] ||
         rootMap is null || rootMap[1] == "0" || rootMap[2] != "1")
     {
         throw new InvalidOperationException("fixture.namespaceRequired");
+    }
+
+    if (args[0] is "query" or "query-cancel")
+    {
+        var capabilities = File.ReadLines("/proc/self/status").Single(line => line.StartsWith("CapEff:", StringComparison.Ordinal)).Split(':')[1].Trim();
+        if (LinuxProcessIdentity.EffectiveUserId is not (1 or 2) || ulong.Parse(capabilities, NumberStyles.HexNumber, CultureInfo.InvariantCulture) != 0)
+        {
+            throw new InvalidOperationException("fixture.unprivilegedClientRequired");
+        }
+
+        var expected = uint.Parse(args[1], NumberStyles.None, CultureInfo.InvariantCulture);
+        var client = new UnixStatusClient(new(args[2], expected, 1, TimeSpan.FromMilliseconds(500)));
+        using var canceled = new CancellationTokenSource();
+        var querying = client.QueryAsync(canceled.Token);
+        if (args[0] == "query-cancel") { canceled.Cancel(); }
+        try
+        {
+            var reply = await querying;
+            Console.WriteLine(System.Text.Encoding.UTF8.GetString(AgentStatusCodec.EncodeReply(reply)));
+            return 0;
+        }
+        catch (OperationCanceledException) { Console.Error.WriteLine("query.canceled"); return 1; }
+    }
+
+    if (LinuxProcessIdentity.EffectiveUserId != 0)
+    {
+        throw new InvalidOperationException("fixture.agentIdentityRequired");
     }
 
     var peers = new HashSet<uint> { args[0] == "overflow" ? LinuxProcessIdentity.ReadOverflowUserId() : 1 };

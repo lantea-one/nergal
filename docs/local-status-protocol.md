@@ -2,7 +2,7 @@
 
 `Nergal.Core.Agent` defines a versioned status contract and pure UTF-8 JSON/frame
 codecs. `Nergal.LocalTransport` implements a Linux pathname Unix stream listener
-with kernel peer-UID authorization. It contains no SQLite, native firewall executor,
+and client with mutual kernel peer-UID checks. It contains no SQLite, native firewall executor,
 web framework or shell. `Nergal.Linux` supplies shared no-follow filesystem metadata
 and process-identity inspection. Web references none of this infrastructure.
 
@@ -91,16 +91,38 @@ supervision and authenticated client APIs remain future work.
 
 ## Evidence and next work
 
+`UnixStatusClient` requires an explicit expected server UID and the same protected
+pathname/group policy. Before sending the fixed status request, it validates the
+socket metadata, connects, verifies kernel server UID, checks overflow authority
+again, and rechecks the parent and complete socket snapshot. Root is trusted only
+when explicitly configured. The client half-closes writes and requires the full
+bounded reply **and EOF** before returning a typed result. A valid-looking frame
+whose server leaves the reply stream open times out. No automatic retry or path
+repair occurs, and client disposal never removes the server pathname.
+
+Stable local failures include `server.denied`, `peer.overflowUid`,
+`socket.parentPolicy`, `socket.metadata`, `socket.pathChanged`, `socket.missing`,
+`reply.invalid`, `exchange.timeout` and `exchange.unavailable`. They disclose no raw
+remote content or partial reply. Explicit caller cancellation stays cancellation.
+Filesystem/native metadata calls are synchronous; trusted local filesystem paths
+are required, and the managed deadline cannot preempt a hung filesystem syscall.
+See ADR 0010 for the client boundary and its connection-creator trust limit.
+
 The disposable [local-status fixture](../tests/integration/local-status/README.md)
 uses real separate mapped UIDs, sockets, kernel peer credentials, protected SQLite
 state and native observations. It proves independent-client matched/drift replies,
 filesystem denial of direct journal access, pre-dispatch denial, malformed-frame
 bounds, provider timeout and preservation of replacement paths/foreign tables.
-Unit tests cover codec/constructor failures and defensive snapshots.
+Unit tests cover codec/constructor failures, cancellation before I/O and defensive
+snapshots. Independent hostile Python servers test the managed client, including a
+different real server UID behind an otherwise correctly owned inode (no request
+bytes sent), fragmented UInt64 replies, malformed/truncated/trailing frames,
+missing reply EOF, cancellation and unsafe paths. Test runtimes/build output are
+copied into disposable readable directories; host home permissions stay unchanged.
 
 There is no installed daemon, production collector, browser integration, remote
 transport or receipt-aware apply/confirmation/recovery command. Bound apply stays
-disabled. The next safe boundary is a peer-authenticated bounded status client,
-with hostile-server conformance, before wiring any controller to an agent. A
+disabled. Controller status integration still requires a configured deployment and
+application authorization model; it is not implicitly connected to Web. A
 production receipt-aware apply path additionally needs resource locking, complete
 candidate validation, atomic receipt transitions and independent timed recovery.
