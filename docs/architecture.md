@@ -53,10 +53,13 @@ Do not edit firewalld-owned tables from a native adapter.
 
 ## Next milestone
 
-Implement an independent local watchdog prototype using the journal, limited to
-disposable namespace resources. ADR 0003 defines crash-safe
-ordering, confirmation/timeout serialization and recovery requirements; the current
-state model supplies no durability or execution guarantees. Replacement transactions
-and rollback need isolated packet and failure conformance tests before any host apply
-path. NAT, forwarding, connection state and IPv6 neighbor discovery remain outside
-the tested input-filter slice.
+The [test-only watchdog fixture](../tests/integration/watchdog/README.md) now exercises
+independent process deadlines, worker/watchdog death and actual packet restoration
+for a fixed synthetic resource. It is not an agent or a production replacement API.
+
+The next boundary is hardened local service-account/path isolation and resource
+identity/reconciliation, before generalizing beyond fresh disposable namespaces.
+Then design an authenticated restricted agent transport. Keep Web disconnected from
+privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
+need their own design and conformance evidence. NAT, forwarding, connection state and
+IPv6 neighbor discovery remain outside the tested input-filter slice.
