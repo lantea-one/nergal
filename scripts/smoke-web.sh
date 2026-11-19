@@ -18,7 +18,7 @@ curl --fail --silent http://127.0.0.1:5191/_framework/blazor.web.js >artifacts/b
 write_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
   -X POST http://127.0.0.1:5191/api/policies/apply)
 case "$write_status" in 404|405) ;; *) exit 1 ;; esac
-for path in login session logout; do
+for path in login session logout agent/status; do
     [[ $(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:5191/$path") == 404 ]]
 done
 printf 'MVC, Blazor, health and absence of a firewall-write endpoint passed.\n'

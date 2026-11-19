@@ -52,3 +52,11 @@ uses fixed argv for read-only nft JSON collection, never shell/request interpola
 This fixture has no daemon deployment, controller/browser integration, live host enrollment,
 remote authentication or apply command. It establishes the documented local status
 slice, not production security, flood resistance or general policy correctness.
+
+The fixture also launches the real HTTPS controller under mapped UID 1 with a
+private synthetic administrator, TLS certificate and session keys. It enables only
+loopback in the disposable network namespace. Anonymous, malformed and logged-out
+requests leave the native provider count unchanged. An authenticated GET returns the
+matched resource revision. Parking the fixture socket produces an empty 503 and
+the fixture restores it before listener teardown. This portion also needs OpenSSL,
+iproute2 and the Release Web and isolation-probe build outputs.

@@ -5,6 +5,10 @@
 <main>
     <h1>Administrator session</h1>
     <p>Signed in as @User.Identity?.Name.</p>
+    @if (Url.RouteUrl("local-agent-status") is string statusUrl)
+    {
+        <p><a href="@statusUrl">View agent status</a></p>
+    }
     <form method="post" action="@Url.Content("~/logout")">
         @Html.AntiForgeryToken()
         <button type="submit">Sign out of all sessions</button>

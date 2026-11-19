@@ -81,9 +81,9 @@ class Browser:
 
 
 @contextlib.contextmanager
-def host(temp, tls):
+def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
     env = {k: v for k, v in os.environ.items()
-           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "logging__"))}
+           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "logging__"))}
     env.update({
         "HOME": str(temp / "profile"),
         "XDG_DATA_HOME": str(temp / "profile"),
@@ -94,8 +94,9 @@ def host(temp, tls):
         "LocalSessions__KeyDirectory": str(temp / "keys"), "LocalSessions__CertificateFile": str(temp / "wrapping.pfx"),
         "Logging__LogLevel__Microsoft.Hosting.Lifetime": "Information",
     })
+    env.update(settings or {})
     with tempfile.TemporaryFile(mode="w+b") as log:
-        process = subprocess.Popen(["dotnet", str(DLL)], cwd=WEB, env=env, stdout=log, stderr=subprocess.STDOUT)
+        process = subprocess.Popen([executable, str(dll)], cwd=dll.parent, env=env, preexec_fn=drop, stdout=log, stderr=subprocess.STDOUT)
         try:
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline:
@@ -116,7 +117,7 @@ def host(temp, tls):
             assert PASSWORD.encode() not in os.pread(log.fileno(), 1_000_000, 0)
 
 
-def exercise(temp):
+def provision(temp):
     for directory in ("accounts", "keys", "profile"):
         (temp / directory).mkdir(mode=0o700)
     subprocess.run(["dotnet", PROBE, "account-initialize", temp / "accounts"], check=True)
@@ -128,8 +129,13 @@ def exercise(temp):
                        check=True, stderr=subprocess.DEVNULL)
     subprocess.run(["openssl", "pkcs12", "-export", "-inkey", temp / "wrapping.key",
                     "-in", temp / "wrapping.crt", "-out", temp / "wrapping.pfx", "-passout", "pass:"], check=True)
-    tls = ssl.create_default_context(cafile=str(temp / "tls.crt"))
+    return ssl.create_default_context(cafile=str(temp / "tls.crt"))
+
+
+def exercise(temp):
+    tls = provision(temp)
     with host(temp, tls) as browser:
+        assert 'href="/login"' in browser.request("/", 200)
         browser.request("/login", 400, plain=True, headers={"X-Forwarded-Proto": "https"})
         browser.request("/session", 401)
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 200)
@@ -140,7 +146,8 @@ def exercise(temp):
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 302, fields)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
-        browser.request("/session", 200)
+        assert 'href="/agent/status"' not in browser.request("/session", 200)
+        browser.request("/agent/status", 404)
         browser.cookies[ADMIN] = "invalid-ticket"
         browser.request("/session", 401)
     with host(temp, tls) as browser:
