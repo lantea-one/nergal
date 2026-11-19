@@ -19,7 +19,35 @@ it creates nothing. `LocalAccountDatabase.InitializeAsync` creates only a **new*
 or sidecar is refused. It creates no administrator and never adopts, upgrades or
 repairs existing/partial state. A canceled/failed initialization can leave an
 incomplete new file; subsequent access fails closed pending explicit offline repair.
-There is no operator CLI yet.
+The offline `nergal-admin` command exposes these operations to the store owner.
+It never starts Web, contacts an identity provider, touches the agent journal or
+changes a host account. The operator supplies an existing private directory.
+Run the following as the application credential owner, with an absolute path:
+
+```sh
+nergal-admin account init "$account_directory"
+nergal-admin account provision "$account_directory" "$administrator_name"
+```
+
+The second command reads and confirms a password from the terminal with echo
+disabled before either prompt. The Linux terminal mode is captured and restored
+through the fixed system utility `/usr/bin/stty`. No password is passed to a
+subprocess. Normal completion, input errors and handled termination signals restore
+the original mode. An uncatchable kill or loss of the terminal can prevent cleanup.
+
+For automation append `--password-stdin` and supply a protected redirected input
+stream. The command reads one bounded UTF-8 line to EOF with an optional final
+LF or CRLF. Other whitespace is preserved. Multiple lines, malformed UTF-8 and
+excess input fail. It accepts no password argument or password environment setting.
+The existing Identity validation and store rules apply. CLI input buffers are
+cleared; managed password strings used by Identity cannot be explicitly erased.
+
+Use the Release apphost from `src/Nergal.Admin/bin/Release/net10.0` or invoke
+`dotnet` with `nergal-admin.dll` from that build. Exit 0 means success, 2 means
+invalid invocation/input mode, and 1 means provisioning or storage failed.
+Initialization and provisioning can be retried independently after checking their
+result. Neither command replaces an existing credential. A lost password still
+requires a separately designed recovery procedure.
 
 `AddLocalAdministratorAccounts` registers a single existing-store configuration,
 standard Identity services and scoped `LocalAdministratorAccounts`; duplicate

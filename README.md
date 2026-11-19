@@ -44,6 +44,8 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.Linux`: shared no-follow metadata and local kernel identity inspection.
 - `Nergal.LocalTransport`: bounded status-only Unix socket listener/client with
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
+- `Nergal.Admin`: offline initialization and singleton administrator provisioning
+  for the private application account store. See [operator commands](docs/local-administrator-accounts.md).
 - `Nergal.Identity`: explicitly provisioned private singleton administrator store
   using standard Identity hashing/lockout and serialized SQLite decisions, plus
   certificate-encrypted persistent session keys and revocable local sessions.
