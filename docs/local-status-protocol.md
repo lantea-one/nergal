@@ -40,7 +40,7 @@ clients that cannot represent all such integers as JSON numbers:
 
 Neither denial nor error replies carry resource metadata, native text, paths or
 caller input. A valid codec result is only parsed intent, never authorization or
-proof of kernel state. An observation outside the supported empty-chain slice is
+proof of kernel state. An observation outside the supported empty-chain or family-rule slice is
 unavailable, rather than a successful match or an invitation to adopt new state.
 
 ## Peer and filesystem boundary

@@ -23,10 +23,13 @@ try
         Console.Write(NftFilterCompiler.Compile(new(1, FilterVerdict.Accept, []), new NftTableIdentity(agent, resource)).Candidate);
         return 0;
     }
-    if (args[0] == "prepare")
+    if (args[0] is "prepare" or "prepare-family")
     {
-        ApplyJournal.Initialize(args[1], new(agent, owner, 1), Artifact(FilterVerdict.Accept));
-        Console.Write(Artifact(FilterVerdict.Accept));
+        FilterRule[] rules = args[0] == "prepare" ? [] :
+            [new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Drop), new(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Accept)];
+        var baseline = NftFilterCompiler.Compile(new(1, FilterVerdict.Accept, rules), identity).Candidate!;
+        ApplyJournal.Initialize(args[1], new(agent, owner, 1), baseline);
+        Console.Write(baseline);
         return 0;
     }
     var store = ApplyJournal.Open(args[1]);

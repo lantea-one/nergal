@@ -58,7 +58,7 @@ Bind this development build to loopback; it is not a secured administration endp
 - `tests/integration/enrollment`: opt-in protected intent/receipt binding and
   read-only native reconciliation; no production enrollment or bound apply.
 - `tests/integration/ownership`: opt-in native identity, drift and cross-namespace
-  receipt checks for the limited empty-chain resource.
+  receipt checks for tagged input chains. The enrollment fixture also checks ordered family rules against packets.
 - `tests/integration/isolation`: opt-in filesystem denial between distinct mapped
   local UIDs, without creating host accounts or changing firewalls.
 - `tests/integration/local-status`: opt-in real peer-UID, framing, deadline and
