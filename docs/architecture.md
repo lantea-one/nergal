@@ -63,11 +63,12 @@ unprivileged browser role; trusted parent paths remain required.
 
 Typed identity markers and a strict empty-chain observation/receipt comparator now
 bind boot, namespace, marker, handle and complete recognized state. They perform no
-host operations and do not persist/enroll a protected receipt. See
+host operations. Schema 2 of LocalState persists explicit trusted expected receipts
+and provides read-only reconciliation; bound-resource apply remains disabled. See
 [the receipt contract](native-resource-receipts.md).
 
-The next boundary is protected receipt persistence and crash-safe reconciliation
-before generalizing beyond fresh disposable namespaces, followed by authenticated
-restricted agent transport. Keep Web disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
+The next boundary is authenticated restricted local-agent transport for read-only
+status, before receipt-aware apply/recovery or generalizing beyond disposable
+namespaces. Protected receipt binding is not production enrollment authority. Keep Web disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and
 IPv6 neighbor discovery remain outside the tested input-filter slice.

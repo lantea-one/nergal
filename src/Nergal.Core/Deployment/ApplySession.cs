@@ -1,45 +1,47 @@
 namespace Nergal.Core.Deployment;
 
 /// <summary>Modeled confirmed-apply phases; none executes or schedules host operations.</summary>
+/// <remarks>Numeric identifiers are persisted in local journals. Do not renumber existing values.</remarks>
 public enum ApplyPhase
 {
     /// <summary>No rollback arming has been acknowledged.</summary>
-    Prepared,
+    Prepared = 0,
     /// <summary>The coordinator asserts that independent local rollback is durably armed.</summary>
-    RollbackArmed,
+    RollbackArmed = 1,
     /// <summary>Apply success was acknowledged; timely confirmation is still required.</summary>
-    AwaitingConfirmation,
+    AwaitingConfirmation = 2,
     /// <summary>Timely confirmation was acknowledged; the operation is terminal.</summary>
-    Confirmed,
+    Confirmed = 3,
     /// <summary>Rollback must complete before new work is considered.</summary>
-    RollbackRequired,
+    RollbackRequired = 4,
     /// <summary>Successful rollback was acknowledged; the operation is terminal.</summary>
-    RolledBack,
+    RolledBack = 5,
     /// <summary>Uncertain state or failed rollback requires external reconciliation; terminal in this model.</summary>
-    RecoveryRequired,
+    RecoveryRequired = 6,
 }
 
 /// <summary>Trusted coordinator acknowledgments, not commands or independently verified proofs.</summary>
+/// <remarks>Numeric identifiers are persisted in local journals. Append deliberately; never renumber existing events.</remarks>
 public enum ApplyEvent
 {
     /// <summary>Complete validation, snapshot and independent durable rollback arming have finished.</summary>
-    RollbackArmed,
+    RollbackArmed = 0,
     /// <summary>The complete candidate was atomically installed.</summary>
-    CandidateApplied,
+    CandidateApplied = 1,
     /// <summary>Apply failed or its outcome cannot be established; rollback is required.</summary>
-    ApplyFailed,
+    ApplyFailed = 2,
     /// <summary>Post-apply verification failed; restore the prior owned state immediately.</summary>
-    VerificationFailed,
+    VerificationFailed = 3,
     /// <summary>The matching operation was authorized, verified and durably confirmed before expiry.</summary>
-    Confirm,
+    Confirm = 4,
     /// <summary>Evaluate the monotonic deadline; this event does not run automatically.</summary>
-    CheckDeadline,
+    CheckDeadline = 5,
     /// <summary>The exact rollback artifact was restored and verified.</summary>
-    RollbackSucceeded,
+    RollbackSucceeded = 6,
     /// <summary>Rollback failed or restoration cannot be verified.</summary>
-    RollbackFailed,
+    RollbackFailed = 7,
     /// <summary>Execution was interrupted; protected journal and kernel reconciliation are required.</summary>
-    Interrupted,
+    Interrupted = 8,
 }
 
 /// <summary>A pure immutable confirmed-apply model, with no persistence, timers or host access.</summary>

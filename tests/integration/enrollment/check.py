@@ -1,0 +1,96 @@
+"""Protected expected receipts plus actual kernel observations, inside fresh disposable namespaces."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+
+def require(condition, message):
+    if not condition:
+        raise AssertionError(message)
+
+
+require(len(sys.argv) == 5, 'Invoke through check.sh')
+assembly, scenario, parent_user, parent_net = sys.argv[1:]
+require(os.readlink('/proc/self/ns/user') != parent_user, 'User isolation missing')
+require(os.readlink('/proc/self/ns/net') != parent_net, 'Network isolation missing')
+require(os.getuid() == 0, 'Namespace root required')
+
+
+def run(arguments, text=None, success=True, error=None):
+    try:
+        result = subprocess.run(arguments, input=text, capture_output=True, text=True, timeout=10)
+    except subprocess.TimeoutExpired:
+        raise AssertionError('Conformance process timed out') from None
+    require((result.returncode == 0) == success, 'Unexpected conformance result')
+    if error:
+        require(result.stderr.strip() == error, 'Expected protected-state denial code missing')
+    return result.stdout
+
+
+def nft(text, success=True, check=False):
+    return run(['nft'] + (['--check'] if check else []) + ['--file', '-'], text, success)
+
+
+def observation():
+    return run(['nft', '--json', 'list', 'table', 'inet', 'nergal_filter'])
+
+
+for family in ('ip', 'ip6', 'inet', 'bridge'):
+    nft(f'create table {family} foreign_fixture\nadd chain {family} foreign_fixture sentinel\n')
+foreign = {family: run(['nft', '--stateless', 'list', 'table', family, 'foreign_fixture'])
+           for family in ('ip', 'ip6', 'inet', 'bridge')}
+with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
+    os.chmod(state, 0o700)
+
+    def probe(mode, text=None, success=True, error=None):
+        return run(['dotnet', assembly, mode, state], text, success, error)
+
+    candidate = probe('prepare')  # Protected intent exists before any exclusive resource creation.
+    if scenario == 'collision':
+        nft(probe('foreign'))
+        before = run(['nft', '--stateless', 'list', 'ruleset'])
+        nft(candidate, success=False, check=True)
+        nft(candidate, success=False)
+        probe('bind', observation(), False, 'ownership.stale')
+        require(probe('receipt').strip() == 'UNBOUND', 'Foreign table was adopted')
+        require(run(['nft', '--stateless', 'list', 'ruleset']) == before, 'Conflicting foreign resource changed')
+        print('PASS: conflicting native resource is preserved and cannot be bound', flush=True)
+    else:
+        nft(candidate, check=True)
+        nft(candidate)
+        original = observation()
+        probe('verify', original, False, 'resource.unbound')
+        probe('bind', original)
+        receipt = probe('receipt')
+        database = Path(state) / 'journal.db'
+        protected = database.read_bytes()
+        probe('bind', original)  # Lost-ack retry is idempotent, not a new enrollment.
+        require(json.loads(probe('verify', original))['IsMatch'], 'Protected receipt did not survive reopen')
+        probe('try-start', success=False, error='resource.boundApplyUnavailable')
+        require(database.read_bytes() == protected, 'Read-only reconciliation or denied apply changed state')
+        print('PASS: protected intent binds once, reopens, verifies and disables legacy apply', flush=True)
+
+        nft('add chain inet nergal_filter input { policy drop; }\n')
+        mismatch = json.loads(probe('verify', observation(), False))
+        require('state.drift' in mismatch['ErrorCodes'], 'Policy drift was accepted')
+        probe('bind', observation(), False, 'resource.baselineMismatch')
+        nft('add chain inet nergal_filter input { policy accept; }\n')
+        nft('delete table inet nergal_filter\n' + candidate)
+        replacement = observation()
+        mismatch = json.loads(probe('verify', replacement, False))
+        require('handle.mismatch' in mismatch['ErrorCodes'], 'Recreated table was accepted')
+        probe('bind', replacement, False, 'resource.alreadyBound')
+        require(probe('receipt') == receipt and database.read_bytes() == protected, 'Rejected state replaced the protected receipt')
+        print('PASS: policy drift and copied-marker recreation cannot rewrite protected expected state', flush=True)
+
+        payload = json.dumps({'candidate': candidate, 'state': state})
+        run(['unshare', '--net', sys.executable, str(Path(__file__).with_name('other_namespace.py')), assembly], payload)
+        require(probe('receipt') == receipt and database.read_bytes() == protected, 'Cross-namespace check changed protected state')
+        print('PASS: a second real namespace cannot satisfy the protected receipt', flush=True)
+
+    for family, before in foreign.items():
+        require(run(['nft', '--stateless', 'list', 'table', family, 'foreign_fixture']) == before, 'Foreign table changed')
+    print('PASS: foreign ip/ip6/inet/bridge sentinel tables preserved', flush=True)

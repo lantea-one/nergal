@@ -7,11 +7,12 @@ namespace Nergal.LocalState;
 
 /// <summary>Private Linux SQLite journal for one explicitly enrolled resource; performs no firewall operations.</summary>
 /// <remarks>Requires a trusted service-owned local parent directory. Same-account/root attackers and hostile path replacement are outside this prototype boundary.</remarks>
-public sealed class ApplyJournal
+public sealed partial class ApplyJournal
 {
     private readonly string directory;
     private readonly IJournalClock clock;
     private const int ArtifactLimit = 1024 * 1024;
+    private const int SchemaVersion = 2;
 
     private ApplyJournal(string directory, IJournalClock clock)
     {
@@ -53,7 +54,7 @@ public sealed class ApplyJournal
         var now = journal.Now();
         Execute(connection, transaction, Schema);
         Execute(connection, transaction,
-            "INSERT INTO enrollment VALUES(1,$agent,$owner,$revision,$artifact,$digest,$boot,NULL)",
+            "INSERT INTO enrollment(singleton,agent,owner,revision,artifact,digest,boot,active) VALUES(1,$agent,$owner,$revision,$artifact,$digest,$boot,NULL)",
             ("$agent", ownership.AgentId.ToString("D")), ("$owner", ownership.OwnerId.ToString("D")),
             ("$revision", Revision(ownership.Revision)), ("$artifact", confirmedArtifact),
             ("$digest", CandidateDigest.FromText(confirmedArtifact).Value), ("$boot", now.BootId.ToString("D")));
@@ -126,6 +127,11 @@ public sealed class ApplyJournal
             if (enrollment.Value.Artifact != rollback)
             {
                 throw new JournalException("rollback.mismatch");
+            }
+
+            if (LoadReceipt(connection, transaction, enrollment.Value, enrollment.Boot, enrollment.ResourceBound) is not null)
+            {
+                throw new JournalException("resource.boundApplyUnavailable");
             }
 
             if (Scalar(connection, transaction, "SELECT count(*) FROM operations WHERE id=$id", ("$id", Id(plan.OperationId))) is long count && count != 0)
@@ -263,9 +269,9 @@ public sealed class ApplyJournal
         }
     }
 
-    private static (JournalEnrollment Value, Guid Boot, Guid? Active) Enrollment(SqliteConnection connection, SqliteTransaction? transaction)
+    private static (JournalEnrollment Value, Guid Boot, Guid? Active, bool ResourceBound) Enrollment(SqliteConnection connection, SqliteTransaction? transaction, bool legacy = false)
     {
-        using var command = Command(connection, transaction, "SELECT agent,owner,revision,artifact,digest,boot,active FROM enrollment WHERE singleton=1");
+        using var command = Command(connection, transaction, "SELECT agent,owner,revision,artifact,digest,boot,active," + (legacy ? "0" : "resource_bound") + " FROM enrollment WHERE singleton=1");
         using var row = command.ExecuteReader();
         if (!row.Read())
         {
@@ -282,7 +288,13 @@ public sealed class ApplyJournal
                 throw new JournalException("journal.corrupt");
             }
 
-            return (new(ownership, artifact), ParseId(row.GetString(5)), row.IsDBNull(6) ? null : ParseId(row.GetString(6)));
+            var bound = row.GetInt64(7);
+            if (bound is not (0 or 1))
+            {
+                throw new JournalException("journal.corrupt");
+            }
+
+            return (new(ownership, artifact), ParseId(row.GetString(5)), row.IsDBNull(6) ? null : ParseId(row.GetString(6)), bound == 1);
         }
         catch (Exception error) when (error is ArgumentException or FormatException or OverflowException or InvalidCastException)
         {
@@ -296,6 +308,11 @@ public sealed class ApplyJournal
         {
             using var connection = Connect();
             using var transaction = connection.BeginTransaction(deferred: true);
+            if (!Equals(Scalar(connection, transaction, "PRAGMA user_version"), (long)SchemaVersion))
+            {
+                throw new JournalException("journal.schemaOrIntegrity");
+            }
+
             return action(connection, transaction);
         }
         catch (SqliteException) { throw new JournalException("database.error"); }
@@ -307,6 +324,11 @@ public sealed class ApplyJournal
         {
             using var connection = Connect();
             using var transaction = connection.BeginTransaction(deferred: false);
+            if (!Equals(Scalar(connection, transaction, "PRAGMA user_version"), (long)SchemaVersion))
+            {
+                throw new JournalException("journal.schemaOrIntegrity");
+            }
+
             var result = action(connection, transaction);
             transaction.Commit();
             return result;
@@ -314,7 +336,7 @@ public sealed class ApplyJournal
         catch (SqliteException) { throw new JournalException("database.error"); }
     }
 
-    private SqliteConnection Connect(bool validate = true)
+    private SqliteConnection Connect(bool validate = true, int expectedVersion = SchemaVersion)
     {
         var database = PrivateJournalPath.Validate(directory, true);
         var connection = new SqliteConnection(new SqliteConnectionStringBuilder
@@ -329,7 +351,7 @@ public sealed class ApplyJournal
             connection.Open();
             Execute(connection, null, "PRAGMA trusted_schema=OFF");
             if (validate && (!Equals(Scalar(connection, null, "PRAGMA application_id"), 0x4e52474cL) ||
-                !Equals(Scalar(connection, null, "PRAGMA user_version"), 1L) ||
+                !Equals(Scalar(connection, null, "PRAGMA user_version"), (long)expectedVersion) ||
                 !Equals(Scalar(connection, null, "PRAGMA quick_check"), "ok") ||
                 Scalar(connection, null, "PRAGMA foreign_key_check") is not null))
             {
@@ -410,16 +432,17 @@ public sealed class ApplyJournal
 
     private const string Schema = """
         PRAGMA application_id=0x4e52474c;
-        PRAGMA user_version=1;
+        PRAGMA user_version=2;
         CREATE TABLE operations(id TEXT PRIMARY KEY,agent TEXT NOT NULL,owner TEXT NOT NULL,revision TEXT NOT NULL,
           candidate TEXT NOT NULL,rollback TEXT NOT NULL,candidate_hash TEXT NOT NULL,rollback_hash TEXT NOT NULL,
           timeout INTEGER NOT NULL,boot TEXT NOT NULL,started INTEGER NOT NULL,phase INTEGER NOT NULL) STRICT;
         CREATE TABLE enrollment(singleton INTEGER PRIMARY KEY CHECK(singleton=1),agent TEXT NOT NULL,owner TEXT NOT NULL,
-          revision TEXT NOT NULL,artifact TEXT NOT NULL,digest TEXT NOT NULL,boot TEXT NOT NULL,active TEXT REFERENCES operations(id)) STRICT;
+          revision TEXT NOT NULL,artifact TEXT NOT NULL,digest TEXT NOT NULL,boot TEXT NOT NULL,active TEXT REFERENCES operations(id),
+          resource_bound INTEGER NOT NULL DEFAULT 0 CHECK(resource_bound IN(0,1))) STRICT;
         CREATE TABLE events(operation TEXT NOT NULL REFERENCES operations(id),sequence INTEGER NOT NULL,
           kind INTEGER NOT NULL,elapsed INTEGER NOT NULL,watchdog TEXT NOT NULL,error TEXT,phase INTEGER NOT NULL,
           PRIMARY KEY(operation,sequence)) STRICT;
-        """;
+        """ + ReceiptSchema;
 }
 
 /// <summary>Verified enrolled state; does not establish that the kernel currently matches this artifact.</summary>

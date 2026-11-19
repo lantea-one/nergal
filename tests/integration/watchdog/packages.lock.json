@@ -54,7 +54,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Data.Sqlite": "[10.0.15, )",
-          "Nergal.Core": "[1.0.0, )"
+          "Nergal.Core": "[1.0.0, )",
+          "Nergal.Nftables": "[1.0.0, )"
         }
       },
       "nergal.nftables": {

@@ -3,6 +3,8 @@
 The native library can emit a typed table marker and parse/compare a limited native
 observation. All these operations are unprivileged and deterministic; none reads a
 host, executes nft, enrolls a resource, persists a receipt or authorizes an apply.
+The separate [protected journal](protected-resource-receipts.md) can now persist
+explicit trusted expected receipts and perform read-only reconciliation.
 See [ADR 0007](decisions/0007-native-resource-receipts.md).
 
 ## Compiler identity
@@ -69,7 +71,8 @@ supplied assertions. Receipt and current context must not be accepted from brows
 request claims as authority. A caller must not turn a rejected current observation
 into a new expected receipt to make the mismatch disappear.
 
-Protected receipt persistence, resource enrollment, reconciliation after a crash or
-reboot, kernel/journal compare-and-swap and authenticated agent transport remain
-unimplemented. The current journal is not integrated with receipt storage. Those
-boundaries must be designed/tested before any host mutation is enabled.
+Protected receipt persistence and read-only reconciliation now exist in LocalState.
+Production resource enrollment, receipt-aware apply/recovery, reboot reconciliation,
+kernel/journal compare-and-swap and authenticated agent transport remain unimplemented.
+Bound-resource legacy apply is disabled until those mutation boundaries are designed
+and tested.
