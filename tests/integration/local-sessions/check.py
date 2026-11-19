@@ -15,7 +15,7 @@ from urllib.parse import urlencode
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "src/Nergal.Web"
 DLL = WEB / "bin/Release/net10.0/Nergal.Web.dll"
-PROBE = ROOT / "tests/integration/isolation/bin/Release/net10.0/Nergal.Isolation.Fixture.dll"
+ADMIN_TOOL = ROOT / "src/Nergal.Admin/bin/Release/net10.0/nergal-admin.dll"
 ADMIN = "__Host-nergal-admin"
 CSRF = "__Host-nergal-csrf"
 PASSWORD = "synthetic account fixture password 0001"
@@ -123,7 +123,9 @@ def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
 def provision(temp):
     for directory in ("accounts", "keys", "profile"):
         (temp / directory).mkdir(mode=0o700)
-    subprocess.run(["dotnet", PROBE, "account-initialize", temp / "accounts"], check=True)
+    subprocess.run(["dotnet", ADMIN_TOOL, "account", "init", temp / "accounts"], check=True)
+    subprocess.run(["dotnet", ADMIN_TOOL, "account", "provision", temp / "accounts", "fixture-admin", "--password-stdin"],
+                   input=PASSWORD.encode() + b"\n", check=True)
     # Independent TLS and wrapping credentials. No machine certificate store.
     for name in ("tls", "wrapping"):
         subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:3072", "-nodes", "-days", "1",

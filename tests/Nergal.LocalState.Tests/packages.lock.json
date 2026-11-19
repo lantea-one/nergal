@@ -368,6 +368,12 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "nergal-admin": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.Identity": "[1.0.0, )"
+        }
+      },
       "nergal.core": {
         "type": "Project"
       },

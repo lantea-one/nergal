@@ -147,6 +147,14 @@ preservation of a maximum UInt64 revision.
 
 ## Web and identity tests
 
+After the Release build, `python3 -B tests/integration/admin/check.py` runs the
+offline commands on a temporary private account directory. A real pseudo-terminal
+checks terminal echo at each prompt, absence of the synthetic password in output
+and full mode restoration after success, mismatch and SIGTERM. Pipe and duplicate
+failures do not create or overwrite an administrator. The HTTPS fixtures provision
+their synthetic account through the same operator command.
+
+
 After the Release build, run `python3 tests/integration/local-sessions/check.py`
 with Python 3 and OpenSSL. The fixture starts independent Kestrel processes on
 dynamic loopback ports, creates separate synthetic TLS/wrapping certificates and

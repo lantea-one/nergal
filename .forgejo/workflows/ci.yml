@@ -26,6 +26,8 @@ jobs:
         run: bash scripts/test-unit.sh
       - name: Check MVC, Blazor and health endpoints
         run: bash scripts/smoke-web.sh
+      - name: Verify offline local administrator provisioning and terminal handling
+        run: python3 -B tests/integration/admin/check.py
       - name: Verify local administrator sessions on loopback HTTPS
         run: python3 tests/integration/local-sessions/check.py
       - name: Verify optional OIDC with a disposable HTTPS issuer

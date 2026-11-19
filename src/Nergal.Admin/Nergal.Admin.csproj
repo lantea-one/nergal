@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>nergal-admin</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Nergal.Identity/Nergal.Identity.csproj" />
+    <InternalsVisibleTo Include="Nergal.LocalState.Tests" />
+  </ItemGroup>
+</Project>

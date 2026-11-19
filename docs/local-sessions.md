@@ -22,9 +22,9 @@ reverse proxy is outside this slice. A forwarded scheme alone cannot satisfy the
 direct TLS check. Health checks on the authenticated host also require HTTPS.
 
 Startup checks the provisioned account and exercises the configured key ring
-before listening. Provisioning still uses the explicit trusted library API in
+before listening. Provisioning uses the offline command documented in
 [local credentials](local-administrator-accounts.md). There is no automatic seed,
-operator CLI, registration or reset. [Optional OIDC](federated-login.md) uses
+public registration or reset. [Optional OIDC](federated-login.md) uses
 a separate cookie, group authorization and session registry. The host suppresses ASP.NET Core's
 separate default key-ring preload so that authentication, antiforgery and page
 protection use the selected provider without creating a second profile key ring.
