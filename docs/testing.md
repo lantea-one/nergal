@@ -101,6 +101,15 @@ The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
 firewalld equivalence test. It is opt-in and is not part of dotnet test.
 
+The local status fixture is under tests/integration/local-status. Run
+`bash tests/integration/local-status/check.sh` with existing subordinate UID/GID
+ranges and mapping helpers, as for the isolation fixture. Independent clients use
+real separate UIDs and actual SO_PEERCRED. It tests denial before provider access,
+strict bounded framing/schema, incomplete-frame and provider deadlines, protected
+native matched/drift status, corrupt-state errors and replacement-path preservation.
+No daemon is installed; only the harness writes synthetic namespace rules. See its
+[README](../tests/integration/local-status/README.md) for the exact scope.
+
 ## Web and identity tests
 
 Future tests must cover OIDC claim validation, group denial, revoked access,

@@ -50,11 +50,15 @@
       "nergal.core": {
         "type": "Project"
       },
+      "nergal.linux": {
+        "type": "Project"
+      },
       "nergal.localstate": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Data.Sqlite": "[10.0.15, )",
           "Nergal.Core": "[1.0.0, )",
+          "Nergal.Linux": "[1.0.0, )",
           "Nergal.Nftables": "[1.0.0, )"
         }
       },

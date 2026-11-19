@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../Nergal.Core/Nergal.Core.csproj" />
     <ProjectReference Include="../Nergal.Nftables/Nergal.Nftables.csproj" />
+    <ProjectReference Include="../Nergal.Linux/Nergal.Linux.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
   </ItemGroup>
 </Project>
