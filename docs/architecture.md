@@ -18,11 +18,16 @@ policy when the web console or identity provider is unavailable.
    for source metadata, comments and named definitions.
 4. A future restricted agent validates owned-table operations and executes
    narrow native nftables transactions. It will not accept arbitrary shell scripts.
-5. Core now models ownership/revision/artifact bindings and confirmed-apply state
+5. `Nergal.LocalState` persists explicit enrollment assertions, exact artifacts and
+   replayable transitions in a private SQLite journal. Transactions serialize
+   confirmation/timeout and commit revisions with confirmation. It has no kernel
+   access and is not referenced by Web. See [the journal contract](local-journal.md).
+6. Core now models ownership/revision/artifact bindings and confirmed-apply state
    transitions (see [the contract](confirmed-apply.md) and ADR 0003). This is a pure
-   model with no persistence, timer, watchdog or executor. Future coordination must
-   validate a complete candidate, snapshot owned state, arm local rollback, apply atomically, verify and confirm. Persistence,
-   revisions and runtime state need explicit reconciliation.
+   model with no timer, watchdog or executor. Future coordination must
+   validate a complete candidate, snapshot owned state, arm local rollback, apply
+   atomically, verify and confirm. Revisions and runtime state need explicit
+   reconciliation even with a durable journal.
 
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy
@@ -48,8 +53,8 @@ Do not edit firewalld-owned tables from a native adapter.
 
 ## Next milestone
 
-Implement a protected durable journal and an independent local watchdog prototype,
-initially against disposable namespace resources only. ADR 0003 defines crash-safe
+Implement an independent local watchdog prototype using the journal, limited to
+disposable namespace resources. ADR 0003 defines crash-safe
 ordering, confirmation/timeout serialization and recovery requirements; the current
 state model supplies no durability or execution guarantees. Replacement transactions
 and rollback need isolated packet and failure conformance tests before any host apply
