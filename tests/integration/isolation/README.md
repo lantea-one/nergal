@@ -28,6 +28,10 @@ The same reusable checks run independently for the local application-account sto
 including an explicitly provisioned synthetic administrator and real Identity
 verification. Namespace UID 0 represents each tested store owner in turn; this does
 not recommend sharing controller identity storage with the privileged agent account.
+Encrypted session-key storage is a third independently checked store. Its wrapping
+certificate and protected payload are synthetic private temporary fixtures, never
+machine-store certificates or repository assets. The same actual UID denial,
+owner/sidecar, shared-inode and FIFO checks apply before key loading.
 No network traffic or firewall operations occur; the managed probe references only
 local storage/Identity libraries. Only clearly synthetic application credentials are
 fixtures; no real credentials, host account data or topology are used.

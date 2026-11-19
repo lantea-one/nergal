@@ -85,7 +85,8 @@ and UID 1 an unrelated untrusted process. That fixture role choice does not impl
 sharing controller/agent service identities in deployment. It verifies real DAC
 denial, foreign-owner rejection, sidecars, hard links and FIFOs without host users.
 
-The next boundary is durable protected Data Protection key storage, then HTTPS-only
-login/logout, CSRF, rate limiting, revocable sessions and isolated HTTP conformance.
+Separate [protected Data Protection key storage](protected-session-keys.md) is now
+implemented as a library. The next boundary is HTTPS-only login/logout, CSRF,
+rate limiting, revocable sessions and isolated HTTP conformance.
 No authenticated agent status will be exposed until those boundaries are in place.
 OIDC issuer/audience/redirect/claims validation and configurable roles remain planned.

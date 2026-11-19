@@ -12,8 +12,8 @@ candidates; it cannot inspect, install or modify host firewall rules.
 A test-only independent watchdog exercises synthetic rollback in disposable
 namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
 OIDC and the host agent are planned, not implemented. No production deployments are configured.
-An isolated local administrator credential library is implemented; browser login,
-durable session keys and authenticated controller routes remain planned.
+Isolated local administrator credentials and protected persistent Data Protection
+keys are implemented as libraries; browser login and authenticated controller routes remain planned.
 
 ## Run locally
 
@@ -45,7 +45,8 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.LocalTransport`: bounded status-only Unix socket listener/client with
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
 - `Nergal.Identity`: explicitly provisioned private singleton administrator store
-  using standard Identity hashing/lockout and serialized SQLite decisions. No browser sessions or default account.
+  using standard Identity hashing/lockout and serialized SQLite decisions, plus
+  certificate-encrypted persistent session keys. No browser sessions or default account.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
   the production Docker socket, unrestricted SSH or arbitrary shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
@@ -72,7 +73,8 @@ Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [native resource receipts](docs/native-resource-receipts.md),
 [protected receipt persistence](docs/protected-resource-receipts.md),
 [local status protocol](docs/local-status-protocol.md),
-[local administrator credentials](docs/local-administrator-accounts.md)
+[local administrator credentials](docs/local-administrator-accounts.md),
+[protected session keys](docs/protected-session-keys.md)
 and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.

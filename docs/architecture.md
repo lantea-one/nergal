@@ -41,6 +41,9 @@ policy when the web console or identity provider is unavailable.
    at most one administrator; no default account or public registration exists.
    Its framework/database types remain outside Core. Web has no reference yet and
    issues no identity session; see [the contract](local-administrator-accounts.md).
+   A separate protected Data Protection provider now persists encrypted session
+   keys, rejects partial/ambient key loading and refreshes existing protectors on
+   appended revocation; see [the key contract](protected-session-keys.md).
 
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy
@@ -86,8 +89,8 @@ is controller status integration with explicit deployment configuration and
 application authorization; the peer-authenticated client now has independent
 hostile-server conformance. Receipt-aware apply/recovery remains a later milestone.
 The user selected local administrator/password authentication with optional OIDC.
-The credential foundation is implemented. Next add durable protected session keys,
-then HTTPS-only login/logout, CSRF, rate limiting, revocation and isolated HTTP tests
+The credential and protected session-key foundations are implemented as libraries.
+Next add HTTPS-only login/logout, CSRF, rate limiting, per-account revocation and isolated HTTP tests
 before protected status routes. The read-only scaffold still uses ephemeral keys.
 Protected receipt binding is not production enrollment authority. Keep Web
 disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
