@@ -37,14 +37,16 @@ Bind this development build to loopback; it is not a secured administration endp
   candidates for the reserved `inet nergal_filter` table, typed identity markers and
   limited native observation/receipt comparison. No execution or host access.
 - `Nergal.LocalState`: Linux SQLite journal with explicit bootstrap assertions,
-  serialized transitions, exact artifact/revision persistence and effective-UID/type/
-  mode/link checks. No kernel operations.
+  serialized transitions, exact artifact/revision persistence, protected resource
+  receipts, explicit offline schema upgrade and effective-UID/type/mode/link checks. No kernel operations.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
   the production Docker socket, unrestricted SSH or arbitrary shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
   invalid inputs and defensive snapshots.
 - `tests/integration/nftables`: opt-in real kernel and dual-stack packet checks
   in disposable user/network namespaces, including collision and foreign-table safety.
+- `tests/integration/enrollment`: opt-in protected intent/receipt binding and
+  read-only native reconciliation; no production enrollment or bound apply.
 - `tests/integration/ownership`: opt-in native identity, drift and cross-namespace
   receipt checks for the limited empty-chain resource.
 - `tests/integration/isolation`: opt-in filesystem denial between distinct mapped
@@ -58,7 +60,8 @@ Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [architecture](docs/architecture.md), [policy contract](docs/policy.md),
 [compiler decision](docs/decisions/0002-filter-compiler.md),
 [confirmed-apply model](docs/confirmed-apply.md), [local journal](docs/local-journal.md),
-[native resource receipts](docs/native-resource-receipts.md)
+[native resource receipts](docs/native-resource-receipts.md),
+[protected receipt persistence](docs/protected-resource-receipts.md)
 and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.

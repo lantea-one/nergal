@@ -1,6 +1,6 @@
 # Private local apply journal
 
-`Nergal.LocalState` is a Linux-only persistence library separate from Core, the
+`Nergal.LocalState` schema 2 is a Linux-only persistence library separate from Core, the
 compiler and Web. It stores trusted bootstrap enrollment assertions, artifact text,
 operation bindings and replayable phase transitions in a private SQLite database.
 It neither establishes live kernel ownership nor authorizes or executes firewall
@@ -14,6 +14,8 @@ changes. See [ADR 0004](decisions/0004-local-journal.md) for the storage threat 
   This explicit prototype bootstrap assertion does not adopt an existing firewall table.
 - `Open` requires the database to exist, validates protection, application/schema
   identity and SQLite integrity, and never repairs, recreates or resets state.
+  Schema 1 requires an explicit offline upgrade with all older writers stopped;
+  see [protected receipt persistence](protected-resource-receipts.md).
   Directory/database/sidecar owners must equal the effective Linux UID. Symbolic
   links, unsafe modes, non-regular files and file link counts other than one are
   refused using no-follow statx metadata before SQLite opening.
@@ -32,7 +34,9 @@ changes. See [ADR 0004](decisions/0004-local-journal.md) for the storage threat 
 
 Phase-preserving polls are not appended. Their returned elapsed value is an observation,
 not a durable heartbeat; subsequent writes sample the real monotonic clock under lock.
-The library rejects clock regression against recorded transitions. Operation IDs and
+The library rejects clock regression against recorded transitions. Bound-resource
+legacy starts are disabled; see the protected receipt contract for binding and
+read-only reconciliation. Operation IDs and
 history remain retained after completion; there is no pruning, reset, unenrollment or
 recovery override API in this slice. Failed writes roll back the whole transaction.
 

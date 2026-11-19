@@ -50,6 +50,12 @@
       },
       "nergal.core": {
         "type": "Project"
+      },
+      "nergal.nftables": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.Core": "[1.0.0, )"
+        }
       }
     }
   }

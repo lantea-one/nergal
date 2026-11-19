@@ -89,6 +89,14 @@ kernel observations, detects policy drift and same-name/same-comment recreation,
 rejects a receipt in a second real network namespace. It observes only the documented
 empty-chain slice and does not establish protected receipt persistence or enrollment.
 
+The protected binding fixture is under tests/integration/enrollment. Run
+`bash tests/integration/enrollment/check.sh` after the Release build. It records a
+protected synthetic intent before exclusive native creation, persists/reopens the
+expected receipt and rejects drift, copied-marker recreation, conflicting foreign
+resources and a second actual namespace without managed-side kernel writes. Bound
+legacy apply is denied. Unit tests exercise explicit quiescent schema migration and
+unchanged state after denied migration; no production/user journal is upgraded.
+
 The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
 firewalld equivalence test. It is opt-in and is not part of dotnet test.
