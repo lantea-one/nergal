@@ -32,6 +32,8 @@ policy when the web console or identity provider is unavailable.
    Accepted Unix sockets are authorized by kernel peer UID before parsing or
    provider access. Clients verify kernel server UID before sending intent and
    require a complete bounded reply/EOF. `Nergal.Linux` shares no-follow metadata with LocalState.
+   The journal derives status revision/binding/classification in one protected read
+   snapshot; native collection remains a separate trusted caller obligation.
    Neither infrastructure library is referenced by Web. No production daemon,
    collector or apply API is installed; see [the protocol](local-status-protocol.md).
 

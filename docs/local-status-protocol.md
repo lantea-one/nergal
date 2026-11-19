@@ -119,6 +119,10 @@ different real server UID behind an otherwise correctly owned inode (no request
 bytes sent), fragmented UInt64 replies, malformed/truncated/trailing frames,
 missing reply EOF, cancellation and unsafe paths. Test runtimes/build output are
 copied into disposable readable directories; host home permissions stay unchanged.
+The test provider uses `ApplyJournal.ReadResourceStatus` so revision, bound marker
+and receipt classification come from one protected database snapshot. Active or
+recovery-blocked work reports unavailable, not idle unbound status. That transaction
+does not make database/native collection atomic against another kernel writer.
 
 There is no installed daemon, production collector, browser integration, remote
 transport or receipt-aware apply/confirmation/recovery command. Bound apply stays

@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
+using Nergal.Core.Agent;
 using Nergal.Core.Deployment;
 using Nergal.Core.Policy;
 using Nergal.LocalState;
@@ -36,6 +37,60 @@ public sealed class ResourceReceiptStoreTests
         Assert.True(reopened.VerifyExpectedResource(actual, 42).IsMatch);
         Assert.Equal(expected, reopened.BindExpectedResource(Ownership, expected, actual, 42));
         Assert.Equal(bytes, File.ReadAllBytes(fixture.Database));
+    }
+
+    /// <summary>One read-only classification uses the protected snapshot revision and never substitutes observed state as authority.</summary>
+    [Fact]
+    public void Status_UsesProtectedBindingAndPreservesDatabaseBytes()
+    {
+        using var fixture = new Fixture();
+        var unbound = File.ReadAllBytes(fixture.Database);
+        Assert.Equal(new(AgentStatusOutcome.Unbound, 1), fixture.Store.ReadResourceStatus(null, 42));
+        Assert.Equal(new(AgentStatusOutcome.Unbound, 1), fixture.Store.ReadResourceStatus(Observe(handle: 8), 42));
+        Assert.Equal(unbound, File.ReadAllBytes(fixture.Database));
+
+        fixture.Store.BindExpectedResource(Ownership, Receipt(Observe()), Observe(), 42);
+        var bound = File.ReadAllBytes(fixture.Database);
+        Assert.Equal(new(AgentStatusOutcome.Matched, 1), fixture.Store.ReadResourceStatus(Observe(), 42));
+        Assert.Equal(new(AgentStatusOutcome.Drift, 1), fixture.Store.ReadResourceStatus(Observe(verdict: FilterVerdict.Drop), 42));
+        Assert.Equal(new(AgentStatusOutcome.Drift, 1), fixture.Store.ReadResourceStatus(Observe(handle: 8), 42));
+        Assert.Equal(new(AgentStatusOutcome.Drift, 1), fixture.Store.ReadResourceStatus(Observe(), 43));
+        Assert.Equal(new(AgentStatusOutcome.Unavailable), fixture.Store.ReadResourceStatus(null, 42));
+        fixture.Clock.BootId = Other;
+        Assert.Equal(new(AgentStatusOutcome.Drift, 1), fixture.Store.ReadResourceStatus(Observe(), 42));
+        Assert.Equal(bound, File.ReadAllBytes(fixture.Database));
+    }
+
+    /// <summary>Pending and recovery-blocked work cannot be described as an idle unbound resource.</summary>
+    [Fact]
+    public void Status_ActiveAndRecoveryBlockedWorkDiscloseNoRevision()
+    {
+        using var fixture = new Fixture();
+        var plan = fixture.Plan();
+        fixture.Store.Start(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept));
+        Assert.Equal(new(AgentStatusOutcome.Unavailable), fixture.Store.ReadResourceStatus(null, 42));
+        Assert.True(fixture.Store.Advance(plan.OperationId, ApplyEvent.Interrupted, plan, Guid.Empty).Accepted);
+        var before = File.ReadAllBytes(fixture.Database);
+        Assert.Equal(new(AgentStatusOutcome.Unavailable), fixture.Store.ReadResourceStatus(Observe(), 42));
+        Assert.Equal(before, File.ReadAllBytes(fixture.Database));
+    }
+
+    /// <summary>Classification follows committed revisions after legacy confirmation rather than retaining an earlier enrollment read.</summary>
+    [Fact]
+    public void Status_ReportsCommittedRevisionAndRejectsInvalidContext()
+    {
+        using var fixture = new Fixture();
+        var plan = fixture.Plan();
+        fixture.Store.Start(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept));
+        foreach (var kind in new[] { ApplyEvent.RollbackArmed, ApplyEvent.CandidateApplied, ApplyEvent.Confirm })
+        {
+            Assert.True(fixture.Store.Advance(plan.OperationId, kind, plan, Other).Accepted);
+        }
+
+        Assert.Equal(new(AgentStatusOutcome.Unbound, 2), fixture.Store.ReadResourceStatus(null, 42));
+        Assert.Throws<ArgumentOutOfRangeException>(() => fixture.Store.ReadResourceStatus(null, 0));
+        fixture.Clock.BootId = Other;
+        Assert.Equal(new(AgentStatusOutcome.Unavailable), fixture.Store.ReadResourceStatus(null, 42));
     }
 
     /// <summary>Policy drift and table recreation are classification failures, never new expected state.</summary>
@@ -99,6 +154,7 @@ public sealed class ResourceReceiptStoreTests
         fixture.Store.BindExpectedResource(Ownership, Receipt(Observe()), Observe(), 42);
         fixture.Sql("DELETE FROM resource_receipt");
         Reject("journal.corrupt", () => fixture.Store.ReadExpectedResource());
+        Reject("journal.corrupt", () => fixture.Store.ReadResourceStatus(null, 42));
         Reject("journal.corrupt", () => fixture.Store.Start(fixture.Plan(), Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept)));
     }
 
@@ -116,6 +172,7 @@ public sealed class ResourceReceiptStoreTests
         fixture.Store.BindExpectedResource(Ownership, Receipt(Observe()), Observe(), 42);
         fixture.Sql(damage);
         Reject("journal.corrupt", () => fixture.Store.ReadExpectedResource());
+        Reject("journal.corrupt", () => fixture.Store.ReadResourceStatus(null, 42));
     }
 
     /// <summary>Changed boot or namespace denies reconciliation without rebinding or clearing the receipt.</summary>

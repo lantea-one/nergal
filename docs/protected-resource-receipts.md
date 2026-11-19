@@ -35,6 +35,23 @@ receipt mismatch codes; missing binding throws `resource.unbound`. Drift never r
 clears, reenrolls or updates state. The current namespace argument must be trusted local
 context, not request data. Matching assertions are still not authorization.
 
+`ReadResourceStatus(actual, currentNamespace)` derives a typed local status reply
+from enrollment, bound marker and expected receipt in **one read transaction**.
+This avoids mixing a revision read before concurrent confirmation/binding with
+receipt state read afterward. An idle unbound enrollment reports its snapshot
+revision; pending/recovery-blocked work or an unbound enrollment from another boot
+reports unavailable without metadata. A bound resource requires a complete
+recognized observation: null/unavailable observation returns unavailable, a full
+match returns matched, and context/state disagreement returns drift. Namespace
+must be nonzero trusted local context. Receipt corruption still throws, including
+when observation is absent, rather than silently becoming unbound/unavailable.
+No artifact or protected receipt is exposed in this reply.
+
+The caller authenticates first and holds the resource lock across collection/query.
+This is advisory snapshot consistency inside SQLite, not atomicity between SQLite
+and kernel state or an apply authorization token. The test-only socket provider now
+uses this query; it still has no managed-side kernel writes. See ADR 0011.
+
 Once bound, `Start` rejects legacy operations with `resource.boundApplyUnavailable`.
 A database trigger also blocks operation insertion on a marked resource, including
 an older queued writer. Receipt-aware apply, replacement/rollback receipt updates and
