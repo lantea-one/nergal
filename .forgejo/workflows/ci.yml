@@ -1,0 +1,28 @@
+name: Build and test nergal
+on:
+  push:
+    branches: [main, 'codex/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: https://github.com/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: https://github.com/actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore locked dependencies
+        run: dotnet restore Nergal.sln --locked-mode
+      - name: Build without warnings
+        run: dotnet build Nergal.sln --configuration Release --no-restore
+      - name: Verify formatting
+        run: dotnet format Nergal.sln --verify-no-changes --no-restore
+      - name: Run unit tests
+        run: dotnet test Nergal.sln --configuration Release --no-build --no-restore --collect:"XPlat Code Coverage"
+      - name: Check MVC, Blazor and health endpoints
+        run: bash scripts/smoke-web.sh

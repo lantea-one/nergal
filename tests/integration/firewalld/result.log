@@ -1,0 +1,14 @@
+2.4.1
+success
+success
+success
+success
+success
+success
+yes
+Generated rich-rule limit expressions: [{'limit': {'rate': 3, 'burst': 5, 'per': 'minute'}}]
+original connection tuple: not expressible with the requested rich-rule element: INVALID_RULE: unknown element conntrack
+explicit source NAT: not expressible with the requested rich-rule element: INVALID_RULE: unknown element snat
+per-source meter: not expressible with the requested rich-rule element: INVALID_RULE: bad attribute 'per-source'
+PASS: ordinary reload preserved all three unrelated tables and applied the basic policy.
+LIMITATION: supported rich-rule limit is a shared rule bucket, not an nftables per-source meter.
