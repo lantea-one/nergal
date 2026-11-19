@@ -42,6 +42,10 @@ with tempfile.TemporaryDirectory(prefix='nergal-isolation-') as root:
         state = root / name
         state.mkdir(mode=0o700)
         probe(initialize, state)
+        if database_name is None:
+            candidates = list(state.glob('key-*.xml'))
+            require(len(candidates) == 1, 'Exactly one synthetic encrypted key expected')
+            database_name = candidates[0].name
         database = state / database_name
         original = database.read_bytes()
         pid = os.fork()
@@ -95,3 +99,4 @@ with tempfile.TemporaryDirectory(prefix='nergal-isolation-') as root:
 
     check_store('agent', 'journal.db', 'initialize', 'read')
     check_store('identity', 'accounts.db', 'account-initialize', 'account-read')
+    check_store('session-keys', None, 'keys-initialize', 'keys-read')

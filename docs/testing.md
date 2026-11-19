@@ -56,6 +56,13 @@ unsafe path denial, corrupt credential identifiers/hashes, unsupported security
 state and pre-reservation cancellation. Lockout expiry uses a persisted past
 deadline rather than a sleep. No browser session is issued.
 
+Protected session-key tests use actual framework cryptography and synthetic RSA
+certificates/private files, without machine-profile key storage. They verify restart
+and certificate rotation (including expired historical certificates), purpose/app
+isolation, tamper denial, cached-protector revocation, immutable stored bytes,
+XML/type/envelope bounds, explicit-certificate-only resolution and persistence output
+limits. Passing them does not establish browser sessions or physical power-loss recovery.
+
 ## Integration and conformance tests
 
 Kernel behavior needs isolated integration tests. Tests must own a disposable
@@ -95,6 +102,8 @@ The same reusable conformance checks independently exercise application-account
 storage with synthetic credentials. Separate mapped UIDs prove direct-file denial,
 foreign-owner/sidecar rejection and shared-inode/FIFO refusal for both stores;
 fixture service-owner UID reuse is not a deployment recommendation.
+Encrypted session-key storage is exercised as a third independent private store,
+using only synthetic wrapping material outside the repository.
 
 The native identity/receipt fixture is under tests/integration/ownership. Run
 `bash tests/integration/ownership/check.sh` after the Release build. It compares real
