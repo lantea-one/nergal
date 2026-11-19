@@ -67,8 +67,10 @@ The append-only repository checks:
   automatically removed.
 
 Files use this repository's naming contract; unrelated framework repositories are
-not silently imported. Filesystem synchronization was exercised on Linux x64;
-arm64 and physical power-loss behavior are unverified. Local trusted filesystems
+not silently imported. Linux x64 and arm64 use different directory-open flags.
+The native regression test synchronizes a directory and requires both a regular
+file and a final directory symlink to fail. Mapped-UID isolation was exercised
+on x64. Physical power-loss recovery remains unverified. Local trusted filesystems
 are required; metadata checks are not descriptor-relative protection against
 hostile ancestor replacement or a malicious same-account/root actor.
 
