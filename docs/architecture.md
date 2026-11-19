@@ -61,8 +61,13 @@ Journal paths now verify effective UID ownership, regular node types, private mo
 and single file links. The disposable UID fixture tests filesystem denial for an
 unprivileged browser role; trusted parent paths remain required.
 
-The next boundary is explicit resource identity/reconciliation before generalizing
-beyond fresh disposable namespaces, followed by authenticated restricted agent
-transport. Keep Web disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
+Typed identity markers and a strict empty-chain observation/receipt comparator now
+bind boot, namespace, marker, handle and complete recognized state. They perform no
+host operations and do not persist/enroll a protected receipt. See
+[the receipt contract](native-resource-receipts.md).
+
+The next boundary is protected receipt persistence and crash-safe reconciliation
+before generalizing beyond fresh disposable namespaces, followed by authenticated
+restricted agent transport. Keep Web disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and
 IPv6 neighbor discovery remain outside the tested input-filter slice.
