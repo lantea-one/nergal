@@ -17,11 +17,14 @@ root, Docker, network access, an identity provider or a live firewall. Test
 semantic validation, denied/unknown inputs, defensive snapshots and stable
 results. Avoid implementation-mirroring assertions and unnecessary mocks.
 
-Optional coverage collection:
+Coverage collection after building the Release configuration:
 
 ```sh
-dotnet test Nergal.sln --configuration Release --collect:"XPlat Code Coverage"
+bash scripts/test-unit.sh
 ```
+
+The script requires a generated report with executed lines, so a collector
+failure cannot silently pass CI. It does not enforce a percentage target.
 
 On Linux, coverage instrumentation uses named synchronization objects. If a
 sandbox makes the inherited `XDG_RUNTIME_DIR` read-only, point it at a private,
