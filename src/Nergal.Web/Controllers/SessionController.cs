@@ -31,8 +31,14 @@ public sealed class SessionController(LocalAdministratorAccounts accounts) : Con
         if (names.Count != 1 || passwords.Count != 1 || form.Count != 3) { return BadRequest(); }
         if (!await accounts.SignInAsync(names[0]!, passwords[0]!, HttpContext.RequestAborted))
         { Response.StatusCode = StatusCodes.Status401Unauthorized; return View("Login", false); }
+        if (HttpContext.RequestServices.GetService<FederatedSessions>() is not null)
+        { await HttpContext.SignOutAsync(FederatedLogin.Session); }
         return LocalRedirect("~/session");
     }
+
+    /// <summary>Begins a correlated authorization-code exchange for an explicitly configured external issuer.</summary>
+    [HttpPost, AllowAnonymous, ValidateAntiForgeryToken, EnableRateLimiting("local-login"), RequestSizeLimit(8192)]
+    public IActionResult Federated() => Challenge(new AuthenticationProperties { RedirectUri = "/session" }, FederatedLogin.Protocol);
 
     /// <summary>Displays the authenticated session page without accessing agent state.</summary>
     [HttpGet, Authorize]
@@ -42,8 +48,13 @@ public sealed class SessionController(LocalAdministratorAccounts accounts) : Con
     [HttpPost, Authorize, ValidateAntiForgeryToken, RequestSizeLimit(8192)]
     public async Task<IActionResult> Logout()
     {
-        await accounts.RevokeSessionsAsync(User);
-        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        if (User.Identity?.AuthenticationType == FederatedLogin.Session)
+        { await HttpContext.SignOutAsync(FederatedLogin.Session); }
+        else
+        {
+            await accounts.RevokeSessionsAsync(User);
+            await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        }
         return LocalRedirect("~/login");
     }
 }

@@ -83,7 +83,7 @@ class Browser:
 @contextlib.contextmanager
 def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
     env = {k: v for k, v in os.environ.items()
-           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "logging__"))}
+           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "oidc__", "logging__"))}
     env.update({
         "HOME": str(temp / "profile"),
         "XDG_DATA_HOME": str(temp / "profile"),
@@ -114,7 +114,10 @@ def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
             if process.poll() is None:
                 process.terminate()
             process.wait(timeout=10)
-            assert PASSWORD.encode() not in os.pread(log.fileno(), 1_000_000, 0)
+            content = os.pread(log.fileno(), 1_000_000, 0)
+            assert PASSWORD.encode() not in content
+            if "Oidc__ClientSecret" in env:
+                assert env["Oidc__ClientSecret"].encode() not in content
 
 
 def provision(temp):

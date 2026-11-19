@@ -86,7 +86,8 @@ hostile-server conformance. Receipt-aware apply/recovery remains a later milesto
 The user selected local administrator/password authentication with optional OIDC.
 Local HTTPS login/logout, antiforgery, rate limiting and per-account revocation
 are implemented with isolated Kestrel conformance. The opt-in controller status
-route uses that session boundary and an explicitly configured shared socket. Local password accounts remain the sole login method.
+route uses that session boundary and an explicitly configured shared socket. An optional [OIDC login](federated-login.md) grants administrator access from
+exact configured groups, with distinct issuer/subject identities and a fifteen-minute maximum.
 Protected receipt binding is not production enrollment authority. Keep Web
 disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and

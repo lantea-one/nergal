@@ -156,8 +156,14 @@ tampered tickets, restart, logout replay, lockout, rate limiting and absence of
 profile-key persistence. A unit test advances the cookie handler clock past the
 absolute expiry. The default smoke test checks that session routes are absent.
 
-Future tests must cover OIDC claim validation, group denial, revoked access,
-CSRF, session lifecycle and prevention of direct agent access. Integration and
+Run `python3 -B tests/integration/oidc/check.py` for a real loopback HTTPS issuer
+and Kestrel login. OpenSSL generates synthetic signing and TLS keys. The fixture
+checks code redemption with PKCE, signature, issuer, audience, nonce, state, group
+and token-age denial, logout replay, restart invalidation and independent local login.
+No machine trust anchor is installed. Clock-controlled tests exercise absolute expiry
+and issuer/subject binding. The mapped-UID native fixture also checks federated
+group denial and authorized read-only status. Real provider interoperability and
+multi-controller sessions remain unverified. Integration and
 browser tests supplement unit tests rather than replacing them.
 
 ## Continuous integration

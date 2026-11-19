@@ -7,7 +7,7 @@ basic installations, with optional OIDC later; ADR 0012 records that direction.
 
 This document covers credential storage and verification. Web optionally adds
 [local browser sessions](local-sessions.md). No public registration endpoint, default
-account, automatic initialization, password reset or OIDC login exists.
+account, automatic initialization or password reset exists.
 Application accounts are not Linux users: no host account/group changes occur.
 
 ## Explicit creation and singleton provisioning
@@ -88,4 +88,4 @@ denial, foreign-owner rejection, sidecars, hard links and FIFOs without host use
 Separate [protected Data Protection key storage](protected-session-keys.md) is now
 implemented as a library. The optional session host now implements HTTPS login/logout, CSRF, rate limiting
 and revocation. Authenticated agent status remains a separate milestone.
-OIDC issuer/audience/redirect/claims validation and configurable roles remain planned.
+Optional [federated login](federated-login.md) uses separate issuer/subject identities and exact configured groups.

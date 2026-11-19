@@ -1,6 +1,6 @@
 # Read-only controller status
 
-A local administrator can follow **View agent status** from the session page when
+A local or authorized federated administrator can follow **View agent status** from the session page when
 both local sessions and the agent status route are enabled. GET `/agent/status`
 queries one explicitly configured local Unix socket. The web process receives a
 classification and last-confirmed revision. It never opens the privileged journal.
@@ -22,11 +22,11 @@ four concurrent queries with no queue, and each exchange has a two-second deadli
 
 A successful response contains schema version 1, `matched`, `drift` or `unbound`,
 and the exact revision as a decimal string. HTTP 401 indicates a missing or invalid
-local session. HTTP 503 with an empty body indicates that the controller could
+administrator session. HTTP 503 with an empty body indicates that the controller could
 not establish resource status, including when the agent refuses the controller.
 The route never exposes local paths, raw policy text, journal fields or diagnostics.
 The HTTP response is not cached. Health checks make no agent query. The agent
 may be offline while the controller starts or an administrator signs in.
 
 Tests use a disposable agent fixture and mapped service identities. No installed
-agent, production observation, OIDC authorization or mutation endpoint is provided.
+agent, production observation or mutation endpoint is provided. [OIDC group authorization](federated-login.md) is optional.
