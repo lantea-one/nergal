@@ -36,6 +36,11 @@ policy when the web console or identity provider is unavailable.
    snapshot; native collection remains a separate trusted caller obligation.
    Neither infrastructure library is referenced by Web. No production daemon,
    collector or apply API is installed; see [the protocol](local-status-protocol.md).
+8. `Nergal.Identity` provides separate private local application-account storage
+   and standard Identity password/lockout verification. Explicit bootstrap creates
+   at most one administrator; no default account or public registration exists.
+   Its framework/database types remain outside Core. Web has no reference yet and
+   issues no identity session; see [the contract](local-administrator-accounts.md).
 
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy
@@ -80,6 +85,10 @@ framing/provider deadlines and safe explicit pathname cleanup. The next boundary
 is controller status integration with explicit deployment configuration and
 application authorization; the peer-authenticated client now has independent
 hostile-server conformance. Receipt-aware apply/recovery remains a later milestone.
+The user selected local administrator/password authentication with optional OIDC.
+The credential foundation is implemented. Next add durable protected session keys,
+then HTTPS-only login/logout, CSRF, rate limiting, revocation and isolated HTTP tests
+before protected status routes. The read-only scaffold still uses ephemeral keys.
 Protected receipt binding is not production enrollment authority. Keep Web
 disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and
