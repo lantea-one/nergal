@@ -6,7 +6,11 @@
   <main>
     <h1>nergal</h1>
     <p>Self-hosted Linux firewall management. Early development foundation.</p>
-    <p>The first backend will manage nftables directly. No firewall inspection or mutation is implemented in this build.</p>
+    <p>The first backend uses native nftables. Local administrators can read agent status when a connection is configured.</p>
+    @if (Url.RouteUrl("local-login", new { controller = "Session", action = "Login" }) is string loginUrl)
+    {
+        <p><a href="@loginUrl">Administrator login</a></p>
+    }
     <p><a href="/backend-decision">Read the backend decision</a></p>
   </main>
 </body>

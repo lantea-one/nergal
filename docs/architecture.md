@@ -34,7 +34,7 @@ policy when the web console or identity provider is unavailable.
    require a complete bounded reply/EOF. `Nergal.Linux` shares no-follow metadata with LocalState.
    The journal derives status revision/binding/classification in one protected read
    snapshot; native collection remains a separate trusted caller obligation.
-   Neither infrastructure library is referenced by Web. No production daemon,
+   Web uses only the status client for its opt-in [controller route](controller-status.md). No production daemon,
    collector or apply API is installed; see [the protocol](local-status-protocol.md).
 8. `Nergal.Identity` provides separate private local application-account storage
    and standard Identity password/lockout verification. Explicit bootstrap creates
@@ -81,14 +81,12 @@ and provides read-only reconciliation; bound-resource apply remains disabled. Se
 [the receipt contract](native-resource-receipts.md).
 
 The status-only listener now has real separate-UID socket conformance, bounded
-framing/provider deadlines and safe explicit pathname cleanup. The next boundary
-is controller status integration with explicit deployment configuration and
-application authorization; the peer-authenticated client now has independent
+framing/provider deadlines and safe explicit pathname cleanup. The peer-authenticated client has independent
 hostile-server conformance. Receipt-aware apply/recovery remains a later milestone.
 The user selected local administrator/password authentication with optional OIDC.
 Local HTTPS login/logout, antiforgery, rate limiting and per-account revocation
-are implemented with isolated Kestrel conformance. The next controller boundary
-is an explicitly configured read-only status route behind administrator authorization.
+are implemented with isolated Kestrel conformance. The opt-in controller status
+route uses that session boundary and an explicitly configured shared socket. Local password accounts remain the sole login method.
 Protected receipt binding is not production enrollment authority. Keep Web
 disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and

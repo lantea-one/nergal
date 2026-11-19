@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 from runtime import stage_client_runtime
+from browser_status import verify_browser_status
 
 
 def require(condition, message):
@@ -162,17 +163,18 @@ with tempfile.TemporaryDirectory(prefix='nergal-status-') as root:
         require(count() == 1, 'Authorized fragmented status did not reach the real provider once')
         managed_client('matched')
         require(count() == 2, 'Managed matched query did not reach the provider once')
+        verify_browser_status(root, client_dotnet, socket_path, count)
         nft('add chain inet nergal_filter input { policy drop; }\n')
         client(1, frame(good), 'drift')
         managed_client('drift')
-        require(count() == 4 and database.read_bytes() == protected, 'Read-only status modified protected state')
+        require(count() == 5 and database.read_bytes() == protected, 'Read-only status modified protected state')
         print('PASS: independent client reads real matched/drift status without direct journal access or state writes', flush=True)
 
         database.write_bytes(b'corrupt synthetic journal')
         client(2, outcome='denied', half_close=False)
-        require(count() == 4, 'Denied peer probed a corrupt journal')
+        require(count() == 5, 'Denied peer probed a corrupt journal')
         client(1, frame(good), 'unavailable')
-        require(count() == 5 and database.read_bytes() == b'corrupt synthetic journal', 'Unavailable status repaired or exposed state')
+        require(count() == 6 and database.read_bytes() == b'corrupt synthetic journal', 'Unavailable status repaired or exposed state')
         stop(server)
         require(not socket_path.exists(), 'Owned listener path was not cleaned up')
         print('PASS: corrupt state is unavailable only to authorized status, with metadata-free denial/error replies', flush=True)

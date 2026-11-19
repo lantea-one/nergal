@@ -22,11 +22,19 @@ foreach (var service in builder.Services.Where(service => service.ServiceType ==
     builder.Services.Remove(service);
 }
 
+var agentSettings = builder.Configuration.GetSection("AgentStatus");
+var statusEnabled = agentSettings.GetValue<bool>("Enabled");
+if (statusEnabled)
+{
+    if (!OperatingSystem.IsLinux() || !enabled) { throw new InvalidOperationException("Agent status requires local administrator sessions on Linux."); }
+    ControllerStatus.Configure(builder.Services, agentSettings);
+}
 var app = builder.Build();
 if (enabled && OperatingSystem.IsLinux()) { await LocalSessionHost.EnableAsync(app); }
 app.UseAntiforgery();
 app.MapStaticAssets().AllowAnonymous();
 app.MapHealthChecks("/healthz").AllowAnonymous();
 app.MapControllers();
+if (statusEnabled && OperatingSystem.IsLinux()) { ControllerStatus.Map(app); }
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();

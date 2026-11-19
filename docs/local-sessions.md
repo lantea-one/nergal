@@ -41,8 +41,8 @@ the password, expires after fifteen minutes and is never renewed by activity.
 Every authenticated request validates its security stamp and supported credential
 state. Lockout blocks new logins. POSTing to `/logout` rotates the singleton
 account stamp and clears the cookie, invalidating its other outstanding tickets.
-An already-authorized request can finish. There are no privileged interactive
-Blazor components or agent-backed routes in this milestone.
+An already-authorized request can finish. The separately enabled [controller status route](controller-status.md) requires
+this session. The application has no privileged interactive Blazor component.
 
 See [the decision record](decisions/0014-local-administrator-sessions.md) and
 [protected session keys](protected-session-keys.md) for the security boundaries.

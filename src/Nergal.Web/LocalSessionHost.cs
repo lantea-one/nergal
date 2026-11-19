@@ -81,9 +81,9 @@ internal static class LocalSessionHost
             await next();
         });
         app.UseRouting();
-        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseRateLimiter();
         app.MapControllerRoute("local-login", "login", new { controller = "Session", action = "Login" });
         app.MapControllerRoute("local-authenticate", "login", new { controller = "Session", action = "Authenticate" });
         app.MapControllerRoute("local-session", "session", new { controller = "Session", action = "Index" });

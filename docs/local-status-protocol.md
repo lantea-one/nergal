@@ -124,9 +124,9 @@ and receipt classification come from one protected database snapshot. Active or
 recovery-blocked work reports unavailable, not idle unbound status. That transaction
 does not make database/native collection atomic against another kernel writer.
 
-There is no installed daemon, production collector, browser integration, remote
-transport or receipt-aware apply/confirmation/recovery command. Bound apply stays
-disabled. Controller status integration still requires a configured deployment and
-application authorization model; it is not implicitly connected to Web. A
+The optional [controller status route](controller-status.md) requires direct HTTPS,
+a local administrator session and explicit socket and identity configuration.
+There is no installed daemon, production collector, remote transport or
+receipt-aware apply/confirmation/recovery command. Bound apply stays disabled. A
 production receipt-aware apply path additionally needs resource locking, complete
 candidate validation, atomic receipt transitions and independent timed recovery.

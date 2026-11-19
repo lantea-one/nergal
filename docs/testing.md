@@ -139,6 +139,12 @@ cancellation and unsafe endpoint metadata fail without partial status.
 No daemon is installed; only the harness writes synthetic namespace rules. See its
 [README](../tests/integration/local-status/README.md) for the exact scope.
 
+The controller status fixture also checks the complete HTTPS-to-Unix path between
+separate mapped process identities. It counts native provider calls through
+authorized and rejected requests, including a temporarily missing socket.
+The Web unit suite checks HTTP presentation for every protocol outcome and
+preservation of a maximum UInt64 revision.
+
 ## Web and identity tests
 
 After the Release build, run `python3 tests/integration/local-sessions/check.py`
