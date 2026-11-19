@@ -13,7 +13,9 @@ evidence of tested behavior.
 ## Unit tests
 
 Run `dotnet test Nergal.sln --configuration Release`. Unit tests must not need
-root, Docker, network access, an identity provider or a live firewall. Test
+root, Docker, network access, an identity provider or a live firewall. The Linux
+local-state suite uses real SQLite databases in private temporary directories and
+explicit test clocks; it needs no host-service access. Test
 semantic validation, denied/unknown inputs, defensive snapshots and stable
 results. Avoid implementation-mirroring assertions and unnecessary mocks.
 
@@ -23,8 +25,10 @@ Coverage collection after building the Release configuration:
 bash scripts/test-unit.sh
 ```
 
-The script requires a generated report with executed lines, so a collector
-failure cannot silently pass CI. It does not enforce a percentage target.
+The script requires one generated report with executed lines per `*.Tests.csproj`,
+so a collector failure in one project cannot be hidden by a successful report from
+another. New test projects must be included in the solution. It does not enforce a
+percentage target.
 
 On Linux, coverage instrumentation uses named synchronization objects. If a
 sandbox makes the inherited `XDG_RUNTIME_DIR` read-only, point it at a private,
@@ -38,7 +42,10 @@ rejection/determinism, exact artifact digests and confirmed-apply state transiti
 Confirmation tests use explicit monotonic elapsed durations without sleeps. They
 cover stale bindings, deadline boundaries, failed apply/rollback, interruption and
 terminal states. No working watchdog or rollback executor is exercised. These unit
-tests do not establish packet behavior or agent correctness.
+tests do not establish packet behavior or agent correctness. Local-state tests cover
+real transactions, reopen/replay, content integrity, path protection, stale/reused
+operations and concurrent reservations/confirmation-timeout decisions. Process death
+and physical power-loss durability require additional integration evidence.
 
 ## Integration and conformance tests
 

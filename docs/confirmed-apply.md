@@ -1,8 +1,9 @@
 # Confirmed-apply model
 
 `Nergal.Core.Deployment` implements immutable plan bindings and deterministic
-transitions. It does not execute an apply, arm a timer, persist a journal, authorize
-requests or restore packets. The web app does not expose this model as an endpoint.
+transitions. The separate [local journal](local-journal.md) can persist and replay
+these transitions. Core itself does not execute an apply, arm a timer, persist state,
+authorize requests or restore packets. The web app does not expose this model as an endpoint.
 The [decision record](decisions/0003-confirmed-apply-contract.md) specifies the
 future agent/watchdog obligations that remain unimplemented.
 

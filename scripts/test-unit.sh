@@ -12,9 +12,16 @@ trap 'rmdir "$XDG_RUNTIME_DIR" 2>/dev/null || true' EXIT
 
 dotnet test Nergal.sln --configuration Release --no-build --no-restore \
     --collect:"XPlat Code Coverage" --results-directory "$result_directory"
-report=$(find "$result_directory" -name coverage.cobertura.xml -type f -print -quit)
-if [[ -z "$report" ]] || ! grep -Eq 'lines-covered="[1-9][0-9]*"' "$report"; then
-    printf '%s\n' 'Coverage collection failed: no report with executed lines.' >&2
+mapfile -t test_projects < <(find tests -name '*.Tests.csproj' -type f)
+mapfile -t reports < <(find "$result_directory" -name coverage.cobertura.xml -type f)
+if [[ ${#test_projects[@]} -eq 0 || ${#reports[@]} -ne ${#test_projects[@]} ]]; then
+    printf 'Coverage collection failed: expected %s reports, found %s.\n' "${#test_projects[@]}" "${#reports[@]}" >&2
     exit 1
 fi
-printf 'Coverage report: %s\n' "$report"
+for report in "${reports[@]}"; do
+    if ! grep -Eq 'lines-covered="[1-9][0-9]*"' "$report"; then
+        printf 'Coverage collection failed: no executed lines in %s.\n' "$report" >&2
+        exit 1
+    fi
+    printf 'Coverage report: %s\n' "$report"
+done
