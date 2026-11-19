@@ -57,9 +57,12 @@ The [test-only watchdog fixture](../tests/integration/watchdog/README.md) now ex
 independent process deadlines, worker/watchdog death and actual packet restoration
 for a fixed synthetic resource. It is not an agent or a production replacement API.
 
-The next boundary is hardened local service-account/path isolation and resource
-identity/reconciliation, before generalizing beyond fresh disposable namespaces.
-Then design an authenticated restricted agent transport. Keep Web disconnected from
-privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
+Journal paths now verify effective UID ownership, regular node types, private modes
+and single file links. The disposable UID fixture tests filesystem denial for an
+unprivileged browser role; trusted parent paths remain required.
+
+The next boundary is explicit resource identity/reconciliation before generalizing
+beyond fresh disposable namespaces, followed by authenticated restricted agent
+transport. Keep Web disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and
 IPv6 neighbor discovery remain outside the tested input-filter slice.

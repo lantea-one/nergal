@@ -36,13 +36,16 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.Nftables`: schema validation and deterministic create-only input-filter
   candidates for the reserved `inet nergal_filter` table. No execution or host access.
 - `Nergal.LocalState`: Linux SQLite journal with explicit bootstrap assertions,
-  serialized transitions and exact artifact/revision persistence. No kernel operations.
+  serialized transitions, exact artifact/revision persistence and effective-UID/type/
+  mode/link checks. No kernel operations.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
   the production Docker socket, unrestricted SSH or arbitrary shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
   invalid inputs and defensive snapshots.
 - `tests/integration/nftables`: opt-in real kernel and dual-stack packet checks
   in disposable user/network namespaces, including collision and foreign-table safety.
+- `tests/integration/isolation`: opt-in filesystem denial between distinct mapped
+  local UIDs, without creating host accounts or changing firewalls.
 - `tests/integration/watchdog`: opt-in independent process/kill-point and real
   packet recovery conformance for fixed synthetic accept/drop policies only.
 - `tests/integration/firewalld`: reproducible backend research in a disposable
@@ -62,8 +65,8 @@ in optional deployment configuration, not in the policy core.
 ## Planned security boundaries
 
 Native OIDC (including Keycloak), configurable group/role authorization,
-per-user audit attribution, durable ownership verification, native candidate
-validation by an agent, atomic apply, independent local timed rollback and
+per-user audit attribution, protected kernel-resource ownership verification, native
+candidate validation by an agent, atomic apply, independent local timed rollback and
 production enrollment/recovery are requirements for future releases. They are not
 claims about this initial scaffold. A future backend must reject unsupported semantics rather than
 silently weakening a policy. The initial implementation will not manage firewalld.

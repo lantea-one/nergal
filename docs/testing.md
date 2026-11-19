@@ -76,6 +76,13 @@ IPv4/IPv6 packet recovery in disposable namespaces. Its README lists eight scena
 and the strict synthetic-resource boundary. It is opt-in, separate from default CI.
 It does not establish a production watchdog, account isolation or arbitrary restore.
 
+The filesystem account-isolation fixture is under tests/integration/isolation. Run
+`bash tests/integration/isolation/check.sh` with existing subordinate UID/GID ranges
+and newuidmap/newgidmap available. It tests actual distinct-UID filesystem denial,
+foreign-owner rejection and shared-inode/FIFO refusal in disposable namespaces. It
+requires no host account/group changes or firewall access. Its README documents the
+trusted-parent boundary and sandbox-helper requirements.
+
 The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
 firewalld equivalence test. It is opt-in and is not part of dotnet test.

@@ -14,7 +14,9 @@ changes. See [ADR 0004](decisions/0004-local-journal.md) for the storage threat 
   This explicit prototype bootstrap assertion does not adopt an existing firewall table.
 - `Open` requires the database to exist, validates protection, application/schema
   identity and SQLite integrity, and never repairs, recreates or resets state.
-  Database and known SQLite sidecar symlinks or unsafe modes are refused.
+  Directory/database/sidecar owners must equal the effective Linux UID. Symbolic
+  links, unsafe modes, non-regular files and file link counts other than one are
+  refused using no-follow statx metadata before SQLite opening.
 - `ReadEnrollment`, `Read` and `ReadActive` expose consistent verified snapshots.
   Operation reads hash the exact artifacts and replay recorded phase changes through
   the Core model; unknown, inconsistent or out-of-order history is an error.
@@ -59,6 +61,7 @@ Routine reservation and storage failures throw `JournalException` with a stable 
 | `journal.corrupt`, `journal.schemaOrIntegrity` | Semantic history/content failure, or schema/application/SQLite integrity failure. |
 | `database.error`, `database.durability` | SQLite operation failed, or required durability settings are unavailable. |
 | `path.absoluteRequired`, `path.directoryMissing`, `path.directoryMode` | The supplied state directory is not an acceptable private absolute path. |
+| `path.owner`, `path.hardLink`, `path.type`, `path.metadataUnavailable` | Foreign UID, shared inode, wrong node type or unavailable required statx metadata. |
 | `path.symlink`, `path.databaseMode` | A path redirects through a symbolic link, or database/sidecar permissions are unsafe. |
 
 Missing programming arguments throw standard argument exceptions; malformed UTF-16
@@ -75,10 +78,11 @@ and storage synchronization guarantees. This is not a kernel/journal distributed
 transaction, and it does not establish power-loss correctness on a particular device.
 
 The caller must supply a trusted local service-owned parent and protect the service
-account. Same-account/root attackers, hostile parent renames, hard links, untrusted
+account. Same-account/root attackers, hostile parent renames or inode swaps, untrusted
 network filesystems and broken hardware flush semantics are outside the prototype's
-protection boundary. Mode checks are not a substitute for hardened production path
-ownership/openat confinement. The library is not a production privileged agent.
+protection boundary. Owner/type/mode/link checks are not a substitute for production
+openat/VFS confinement or a trusted service-owned parent. The library is not a
+production privileged agent.
 
 The separate [watchdog fixture](../tests/integration/watchdog/README.md) now tests
 process death/reopen and real packet recovery for fixed synthetic namespace resources.
@@ -86,5 +90,7 @@ process death/reopen and real packet recovery for fixed synthetic namespace reso
 Unit tests use synthetic artifacts and actual private temporary databases. They
 exercise reopen, real concurrent writers, tampering, permissions, symlinks, stale
 bindings, operation replay and exact-deadline races. They do not kill processes,
-restore packets or prove hardware durability. Production path/account hardening and
-general owned-resource reconciliation remain separate unimplemented boundaries.
+restore packets or prove hardware durability. Production installation/path confinement
+and general owned-resource reconciliation remain separate unimplemented boundaries.
+The [UID-isolation fixture](../tests/integration/isolation/README.md) tests actual
+filesystem denial between distinct mapped local UIDs without creating host accounts.

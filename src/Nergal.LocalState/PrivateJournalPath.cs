@@ -27,30 +27,26 @@ internal static class PrivateJournalPath
             }
         }
 
-        if (!Directory.Exists(full))
-        {
-            throw new JournalException("path.directoryMissing");
-        }
-
-        if (File.GetUnixFileMode(full) != DirectoryMode)
-        {
-            throw new JournalException("path.directoryMode");
-        }
+        var directoryMetadata = LinuxFileMetadata.Read(full) ?? throw new JournalException("path.directoryMissing");
+        LinuxFileMetadata.Validate(directoryMetadata, true);
 
         var database = Path.Combine(full, "journal.db");
+        var databaseExists = false;
         foreach (var path in new[] { database, database + "-journal", database + "-wal", database + "-shm" })
         {
-            if (new FileInfo(path).LinkTarget is not null)
+            var metadata = LinuxFileMetadata.Read(path);
+            if (metadata is null)
             {
-                throw new JournalException("path.symlink");
+                continue;
             }
 
-            if (File.Exists(path) && File.GetUnixFileMode(path) != FileMode)
+            LinuxFileMetadata.Validate(metadata.Value, false);
+            if (path == database)
             {
-                throw new JournalException("path.databaseMode");
+                databaseExists = true;
             }
         }
-        if (databaseRequired && !File.Exists(database))
+        if (databaseRequired && !databaseExists)
         {
             throw new JournalException("journal.missing");
         }
