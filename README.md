@@ -7,7 +7,7 @@ Blazor, and reusable C# POCOs. Native nftables is the first backend.
 This revision includes the backend decision, semantic capability assessment,
 a typed input-filter policy, an unprivileged deterministic native nftables compiler,
 a pure confirmed-apply state model, a private transactional local journal, unit tests,
-an MVC landing page and a Blazor decision page. The compiler emits create-only
+an authorized read-only local status listener, an MVC landing page and a Blazor decision page. The compiler emits create-only
 candidates; it cannot inspect, install or modify host firewall rules.
 A test-only independent watchdog exercises synthetic rollback in disposable
 namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
@@ -39,6 +39,9 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.LocalState`: Linux SQLite journal with explicit bootstrap assertions,
   serialized transitions, exact artifact/revision persistence, protected resource
   receipts, explicit offline schema upgrade and effective-UID/type/mode/link checks. No kernel operations.
+- `Nergal.Linux`: shared no-follow metadata and local kernel identity inspection.
+- `Nergal.LocalTransport`: bounded status-only Unix socket listener with explicit
+  kernel peer-UID authorization. No firewall executor, database or browser access.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
   the production Docker socket, unrestricted SSH or arbitrary shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
@@ -51,6 +54,8 @@ Bind this development build to loopback; it is not a secured administration endp
   receipt checks for the limited empty-chain resource.
 - `tests/integration/isolation`: opt-in filesystem denial between distinct mapped
   local UIDs, without creating host accounts or changing firewalls.
+- `tests/integration/local-status`: opt-in real peer-UID, framing, deadline and
+  read-only native status conformance with independent mapped client processes.
 - `tests/integration/watchdog`: opt-in independent process/kill-point and real
   packet recovery conformance for fixed synthetic accept/drop policies only.
 - `tests/integration/firewalld`: reproducible backend research in a disposable
@@ -61,7 +66,8 @@ Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [compiler decision](docs/decisions/0002-filter-compiler.md),
 [confirmed-apply model](docs/confirmed-apply.md), [local journal](docs/local-journal.md),
 [native resource receipts](docs/native-resource-receipts.md),
-[protected receipt persistence](docs/protected-resource-receipts.md)
+[protected receipt persistence](docs/protected-resource-receipts.md),
+[local status protocol](docs/local-status-protocol.md)
 and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.

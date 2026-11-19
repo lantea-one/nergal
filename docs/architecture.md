@@ -28,6 +28,11 @@ policy when the web console or identity provider is unavailable.
    validate a complete candidate, snapshot owned state, arm local rollback, apply
    atomically, verify and confirm. Revisions and runtime state need explicit
    reconciliation even with a durable journal.
+7. `Nergal.LocalTransport` serves only bounded versioned read-only status intent.
+   Accepted Unix sockets are authorized by kernel peer UID before parsing or
+   provider access. `Nergal.Linux` shares no-follow metadata with LocalState.
+   Neither infrastructure library is referenced by Web. No production daemon,
+   collector or apply API is installed; see [the protocol](local-status-protocol.md).
 
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy
@@ -67,8 +72,11 @@ host operations. Schema 2 of LocalState persists explicit trusted expected recei
 and provides read-only reconciliation; bound-resource apply remains disabled. See
 [the receipt contract](native-resource-receipts.md).
 
-The next boundary is authenticated restricted local-agent transport for read-only
-status, before receipt-aware apply/recovery or generalizing beyond disposable
-namespaces. Protected receipt binding is not production enrollment authority. Keep Web disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
+The status-only listener now has real separate-UID socket conformance, bounded
+framing/provider deadlines and safe explicit pathname cleanup. The next boundary
+is a peer-authenticated status client with hostile-server conformance before any
+controller integration. Receipt-aware apply/recovery remains a later milestone.
+Protected receipt binding is not production enrollment authority. Keep Web
+disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and
 IPv6 neighbor discovery remain outside the tested input-filter slice.

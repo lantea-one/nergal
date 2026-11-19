@@ -1,54 +1,31 @@
-using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Nergal.Linux;
 
 namespace Nergal.LocalState;
 
-// Fixed-layout Linux UAPI statx structure. Required fields are checked, never inferred from dummy values.
+// Journal-specific policy stays here; no-follow Linux metadata is shared with local transport.
+[SupportedOSPlatform("linux")]
 internal static class LinuxFileMetadata
 {
-    private const uint RequiredFields = 0x0f; // STATX_TYPE | STATX_MODE | STATX_NLINK | STATX_UID
-    internal static Metadata? Read(string path)
+    internal static LinuxNodeMetadata? Read(string path)
     {
-        try
-        {
-            if (statx(-100, path, 0x900, RequiredFields, out var metadata) != 0) // AT_FDCWD, NOFOLLOW | NO_AUTOMOUNT
-            {
-                var error = Marshal.GetLastPInvokeError();
-                if (error is 2 or 20)
-                {
-                    return null; // ENOENT / ENOTDIR
-                }
-
-                if (error == 13)
-                {
-                    throw new UnauthorizedAccessException("Cannot inspect private journal metadata.");
-                }
-
-                throw new JournalException("path.metadataUnavailable");
-            }
-            if ((metadata.Mask & RequiredFields) != RequiredFields)
-            {
-                throw new JournalException("path.metadataUnavailable");
-            }
-
-            return metadata;
-        }
-        catch (EntryPointNotFoundException) { throw new JournalException("path.metadataUnavailable"); }
+        try { return LinuxFileSystem.Read(path); }
+        catch (LinuxMetadataException) { throw new JournalException("path.metadataUnavailable"); }
     }
 
-    internal static void Validate(Metadata metadata, bool directory)
+    internal static void Validate(LinuxNodeMetadata metadata, bool directory)
     {
-        var type = metadata.Mode & 0xf000;
-        if (type == 0xa000)
+        if (metadata.Type == LinuxNodeType.SymbolicLink)
         {
             throw new JournalException("path.symlink");
         }
 
-        if (type != (directory ? 0x4000 : 0x8000))
+        if (metadata.Type != (directory ? LinuxNodeType.Directory : LinuxNodeType.RegularFile))
         {
             throw new JournalException("path.type");
         }
 
-        if (metadata.UserId != geteuid())
+        if (metadata.OwnerUserId != LinuxProcessIdentity.EffectiveUserId)
         {
             throw new JournalException("path.owner");
         }
@@ -59,23 +36,9 @@ internal static class LinuxFileMetadata
         }
 
         var expected = directory ? PrivateJournalPath.DirectoryMode : PrivateJournalPath.FileMode;
-        if ((UnixFileMode)(metadata.Mode & 0xfff) != expected)
+        if (metadata.Permissions != expected)
         {
             throw new JournalException(directory ? "path.directoryMode" : "path.databaseMode");
         }
     }
-
-    [StructLayout(LayoutKind.Explicit, Size = 256)]
-    internal struct Metadata
-    {
-        [FieldOffset(0)] internal uint Mask;
-        [FieldOffset(16)] internal uint LinkCount;
-        [FieldOffset(20)] internal uint UserId;
-        [FieldOffset(28)] internal ushort Mode;
-    }
-
-    [DllImport("libc", SetLastError = true)]
-    private static extern int statx(int directoryFd, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, int flags, uint mask, out Metadata metadata);
-    [DllImport("libc")]
-    private static extern uint geteuid();
 }
