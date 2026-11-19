@@ -82,12 +82,6 @@ try
         try
         {
             var store = ApplyJournal.Open(args[1]);
-            var revision = store.ReadEnrollment().Ownership.Revision;
-            if (store.ReadExpectedResource() is null)
-            {
-                return new(AgentStatusOutcome.Unbound, revision);
-            }
-
             var start = new ProcessStartInfo("nft") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
             foreach (var argument in new[] { "--json", "list", "table", "inet", "nergal_filter" })
             {
@@ -100,21 +94,11 @@ try
             try { await process.WaitForExitAsync(cancellation); }
             catch (OperationCanceledException) { process.Kill(true); await process.WaitForExitAsync(); throw; }
             await error;
-            if (process.ExitCode != 0)
-            {
-                return new(AgentStatusOutcome.Unavailable);
-            }
-
-            var parsed = NftTableObservation.Parse(await output);
-            if (!parsed.IsSuccess)
-            {
-                return new(AgentStatusOutcome.Unavailable);
-            }
-
+            var nativeOutput = await output;
+            var parsed = process.ExitCode == 0 ? NftTableObservation.Parse(nativeOutput).Observation : null;
             var context = new FileInfo("/proc/self/ns/net").LinkTarget ?? throw new IOException("fixture.contextUnavailable");
             var inode = ulong.Parse(context.AsSpan(5, context.Length - 6), NumberStyles.None, CultureInfo.InvariantCulture);
-            var comparison = store.VerifyExpectedResource(parsed.Observation!, inode);
-            return new(comparison.IsMatch ? AgentStatusOutcome.Matched : AgentStatusOutcome.Drift, revision);
+            return store.ReadResourceStatus(parsed, inode);
         }
         catch (Exception error) when (error is JournalException or IOException or InvalidOperationException)
         { return new(AgentStatusOutcome.Unavailable); }

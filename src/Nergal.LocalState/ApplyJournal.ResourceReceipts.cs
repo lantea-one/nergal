@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Nergal.Core.Agent;
 using Nergal.Core.Deployment;
 using Nergal.Core.Policy;
 using Nergal.Nftables;
@@ -7,6 +8,40 @@ namespace Nergal.LocalState;
 
 public sealed partial class ApplyJournal
 {
+    /// <summary>Classifies a complete local observation using enrollment and expected receipt from one protected read transaction.</summary>
+    /// <param name="actual">Complete locally collected observation, or null when unavailable/unrecognized.</param>
+    /// <param name="currentNamespace">Nonzero trusted current namespace inode, never request data.</param>
+    /// <remarks>Caller authenticates first and holds its resource lock across collection/query. This advisory snapshot is not authority to mutate a resource. No repair or adoption occurs.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Current namespace is zero.</exception>
+    /// <exception cref="JournalException">Protected state, local clock or database validation fails; no partial status is returned.</exception>
+    public AgentStatusReply ReadResourceStatus(NftTableObservation? actual, ulong currentNamespace)
+    {
+        if (currentNamespace == 0) { throw new ArgumentOutOfRangeException(nameof(currentNamespace)); }
+        return Inspect<AgentStatusReply>((connection, transaction) =>
+        {
+            var enrollment = Enrollment(connection, transaction);
+            var receipt = LoadReceipt(connection, transaction, enrollment.Value, enrollment.Boot, enrollment.ResourceBound);
+            var now = Now();
+            if (enrollment.Active is not null || (receipt is null && now.BootId != enrollment.Boot))
+            {
+                return new(AgentStatusOutcome.Unavailable);
+            }
+
+            if (receipt is null)
+            {
+                return new(AgentStatusOutcome.Unbound, enrollment.Value.Ownership.Revision);
+            }
+
+            if (actual is null)
+            {
+                return new(AgentStatusOutcome.Unavailable);
+            }
+
+            var comparison = NftReceiptVerifier.Verify(receipt, actual, now.BootId, currentNamespace);
+            return new(comparison.IsMatch ? AgentStatusOutcome.Matched : AgentStatusOutcome.Drift, enrollment.Value.Ownership.Revision);
+        });
+    }
+
     /// <summary>Explicitly upgrades a quiescent schema-1 journal to schema 2 without resetting enrollment or history.</summary>
     /// <remarks>Caller must stop all older writers first. Active/recovery-blocked operations forbid migration; this API cannot prove process quiescence.</remarks>
     /// <exception cref="JournalException">State is active, corrupt, unsupported or cannot be atomically upgraded.</exception>

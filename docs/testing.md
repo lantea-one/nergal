@@ -96,6 +96,9 @@ expected receipt and rejects drift, copied-marker recreation, conflicting foreig
 resources and a second actual namespace without managed-side kernel writes. Bound
 legacy apply is denied. Unit tests exercise explicit quiescent schema migration and
 unchanged state after denied migration; no production/user journal is upgraded.
+Status tests cover one-snapshot revision/binding classification, unavailable status
+for active/recovery-blocked work, missing observations and changed unbound boot,
+drift without receipt replacement, and corruption rejection even without an observation.
 
 The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
