@@ -11,7 +11,9 @@ policy when the web console or identity provider is unavailable.
 2. The core contains typed policy concepts, requirements, validation results and
    capability contracts. It has no knowledge of a particular site's addresses,
    authentication directory or deployment system.
-3. A future compiler produces deterministic candidates from the policy model.
+3. The unprivileged `Nergal.Nftables` compiler produces deterministic, create-only
+   candidates from schema 1 input-filter policies (see [the contract](policy.md)).
+   It performs no host operations and the web host does not reference it.
    Kernel JSON is an observation/command interface, not a lossless replacement
    for source metadata, comments and named definitions.
 4. A future restricted agent validates owned-table operations and executes
@@ -21,8 +23,9 @@ policy when the web console or identity provider is unavailable.
    revisions and runtime state need explicit reconciliation.
 
 Do not treat a capability declaration as evidence that a driver is implemented,
-connected, authorized or healthy. The first core types only prevent lossy
-backend selection. There is no privileged agent or policy compiler in this revision. The read-only
+connected, authorized or healthy. The capability contracts prevent lossy
+backend selection; the compiler implements only the subset in ADR 0002, not all
+features represented by capability enums. No privileged agent exists. The read-only
 web foundation uses an ephemeral, application-scoped Data Protection provider
 to avoid creating or sharing machine-wide keys. Durable authenticated releases
 will require an explicit persisted and protected key store before session support.
@@ -40,3 +43,11 @@ A backend interface is a boundary, not a commitment to multiple implementations.
 Only native nftables is selected. A firewalld adapter would require its own
 semantic conformance suite and an accepted decision record before implementation.
 Do not edit firewalld-owned tables from a native adapter.
+
+## Next milestone
+
+Design durable ownership/revision evidence and independent local timed rollback,
+confirmation and recovery before introducing any privileged apply path. Replacement
+transactions need their own isolated packet and failure conformance tests. NAT,
+forwarding, connection state and IPv6 neighbor discovery remain outside the tested
+input-filter slice; no broad backend-capability claim follows from these tests.

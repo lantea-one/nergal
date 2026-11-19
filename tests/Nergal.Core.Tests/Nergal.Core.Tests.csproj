@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nergal.Core\Nergal.Core.csproj" />
+    <ProjectReference Include="../../src/Nergal.Nftables/Nergal.Nftables.csproj" />
   </ItemGroup>
 
 </Project>

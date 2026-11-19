@@ -33,7 +33,8 @@ runtime directory permissions. Check the test output and report for collector
 errors even when the test process exits successfully.
 
 Coverage is a diagnostic, not evidence of correct packet handling. The current
-suite tests the capability boundary only; it does not claim compiler or agent coverage.
+suite tests capability selection, policy snapshots, network validation and compiler
+rejection/determinism. It does not establish packet behavior or agent correctness.
 
 ## Integration and conformance tests
 
@@ -43,6 +44,19 @@ configuration or credentials. Packet fixtures must eventually verify dual-stack
 filtering, NAT return paths, per-source meters, IPv6 control traffic, foreign-table
 preservation, failed validation, interrupted apply, confirmation timeout and rollback.
 A successful reload is not proof of forwarding correctness.
+
+The native compiler fixture is under tests/integration/nftables. After the Release
+build, run:
+
+```sh
+bash tests/integration/nftables/check.sh
+```
+
+It requires Linux with unprivileged user/network namespaces, nft, ip, ping and
+Python 3. It fails if isolation is unavailable and never falls back to the host.
+See its [README](../tests/integration/nftables/README.md) for exact assertions and
+limits. It is opt-in, separate from dotnet test and the default CI job. Successful
+local execution does not establish NAT, forwarding, neighbor discovery or rollback.
 
 The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
