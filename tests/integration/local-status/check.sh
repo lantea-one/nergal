@@ -8,5 +8,7 @@ done
 fixture="$PWD/tests/integration/local-status/bin/Release/net10.0/Nergal.LocalStatus.Fixture.dll"
 enrollment="$PWD/tests/integration/enrollment/bin/Release/net10.0/Nergal.Enrollment.Fixture.dll"
 [[ -f "$fixture" && -f "$enrollment" ]] || { printf '%s\n' 'Build the Release solution first.' >&2; exit 1; }
-unshare --user --map-auto --map-root-user --net python3 tests/integration/local-status/check.py \
+unshare --user --map-auto --map-root-user --net python3 -B tests/integration/local-status/check.py \
     "$fixture" "$enrollment" "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"
+unshare --user --map-auto --map-root-user --net python3 -B tests/integration/local-status/client-check.py \
+    "$fixture" "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"

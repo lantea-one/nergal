@@ -28,9 +28,10 @@ policy when the web console or identity provider is unavailable.
    validate a complete candidate, snapshot owned state, arm local rollback, apply
    atomically, verify and confirm. Revisions and runtime state need explicit
    reconciliation even with a durable journal.
-7. `Nergal.LocalTransport` serves only bounded versioned read-only status intent.
+7. `Nergal.LocalTransport` serves/queries only bounded versioned read-only status intent.
    Accepted Unix sockets are authorized by kernel peer UID before parsing or
-   provider access. `Nergal.Linux` shares no-follow metadata with LocalState.
+   provider access. Clients verify kernel server UID before sending intent and
+   require a complete bounded reply/EOF. `Nergal.Linux` shares no-follow metadata with LocalState.
    Neither infrastructure library is referenced by Web. No production daemon,
    collector or apply API is installed; see [the protocol](local-status-protocol.md).
 
@@ -74,8 +75,9 @@ and provides read-only reconciliation; bound-resource apply remains disabled. Se
 
 The status-only listener now has real separate-UID socket conformance, bounded
 framing/provider deadlines and safe explicit pathname cleanup. The next boundary
-is a peer-authenticated status client with hostile-server conformance before any
-controller integration. Receipt-aware apply/recovery remains a later milestone.
+is controller status integration with explicit deployment configuration and
+application authorization; the peer-authenticated client now has independent
+hostile-server conformance. Receipt-aware apply/recovery remains a later milestone.
 Protected receipt binding is not production enrollment authority. Keep Web
 disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and

@@ -31,8 +31,24 @@ Assertions use actual Unix sockets and kernel SO_PEERCRED, not mocked identity:
   causes explicit cleanup refusal and leaves the replacement intact.
 - Synthetic foreign tables in ip, ip6, inet and bridge remain unchanged.
 
+The managed client is also run after dropping to UID 1, against both the native
+status provider and independent Python wire servers. The harness copies only the
+built fixture and framework runtime into disposable readable directories; it never
+loosens host home/toolchain permissions. The adversarial server suite verifies:
+
+- A correctly owned socket inode can still have a wrong kernel server UID. The
+  server calls listen after an actual UID drop; the client sends zero request bytes.
+- All typed replies, including full UInt64 revisions, survive fragmented frames.
+- Zero/oversized lengths, truncated frames, duplicate/unknown fields/outcomes,
+  lossy/noncanonical revisions, error metadata and surplus bytes return no status.
+- Missing reply data or missing EOF after a complete frame expires. Explicit caller
+  cancellation stays cancellation; the server waits for actual disconnect rather
+  than treating the client's request half-close as full closure.
+- Missing, regular-file, public-write and shared-inode endpoints, writable parents
+  and overflow UID authority are rejected without altering the paths.
+
 Only the harness writes the synthetic namespace rules. The server's test provider
 uses fixed argv for read-only nft JSON collection, never shell/request interpolation.
-This fixture has no daemon deployment, controller client, live host enrollment,
+This fixture has no daemon deployment, controller/browser integration, live host enrollment,
 remote authentication or apply command. It establishes the documented local status
 slice, not production security, flood resistance or general policy correctness.

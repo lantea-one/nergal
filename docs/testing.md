@@ -107,6 +107,10 @@ ranges and mapping helpers, as for the isolation fixture. Independent clients us
 real separate UIDs and actual SO_PEERCRED. It tests denial before provider access,
 strict bounded framing/schema, incomplete-frame and provider deadlines, protected
 native matched/drift status, corrupt-state errors and replacement-path preservation.
+It also tests the managed status client against independent Python servers: wrong
+kernel UID behind a correctly owned inode receives no intent; complete fragmented
+UInt64 replies pass, while hostile/truncated/trailing replies, missing EOF, timeouts,
+cancellation and unsafe endpoint metadata fail without partial status.
 No daemon is installed; only the harness writes synthetic namespace rules. See its
 [README](../tests/integration/local-status/README.md) for the exact scope.
 

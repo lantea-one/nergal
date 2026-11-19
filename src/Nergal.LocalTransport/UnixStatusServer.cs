@@ -29,38 +29,14 @@ public sealed class UnixStatusServer : IDisposable
     public static UnixStatusServer Bind(UnixStatusOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
-            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64))
-        {
-            throw new PlatformNotSupportedException("Local peer status requires Linux x64 or arm64.");
-        }
+        UnixSocketPathPolicy.RequireSupportedPlatform();
 
         if (options.TrustedUserIds.Contains(LinuxProcessIdentity.ReadOverflowUserId()))
         {
             throw new LocalTransportException("peer.overflowUid");
         }
 
-        var parent = Path.GetDirectoryName(options.SocketPath) ?? throw new LocalTransportException("socket.parent");
-        for (DirectoryInfo? part = new(parent); part is not null; part = part.Parent)
-        {
-            if (part.LinkTarget is not null)
-            {
-                throw new LocalTransportException("socket.symlink");
-            }
-        }
-
-        var directory = LinuxFileSystem.Read(parent) ?? throw new LocalTransportException("socket.parentMissing");
-        var expectedDirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
-        if (options.SocketGroupId.HasValue)
-        {
-            expectedDirectoryMode |= UnixFileMode.GroupExecute | UnixFileMode.SetGroup;
-        }
-
-        if (directory.Type != LinuxNodeType.Directory || directory.OwnerUserId != LinuxProcessIdentity.EffectiveUserId ||
-            directory.Permissions != expectedDirectoryMode || (options.SocketGroupId is { } group && directory.OwnerGroupId != group))
-        {
-            throw new LocalTransportException("socket.parentPolicy");
-        }
+        UnixSocketPathPolicy.RequireParent(options.SocketPath, LinuxProcessIdentity.EffectiveUserId, options.SocketGroupId);
 
         if (LinuxFileSystem.Read(options.SocketPath) is not null)
         {

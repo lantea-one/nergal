@@ -7,6 +7,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+from runtime import stage_client_runtime
 
 
 def require(condition, message):
@@ -42,6 +43,7 @@ children = []
 with tempfile.TemporaryDirectory(prefix='nergal-status-') as root:
     root = Path(root)
     os.chmod(root, 0o711)
+    client_dotnet, client_assembly = stage_client_runtime(root, assembly)
     state = root / 'agent'
     state.mkdir(mode=0o700)
     endpoint = root / 'endpoint'
@@ -97,6 +99,20 @@ with tempfile.TemporaryDirectory(prefix='nergal-status-') as root:
         require(result.returncode == 0, f'Client conformance failed for {outcome}: {result.stderr}')
         require(result.stdout.strip() == ('CLOSED' if closed else 'OK'), 'Client outcome missing')
 
+    def managed_client(outcome):
+        def drop():
+            try:
+                os.setgroups([])
+            except PermissionError:
+                pass
+            os.setgid(1)
+            os.setuid(1)
+        result = subprocess.run([client_dotnet, client_assembly, 'query', '0', str(socket_path), parent_user, parent_net],
+                                preexec_fn=drop, capture_output=True, text=True, timeout=8,
+                                env={'PATH': os.defpath, 'LANG': 'C.UTF-8', 'DOTNET_ROOT': str(Path(client_dotnet).parent)})
+        require(result.returncode == 0, 'Managed client query failed: ' + result.stderr)
+        require(json.loads(result.stdout) == {'schemaVersion': 1, 'outcome': outcome, 'revision': '1'}, 'Managed native status differs')
+
     try:
         os.chmod(endpoint, 0o2770)
         rejected = subprocess.run(command(), stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10)
@@ -144,16 +160,19 @@ with tempfile.TemporaryDirectory(prefix='nergal-status-') as root:
 
         client(1, frame(good), 'matched', fragmented=True)
         require(count() == 1, 'Authorized fragmented status did not reach the real provider once')
+        managed_client('matched')
+        require(count() == 2, 'Managed matched query did not reach the provider once')
         nft('add chain inet nergal_filter input { policy drop; }\n')
         client(1, frame(good), 'drift')
-        require(count() == 2 and database.read_bytes() == protected, 'Read-only status modified protected state')
+        managed_client('drift')
+        require(count() == 4 and database.read_bytes() == protected, 'Read-only status modified protected state')
         print('PASS: independent client reads real matched/drift status without direct journal access or state writes', flush=True)
 
         database.write_bytes(b'corrupt synthetic journal')
         client(2, outcome='denied', half_close=False)
-        require(count() == 2, 'Denied peer probed a corrupt journal')
+        require(count() == 4, 'Denied peer probed a corrupt journal')
         client(1, frame(good), 'unavailable')
-        require(count() == 3 and database.read_bytes() == b'corrupt synthetic journal', 'Unavailable status repaired or exposed state')
+        require(count() == 5 and database.read_bytes() == b'corrupt synthetic journal', 'Unavailable status repaired or exposed state')
         stop(server)
         require(not socket_path.exists(), 'Owned listener path was not cleaned up')
         print('PASS: corrupt state is unavailable only to authorized status, with metadata-free denial/error replies', flush=True)

@@ -156,4 +156,36 @@ public sealed class AgentStatusProtocolTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new UnixStatusOptions("/tmp/test.sock", [1], exchangeTimeout: TimeSpan.Zero));
         Assert.Throws<ArgumentOutOfRangeException>(() => new UnixStatusOptions("/tmp/test.sock", [1], exchangeTimeout: TimeSpan.FromSeconds(31)));
     }
+
+    /// <summary>Client authority is explicit and shares the same strict pathname/group/deadline contract.</summary>
+    [Fact]
+    public void ClientOptions_RequireValidExplicitServerPolicy()
+    {
+        var policy = new UnixStatusClientOptions("/tmp/nergal-client.sock", 7, 3, TimeSpan.FromSeconds(1));
+        Assert.Equal(7U, policy.ExpectedServerUserId);
+        Assert.Equal(3U, policy.SocketGroupId);
+        Assert.Equal(TimeSpan.FromSeconds(1), policy.ExchangeTimeout);
+        Assert.Equal("/tmp/nergal-client.sock", policy.SocketPath);
+        Assert.Equal(0U, new UnixStatusClientOptions("/tmp/test.sock", 0).ExpectedServerUserId);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnixStatusClientOptions("/tmp/test.sock", uint.MaxValue));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnixStatusClientOptions("/tmp/test.sock", 1, uint.MaxValue));
+        Assert.Throws<ArgumentException>(() => new UnixStatusClientOptions("relative.sock", 1));
+        Assert.Throws<ArgumentException>(() => new UnixStatusClientOptions("/tmp/invalid\0.sock", 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnixStatusClientOptions("/tmp/test.sock", 1, exchangeTimeout: TimeSpan.Zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnixStatusClientOptions("/tmp/test.sock", 1, exchangeTimeout: TimeSpan.FromSeconds(31)));
+        Assert.Throws<ArgumentNullException>(() => new UnixStatusClient(null!));
+    }
+
+    /// <summary>Caller cancellation is preserved before any filesystem or socket access, including nonexistent endpoints.</summary>
+    [Fact]
+    public async Task Client_PreCanceledQueryDoesNotInspectEndpoint()
+    {
+        if (!OperatingSystem.IsLinux()) { return; }
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var client = new UnixStatusClient(new("/missing/nergal-test/status.sock", 7));
+        var querying = client.QueryAsync(canceled.Token);
+        var failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => querying);
+        Assert.Equal(canceled.Token, failure.CancellationToken);
+    }
 }

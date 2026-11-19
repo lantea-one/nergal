@@ -40,8 +40,8 @@ Bind this development build to loopback; it is not a secured administration endp
   serialized transitions, exact artifact/revision persistence, protected resource
   receipts, explicit offline schema upgrade and effective-UID/type/mode/link checks. No kernel operations.
 - `Nergal.Linux`: shared no-follow metadata and local kernel identity inspection.
-- `Nergal.LocalTransport`: bounded status-only Unix socket listener with explicit
-  kernel peer-UID authorization. No firewall executor, database or browser access.
+- `Nergal.LocalTransport`: bounded status-only Unix socket listener/client with
+  explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
   the production Docker socket, unrestricted SSH or arbitrary shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
