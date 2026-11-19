@@ -18,8 +18,10 @@ policy when the web console or identity provider is unavailable.
    for source metadata, comments and named definitions.
 4. A future restricted agent validates owned-table operations and executes
    narrow native nftables transactions. It will not accept arbitrary shell scripts.
-5. Deployment coordination must validate a complete candidate, snapshot owned
-   state, arm local rollback, apply atomically, verify and confirm. Persistence,
+5. Core now models ownership/revision/artifact bindings and confirmed-apply state
+   transitions (see [the contract](confirmed-apply.md) and ADR 0003). This is a pure
+   model with no persistence, timer, watchdog or executor. Future coordination must
+   validate a complete candidate, snapshot owned state, arm local rollback, apply atomically, verify and confirm. Persistence,
    revisions and runtime state need explicit reconciliation.
 
 Do not treat a capability declaration as evidence that a driver is implemented,
@@ -46,8 +48,10 @@ Do not edit firewalld-owned tables from a native adapter.
 
 ## Next milestone
 
-Design durable ownership/revision evidence and independent local timed rollback,
-confirmation and recovery before introducing any privileged apply path. Replacement
-transactions need their own isolated packet and failure conformance tests. NAT,
-forwarding, connection state and IPv6 neighbor discovery remain outside the tested
-input-filter slice; no broad backend-capability claim follows from these tests.
+Implement a protected durable journal and an independent local watchdog prototype,
+initially against disposable namespace resources only. ADR 0003 defines crash-safe
+ordering, confirmation/timeout serialization and recovery requirements; the current
+state model supplies no durability or execution guarantees. Replacement transactions
+and rollback need isolated packet and failure conformance tests before any host apply
+path. NAT, forwarding, connection state and IPv6 neighbor discovery remain outside
+the tested input-filter slice.

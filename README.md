@@ -6,8 +6,8 @@ Blazor, and reusable C# POCOs. Native nftables is the first backend.
 **Status: early development foundation, not a production firewall manager.**
 This revision includes the backend decision, semantic capability assessment,
 a typed input-filter policy, an unprivileged deterministic native nftables compiler,
-unit tests, an MVC landing page and a Blazor decision page. The compiler emits
-create-only candidates; it cannot inspect, install or modify host firewall rules.
+a pure confirmed-apply state model, unit tests, an MVC landing page and a Blazor
+decision page. The compiler emits create-only candidates; it cannot inspect, install or modify host firewall rules.
 The web app has no compiler/editor endpoint. OIDC and the host agent are planned,
 not implemented. No production deployments are configured.
 
@@ -29,7 +29,8 @@ Bind this development build to loopback; it is not a secured administration endp
 ## Design
 
 - `Nergal.Core`: framework-independent, immutable policy/capability POCOs and
-  fail-closed backend compatibility checks. No network or host operations.
+  fail-closed backend compatibility checks, artifact/ownership bindings and a pure
+  confirmed-apply state model. No timers, persistence, network or host operations.
 - `Nergal.Nftables`: schema validation and deterministic create-only input-filter
   candidates for the reserved `inet nergal_filter` table. No execution or host access.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
@@ -43,8 +44,8 @@ Bind this development build to loopback; it is not a secured administration endp
 
 Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [architecture](docs/architecture.md), [policy contract](docs/policy.md),
-[compiler decision](docs/decisions/0002-filter-compiler.md) and
-[testing standards](docs/testing.md).
+[compiler decision](docs/decisions/0002-filter-compiler.md),
+[confirmed-apply model](docs/confirmed-apply.md) and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.
 A simple single-server installation must work without Active Directory,
