@@ -80,8 +80,11 @@ network filesystems and broken hardware flush semantics are outside the prototyp
 protection boundary. Mode checks are not a substitute for hardened production path
 ownership/openat confinement. The library is not a production privileged agent.
 
+The separate [watchdog fixture](../tests/integration/watchdog/README.md) now tests
+process death/reopen and real packet recovery for fixed synthetic namespace resources.
+
 Unit tests use synthetic artifacts and actual private temporary databases. They
 exercise reopen, real concurrent writers, tampering, permissions, symlinks, stale
 bindings, operation replay and exact-deadline races. They do not kill processes,
-restore packets or prove hardware durability. The next milestone is an independent
-watchdog and process/crash/packet conformance fixture in disposable namespaces only.
+restore packets or prove hardware durability. Production path/account hardening and
+general owned-resource reconciliation remain separate unimplemented boundaries.

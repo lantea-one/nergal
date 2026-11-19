@@ -69,6 +69,13 @@ See its [README](../tests/integration/nftables/README.md) for exact assertions a
 limits. It is opt-in, separate from dotnet test and the default CI job. Successful
 local execution does not establish NAT, forwarding, neighbor discovery or rollback.
 
+The independent watchdog fixture is under tests/integration/watchdog. Run
+`bash tests/integration/watchdog/check.sh` after the Release build. It uses actual
+process termination, durable journal decisions, native atomic replacement and real
+IPv4/IPv6 packet recovery in disposable namespaces. Its README lists eight scenarios
+and the strict synthetic-resource boundary. It is opt-in, separate from default CI.
+It does not establish a production watchdog, account isolation or arbitrary restore.
+
 The firewalld research fixture is under tests/integration/firewalld. It checks
 basic configuration and generated rule semantics; it is not a full packet-level
 firewalld equivalence test. It is opt-in and is not part of dotnet test.

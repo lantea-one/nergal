@@ -9,8 +9,9 @@ a typed input-filter policy, an unprivileged deterministic native nftables compi
 a pure confirmed-apply state model, a private transactional local journal, unit tests,
 an MVC landing page and a Blazor decision page. The compiler emits create-only
 candidates; it cannot inspect, install or modify host firewall rules.
-The web app has no compiler/editor endpoint. OIDC and the host agent are planned,
-not implemented. No production deployments are configured.
+A test-only independent watchdog exercises synthetic rollback in disposable
+namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
+OIDC and the host agent are planned, not implemented. No production deployments are configured.
 
 ## Run locally
 
@@ -42,6 +43,8 @@ Bind this development build to loopback; it is not a secured administration endp
   invalid inputs and defensive snapshots.
 - `tests/integration/nftables`: opt-in real kernel and dual-stack packet checks
   in disposable user/network namespaces, including collision and foreign-table safety.
+- `tests/integration/watchdog`: opt-in independent process/kill-point and real
+  packet recovery conformance for fixed synthetic accept/drop policies only.
 - `tests/integration/firewalld`: reproducible backend research in a disposable
   container network namespace; it never mounts the host firewall or system bus.
 
