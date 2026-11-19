@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
 using Nergal.Core.Deployment;
 using Nergal.LocalState;
@@ -275,6 +276,33 @@ public sealed class ApplyJournalTests
         Assert.Equal(ApplyPhase.RollbackRequired, fixture.Store.ReadActive()!.Session.Phase);
         Assert.Equal(1UL, fixture.Store.ReadEnrollment().Ownership.Revision);
     }
+
+    /// <summary>A shared inode cannot be opened as private state, even when both links have private permissions.</summary>
+    [Fact]
+    public void HardLinkedDatabase_IsRejectedWithoutChangingContent()
+    {
+        using var fixture = new JournalFixture();
+        var other = System.IO.Path.Combine(fixture.Path, "other-link");
+        Assert.Equal(0, link(fixture.Database, other));
+        Reject("path.hardLink", () => ApplyJournal.Open(fixture.Path));
+        File.Delete(other);
+        Assert.Equal(Prior, ApplyJournal.Open(fixture.Path, fixture.Clock).ReadEnrollment().Artifact);
+    }
+
+    /// <summary>Opening a FIFO as a database must fail at metadata inspection instead of blocking on native open.</summary>
+    [Fact]
+    public void FifoDatabase_IsRejectedBeforeSQLiteOpen()
+    {
+        using var fixture = new JournalFixture();
+        File.Delete(fixture.Database);
+        Assert.Equal(0, mkfifo(fixture.Database, 0x180)); // 0600
+        Reject("path.type", () => ApplyJournal.Open(fixture.Path));
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int link(string existing, string newPath);
+    [DllImport("libc", SetLastError = true)]
+    private static extern int mkfifo(string path, uint mode);
 
     private static void Reject(string code, Action action) => Assert.Equal(code, Assert.Throws<JournalException>(action).Code);
 

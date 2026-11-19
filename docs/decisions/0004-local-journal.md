@@ -36,6 +36,9 @@ journal update atomic. Crash reconciliation remains mandatory before host execut
 
 ## Protection and durability limits
 
+Metadata ownership/type/link-count protections are extended by
+[ADR 0006](0006-journal-owner-isolation.md); its trusted-parent limits still apply.
+
 Require an explicitly created private directory with mode 0700 and database mode
 0600. Reject symbolic links in the supplied path, wrong modes and missing databases;
 normal open never creates/reinitializes a database. Creation uses exclusive file
