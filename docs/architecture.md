@@ -39,8 +39,7 @@ policy when the web console or identity provider is unavailable.
 8. `Nergal.Identity` provides separate private local application-account storage
    and standard Identity password/lockout verification. Explicit bootstrap creates
    at most one administrator; no default account or public registration exists.
-   Its framework/database types remain outside Core. Web has no reference yet and
-   issues no identity session; see [the contract](local-administrator-accounts.md).
+   Its framework/database types remain outside Core. Web can enable [local administrator sessions](local-sessions.md) over direct HTTPS.
    A separate protected Data Protection provider now persists encrypted session
    keys, rejects partial/ambient key loading and refreshes existing protectors on
    appended revocation; see [the key contract](protected-session-keys.md).
@@ -48,10 +47,8 @@ policy when the web console or identity provider is unavailable.
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy
 backend selection; the compiler implements only the subset in ADR 0002, not all
-features represented by capability enums. No privileged agent exists. The read-only
-web foundation uses an ephemeral, application-scoped Data Protection provider
-to avoid creating or sharing machine-wide keys. Durable authenticated releases
-will require an explicit persisted and protected key store before session support.
+features represented by capability enums. No privileged agent exists. The default scaffold uses ephemeral Data Protection.
+The enabled session host requires explicitly protected, persistent keys.
 
 ## Optional site integration
 
@@ -89,9 +86,9 @@ is controller status integration with explicit deployment configuration and
 application authorization; the peer-authenticated client now has independent
 hostile-server conformance. Receipt-aware apply/recovery remains a later milestone.
 The user selected local administrator/password authentication with optional OIDC.
-The credential and protected session-key foundations are implemented as libraries.
-Next add HTTPS-only login/logout, CSRF, rate limiting, per-account revocation and isolated HTTP tests
-before protected status routes. The read-only scaffold still uses ephemeral keys.
+Local HTTPS login/logout, antiforgery, rate limiting and per-account revocation
+are implemented with isolated Kestrel conformance. The next controller boundary
+is an explicitly configured read-only status route behind administrator authorization.
 Protected receipt binding is not production enrollment authority. Keep Web
 disconnected from privileged execution. Production enrollment, reboot recovery and arbitrary snapshots
 need their own design and conformance evidence. NAT, forwarding, connection state and

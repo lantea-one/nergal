@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <ProjectReference Include="../Nergal.Identity/Nergal.Identity.csproj" />
     <ProjectReference Include="..\Nergal.Core\Nergal.Core.csproj" />
   </ItemGroup>
 

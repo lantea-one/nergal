@@ -13,7 +13,7 @@ A test-only independent watchdog exercises synthetic rollback in disposable
 namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
 OIDC and the host agent are planned, not implemented. No production deployments are configured.
 Isolated local administrator credentials and protected persistent Data Protection
-keys are implemented as libraries; browser login and authenticated controller routes remain planned.
+keys support an opt-in HTTPS administrator login and session page. Agent-backed browser routes remain planned.
 
 ## Run locally
 
@@ -46,7 +46,7 @@ Bind this development build to loopback; it is not a secured administration endp
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
 - `Nergal.Identity`: explicitly provisioned private singleton administrator store
   using standard Identity hashing/lockout and serialized SQLite decisions, plus
-  certificate-encrypted persistent session keys. No browser sessions or default account.
+  certificate-encrypted persistent session keys and revocable local sessions.
 - `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
   the production Docker socket, unrestricted SSH or arbitrary shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
@@ -74,7 +74,7 @@ Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [protected receipt persistence](docs/protected-resource-receipts.md),
 [local status protocol](docs/local-status-protocol.md),
 [local administrator credentials](docs/local-administrator-accounts.md),
-[protected session keys](docs/protected-session-keys.md)
+[protected session keys](docs/protected-session-keys.md), [local sessions](docs/local-sessions.md)
 and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.

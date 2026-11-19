@@ -1,0 +1,17 @@
+@model bool?
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Administrator login · nergal</title></head>
+<body>
+<main>
+    <h1>Administrator login</h1>
+    @if (Model == false) { <p role="alert">Sign-in failed.</p> }
+    <form method="post" action="@Url.Content("~/login")">
+        @Html.AntiForgeryToken()
+        <p><label>Username <input name="username" autocomplete="username" maxlength="64" required></label></p>
+        <p><label>Password <input name="password" type="password" autocomplete="current-password" maxlength="256" required></label></p>
+        <button type="submit">Sign in</button>
+    </form>
+</main>
+</body>
+</html>
