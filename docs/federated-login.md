@@ -54,3 +54,10 @@ method does not contact the issuer.
 A federated administrator can use the same [read-only agent status](controller-status.md)
 when enabled. Identity-provider membership grants no privileged journal or firewall
 operation. See [ADR 0016](decisions/0016-federated-administrator-login.md).
+
+An opt-in conformance fixture checks the upstream Keycloak 26.8.2 distribution
+with its group-membership mapper in a synthetic realm. Both the provider and
+controller use disposable loopback HTTPS. It confirms group-member admission and
+outsider denial, including the provider's manual form-post fallback. Unrecognized
+bounded callback fields are discarded under [RFC 6749 section 4.1.2](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.2).
+Duplicate fields and mixed token/code responses are rejected.

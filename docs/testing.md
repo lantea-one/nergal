@@ -162,8 +162,14 @@ checks code redemption with PKCE, signature, issuer, audience, nonce, state, gro
 and token-age denial, logout replay, restart invalidation and independent local login.
 No machine trust anchor is installed. Clock-controlled tests exercise absolute expiry
 and issuer/subject binding. The mapped-UID native fixture also checks federated
-group denial and authorized read-only status. Real provider interoperability and
-multi-controller sessions remain unverified. Integration and
+group denial and authorized read-only status. For upstream provider interoperability, run
+`bash tests/integration/oidc/check-keycloak.sh /path/to/keycloak-26.8.2.tar.gz`
+with the official [Keycloak release archive](https://github.com/keycloak/keycloak/releases/tag/26.8.2),
+Java, Python 3.12 or later, OpenSSL, iproute2 and unprivileged namespaces. The
+fixture verifies the release SHA-256, extracts a fresh copy, imports only its own
+synthetic realm and uses new user/network namespaces. No existing server or
+database is opened. This check runs separately from the ordinary CI fixture.
+Multi-controller sessions remain unverified. Integration and
 browser tests supplement unit tests rather than replacing them.
 
 ## Continuous integration

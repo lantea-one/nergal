@@ -113,10 +113,14 @@ internal static class FederatedLogin
                     request.PathBase.HasValue || request.Path != callback.AbsolutePath)
                 { context.Fail("Invalid callback."); return; }
                 var form = await request.ReadFormAsync(context.HttpContext.RequestAborted);
-                if (form.Keys.Any(key => key is not ("code" or "state" or "iss" or "session_state")) ||
+                if (form.Count > 16 || form.Keys.Any(key => key is "error" or "error_description" or "error_uri" or "id_token" or "access_token" or "refresh_token" or "token_type" or "expires_in") ||
                     form.Any(field => field.Value.Count != 1) || string.IsNullOrEmpty(form["code"]) ||
                     string.IsNullOrEmpty(form["state"]) || (form.ContainsKey("iss") && form["iss"] != policy.Issuer))
-                { context.Fail("Invalid authorization-code response."); }
+                { context.Fail("Invalid authorization-code response."); return; }
+                // RFC 6749 section 4.1.2 permits extension fields (including
+                // form submit controls). Never forward one to a protocol decision.
+                foreach (var key in context.ProtocolMessage.Parameters.Keys.Where(key => key is not ("code" or "state" or "iss" or "session_state")).ToArray())
+                { context.ProtocolMessage.RemoveParameter(key); }
             };
             options.Events.OnTokenValidated = context =>
             {

@@ -186,7 +186,7 @@ def exercise(temp):
             for override in ({"groups": ["Fixture-Admins"]}, {"aud": "another-client"}, {"iss": op.issuer + "/other"},
                              {"nonce": "different"}, {"iat": int(time.time()) - 901}):
                 op.overrides = override
-                rp.exchange(op, cert, 401)
+                rp.exchange(op, cert, 401, lambda form: form.update(groups="fixture-admins"))
                 rp.request("/session", 401)
             op.overrides = {}
             op.signing_key = temp / "tls.key"
@@ -198,7 +198,7 @@ def exercise(temp):
             # below to exercise success independently of the denial-case budget.
         with sessions.host(temp, tls, settings) as browser:
             rp = RelyingParty(browser)
-            rp.exchange(op, cert, 302)
+            rp.exchange(op, cert, 302, lambda form: form.update(continue_button="Continue", groups="untrusted-form-value"))
             assert "synthetic-external-subject" in rp.request("/session", 200)[0]
             other = RelyingParty(browser)
             other.exchange(op, cert, 302)
