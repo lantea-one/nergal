@@ -20,7 +20,10 @@ public static class LinuxDirectoryDurability
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
         if (!Path.IsPathFullyQualified(directory) || directory.Contains('\0'))
         { throw new ArgumentException("An absolute NUL-free directory is required.", nameof(directory)); }
-        var descriptor = open(directory, 0xb0000); // O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+        // Linux arm64 overrides O_DIRECTORY/O_NOFOLLOW for AArch32 compatibility;
+        // these flags are not architecture-neutral. Both include O_CLOEXEC.
+        var flags = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x8c000 : 0xb0000;
+        var descriptor = open(directory, flags); // O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
         if (descriptor < 0) { throw new IOException("Cannot open directory for synchronization."); }
         using var handle = new SafeFileHandle((IntPtr)descriptor, ownsHandle: true);
         if (fsync(handle) != 0) { throw new IOException("Cannot synchronize directory."); }

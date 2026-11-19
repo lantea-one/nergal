@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Nergal.Identity;
+using Nergal.Linux;
 
 namespace Nergal.LocalState.Tests;
 
@@ -15,6 +16,20 @@ namespace Nergal.LocalState.Tests;
 public sealed class ProtectedSessionKeyTests
 {
     private static readonly byte[] Plaintext = Encoding.UTF8.GetBytes("synthetic protected fixture value");
+
+    /// <summary>Native directory flags preserve directory-only/no-follow behavior on each executing Linux architecture.</summary>
+    [Fact]
+    public void DirectoryDurability_RejectsRegularFilesAndFinalSymlinks()
+    {
+        using var fixture = new Fixture();
+        LinuxDirectoryDurability.Synchronize(fixture.Keys);
+        var file = fixture.Write("synthetic sentinel");
+        Assert.Throws<IOException>(() => LinuxDirectoryDurability.Synchronize(file));
+        var linkPath = Path.Combine(fixture.Root, "directory-link");
+        Directory.CreateSymbolicLink(linkPath, fixture.Keys);
+        Assert.Throws<IOException>(() => LinuxDirectoryDurability.Synchronize(linkPath));
+        Assert.Equal("synthetic sentinel", File.ReadAllText(file));
+    }
 
     /// <summary>Encrypted private keys survive a new provider, while caller certificate disposal cannot invalidate a configured ring.</summary>
     [Fact]

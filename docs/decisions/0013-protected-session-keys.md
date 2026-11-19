@@ -49,3 +49,7 @@ certificate rotation, wrong-certificate/purpose/application denial and private-f
 failure cases. No real key material, topology or credentials enter the repository.
 
 Source: [ASP.NET Core Data Protection configuration](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/configuration/overview?view=aspnetcore-10.0).
+Linux directory synchronization uses architecture-specific
+[arm64](https://github.com/torvalds/linux/blob/v6.12/arch/arm64/include/uapi/asm/fcntl.h)
+and [generic/x64](https://github.com/torvalds/linux/blob/v6.12/include/uapi/asm-generic/fcntl.h)
+UAPI flags; directory-only and no-follow behavior require native tests on both.
