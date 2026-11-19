@@ -1,4 +1,5 @@
 using System.Data;
+using System.Security.Claims;
 using System.Runtime.Versioning;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Nergal.Identity;
 
-/// <summary>Explicit singleton administrator provisioning and serialized local password/lockout verification. Issues no browser session.</summary>
+/// <summary>Explicit singleton administrator provisioning and serialized password verification and explicit browser session operations.</summary>
 /// <remarks>Trusted callers provision through a local administrative boundary, never an unauthenticated registration route. Use a fresh DI scope per operation.</remarks>
 [SupportedOSPlatform("linux")]
 public sealed class LocalAdministratorAccounts
@@ -55,33 +56,77 @@ public sealed class LocalAdministratorAccounts
     /// <exception cref="OperationCanceledException">Cancellation preceded credential reservation.</exception>
     public async Task<LocalCredentialResult> VerifyAsync(string userName, string password, CancellationToken cancellationToken = default)
     {
+        var user = await VerifyPasswordAsync(userName, password, cancellationToken);
+        return new(user is null ? null : Guid.Parse(user.Id));
+    }
+
+    /// <summary>Checks that the existing store contains one administrator with supported password and session state before accepting requests.</summary>
+    public async Task RequireProvisionedAsync(CancellationToken cancellationToken = default)
+    {
+        var user = await users.Users.AsNoTracking().SingleOrDefaultAsync(cancellationToken)
+            ?? throw new AccountStoreException("account.unprovisioned");
+        RequireSupported(user);
+    }
+
+    /// <summary>Issues a nonpersistent application cookie from the account snapshot whose password was verified under reservation.</summary>
+    /// <remarks>The calling host must install the protected local cookie scheme and enforce HTTPS, antiforgery and rate limits.</remarks>
+    public async Task<bool> SignInAsync(string userName, string password, CancellationToken cancellationToken = default)
+    {
+        var user = await VerifyPasswordAsync(userName, password, cancellationToken);
+        if (user is null) { return false; }
+        await signIn.SignInAsync(user, isPersistent: false);
+        return true;
+    }
+
+    internal async Task<bool> ValidateSessionAsync(ClaimsPrincipal principal)
+    {
+        var user = await signIn.ValidateSecurityStampAsync(principal);
+        if (user is null) { return false; }
+        RequireSupported(user);
+        return true;
+    }
+
+    /// <summary>Revokes sessions for the authenticated account by replacing its security stamp. The host also clears the local cookie.</summary>
+    public async Task RevokeSessionsAsync(ClaimsPrincipal principal)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+        var user = await signIn.ValidateSecurityStampAsync(principal);
+        if (user is null) { throw new AccountStoreException("account.sessionInvalid"); }
+        RequireSupported(user);
+        if (!(await users.UpdateSecurityStampAsync(user)).Succeeded)
+        { throw new AccountStoreException("account.revokeFailed"); }
+    }
+
+    private static void RequireSupported(LocalAdministrator user)
+    {
+        if (!user.LockoutEnabled || user.TwoFactorEnabled || string.IsNullOrWhiteSpace(user.PasswordHash) ||
+            string.IsNullOrWhiteSpace(user.SecurityStamp) || string.IsNullOrWhiteSpace(user.ConcurrencyStamp))
+        { throw new AccountStoreException("account.unsupportedState"); }
+        if (!Guid.TryParse(user.Id, out var parsed) || parsed == Guid.Empty)
+        { throw new AccountStoreException("account.corrupt"); }
+    }
+
+    private async Task<LocalAdministrator?> VerifyPasswordAsync(string userName, string password, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(userName);
         ArgumentNullException.ThrowIfNull(password);
         cancellationToken.ThrowIfCancellationRequested();
-        if (!ValidName(userName) || !BoundedPasswordValidator.Valid(password)) { return new(null); }
+        if (!ValidName(userName) || !BoundedPasswordValidator.Valid(password)) { return null; }
         try
         {
             await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
             AccountConnectionPolicy.RequireSchema(context.Database.GetDbConnection(), transaction.GetDbTransaction());
             var user = await users.FindByNameAsync(userName);
-            if (user is not null && (!user.LockoutEnabled || user.TwoFactorEnabled || string.IsNullOrWhiteSpace(user.PasswordHash) ||
-                string.IsNullOrWhiteSpace(user.SecurityStamp) || string.IsNullOrWhiteSpace(user.ConcurrencyStamp)))
-            { throw new AccountStoreException("account.unsupportedState"); }
+            if (user is not null) { RequireSupported(user); }
             if (user is null || await users.IsLockedOutAsync(user))
             {
                 dummy.Verify(password);
                 await transaction.CommitAsync(CancellationToken.None);
-                return new(null);
+                return null;
             }
             var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
-            Guid? identifier = null;
-            if (result.Succeeded)
-            {
-                if (!Guid.TryParse(user.Id, out var parsed) || parsed == Guid.Empty) { throw new AccountStoreException("account.corrupt"); }
-                identifier = parsed;
-            }
             await transaction.CommitAsync(CancellationToken.None);
-            return new(identifier);
+            return result.Succeeded ? user : null;
         }
         catch (Exception error) when (error is SqliteException or DbUpdateException)
         { throw new AccountStoreException("account.databaseError"); }

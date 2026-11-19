@@ -1,6 +1,11 @@
 using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
@@ -247,6 +252,86 @@ public sealed class LocalAdministratorAccountTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => accounts.ProvisionAsync(Name, Password, canceled.Token));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => accounts.VerifyAsync(Name, Password, canceled.Token));
         Assert.Equal(before, File.ReadAllBytes(fixture.Database));
+    }
+
+    /// <summary>Startup refuses an empty or unsupported store. It never provisions or resets the administrator as a side effect.</summary>
+    [Fact]
+    public async Task SessionReadiness_RequiresSupportedProvisionedAccount()
+    {
+        await using var fixture = await Fixture.Create();
+        async Task Ready()
+        {
+            using var scope = fixture.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>().RequireProvisionedAsync();
+        }
+        await Reject("account.unprovisioned", Ready);
+        Assert.True((await fixture.Provision(Name, Password)).Succeeded);
+        await Ready();
+        fixture.Sql("UPDATE AspNetUsers SET TwoFactorEnabled=1");
+        await Reject("account.unsupportedState", Ready);
+    }
+
+    /// <summary>A nonpersistent ticket expires at its original deadline even after a successful late request.</summary>
+    [Fact]
+    public async Task SessionTicket_ExpiresWithoutRenewal()
+    {
+        await using var fixture = await Fixture.Create();
+        Assert.True((await fixture.Provision(Name, Password)).Succeeded);
+        var directory = System.IO.Path.Combine(fixture.Path, "keys");
+        Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        using var rsa = RSA.Create(3072);
+        var request = new CertificateRequest("CN=synthetic-session-test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+        using var keys = ProtectedSessionKeyRing.Open(new(directory), cert);
+        var clock = new SessionClock();
+        var collection = new ServiceCollection().AddLocalAdministratorAccounts(fixture.Options).AddLocalAdministratorSessions(keys);
+        collection.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options => options.TimeProvider = clock);
+        await using var services = collection.BuildServiceProvider();
+        string cookie;
+        using (var scope = services.CreateScope())
+        {
+            var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+            scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext = http;
+            Assert.True(await scope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>().SignInAsync(Name, Password));
+            cookie = Assert.Single(http.Response.Headers.SetCookie)!.Split(';')[0];
+        }
+
+        async Task<bool> Authenticate()
+        {
+            using var scope = services.CreateScope();
+            var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+            scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext = http;
+            http.Request.Headers.Cookie = cookie;
+            var result = await http.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+            await http.Response.StartAsync();
+            Assert.False(http.Response.Headers.ContainsKey("Set-Cookie"));
+            return result.Succeeded;
+        }
+        clock.Now += TimeSpan.FromMinutes(14);
+        Assert.True(await Authenticate());
+        clock.Now += TimeSpan.FromMinutes(2);
+        Assert.False(await Authenticate());
+    }
+
+    /// <summary>Refuse missing, oversized or readable-by-others wrapping credentials before importing any certificate material.</summary>
+    [Fact]
+    public async Task WrappingCredential_RequiresBoundedPrivateFile()
+    {
+        await using var fixture = await Fixture.Create(initialize: false);
+        var path = System.IO.Path.Combine(fixture.Path, "fixture.pfx");
+        Assert.Equal("keys.credentialMissing", Assert.Throws<AccountStoreException>(() => PrivateWrappingCertificate.Load(path)).Code);
+        using (var stream = new FileStream(path, new FileStreamOptions
+        { Mode = FileMode.CreateNew, Access = FileAccess.Write, UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite }))
+        { stream.SetLength(65537); }
+        Assert.Equal("keys.credentialSize", Assert.Throws<AccountStoreException>(() => PrivateWrappingCertificate.Load(path)).Code);
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead);
+        Assert.Equal("path.mode", Assert.Throws<AccountStoreException>(() => PrivateWrappingCertificate.Load(path)).Code);
+    }
+
+    private sealed class SessionClock : TimeProvider
+    {
+        internal DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => Now;
     }
 
     private static void AssertDenied(LocalCredentialResult result)

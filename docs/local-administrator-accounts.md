@@ -5,9 +5,9 @@ Identity and EF Core SQLite. It does not depend on policy, compiler, privileged
 journal or transport. The user selected local account/password authentication for
 basic installations, with optional OIDC later; ADR 0012 records that direction.
 
-This revision implements credential storage/verification, **not browser sign-in**.
-Web does not reference the library. No cookie handler, HTTP registration endpoint,
-default account, automatic initialization, password reset or OIDC login exists.
+This document covers credential storage and verification. Web optionally adds
+[local browser sessions](local-sessions.md). No public registration endpoint, default
+account, automatic initialization, password reset or OIDC login exists.
 Application accounts are not Linux users: no host account/group changes occur.
 
 ## Explicit creation and singleton provisioning
@@ -86,7 +86,6 @@ sharing controller/agent service identities in deployment. It verifies real DAC
 denial, foreign-owner rejection, sidecars, hard links and FIFOs without host users.
 
 Separate [protected Data Protection key storage](protected-session-keys.md) is now
-implemented as a library. The next boundary is HTTPS-only login/logout, CSRF,
-rate limiting, revocable sessions and isolated HTTP conformance.
-No authenticated agent status will be exposed until those boundaries are in place.
+implemented as a library. The optional session host now implements HTTPS login/logout, CSRF, rate limiting
+and revocation. Authenticated agent status remains a separate milestone.
 OIDC issuer/audience/redirect/claims validation and configurable roles remain planned.

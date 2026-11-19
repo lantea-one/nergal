@@ -141,6 +141,15 @@ No daemon is installed; only the harness writes synthetic namespace rules. See i
 
 ## Web and identity tests
 
+After the Release build, run `python3 tests/integration/local-sessions/check.py`
+with Python 3 and OpenSSL. The fixture starts independent Kestrel processes on
+dynamic loopback ports, creates separate synthetic TLS/wrapping certificates and
+uses the real singleton account store. Checks cover spoofed HTTP, antiforgery,
+duplicate and oversized forms, fixed redirects, cookie flags, anonymous and
+tampered tickets, restart, logout replay, lockout, rate limiting and absence of
+profile-key persistence. A unit test advances the cookie handler clock past the
+absolute expiry. The default smoke test checks that session routes are absent.
+
 Future tests must cover OIDC claim validation, group denial, revoked access,
 CSRF, session lifecycle and prevention of direct agent access. Integration and
 browser tests supplement unit tests rather than replacing them.
@@ -148,7 +157,7 @@ browser tests supplement unit tests rather than replacing them.
 ## Continuous integration
 
 The Forgejo workflow builds, checks formatting, runs unit tests with coverage
-and starts the real read-only MVC/Blazor application for a smoke check. Set the
+and runs the default MVC/Blazor smoke check and isolated HTTPS session fixture. Set the
 repository variable `CI_RUNNER_LABEL` to a suitable trusted Linux runner label;
 otherwise it uses `ubuntu-latest`. Action revisions are pinned. CI has no
 production deployment step or host firewall access. Automatic fork-PR execution

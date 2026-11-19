@@ -3,8 +3,7 @@
 `ProtectedSessionKeyRing` in `Nergal.Identity` implements an explicit Linux Data
 Protection provider. It persists certificate-encrypted framework keys and returns
 purpose-isolated checked protectors. It enables no login, browser cookie, endpoint,
-OIDC integration or privileged agent access. Web still uses its separate ephemeral
-provider until authenticated-host configuration is implemented.
+OIDC integration or privileged agent access. The [local session host](local-sessions.md) uses this provider when enabled.
 
 ## Provisioning and certificate boundary
 
@@ -102,6 +101,6 @@ mapped-UID isolation fixture checks key files alongside journal/account stores,
 including owner, sidecar, hard-link and FIFO denial. It creates no host accounts and
 uses only synthetic certificate/key material in disposable directories.
 
-The next milestone is explicitly configured HTTPS-only login/logout with CSRF,
-rate limits, revocable local sessions and isolated HTTP conformance. Protected key
+The [local session host](local-sessions.md) provides explicitly configured HTTPS login/logout,
+CSRF, rate limits, revocation and isolated HTTP conformance. Protected key
 persistence alone does not establish browser authentication or production readiness.

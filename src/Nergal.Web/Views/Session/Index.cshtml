@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Administrator session · nergal</title></head>
+<body>
+<main>
+    <h1>Administrator session</h1>
+    <p>Signed in as @User.Identity?.Name.</p>
+    <form method="post" action="@Url.Content("~/logout")">
+        @Html.AntiForgeryToken()
+        <button type="submit">Sign out of all sessions</button>
+    </form>
+</main>
+</body>
+</html>

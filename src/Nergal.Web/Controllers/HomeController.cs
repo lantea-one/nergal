@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Nergal.Web.Controllers;
@@ -6,6 +7,6 @@ namespace Nergal.Web.Controllers;
 public sealed class HomeController : Controller
 {
     /// <summary>Displays the project's current status without reading host configuration.</summary>
-    [HttpGet("/")]
+    [AllowAnonymous, HttpGet("/")]
     public IActionResult Index() => View();
 }
