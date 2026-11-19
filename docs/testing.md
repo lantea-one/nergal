@@ -34,7 +34,11 @@ errors even when the test process exits successfully.
 
 Coverage is a diagnostic, not evidence of correct packet handling. The current
 suite tests capability selection, policy snapshots, network validation and compiler
-rejection/determinism. It does not establish packet behavior or agent correctness.
+rejection/determinism, exact artifact digests and confirmed-apply state transitions.
+Confirmation tests use explicit monotonic elapsed durations without sleeps. They
+cover stale bindings, deadline boundaries, failed apply/rollback, interruption and
+terminal states. No working watchdog or rollback executor is exercised. These unit
+tests do not establish packet behavior or agent correctness.
 
 ## Integration and conformance tests
 

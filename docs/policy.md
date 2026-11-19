@@ -48,7 +48,9 @@ contain stable identifiers rather than caller-supplied policy data.
 | `port.outOfRange` | Destination port is outside 1–65535. |
 | `port.requiresTransport` | A destination port was supplied without TCP or UDP. |
 
-Successful results contain a complete deterministic native batch and no diagnostics.
+Successful results contain a complete deterministic native batch, its SHA-256
+`Digest` over exact UTF-8 bytes, and no diagnostics. Failed results contain no digest.
+See the [confirmed-apply contract](confirmed-apply.md) for artifact binding.
 The batch begins with `create table inet nergal_filter`, then adds a single input
 base chain at priority 0 and its ordered rules. It uses invariant numeric formatting
 and LF newlines. The compiler never returns partial output on validation failure.
