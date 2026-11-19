@@ -11,7 +11,7 @@ planned, not implemented. No production deployments are configured.
 
 ## Run locally
 
-Install the .NET 10 SDK, then:
+Install the .NET 10 SDK version pinned in `global.json`, then:
 
 ```sh
 dotnet restore Nergal.sln

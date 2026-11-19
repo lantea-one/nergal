@@ -4,6 +4,12 @@ Tests are production code: keep them standardized, reusable, documented,
 deterministic and efficient. Explain why a safety property matters. Use synthetic
 RFC documentation addresses and avoid real credentials or exported host state.
 
+The SDK is pinned in `global.json`. Update it and regenerate the dependency
+lockfiles together: Blazor includes SDK-selected asset package versions. CI
+installs that exact SDK. Coverage tooling must support the selected runtime;
+a report containing no executed lines must be investigated, not presented as
+evidence of tested behavior.
+
 ## Unit tests
 
 Run `dotnet test Nergal.sln --configuration Release`. Unit tests must not need
@@ -16,6 +22,12 @@ Optional coverage collection:
 ```sh
 dotnet test Nergal.sln --configuration Release --collect:"XPlat Code Coverage"
 ```
+
+On Linux, coverage instrumentation uses named synchronization objects. If a
+sandbox makes the inherited `XDG_RUNTIME_DIR` read-only, point it at a private,
+writable directory owned by the test user (mode 0700); do not loosen the host
+runtime directory permissions. Check the test output and report for collector
+errors even when the test process exits successfully.
 
 Coverage is a diagnostic, not evidence of correct packet handling. The current
 suite tests the capability boundary only; it does not claim compiler or agent coverage.
