@@ -11,7 +11,7 @@ an authorized read-only local status listener, an MVC landing page and a Blazor 
 candidates; it cannot inspect, install or modify host firewall rules.
 A test-only independent watchdog exercises synthetic rollback in disposable
 namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
-OIDC and the host agent are planned, not implemented. No production deployments are configured.
+Optional OIDC supports administrator group login. The host agent and production deployment remain planned.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 
@@ -74,7 +74,7 @@ Read [the backend decision](docs/decisions/0001-native-nftables.md),
 [protected receipt persistence](docs/protected-resource-receipts.md),
 [local status protocol](docs/local-status-protocol.md),
 [local administrator credentials](docs/local-administrator-accounts.md),
-[protected session keys](docs/protected-session-keys.md), [local sessions](docs/local-sessions.md), [controller status](docs/controller-status.md)
+[protected session keys](docs/protected-session-keys.md), [local sessions](docs/local-sessions.md), [federated login](docs/federated-login.md), [controller status](docs/controller-status.md)
 and [testing standards](docs/testing.md).
 
 The intended deployment model is a controller and restricted per-host agent.

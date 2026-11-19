@@ -11,7 +11,7 @@
     }
     <form method="post" action="@Url.Content("~/logout")">
         @Html.AntiForgeryToken()
-        <button type="submit">Sign out of all sessions</button>
+        <button type="submit">@(User.Identity?.AuthenticationType == Nergal.Web.FederatedLogin.Session ? "Sign out of this session" : "Sign out of all local sessions")</button>
     </form>
 </main>
 </body>

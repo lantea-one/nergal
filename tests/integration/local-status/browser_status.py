@@ -67,4 +67,26 @@ def verify_browser_status(root, dotnet, socket_path, count):
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
         browser.request("/agent/status", 401)
         assert count() == before + 1
+    oidc_spec = importlib.util.spec_from_file_location("oidc_fixture", source / "tests/integration/oidc/check.py")
+    oidc = importlib.util.module_from_spec(oidc_spec)
+    oidc_spec.loader.exec_module(oidc)
+    issuer_dir = root / "issuer"
+    issuer_dir.mkdir(mode=0o700)
+    with oidc.provider(issuer_dir) as (op, cert):
+        public_cert = root / "fixture-issuer.crt"
+        shutil.copyfile(cert, public_cert)
+        os.chmod(public_cert, 0o644)
+        federated = {**settings, **oidc.host_settings(op, public_cert)}
+        with sessions.host(profile, tls, federated, executable=dotnet, dll=web / "Nergal.Web.dll", drop=drop) as browser:
+            rp = oidc.RelyingParty(browser)
+            op.overrides = {"groups": ["unrelated-fixture"]}
+            rp.exchange(op, public_cert, 401)
+            rp.request("/agent/status", 401)
+            assert count() == before + 1
+            op.overrides = {}
+            rp.exchange(op, public_cert, 302)
+            body, _ = rp.request("/agent/status", 200)
+            assert json.loads(body) == {"schemaVersion": 1, "outcome": "matched", "revision": "1"}
+            assert count() == before + 2
+    print("PASS: only a validated configured OIDC group reaches the native status provider", flush=True)
     print("PASS: authorized HTTPS session reads one verified peer snapshot; anonymous, invalid and logged-out requests never dispatch", flush=True)

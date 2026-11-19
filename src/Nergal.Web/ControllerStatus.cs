@@ -12,7 +12,7 @@ namespace Nergal.Web;
 [SupportedOSPlatform("linux")]
 internal static class ControllerStatus
 {
-    internal static void Configure(IServiceCollection services, IConfigurationSection settings)
+    internal static void Configure(IServiceCollection services, IConfigurationSection settings, bool federated = false)
     {
         var server = settings.GetValue<uint?>("ServerUserId") ?? throw new InvalidOperationException("AgentStatus:ServerUserId is required.");
         var group = settings.GetValue<uint?>("SocketGroupId") ?? throw new InvalidOperationException("AgentStatus:SocketGroupId is required.");
@@ -28,7 +28,7 @@ internal static class ControllerStatus
             limiter.QueueLimit = 0;
         }));
         services.AddAuthorization(options => options.AddPolicy("LocalAgentStatus", policy =>
-            policy.AddAuthenticationSchemes(IdentityConstants.ApplicationScheme).RequireAuthenticatedUser()));
+            policy.AddAuthenticationSchemes(federated ? FederatedLogin.Browser : IdentityConstants.ApplicationScheme).RequireAuthenticatedUser()));
     }
 
     internal static void Map(WebApplication app)

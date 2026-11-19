@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.15" />
     <InternalsVisibleTo Include="Nergal.Web.Tests" />
     <ProjectReference Include="../Nergal.LocalTransport/Nergal.LocalTransport.csproj" />
     <ProjectReference Include="../Nergal.Identity/Nergal.Identity.csproj" />

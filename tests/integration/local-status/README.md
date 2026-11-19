@@ -60,3 +60,8 @@ requests leave the native provider count unchanged. An authenticated GET returns
 matched resource revision. Parking the fixture socket produces an empty 503 and
 the fixture restores it before listener teardown. This portion also needs OpenSSL,
 iproute2 and the Release Web and isolation-probe build outputs.
+
+With a separate disposable HTTPS issuer, an unlisted group receives no session and
+causes no agent dispatch. A signed administrator group receives the expected native
+status under its distinct federated identity. The issuer's private signing key stays
+outside the mapped controller UID's private storage.
