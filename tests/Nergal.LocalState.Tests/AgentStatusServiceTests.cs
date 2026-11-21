@@ -74,11 +74,21 @@ public sealed class AgentStatusServiceTests
         [],
         ["unknown"],
         ["enroll", "relative/path"],
+        ["reconcile", "relative/path"],
         ["status-serve", "/tmp/journal", "relative/sock", "1000"],
         ["status-serve", "relative/journal", "/tmp/status.sock", "1000"],
         ["status-serve", "/tmp/journal", "/tmp/status.sock", "-1"],
         ["status-serve", "/tmp/journal", "/tmp/status.sock", "1000", "not-a-gid"],
         ["status-serve", "/tmp/journal", "/tmp/status.sock", "1000", "2000", "extra"],
+        ["prepare", "/tmp/journal", "not-a-guid", "10", "drop"],
+        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000000", "10", "drop"],
+        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "0", "drop"],
+        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "3601", "drop"],
+        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "10", "reject"],
+        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "10", "drop", "icmp:accept"],
+        ["watch", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000000"],
+        ["apply", "relative/journal", "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002"],
+        ["confirm", "/tmp/journal", "00000000-0000-0000-0000-000000000001"],
     ];
 
     /// <summary>CLI parsing rejects unknown commands, relative paths, and malformed numeric identities.</summary>
@@ -108,6 +118,17 @@ public sealed class AgentStatusServiceTests
         Assert.Equal("/run/nergal/status.sock", parsedServe.SocketPath);
         Assert.Equal(1001u, parsedServe.AllowedPeerUid);
         Assert.Equal(2002u, parsedServe.SocketGroupId);
+
+        Assert.True(AgentCommands.TryParseCommand(
+            ["prepare", "/var/lib/nergal/agent", "00000000-0000-0000-0000-000000000010", "30", "drop", "ipv4:drop", "ipv6:accept"],
+            out var prepare));
+        var parsedPrepare = Assert.IsType<AgentCommands.PrepareCommand>(prepare);
+        Assert.Equal(30, parsedPrepare.TimeoutSeconds);
+        Assert.Equal(FilterVerdict.Drop, parsedPrepare.DefaultVerdict);
+        Assert.Equal(2, parsedPrepare.Rules.Count);
+
+        Assert.True(AgentCommands.TryParseCommand(["reconcile", "/var/lib/nergal/agent"], out var reconcile));
+        Assert.IsType<AgentCommands.ReconcileCommand>(reconcile);
     }
 
     /// <summary>Status evaluation reports unbound, matched, drift, and metadata-free unavailable without altering journal bytes.</summary>

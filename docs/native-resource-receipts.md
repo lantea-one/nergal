@@ -63,10 +63,12 @@ Observation errors are `observation.tooLarge`, `observation.invalidJson`,
 `NftTableObservation.ParseEnrollmentEcho(json)` parses the handle-bearing JSON echo
 from a successful local exclusive creation of the tagged `inet nergal_filter` empty
 `accept` input chain (`create` table followed by `add` chain, both with positive
-handles). It rejects table listings, `add` table operations, `drop` policies,
-duplicate keys or extra objects with `observation.createEcho` (or the applicable
-scope/handle/identity/policy code). The caller must establish successful native
-transaction exit and independently compare a complete listing before binding.
+handles). `NftTableObservation.ParseReplacementEcho(json)` similarly parses the
+echo of an atomic delete-and-recreate replacement or rule-bearing baseline creation
+(`create` table, `add` chain with `accept` or `drop`, and zero or more schema-1
+`add` rules). Unsupported replacement echo shapes fail with `observation.replacementEcho`.
+The caller must establish successful native transaction exit and independently compare
+a complete listing before binding or recording receipts.
 
 ## Expected receipt
 

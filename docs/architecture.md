@@ -18,20 +18,20 @@ policy when the web console or identity provider is unavailable.
    for source metadata, comments and named definitions.
 4. `Nergal.Agent` provides offline local operator enrollment
    (`nergal-agent enroll ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY`,
-   [ADR 0019](decisions/0019-local-agent-enrollment.md)) and the peer-authorized
+   [ADR 0019](decisions/0019-local-agent-enrollment.md)), the peer-authorized
    read-only status listener (`nergal-agent status-serve`,
-   [ADR 0020](decisions/0020-local-agent-status-listener.md)). Both serialize kernel
-   observation/creation and journal decisions with `ResourceExecutionLock`. Enrollment
-   generates fresh ownership and table identities locally, commits the empty `accept`
-   baseline intent and disables legacy unbound operations in `Nergal.LocalState` before
-   invoking `/usr/sbin/nft`, validates and submits one exclusive-create batch,
-   parses the echoed table and chain handles (`ParseEnrollmentEcho`), and reconciles
-   an independent full native listing before binding the expected receipt. Status
-   serving opens the private journal, binds `UnixStatusServer` for one explicit
-   allowed peer UID, collects read-only `nft --json list table inet nergal_filter`
-   observations, and classifies status in one protected SQLite read transaction.
-   A future restricted apply agent will validate owned-table operations and execute
-   narrow native nftables transactions. It will not accept arbitrary shell scripts.
+   [ADR 0020](decisions/0020-local-agent-status-listener.md)), and local operator
+   receipt-aware confirmed-apply, watchdog, and boot-reconciliation commands
+   (`prepare`, `watch`, `apply`, `confirm`, `reconcile`,
+   [ADR 0023](decisions/0023-explicit-boot-reconciliation.md)). All mutate/observe
+   operations serialize with `ResourceExecutionLock`. Enrollment generates fresh
+   ownership and table identities locally, commits the empty `accept` baseline
+   intent before invoking `/usr/sbin/nft`, parses `ParseEnrollmentEcho`, and verifies
+   an independent full listing before binding. Confirmed apply validates complete
+   atomic delete+create replacement candidates, arms an independent `watch` process
+   before mutating the kernel, binds candidate/rollback handles via `ParseReplacementEcho`,
+   and restores packets automatically on timeout. It accepts no arbitrary shell scripts
+   or browser-supplied native commands.
 5. `Nergal.LocalState` persists explicit enrollment assertions, exact artifacts and
    replayable transitions in a private SQLite journal. Transactions serialize
    confirmation/timeout and commit revisions with confirmation. It has no kernel

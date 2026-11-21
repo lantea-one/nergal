@@ -413,6 +413,69 @@ public sealed partial class ApplyJournal
         });
     }
 
+    /// <summary>Explicitly reconciles an enrolled bound resource on a new Linux boot after exclusive kernel baseline re-creation.</summary>
+    /// <remarks>Never adopts preexisting kernel tables or runs on the same boot. Nonterminal operations from the prior boot are recorded as interrupted.</remarks>
+    /// <exception cref="ArgumentNullException">Ownership, expected receipt, or actual observation is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Current namespace is zero.</exception>
+    /// <exception cref="JournalException">Resource is unbound, boot is unchanged, or recreated kernel evidence mismatches confirmed baseline.</exception>
+    public NftTableReceipt ReconcileBoot(ResourceOwnership ownership, NftTableReceipt recreatedExpected, NftTableObservation recreatedActual, ulong currentNamespace)
+    {
+        ArgumentNullException.ThrowIfNull(ownership);
+        ArgumentNullException.ThrowIfNull(recreatedExpected);
+        ArgumentNullException.ThrowIfNull(recreatedActual);
+        if (currentNamespace == 0) { throw new ArgumentOutOfRangeException(nameof(currentNamespace)); }
+        return Write((connection, transaction) =>
+        {
+            var enrollment = Enrollment(connection, transaction);
+            var prior = LoadReceipt(connection, transaction, enrollment.Value, enrollment.Boot, enrollment.ResourceBound)
+                ?? throw new JournalException("resource.unbound");
+            if (ownership != enrollment.Value.Ownership || recreatedExpected.Identity != prior.Identity)
+            {
+                throw new JournalException("ownership.stale");
+            }
+
+            var now = Now();
+            if (now.BootId == enrollment.Boot)
+            {
+                throw new JournalException("reconcile.sameBoot");
+            }
+
+            if (!NftReceiptVerifier.Verify(recreatedExpected, recreatedActual, now.BootId, currentNamespace).IsMatch)
+            {
+                throw new JournalException("resource.receiptMismatch");
+            }
+
+            var reconstructed = NftFilterCompiler.Compile(recreatedActual.Policy, recreatedActual.Identity);
+            if (reconstructed.Candidate != enrollment.Value.Artifact)
+            {
+                throw new JournalException("resource.baselineMismatch");
+            }
+
+            if (enrollment.Active is { } activeId)
+            {
+                var activeEntry = Load(connection, transaction, activeId);
+                if (!activeEntry.Session.IsTerminal)
+                {
+                    var interrupted = activeEntry.Session.Advance(ApplyEvent.Interrupted, activeEntry.Session.Plan,
+                        activeEntry.Session.WatchdogId, activeEntry.Session.Elapsed);
+                    if (interrupted.Session.Phase != activeEntry.Session.Phase)
+                    {
+                        Append(connection, transaction, activeEntry, interrupted.Session, ApplyEvent.Interrupted,
+                            activeEntry.Session.WatchdogId, interrupted.ErrorCode);
+                    }
+                }
+            }
+
+            Execute(connection, transaction, "UPDATE enrollment SET boot=$boot,active=NULL WHERE singleton=1",
+                ("$boot", Id(now.BootId)));
+            Execute(connection, transaction,
+                "UPDATE resource_receipt SET boot=$boot,namespace=$namespace,handle=$handle,digest=$digest WHERE singleton=1",
+                ("$boot", Id(now.BootId)), ("$namespace", Revision(currentNamespace)),
+                ("$handle", Revision(recreatedActual.TableHandle)), ("$digest", recreatedActual.StateDigest.Value));
+            return recreatedExpected;
+        });
+    }
+
     private static bool IsBoundOperation(SqliteConnection connection, SqliteTransaction transaction, Guid operationId) =>
         Scalar(connection, transaction, "SELECT count(*) FROM bound_operations WHERE operation=$id", ("$id", Id(operationId))) is long count && count == 1;
 

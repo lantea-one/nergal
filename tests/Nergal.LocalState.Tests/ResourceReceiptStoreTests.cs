@@ -149,6 +149,41 @@ public sealed class ResourceReceiptStoreTests
         Assert.Equal(activeBefore, File.ReadAllBytes(activeFixture.Database));
     }
 
+    /// <summary>Explicit new-boot reconciliation updates boot/namespace/handle receipts, marks prior active work interrupted, and rejects same-boot calls.</summary>
+    [Fact]
+    public void ReconcileBoot_UpdatesContextAndClearsPriorBootWorkOnlyAfterBootChange()
+    {
+        using var fixture = new Fixture(resourceIntent: true);
+        var baseline = Observe(handle: 7, verdict: FilterVerdict.Accept);
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+
+        Reject("reconcile.sameBoot", () => fixture.Store.ReconcileBoot(Ownership, Receipt(baseline), baseline, 42));
+
+        var plan = fixture.Plan();
+        fixture.Store.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        Assert.True(fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog).Accepted);
+
+        var newBoot = Guid.NewGuid();
+        fixture.Clock.BootId = newBoot;
+        fixture.Clock.Seconds = 5;
+        var recreated = Observe(handle: 18, verdict: FilterVerdict.Accept);
+        var newReceipt = new NftTableReceipt(newBoot, 99UL, recreated.Identity, recreated.TableHandle, recreated.StateDigest);
+
+        Reject("resource.baselineMismatch", () =>
+        {
+            var wrongPolicy = Observe(handle: 18, verdict: FilterVerdict.Drop);
+            fixture.Store.ReconcileBoot(Ownership, new(newBoot, 99UL, wrongPolicy.Identity, wrongPolicy.TableHandle, wrongPolicy.StateDigest), wrongPolicy, 99UL);
+        });
+
+        var reconciled = fixture.Store.ReconcileBoot(Ownership, newReceipt, recreated, 99UL);
+        Assert.Equal(newReceipt, reconciled);
+        Assert.Null(fixture.Store.ReadActive());
+        Assert.Equal(ApplyPhase.RecoveryRequired, fixture.Store.Read(plan.OperationId).Session.Phase);
+        Assert.Equal(1UL, fixture.Store.ReadEnrollment().Ownership.Revision);
+        Assert.Equal(newReceipt, fixture.Store.ReadExpectedResource());
+        Assert.True(fixture.Store.VerifyExpectedResource(recreated, 99UL).IsMatch);
+    }
+
     /// <summary>A crash between intent and receipt cannot enable legacy operations or permit a second initializer.</summary>
     [Fact]
     public void FreshResourceIntent_DeniesReplayAndLegacyStartBeforeBinding()
