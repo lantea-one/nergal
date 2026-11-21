@@ -28,5 +28,7 @@ The route never exposes local paths, raw policy text, journal fields or diagnost
 The HTTP response is not cached. Health checks make no agent query. The agent
 may be offline while the controller starts or an administrator signs in.
 
-Tests use a disposable agent fixture and mapped service identities. No installed
-agent, production observation or mutation endpoint is provided. [OIDC group authorization](federated-login.md) is optional.
+Tests use both a disposable agent fixture and `nergal-agent status-serve`
+([ADR 0020](decisions/0020-local-agent-status-listener.md)) with mapped service
+identities. No systemd unit or mutation endpoint is installed.
+[OIDC group authorization](federated-login.md) is optional.

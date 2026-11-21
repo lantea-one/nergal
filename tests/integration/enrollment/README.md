@@ -44,4 +44,7 @@ disposable state directories inside isolated user/network namespaces. They verif
 exclusive creation of `inet nergal_filter` with an empty `accept` input chain,
 binding against an independent listing, preservation of a preexisting conflicting
 table without adoption (`cli-collision`), and refusal of repeated enrollment
-(`journal.exists`) without mutating kernel or journal state.
+(`journal.exists`) without mutating kernel or journal state. In `cli`, the fixture
+also launches `nergal-agent status-serve`, queries live `matched` and `drift`
+classifications over the protected Unix socket, and checks clean `SIGTERM` socket
+cleanup.
