@@ -6,5 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Nergal.LocalState/Nergal.LocalState.csproj" />
+    <ProjectReference Include="../Nergal.LocalTransport/Nergal.LocalTransport.csproj" />
+    <InternalsVisibleTo Include="Nergal.LocalState.Tests" />
   </ItemGroup>
 </Project>

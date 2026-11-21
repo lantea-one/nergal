@@ -126,7 +126,11 @@ does not make database/native collection atomic against another kernel writer.
 
 The optional [controller status route](controller-status.md) requires direct HTTPS,
 a local administrator session and explicit socket and identity configuration.
-There is no installed daemon, production collector, remote transport or
+`nergal-agent status-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY ABSOLUTE_SOCKET_PATH ALLOWED_PEER_UID [SOCKET_GROUP_ID]`
+provides the local CLI status listener ([ADR 0020](decisions/0020-local-agent-status-listener.md)),
+holding `ResourceExecutionLock` across read-only `nft --json list table inet nergal_filter`
+observation and `ApplyJournal.ReadResourceStatus` and removing only its owned socket
+inode on `SIGINT`/`SIGTERM`. There is no installed daemon, remote transport or
 receipt-aware apply/confirmation/recovery command. Bound apply stays disabled. A
-production receipt-aware apply path additionally needs resource locking, complete
+production receipt-aware apply path additionally needs complete
 candidate validation, atomic receipt transitions and independent timed recovery.

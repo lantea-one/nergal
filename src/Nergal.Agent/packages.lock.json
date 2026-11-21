@@ -62,6 +62,13 @@
           "Nergal.Nftables": "[1.0.0, )"
         }
       },
+      "nergal.localtransport": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.Core": "[1.0.0, )",
+          "Nergal.Linux": "[1.0.0, )"
+        }
+      },
       "nergal.nftables": {
         "type": "Project",
         "dependencies": {

@@ -374,6 +374,13 @@
           "Nergal.Identity": "[1.0.0, )"
         }
       },
+      "nergal-agent": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.LocalState": "[1.0.0, )",
+          "Nergal.LocalTransport": "[1.0.0, )"
+        }
+      },
       "nergal.core": {
         "type": "Project"
       },
@@ -395,6 +402,13 @@
           "Nergal.Core": "[1.0.0, )",
           "Nergal.Linux": "[1.0.0, )",
           "Nergal.Nftables": "[1.0.0, )"
+        }
+      },
+      "nergal.localtransport": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.Core": "[1.0.0, )",
+          "Nergal.Linux": "[1.0.0, )"
         }
       },
       "nergal.nftables": {

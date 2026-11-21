@@ -16,16 +16,22 @@ policy when the web console or identity provider is unavailable.
    It performs no host operations and the web host does not reference it.
    Kernel JSON is an observation/command interface, not a lossless replacement
    for source metadata, comments and named definitions.
-4. `Nergal.Agent` currently provides only offline local operator enrollment
-   (`nergal-agent enroll ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY`) per
-   [ADR 0019](decisions/0019-local-agent-enrollment.md). It generates fresh
-   ownership and table identities locally, commits the empty `accept` baseline
-   intent and disables legacy unbound operations in `Nergal.LocalState` before
+4. `Nergal.Agent` provides offline local operator enrollment
+   (`nergal-agent enroll ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY`,
+   [ADR 0019](decisions/0019-local-agent-enrollment.md)) and the peer-authorized
+   read-only status listener (`nergal-agent status-serve`,
+   [ADR 0020](decisions/0020-local-agent-status-listener.md)). Both serialize kernel
+   observation/creation and journal decisions with `ResourceExecutionLock`. Enrollment
+   generates fresh ownership and table identities locally, commits the empty `accept`
+   baseline intent and disables legacy unbound operations in `Nergal.LocalState` before
    invoking `/usr/sbin/nft`, validates and submits one exclusive-create batch,
    parses the echoed table and chain handles (`ParseEnrollmentEcho`), and reconciles
-   an independent full native listing before binding the expected receipt. A future
-   restricted apply agent will validate owned-table operations and execute narrow
-   native nftables transactions. It will not accept arbitrary shell scripts.
+   an independent full native listing before binding the expected receipt. Status
+   serving opens the private journal, binds `UnixStatusServer` for one explicit
+   allowed peer UID, collects read-only `nft --json list table inet nergal_filter`
+   observations, and classifies status in one protected SQLite read transaction.
+   A future restricted apply agent will validate owned-table operations and execute
+   narrow native nftables transactions. It will not accept arbitrary shell scripts.
 5. `Nergal.LocalState` persists explicit enrollment assertions, exact artifacts and
    replayable transitions in a private SQLite journal. Transactions serialize
    confirmation/timeout and commit revisions with confirmation. It has no kernel

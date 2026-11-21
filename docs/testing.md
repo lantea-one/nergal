@@ -116,13 +116,17 @@ The protected binding fixture is under tests/integration/enrollment. Run
 protected synthetic intent before exclusive native creation, persists/reopens the
 expected receipt and rejects drift, copied-marker recreation, conflicting foreign
 resources and a second actual namespace without managed-side kernel writes. Bound
-legacy apply is denied. The `cli` and `cli-collision` scenarios additionally run
-`nergal-agent enroll` in disposable namespaces to check exclusive creation, handle-bearing
-echo binding against an independent listing, foreign-table preservation on collision,
-and repeat-invocation refusal (`journal.exists`) without modifying state. Unit tests
-exercise `ParseEnrollmentEcho`, `InitializeResourceIntent` (denying replay and legacy
-`Start` before binding), explicit quiescent schema migration and unchanged state after
-denied migration; no production/user journal is upgraded.
+legacy apply is denied. The `cli` and `cli-collision` scenarios additionally run `nergal-agent enroll` in
+disposable namespaces to check exclusive creation, handle-bearing echo binding
+against an independent listing, foreign-table preservation on collision, and
+repeat-invocation refusal (`journal.exists`) without modifying state; the `cli`
+scenario also starts `nergal-agent status-serve`, queries live `matched` and
+`drift` classifications over the Unix socket, and verifies clean `SIGTERM` socket
+removal. Unit tests exercise `ResourceExecutionLock` contention/inode hardening,
+`AgentStatusProvider`, CLI argument parsing, `ParseEnrollmentEcho`,
+`InitializeResourceIntent` (denying replay and legacy `Start` before binding),
+explicit quiescent schema migration and unchanged state after denied migration; no
+production/user journal is upgraded.
 Status tests cover one-snapshot revision/binding classification, unavailable status
 for active/recovery-blocked work, missing observations and changed unbound boot,
 drift without receipt replacement, and corruption rejection even without an observation.

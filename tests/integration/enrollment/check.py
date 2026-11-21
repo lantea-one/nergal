@@ -1,7 +1,9 @@
 """Protected expected receipts plus actual kernel observations, inside fresh disposable namespaces."""
 import json
 import os
+import select
 import socket
+import struct
 from pathlib import Path
 import subprocess
 import sys
@@ -66,6 +68,53 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
         receipt = probe('receipt')
         run(command, success=False, error='journal.exists')
         require(observation() == original and probe('receipt') == receipt, 'Repeat invocation mutated protected state')
+        if scenario == 'cli':
+            socket_path = Path(state) / 'status.sock'
+            database = Path(state) / 'journal.db'
+            protected = database.read_bytes()
+            listener = subprocess.Popen(
+                ['dotnet', str(agent), 'status-serve', state, str(socket_path), '0'],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            try:
+                ready, _, _ = select.select([listener.stdout], [], [], 10)
+                require(ready and listener.stdout.readline().strip() == 'Listening for authorized status queries.',
+                        'Agent status-serve did not announce readiness')
+
+                def query_status():
+                    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                        client.settimeout(5)
+                        client.connect(str(socket_path))
+                        request_payload = b'{"schemaVersion":1,"command":"status"}'
+                        client.sendall(struct.pack('>I', len(request_payload)) + request_payload)
+                        client.shutdown(socket.SHUT_WR)
+                        header = b''
+                        while len(header) < 4:
+                            chunk = client.recv(4 - len(header))
+                            require(bool(chunk), 'Incomplete reply length from status-serve')
+                            header += chunk
+                        length = struct.unpack('>I', header)[0]
+                        body = b''
+                        while len(body) < length:
+                            chunk = client.recv(length - len(body))
+                            require(bool(chunk), 'Truncated reply from status-serve')
+                            body += chunk
+                        require(client.recv(1) == b'', 'Unexpected trailing bytes from status-serve')
+                        return json.loads(body.decode('utf-8'))
+
+                require(query_status() == {'schemaVersion': 1, 'outcome': 'matched', 'revision': '1'},
+                        'status-serve did not classify enrolled baseline as matched')
+                nft('add chain inet nergal_filter input { policy drop; }\n')
+                require(query_status() == {'schemaVersion': 1, 'outcome': 'drift', 'revision': '1'},
+                        'status-serve did not detect kernel policy drift')
+                require(database.read_bytes() == protected, 'status-serve mutated protected state')
+                listener.terminate()
+                listener.communicate(timeout=10)
+                require(listener.returncode == 0, f'status-serve did not exit cleanly on SIGTERM: {listener.returncode}')
+                require(not socket_path.exists(), 'status-serve did not unlink its owned socket on SIGTERM')
+            finally:
+                if listener.poll() is None:
+                    listener.kill()
+                    listener.communicate(timeout=5)
         print('PASS: local CLI exclusive creation, receipt and retry contract: ' + scenario, flush=True)
     else:
         candidate = probe('prepare-family' if scenario == 'family' else 'prepare')  # Protected intent exists before any exclusive resource creation.
