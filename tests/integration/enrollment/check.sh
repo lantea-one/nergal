@@ -7,7 +7,7 @@ for tool in dotnet unshare nft ip python3; do
 done
 fixture="$PWD/tests/integration/enrollment/bin/Release/net10.0/Nergal.Enrollment.Fixture.dll"
 [[ -f "$fixture" ]] || { printf '%s\n' 'Build the Release solution first.' >&2; exit 1; }
-for scenario in collision bound family cli cli-collision; do
+for scenario in collision bound family schema1 cli cli-collision; do
     unshare --user --map-root-user --net python3 tests/integration/enrollment/check.py \
         "$fixture" "$scenario" "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"
 done

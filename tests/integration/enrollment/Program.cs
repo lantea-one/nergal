@@ -23,11 +23,22 @@ try
         Console.Write(NftFilterCompiler.Compile(new(1, FilterVerdict.Accept, []), new NftTableIdentity(agent, resource)).Candidate);
         return 0;
     }
-    if (args[0] is "prepare" or "prepare-family")
+    if (args[0] is "prepare" or "prepare-family" or "prepare-schema1")
     {
-        FilterRule[] rules = args[0] == "prepare" ? [] :
-            [new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Drop), new(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Accept)];
-        var baseline = NftFilterCompiler.Compile(new(1, FilterVerdict.Accept, rules), identity).Candidate!;
+        FilterRule[] rules = args[0] switch
+        {
+            "prepare" => [],
+            "prepare-family" => [new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Drop), new(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Accept)],
+            _ =>
+            [
+                new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, new("127.0.0.1/32"), new("127.0.0.0/8"), 18091),
+                new(IpFamily.IPv4, FilterProtocol.Icmp, FilterVerdict.Accept, new("127.0.0.0/8")),
+                new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept, null, new("::1/128"), 18092),
+                new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept),
+            ],
+        };
+        var defaultVerdict = args[0] == "prepare-schema1" ? FilterVerdict.Drop : FilterVerdict.Accept;
+        var baseline = NftFilterCompiler.Compile(new(1, defaultVerdict, rules), identity).Candidate!;
         ApplyJournal.Initialize(args[1], new(agent, owner, 1), baseline);
         Console.Write(baseline);
         return 0;

@@ -144,6 +144,71 @@ public sealed class NftResourceReceiptTests
         Assert.NotEqual(original.StateDigest, Read().StateDigest);
     }
 
+    /// <summary>Complete schema-1 rules round-trip through compilation, native JSON observation, and handle/order-bound digests.</summary>
+    [Fact]
+    public void Schema1Rules_ReconstructPolicyAndBindDigest()
+    {
+        var identity = new NftTableIdentity(Owner, Resource);
+        var policy = new FilterPolicy(1, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Accept, new("0.0.0.0/0")),
+            new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept, new("192.0.2.1/32"), new("198.51.100.0/24"), 443),
+            new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 53),
+            new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept),
+            new(IpFamily.IPv4, FilterProtocol.Icmp, FilterVerdict.Accept, new("192.0.2.0/24")),
+            new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Accept, new("2001:db8::1/128"), new("::/0"), 5353),
+            new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept),
+        ]);
+        var compiled = NftFilterCompiler.Compile(policy, identity);
+        Assert.True(compiled.IsSuccess);
+
+        var node = JsonNode.Parse(Json)!;
+        Item(node, "chain")["policy"] = "drop";
+        var items = node["nftables"]!.AsArray();
+        string[] rulesJson =
+        [
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":{"prefix":{"addr":"0.0.0.0","len":0}}}},{"accept":null}]}}""",
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":11,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":"192.0.2.1"}},{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"daddr"}},"right":{"prefix":{"addr":"198.51.100.0","len":24}}}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":443}},{"accept":null}]}}""",
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":12,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"payload":{"protocol":"udp","field":"dport"}},"right":53}},{"drop":null}]}}""",
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":13,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":"tcp"}},{"accept":null}]}}""",
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":14,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":{"prefix":{"addr":"192.0.2.0","len":24}}}},{"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":"icmp"}},{"accept":null}]}}""",
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":15,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip6","field":"saddr"}},"right":"2001:db8::1"}},{"match":{"op":"==","left":{"payload":{"protocol":"ip6","field":"daddr"}},"right":{"prefix":{"addr":"::","len":0}}}},{"match":{"op":"==","left":{"payload":{"protocol":"udp","field":"dport"}},"right":5353}},{"accept":null}]}}""",
+            """{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":16,"expr":[{"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":"ipv6-icmp"}},{"accept":null}]}}""",
+        ];
+        foreach (var entry in rulesJson)
+        {
+            items.Add(JsonNode.Parse(entry)!);
+        }
+
+        var parsed = NftTableObservation.Parse(node.ToJsonString());
+        Assert.True(parsed.IsSuccess, parsed.ErrorCode);
+        var observation = parsed.Observation!;
+        Assert.Equal(compiled.Candidate, NftFilterCompiler.Compile(observation.Policy, observation.Identity).Candidate);
+
+        var originalDigest = observation.StateDigest;
+        items[4]!["rule"]!["expr"]![2]!["match"]!["right"] = 8443;
+        var changed = NftTableObservation.Parse(node.ToJsonString()).Observation!;
+        Assert.NotEqual(originalDigest, changed.StateDigest);
+    }
+
+    /// <summary>Non-canonical CIDR prefixes, redundant implicit matches, bad ports, and out-of-order match expressions fail closed.</summary>
+    [Theory]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":{"prefix":{"addr":"192.0.2.1","len":24}}}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":{"prefix":{"addr":"192.0.2.1","len":32}}}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":"192.0.2.0/24"}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":"192.0.2.1"}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":"tcp"}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":443}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":"icmp"}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"daddr"}},"right":"192.0.2.1"}},{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":"192.0.2.2"}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":0}},{"accept":null}]}}""")]
+    [InlineData("""{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":65536}},{"accept":null}]}}""")]
+    public void Schema1Rules_RejectNonCanonicalAndAmbiguousExpressions(string ruleJson)
+    {
+        var node = JsonNode.Parse(Json)!;
+        node["nftables"]!.AsArray().Add(JsonNode.Parse(ruleJson)!);
+        Reject(node.ToJsonString(), "observation.rule");
+    }
+
     /// <summary>Malformed scope, shared handles, additional effects and unfamiliar matching expressions reject the entire snapshot.</summary>
     [Theory]
     [InlineData("10", "9", "observation.handle")]

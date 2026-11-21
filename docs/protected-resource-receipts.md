@@ -14,9 +14,9 @@ trusted bootstrap assertion after exclusive resource creation. It requires:
 - Exact enrolled agent/owner/revision and no active or recovery-blocked operation.
 - Current boot equal to the protected enrolled boot; expected identity belongs to
   the enrolled owner, and expected receipt matches the full actual observation/context.
-- A canonical empty or family-rule candidate reconstructed from the observation/identity
-  exactly equal to the protected baseline artifact. Unsupported/rule-bearing
-  observations cannot enter this limited binding API.
+- A canonical schema-1 candidate reconstructed from the observation/identity
+  exactly equal to the protected baseline artifact. Unmodeled/unsupported
+  observations cannot enter this binding API.
 - No different existing binding. Identical retries return the same receipt; rejected
   state is never promoted into a replacement expected receipt.
 

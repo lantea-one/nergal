@@ -117,7 +117,8 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
                     listener.communicate(timeout=5)
         print('PASS: local CLI exclusive creation, receipt and retry contract: ' + scenario, flush=True)
     else:
-        candidate = probe('prepare-family' if scenario == 'family' else 'prepare')  # Protected intent exists before any exclusive resource creation.
+        mode = 'prepare-family' if scenario == 'family' else ('prepare-schema1' if scenario == 'schema1' else 'prepare')
+        candidate = probe(mode)  # Protected intent exists before any exclusive resource creation.
         if scenario == 'collision':
             nft(probe('foreign'))
             before = run(['nft', '--stateless', 'list', 'ruleset'])
@@ -127,6 +128,36 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
             require(probe('receipt').strip() == 'UNBOUND', 'Foreign table was adopted')
             require(run(['nft', '--stateless', 'list', 'ruleset']) == before, 'Conflicting foreign resource changed')
             print('PASS: conflicting native resource is preserved and cannot be bound', flush=True)
+        elif scenario == 'schema1':
+            run(['ip', 'link', 'set', 'lo', 'up'])
+            def udp_allowed(family, address, port):
+                with socket.socket(family, socket.SOCK_DGRAM) as receiver, socket.socket(family, socket.SOCK_DGRAM) as sender:
+                    receiver.bind((address, port))
+                    receiver.settimeout(0.4)
+                    sender.sendto(b'schema1', (address, port))
+                    try:
+                        return receiver.recv(32) == b'schema1'
+                    except TimeoutError:
+                        return False
+
+            require(udp_allowed(socket.AF_INET, '127.0.0.1', 18099) and udp_allowed(socket.AF_INET6, '::1', 18099),
+                    'Loopback UDP baseline check failed')
+            nft(candidate, check=True)
+            nft(candidate)
+            probe('bind', observation())
+            require(json.loads(probe('verify', observation()))['IsMatch'], 'Full schema-1 baseline failed to bind')
+            receipt = probe('receipt')
+            require(udp_allowed(socket.AF_INET, '127.0.0.1', 18091), 'Permitted schema-1 UDP port failed')
+            require(not udp_allowed(socket.AF_INET, '127.0.0.1', 18099), 'Unmatched IPv4 UDP was not dropped')
+            require(not udp_allowed(socket.AF_INET6, '::1', 18099), 'Unmatched IPv6 UDP was not dropped')
+            nft('add rule inet nergal_filter input meta nfproto ipv4 udp dport 18099 accept\n')
+            require(udp_allowed(socket.AF_INET, '127.0.0.1', 18099), 'Added schema-1 UDP rule did not take effect')
+            require('state.drift' in json.loads(probe('verify', observation(), False))['ErrorCodes'], 'Schema-1 rule drift missed')
+            probe('bind', observation(), False, 'resource.baselineMismatch')
+            nft('add rule inet nergal_filter input meta nfproto ipv4 counter accept\n')
+            probe('verify', observation(), False, 'observation.rule')
+            require(probe('receipt') == receipt, 'Schema-1 drift or unsupported counter modified receipt')
+            print('PASS: full schema-1 receipt binds CIDR/protocol/port rules, matches packets, and detects drift', flush=True)
         elif scenario == 'family':
             run(['ip', 'link', 'set', 'lo', 'up'])
             def packet(family, address):

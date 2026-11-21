@@ -27,9 +27,9 @@ ip/ip6/inet/bridge sentinels remain unchanged in both scenarios.
 
 This is explicit trusted fixture bootstrap and read-only classification, not a
 production enrollment authority or receipt-aware apply/recovery engine. The receipt
-is never automatically replaced to match rejected actual state. The observer still
-supports only the empty-chain slice. Concurrent privileged writers, protected
-exclusive-creation proof, reboot recovery and production transport remain unimplemented.
+is never automatically replaced to match rejected actual state. The observer supports
+canonical schema-1 input-filter rules; unmodeled expressions are rejected.
+Concurrent privileged writers, reboot recovery and production remote transport remain unimplemented.
 Migration is tested separately using actual private schema-1 databases and retained
 literal legacy event identifiers; no production/user journal is upgraded by this fixture.
 
@@ -38,6 +38,11 @@ baseline. It sends real loopback UDP packets before and after applying the
 synthetic candidate, inserts a first IPv4-accept rule and verifies both the
 changed packet outcome and protected receipt drift. A counter expression makes
 the observation unsupported. The original receipt and foreign tables survive.
+
+The `schema1` scenario compiles, binds, and reconciles a complete schema-1 baseline
+containing canonical CIDR source/destination prefixes, TCP/UDP destination ports, and
+ICMP/ICMPv6 rules, checking actual loopback UDP acceptance/drop outcomes and drift
+detection after adding a new port rule.
 
 The `cli` and `cli-collision` scenarios execute `nergal-agent enroll` against
 disposable state directories inside isolated user/network namespaces. They verify

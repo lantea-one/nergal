@@ -37,7 +37,7 @@ Bind this development build to loopback; it is not a secured administration endp
   confirmed-apply state model. No timers, persistence, network or host operations.
 - `Nergal.Nftables`: schema validation and deterministic create-only input-filter
   candidates for the reserved `inet nergal_filter` table, typed identity markers and
-  limited native observation/receipt comparison. No execution or host access.
+  native observation/receipt comparison across the complete schema-1 input-filter slice. No execution or host access.
 - `Nergal.LocalState`: Linux SQLite journal with explicit bootstrap assertions,
   serialized transitions, exact artifact/revision persistence, protected resource
   receipts, explicit offline schema upgrade and effective-UID/type/mode/link checks. No kernel operations.
