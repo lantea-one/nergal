@@ -8,7 +8,16 @@ done
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
-    --configuration Release --no-build --no-restore > "$fixture/candidate.nft"
+    --configuration Release --no-build --no-restore -- schema1 > "$fixture/candidate.nft"
 unshare --user --map-root-user --net \
     python3 tests/integration/nftables/check.py "$fixture/candidate.nft" \
     "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- router > "$fixture/router.nft"
+unshare --user --map-root-user --net \
+    python3 tests/integration/nftables/router_check.py "$fixture/router.nft" \
+    "$fixture/router-echo.json" "$fixture/router-list.json" \
+    "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- verify-router \
+    "$fixture/router-echo.json" "$fixture/router-list.json"

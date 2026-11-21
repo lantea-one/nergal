@@ -1,7 +1,7 @@
 name: Build and test nergal
 on:
   push:
-    branches: [main, 'codex/**']
+    branches: [main, 'codex/**', 'renovate/**']
   workflow_dispatch:
 permissions:
   contents: read

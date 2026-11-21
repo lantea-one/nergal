@@ -12,7 +12,8 @@ policy when the web console or identity provider is unavailable.
    capability contracts. It has no knowledge of a particular site's addresses,
    authentication directory or deployment system.
 3. The unprivileged `Nergal.Nftables` compiler produces deterministic, create-only
-   candidates from schema 1 input-filter policies (see [the contract](policy.md)).
+   candidates from schema 1 input-filter and schema 2 stateful forwarding/output policies
+   (see [the contract](policy.md) and [ADR 0024](decisions/0024-stateful-forwarding-and-icmpv6-policy.md)).
    It performs no host operations and the web host does not reference it.
    Kernel JSON is an observation/command interface, not a lossless replacement
    for source metadata, comments and named definitions.

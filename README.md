@@ -16,9 +16,10 @@ operator enrollment (`enroll`, [ADR 0019](docs/decisions/0019-local-agent-enroll
 a peer-authorized read-only status listener (`status-serve`, [ADR 0020](docs/decisions/0020-local-agent-status-listener.md)),
 and receipt-aware local confirmed-apply, watchdog rollback, and boot reconciliation commands
 (`prepare`, `watch`, `apply`, `confirm`, `reconcile`, [ADR 0023](docs/decisions/0023-explicit-boot-reconciliation.md))
-for the schema-1 `inet nergal_filter` input slice; remote agent transport, extended
-firewall semantics (NAT, stateful/forwarding, rate-limiting, bridge), web policy authoring,
-and systemd packaging remain subsequent milestones.
+alongside schema-1 input filtering and schema-2 stateful forwarding, output chains,
+interface matchers, and IPv6 Neighbor Discovery in `inet nergal_filter` ([ADR 0024](docs/decisions/0024-stateful-forwarding-and-icmpv6-policy.md));
+per-source rate limiting, NAT, bridge filtering, remote agent transport, web policy
+authoring, and systemd packaging remain subsequent phases.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 

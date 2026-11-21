@@ -1,35 +1,46 @@
-# Input-filter policy contract (schema 1)
+# Filter policy contract (schema 1 and schema 2)
 
 The implemented slice consists of immutable POCOs in `Nergal.Core.Policy` and
 `NftFilterCompiler.Compile` in the separate `Nergal.Nftables` library. Neither
 performs host operations. The web host does not reference the compiler.
 
-A policy specifies schema version 1, an explicit accept/drop input default and
-ordered rules. Each rule chooses one IP family, a protocol, a terminal accept/drop
-verdict, optional source/destination networks and an optional destination port.
-Rules are evaluated in supplied order; they are never sorted or deduplicated.
-All unmatched packets receive the explicit default. There are no implicit permits.
+- **Schema version 1**: single `input` chain, stateless matching (`Family`, `Protocol`,
+  `Source`, `Destination`, `DestinationPort`) and `Accept`/`Drop` verdicts.
+- **Schema version 2** ([ADR 0024](decisions/0024-stateful-forwarding-and-icmpv6-policy.md)):
+  three base chains (`input`, `forward`, `output`) with explicit per-chain defaults
+  (`InputDefaultVerdict`, `ForwardDefaultVerdict`, `OutputDefaultVerdict`), optional
+  validated interface names (`InputInterface`, `OutputInterface`), conntrack state masks
+  (`ConnectionStateFlags`: `New`, `Established`, `Related`, `Invalid`), and canonical
+  ICMP/ICMPv6 type matchers (`FilterIcmpTypes`, including IPv6 Neighbor Discovery).
+  Schema-2 rules emit grouped by `(input, forward, output)` chain while preserving
+  relative rule order within each chain. Schema 1 policies reject schema-2 fields.
+All unmatched packets receive the chain's explicit default. There are no implicit permits.
 
 ```csharp
-var policy = new FilterPolicy(1, FilterVerdict.Drop,
+var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
 [
+    new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept,
+        Chain: FilterChainKind.Input, InputInterface: "eth0",
+        IcmpType: FilterIcmpTypes.NdNeighborSolicit),
     new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
-        Source: new NetworkPrefix("192.0.2.0/24"), DestinationPort: 443),
-    new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept,
-        Source: new NetworkPrefix("2001:db8::/32"), DestinationPort: 443),
+        Source: new NetworkPrefix("192.0.2.0/24"), DestinationPort: 443,
+        Chain: FilterChainKind.Forward, InputInterface: "eth0", OutputInterface: "eth1",
+        ConnectionStates: ConnectionStateFlags.New | ConnectionStateFlags.Established),
 ]);
 var result = NftFilterCompiler.Compile(policy);
 // Inspect result.Diagnostics. Candidate is null on any validation error.
 // Candidate text is not permission to execute it on a host.
 ```
 
-This example is synthetic and incomplete for a real host, especially IPv6 control
-traffic. Supported protocols are any, TCP, UDP, ICMP (IPv4 only) and ICMPv6 (IPv6
-only). Ports are 1–65535 and require TCP or UDP. Networks use numeric CIDR syntax,
+Supported protocols are any, TCP, UDP, ICMP (IPv4 only) and ICMPv6 (IPv6 only).
+Ports are 1–65535 and require TCP or UDP. Networks use numeric CIDR syntax,
 zero host bits and the rule's family. Scoped and IPv4-mapped IPv6 are rejected.
-`NetworkPrefix` throws `ArgumentException` for invalid text; policy collection and
-compiler null arguments throw `ArgumentNullException`. Valid networks become
-canonical strings; no caller-provided native fragments enter output.
+Interface names allow 1–15 ASCII characters (`[A-Za-z0-9._-]`, leading alphanumeric)
+and must match chain direction (`InputInterface` on `Input`/`Forward`,
+`OutputInterface` on `Forward`/`Output`). `NetworkPrefix` throws `ArgumentException`
+for invalid text; policy collection and compiler null arguments throw
+`ArgumentNullException`. Valid values become canonical strings; no caller-provided
+native fragments enter output.
 
 Policy construction snapshots the rules, including invalid/null entries. Compiler
 validation returns all applicable diagnostics in schema/default/rule/field order.
@@ -38,7 +49,7 @@ contain stable identifiers rather than caller-supplied policy data.
 
 | Code | Meaning |
 | --- | --- |
-| `schema.unsupported` | Schema version is not 1. |
+| `schema.unsupported` | Schema version is not 1 or 2. |
 | `verdict.unknown` | Default or rule verdict is undefined. |
 | `rule.required` | A rule entry is null. |
 | `family.unknown` | Rule IP family is undefined. |
@@ -47,6 +58,16 @@ contain stable identifiers rather than caller-supplied policy data.
 | `protocol.familyMismatch` | ICMP protocol belongs to another IP family. |
 | `port.outOfRange` | Destination port is outside 1–65535. |
 | `port.requiresTransport` | A destination port was supplied without TCP or UDP. |
+| `chain.requiresSchema2` | Schema 1 policy specified a non-input chain or non-drop forward/output default. |
+| `chain.unknown` | Rule chain kind is undefined. |
+| `interface.requiresSchema2` | Schema 1 rule specified an ingress or egress interface name. |
+| `interface.invalid` | Interface name failed `IFNAMSIZ - 1` / ASCII character safety checks. |
+| `interface.chainMismatch` | `InputInterface` used on `Output` or `OutputInterface` used on `Input`. |
+| `connectionState.requiresSchema2` | Schema 1 rule specified connection-tracking state flags. |
+| `connectionState.unknown` | Connection state mask contains undefined bits. |
+| `icmpType.requiresSchema2` | Schema 1 rule specified an ICMP/ICMPv6 type matcher. |
+| `icmpType.requiresIcmp` | ICMP type specified without ICMP or ICMPv6 protocol. |
+| `icmpType.unsupported` | ICMP type is not in the family's canonical allowlist. |
 
 Successful results contain a complete deterministic native batch, its SHA-256
 `Digest` over exact UTF-8 bytes, and no diagnostics. Failed results contain no digest.

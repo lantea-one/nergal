@@ -60,7 +60,7 @@ public sealed class NftFilterCompilerTests
     [Fact]
     public void Compile_InvalidSchemaAndRules_ReturnsStableDiagnosticsWithoutCandidate()
     {
-        var policy = new FilterPolicy(2, (FilterVerdict)99,
+        var policy = new FilterPolicy(99, (FilterVerdict)99,
         [
             null,
             new((IpFamily)99, (FilterProtocol)99, (FilterVerdict)99),
@@ -73,7 +73,7 @@ public sealed class NftFilterCompilerTests
         Assert.Equal(
         [
             new("schema.unsupported", "schemaVersion"),
-            new("verdict.unknown", "defaultVerdict"),
+            new("verdict.unknown", "inputDefaultVerdict"),
             new("rule.required", "rules[0]"),
             new("family.unknown", "rules[1].family"),
             new("protocol.unknown", "rules[1].protocol"),
@@ -160,6 +160,92 @@ public sealed class NftFilterCompilerTests
         Assert.Equal("create table inet nergal_filter\n" +
             "add chain inet nergal_filter input { type filter hook input priority 0; policy " + native + "; }\n",
             result.Candidate);
+    }
+
+    /// <summary>Schema 2 compiles input, forward, and output chains in canonical order with stateful, interface, and ICMPv6 matchers.</summary>
+    [Fact]
+    public void Compile_Schema2MultiChainStatefulAndIcmpV6_EmitsCanonicalBatch()
+    {
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Accept,
+                Chain: FilterChainKind.Forward, InputInterface: "veth-in", OutputInterface: "veth-out",
+                ConnectionStates: ConnectionStateFlags.New | ConnectionStateFlags.Established | ConnectionStateFlags.Related),
+            new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept,
+                Chain: FilterChainKind.Input, InputInterface: "eth0", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+            new(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Drop,
+                Chain: FilterChainKind.Output, OutputInterface: "wan0",
+                ConnectionStates: ConnectionStateFlags.Invalid),
+        ]);
+
+        var result = NftFilterCompiler.Compile(policy);
+        Assert.True(result.IsSuccess);
+        var expected = """
+            create table inet nergal_filter
+            add chain inet nergal_filter input { type filter hook input priority 0; policy drop; }
+            add chain inet nergal_filter forward { type filter hook forward priority 0; policy drop; }
+            add chain inet nergal_filter output { type filter hook output priority 0; policy accept; }
+            add rule inet nergal_filter input meta nfproto ipv6 iifname "eth0" icmpv6 type nd-neighbor-solicit accept
+            add rule inet nergal_filter forward meta nfproto ipv4 iifname "veth-in" oifname "veth-out" ct state established,related,new accept
+            add rule inet nergal_filter output meta nfproto ipv6 oifname "wan0" ct state invalid drop
+            """ + "\n";
+        Assert.Equal(expected, result.Candidate);
+    }
+
+    /// <summary>Schema 1 policies reject schema-2-only chains, defaults, interfaces, connection states, and ICMP types.</summary>
+    [Fact]
+    public void Compile_Schema1_RejectsSchema2OnlyFeatures()
+    {
+        var policy = new FilterPolicy(1, FilterVerdict.Drop, FilterVerdict.Accept, FilterVerdict.Accept,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
+                Chain: FilterChainKind.Forward, InputInterface: "eth0", OutputInterface: "eth1",
+                ConnectionStates: ConnectionStateFlags.New, IcmpType: FilterIcmpTypes.EchoRequest),
+        ]);
+
+        var result = NftFilterCompiler.Compile(policy);
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Candidate);
+        Assert.Equal(
+        [
+            new("chain.requiresSchema2", "forwardDefaultVerdict"),
+            new("chain.requiresSchema2", "outputDefaultVerdict"),
+            new("chain.requiresSchema2", "rules[0].chain"),
+            new("interface.requiresSchema2", "rules[0].inputInterface"),
+            new("interface.requiresSchema2", "rules[0].outputInterface"),
+            new("connectionState.requiresSchema2", "rules[0].connectionStates"),
+            new("icmpType.requiresSchema2", "rules[0].icmpType"),
+        ], result.Diagnostics);
+    }
+
+    /// <summary>Invalid interface names, wrong chain interface directions, unknown conntrack bits, and bad ICMP types reject fail-closed.</summary>
+    [Fact]
+    public void Compile_Schema2InvalidRules_ReturnsStableDiagnostics()
+    {
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Accept,
+                Chain: FilterChainKind.Output, InputInterface: "eth0", OutputInterface: "bad/if0"),
+            new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
+                Chain: FilterChainKind.Input, OutputInterface: "eth1",
+                ConnectionStates: (ConnectionStateFlags)99, IcmpType: FilterIcmpTypes.EchoRequest),
+            new(IpFamily.IPv4, FilterProtocol.Icmp, FilterVerdict.Accept,
+                Chain: FilterChainKind.Input, InputInterface: "0123456789abcdef", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+        ]);
+
+        var result = NftFilterCompiler.Compile(policy);
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Candidate);
+        Assert.Equal(
+        [
+            new("interface.chainMismatch", "rules[0].inputInterface"),
+            new("interface.invalid", "rules[0].outputInterface"),
+            new("interface.chainMismatch", "rules[1].outputInterface"),
+            new("connectionState.unknown", "rules[1].connectionStates"),
+            new("icmpType.requiresIcmp", "rules[1].icmpType"),
+            new("interface.invalid", "rules[2].inputInterface"),
+            new("icmpType.unsupported", "rules[2].icmpType"),
+        ], result.Diagnostics);
     }
 
     private static CompilationResult Compile(FilterRule rule)

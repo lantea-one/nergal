@@ -27,13 +27,17 @@ loopback device. Tests verify:
 - Earlier TCP drops override later permits; unmatched UDP receives default drop.
 - Wrong source/destination traffic is denied in both families.
 - ICMP and ICMPv6 echo packets reach the local namespace address.
+- A 3-namespace routed topology (`client` <-> `router` <-> `server`) verifies schema-2
+  `input`/`forward`/`output` drop defaults, interface matching (`iifname`/`oifname`),
+  IPv6 Neighbor Discovery (`nd-neighbor-solicit`, `nd-neighbor-advert`) over
+  drop-default chains, stateful return forwarding (`ct state established,related`),
+  and deterministic `NftTableObservation` round-tripping from live kernel JSON.
 
 Denied packet assertions use bounded socket receive/connect timeouts. Listener
 sockets exist before sending, so service startup timing does not determine results.
 No production rules or topology are read or changed, and no host ruleset is flushed.
 
-This verifies a local input-hook slice, not routing across interfaces, IPv6 neighbor
-discovery/control completeness, NAT, fragmented traffic, rate limits, performance,
-confirmed apply or rollback. The compiler is not connected to an agent or the web
-host. A passing test does not make this a production firewall policy or apply path.
+This suite covers schema-1 input filtering and schema-2 stateful forwarding/ICMPv6
+rules; per-source rate limits, NAT, bridge filtering, multi-table transactions,
+and web-driven confirmed apply belong to Phases 7–13.
 This fixture is opt-in and not run by the default CI job.
