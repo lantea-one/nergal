@@ -93,6 +93,7 @@ public sealed record PerSourceRateLimit(
 /// <param name="ConnectionStates">Optional conntrack state mask (`None` for stateless match; schema 2 only).</param>
 /// <param name="IcmpType">Optional canonical ICMP/ICMPv6 type name (schema 2 only).</param>
 /// <param name="RateLimit">Optional per-source token-bucket rate limit backed by a dynamic set (schema 2 only).</param>
+/// <param name="MatchOriginalDestinationDnat">Matches packets whose conntrack entry indicates destination NAT (<c>ct status dnat</c>; schema 2 only).</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -105,7 +106,8 @@ public sealed record FilterRule(
     string? OutputInterface = null,
     ConnectionStateFlags ConnectionStates = ConnectionStateFlags.None,
     string? IcmpType = null,
-    PerSourceRateLimit? RateLimit = null);
+    PerSourceRateLimit? RateLimit = null,
+    bool MatchOriginalDestinationDnat = false);
 
 /// <summary>An immutable, versioned snapshot of ordered host and forwarding filter rules.</summary>
 public sealed class FilterPolicy
@@ -171,6 +173,11 @@ public sealed class FilterPolicy
         if (Rules.Any(rule => rule?.RateLimit is not null))
         {
             features.Add(FirewallFeature.PerSourceRateLimiting);
+        }
+
+        if (Rules.Any(rule => rule?.MatchOriginalDestinationDnat == true))
+        {
+            features.Add(FirewallFeature.OriginalConnectionTuple);
         }
 
         return features;

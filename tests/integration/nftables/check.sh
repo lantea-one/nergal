@@ -21,3 +21,17 @@ unshare --user --map-root-user --net \
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- verify-router \
     "$fixture/router-echo.json" "$fixture/router-list.json" "$fixture/router-terse.json"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- nat-filter > "$fixture/nat-filter.nft"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- nat > "$fixture/nat.nft"
+unshare --user --map-root-user --net \
+    python3 tests/integration/nftables/nat_check.py \
+    "$fixture/nat-filter.nft" "$fixture/nat.nft" \
+    "$fixture/nat-filter-echo.json" "$fixture/nat-filter-list.json" \
+    "$fixture/nat-echo.json" "$fixture/nat-list.json" \
+    "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- verify-nat \
+    "$fixture/nat-filter-echo.json" "$fixture/nat-filter-list.json" \
+    "$fixture/nat-echo.json" "$fixture/nat-list.json"

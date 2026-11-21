@@ -87,7 +87,89 @@ if (mode == "verify-router" && args.Length is 3 or 4)
     return 0;
 }
 
+if (mode == "nat-filter")
+{
+    var result = NftFilterCompiler.Compile(BuildNatFilterPolicy(), routerIdentity);
+    if (!result.IsSuccess)
+    {
+        throw new InvalidOperationException("NAT filter policy failed: " + string.Join(", ", result.Diagnostics));
+    }
+
+    Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "nat")
+{
+    var result = NftNatCompiler.Compile(BuildNatPolicy(), routerIdentity);
+    if (!result.IsSuccess)
+    {
+        throw new InvalidOperationException("NAT policy failed: " + string.Join(", ", result.Diagnostics));
+    }
+
+    Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "verify-nat" && args.Length == 5)
+{
+    var expectedFilter = NftFilterCompiler.Compile(BuildNatFilterPolicy(), routerIdentity).Candidate!;
+    var expectedNat = NftNatCompiler.Compile(BuildNatPolicy(), routerIdentity).Candidate!;
+
+    var filterEcho = NftTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
+    var filterList = NftTableObservation.Parse(File.ReadAllText(args[2]));
+    if (!filterEcho.IsSuccess || !filterList.IsSuccess ||
+        filterEcho.Observation!.StateDigest != filterList.Observation!.StateDigest ||
+        NftFilterCompiler.Compile(filterList.Observation.Policy, filterList.Observation.Identity).Candidate != expectedFilter)
+    {
+        throw new InvalidOperationException("NAT filter observation verification failed.");
+    }
+
+    var natEcho = NftNatTableObservation.ParseReplacementEcho(File.ReadAllText(args[3]));
+    var natList = NftNatTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!natEcho.IsSuccess || !natList.IsSuccess ||
+        natEcho.Observation!.StateDigest != natList.Observation!.StateDigest ||
+        NftNatCompiler.Compile(natList.Observation.Policy, natList.Observation.Identity).Candidate != expectedNat)
+    {
+        throw new InvalidOperationException("NAT table observation verification failed.");
+    }
+
+    return 0;
+}
+
 throw new ArgumentException("Unsupported fixture mode.");
+
+static FilterPolicy BuildNatFilterPolicy()
+{
+    var rules = new List<FilterRule?>
+    {
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Input, InputInterface: "r_cli", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Input, InputInterface: "r_cli", IcmpType: FilterIcmpTypes.NdNeighborAdvert),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Input, InputInterface: "r_srv", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Input, InputInterface: "r_srv", IcmpType: FilterIcmpTypes.NdNeighborAdvert),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Output, OutputInterface: "r_cli", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Output, OutputInterface: "r_cli", IcmpType: FilterIcmpTypes.NdNeighborAdvert),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Output, OutputInterface: "r_srv", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+        new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Output, OutputInterface: "r_srv", IcmpType: FilterIcmpTypes.NdNeighborAdvert),
+        new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Accept, Chain: FilterChainKind.Forward, InputInterface: "r_srv", OutputInterface: "r_cli", ConnectionStates: ConnectionStateFlags.Established | ConnectionStateFlags.Related),
+        new(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Accept, Chain: FilterChainKind.Forward, InputInterface: "r_srv", OutputInterface: "r_cli", ConnectionStates: ConnectionStateFlags.Established | ConnectionStateFlags.Related),
+        // Permit port 18447 forward ONLY for DNAT-translated connections (`ct status dnat`).
+        new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept, Destination: new("198.51.100.2/32"), DestinationPort: 18447, Chain: FilterChainKind.Forward, InputInterface: "r_cli", OutputInterface: "r_srv", ConnectionStates: ConnectionStateFlags.New | ConnectionStateFlags.Established, MatchOriginalDestinationDnat: true),
+        new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept, Destination: new("2001:db8:2::2/128"), DestinationPort: 18447, Chain: FilterChainKind.Forward, InputInterface: "r_cli", OutputInterface: "r_srv", ConnectionStates: ConnectionStateFlags.New | ConnectionStateFlags.Established, MatchOriginalDestinationDnat: true),
+    };
+
+    return new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, rules);
+}
+
+static NatPolicy BuildNatPolicy() => new(1,
+    [
+        new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.1/32"), "198.51.100.2", 18446, 18447, "r_cli"),
+        new(IpFamily.IPv6, FilterProtocol.Tcp, new("2001:db8:1::1/128"), "2001:db8:2::2", 18446, 18447, "r_cli"),
+    ],
+    [
+        new(IpFamily.IPv4, new("192.0.2.0/24"), "198.51.100.1", new("198.51.100.0/24"), "r_srv"),
+        new(IpFamily.IPv6, new("2001:db8:1::/64"), "2001:db8:2::1", new("2001:db8:2::/64"), "r_srv"),
+    ]);
 
 static FilterPolicy BuildRouterPolicy()
 {

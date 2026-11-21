@@ -160,6 +160,11 @@ public static class NftFilterCompiler
                 {
                     errors.Add(new("rateLimit.requiresSchema2", path + ".rateLimit"));
                 }
+
+                if (rule.MatchOriginalDestinationDnat)
+                {
+                    errors.Add(new("ctStatus.requiresSchema2", path + ".matchOriginalDestinationDnat"));
+                }
             }
             else
             {
@@ -325,6 +330,11 @@ public static class NftFilterCompiler
         if (rule.Destination is not null)
         {
             text.Append(family).Append(" daddr ").Append(rule.Destination.Value).Append(' ');
+        }
+
+        if (rule.MatchOriginalDestinationDnat)
+        {
+            text.Append("ct status dnat ");
         }
 
         if (rule.ConnectionStates != ConnectionStateFlags.None)

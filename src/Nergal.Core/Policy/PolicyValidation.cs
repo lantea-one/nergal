@@ -1,4 +1,7 @@
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Nergal.Core.Policy;
 
@@ -111,4 +114,49 @@ public static class FilterPolicyValidation
 
     private static bool IsAsciiAlphanumeric(char ch) =>
         ch is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9');
+
+    /// <summary>Parses a canonical single IPv4 or IPv6 host address without CIDR suffix, scope ID, or mapped IPv4.</summary>
+    /// <param name="value">The candidate address text.</param>
+    /// <param name="address">The parsed address when valid; otherwise null.</param>
+    /// <param name="family">The address family when valid.</param>
+    /// <param name="normalized">The canonical lowercase string representation when valid.</param>
+    public static bool TryParseSingleIpAddress(
+        string? value,
+        [NotNullWhen(true)] out IPAddress? address,
+        out IpFamily family,
+        [NotNullWhen(true)] out string? normalized)
+    {
+        address = null;
+        family = IpFamily.IPv4;
+        normalized = null;
+        if (string.IsNullOrWhiteSpace(value) || value.Any(char.IsWhiteSpace) ||
+            value.Contains('/', StringComparison.Ordinal) || value.Contains('%', StringComparison.Ordinal) ||
+            !IPAddress.TryParse(value, out var parsed) || parsed.IsIPv4MappedToIPv6)
+        {
+            return false;
+        }
+
+        if (parsed.AddressFamily == AddressFamily.InterNetwork)
+        {
+            if (value.Count(ch => ch == '.') != 3)
+            {
+                return false;
+            }
+
+            address = parsed;
+            family = IpFamily.IPv4;
+            normalized = parsed.ToString();
+            return true;
+        }
+
+        if (parsed.AddressFamily == AddressFamily.InterNetworkV6)
+        {
+            address = parsed;
+            family = IpFamily.IPv6;
+            normalized = parsed.ToString();
+            return true;
+        }
+
+        return false;
+    }
 }

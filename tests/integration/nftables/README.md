@@ -34,12 +34,16 @@ loopback device. Tests verify:
   per-source dynamic rate limiting (`nergal_rl_*` isolation between distinct IPv4 and
   IPv6 client addresses), and deterministic `NftTableObservation` round-tripping across
   both populated full listings and `--terse` listings.
+- A second 3-namespace NAT topology (`nat_check.py`) removes the server's default route
+  and verifies dual-stack DNAT port forwarding, explicit SNAT source rewriting observed
+  by the backend socket, `ct status dnat` filter discrimination, and live NAT/filter
+  `NftNatTableObservation` / `NftTableObservation` round-tripping.
 
 Denied packet assertions use bounded socket receive/connect timeouts. Listener
 sockets exist before sending, so service startup timing does not determine results.
 No production rules or topology are read or changed, and no host ruleset is flushed.
 
-This suite covers schema-1 input filtering and schema-2 stateful forwarding, ICMPv6,
-and per-source rate limiting; NAT, bridge filtering, multi-table transactions,
-and web-driven confirmed apply belong to Phases 8–13.
+This suite covers schema-1/2 filtering, per-source rate limits, and dual-stack NAT;
+bridge filtering, coordinated multi-table atomic transactions, remote agent control,
+and web-driven confirmed apply belong to Phases 9–13.
 This fixture is opt-in and not run by the default CI job.

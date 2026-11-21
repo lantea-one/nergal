@@ -533,6 +533,49 @@ public sealed class NftResourceReceiptTests
         Reject(unreferenced.ToJsonString(), "observation.unsupportedObjects");
     }
 
+    /// <summary>Schema-2 ct status dnat rules reconstruct MatchOriginalDestinationDnat and detect status drift.</summary>
+    [Fact]
+    public void Schema2_CtStatusDnat_RoundTripsAndDetectsDrift()
+    {
+        var identity = new NftTableIdentity(Owner, Resource);
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept, DestinationPort: 18447,
+                Chain: FilterChainKind.Forward, InputInterface: "r_cli", OutputInterface: "r_srv",
+                ConnectionStates: ConnectionStateFlags.New, MatchOriginalDestinationDnat: true),
+        ]);
+        var compiled = NftFilterCompiler.Compile(policy, identity);
+        Assert.True(compiled.IsSuccess);
+
+        var listing = JsonNode.Parse("""
+            {"nftables":[
+              {"metainfo":{"version":"1.1.7","release_name":"fixture","json_schema_version":1}},
+              {"table":{"family":"inet","name":"nergal_filter","handle":7,"comment":"MARKER"}},
+              {"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":9,"type":"filter","hook":"input","prio":0,"policy":"drop"}},
+              {"chain":{"family":"inet","table":"nergal_filter","name":"forward","handle":11,"type":"filter","hook":"forward","prio":0,"policy":"drop"}},
+              {"chain":{"family":"inet","table":"nergal_filter","name":"output","handle":12,"type":"filter","hook":"output","prio":0,"policy":"drop"}},
+              {"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":21,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"r_cli"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"r_srv"}},{"match":{"op":"in","left":{"ct":{"key":"status"}},"right":"dnat"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":"new"}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":18447}},{"accept":null}]}}
+            ]}
+            """.Replace("MARKER", identity.Comment, StringComparison.Ordinal))!;
+
+        var parsed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(parsed.IsSuccess, parsed.ErrorCode);
+        Assert.Equal(compiled.Candidate, NftFilterCompiler.Compile(parsed.Observation!.Policy, identity).Candidate);
+
+        var withoutDnat = JsonNode.Parse(listing.ToJsonString())!;
+        withoutDnat["nftables"]![5]!["rule"]!["expr"]!.AsArray().RemoveAt(3);
+        var drifted = NftTableObservation.Parse(withoutDnat.ToJsonString());
+        Assert.True(drifted.IsSuccess, drifted.ErrorCode);
+        Assert.NotEqual(parsed.Observation.StateDigest, drifted.Observation!.StateDigest);
+
+        var wrongOrder = JsonNode.Parse(listing.ToJsonString())!;
+        var expr = wrongOrder["nftables"]![5]!["rule"]!["expr"]!.AsArray();
+        var dnatExpr = expr[3]!.DeepClone();
+        expr.RemoveAt(3);
+        expr.Insert(4, dnatExpr);
+        Reject(wrongOrder.ToJsonString(), "observation.rule");
+    }
+
     private static JsonNode Schema2RateLimitListing(bool includeRuntimeElems)
     {
         var set0 = includeRuntimeElems
