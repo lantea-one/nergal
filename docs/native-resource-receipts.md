@@ -33,20 +33,27 @@ missing fields, malformed identities and unknown schema versions are rejected. A
 failed result has no partial observation and a stable `ErrorCode`. Null input throws
 `ArgumentNullException`. Invalid input is never echoed in diagnostics.
 
-After the chain, the observer accepts ordered rules that match exactly one
-explicit `meta nfproto` equality (IPv4 or IPv6) and a terminal accept/drop. Each
-rule must have a distinct positive handle and belong to that input chain.
-An additional expression, counter, comment, address or transport match causes
-the entire snapshot to be refused. The immutable `Policy` reconstructs every
-accepted rule in order. See [ADR 0018](decisions/0018-family-rule-observations.md).
+After the chain, the observer accepts ordered schema-1 rules matching canonical
+`NftFilterCompiler` output: IPv4/IPv6 family (`meta nfproto` or implied by address/ICMP),
+optional source/destination canonical CIDR prefixes (`ip`/`ip6` `saddr`/`daddr`),
+protocol (`meta l4proto` for `tcp`, `udp`, `icmp`, `ipv6-icmp` or implied by `dport`),
+optional TCP/UDP destination port (`1`–`65535`), and a terminal `accept`/`drop`.
+Each rule must have a distinct positive handle and belong to that input chain.
+Redundant elidable matches, out-of-order match stages, non-canonical prefixes, counters,
+comments, interfaces, or extra expressions cause the entire snapshot to be refused.
+The immutable `Policy` reconstructs every accepted rule in order. See
+[ADR 0018](decisions/0018-family-rule-observations.md) and
+[ADR 0021](decisions/0021-observe-schema1-filter-rules.md).
 
-`StateDigest` retains the original empty-chain projection for stored receipts.
-The rule-bearing projection includes the marker, table and chain handles, chain
-semantics and each rule's handle, family and verdict in order. JSON property order and
-validated tool version/release text do not alter enforcement identity. No accepted
-enforcement field is dropped. The parser cannot prove collection completeness: a
-trusted future agent must obtain a full table snapshot locally under its resource
-lock, not accept filtered or browser-supplied JSON as host evidence. Observations and their digests are immutable snapshots.
+`StateDigest` retains `nergal-observation-v1` for empty chains and `nergal-observation-v2`
+for family-only rules byte-for-byte. Rules carrying addresses, protocols, or ports use
+`nergal-observation-v3` binding the marker, table and chain handles, chain semantics,
+and each rule's handle, family, source/destination CIDR, protocol, destination port,
+and verdict in order. JSON property order and validated tool version/release text do
+not alter enforcement identity. No accepted enforcement field is dropped. The parser
+cannot prove collection completeness: a trusted future agent must obtain a full table
+snapshot locally under its resource lock, not accept filtered or browser-supplied JSON
+as host evidence. Observations and their digests are immutable snapshots.
 
 Observation errors are `observation.tooLarge`, `observation.invalidJson`,
 `observation.duplicateProperty`, `observation.shape`, `observation.unsupportedObjects`,
