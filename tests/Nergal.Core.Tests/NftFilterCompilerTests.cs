@@ -201,7 +201,7 @@ public sealed class NftFilterCompilerTests
             new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
                 Chain: FilterChainKind.Forward, InputInterface: "eth0", OutputInterface: "eth1",
                 ConnectionStates: ConnectionStateFlags.New, IcmpType: FilterIcmpTypes.EchoRequest,
-                RateLimit: new(5, RateLimitTimeUnit.Second, 3)),
+                RateLimit: new(5, RateLimitTimeUnit.Second, 3), MatchOriginalDestinationDnat: true),
         ]);
 
         var result = NftFilterCompiler.Compile(policy);
@@ -217,6 +217,7 @@ public sealed class NftFilterCompilerTests
             new("connectionState.requiresSchema2", "rules[0].connectionStates"),
             new("icmpType.requiresSchema2", "rules[0].icmpType"),
             new("rateLimit.requiresSchema2", "rules[0].rateLimit"),
+            new("ctStatus.requiresSchema2", "rules[0].matchOriginalDestinationDnat"),
         ], result.Diagnostics);
     }
 
@@ -288,6 +289,24 @@ public sealed class NftFilterCompilerTests
             add rule inet nergal_filter forward meta nfproto ipv6 iifname "eth0" oifname "eth1" meta l4proto tcp tcp dport 22 add @nergal_rl_1 { ip6 saddr timeout 120s limit rate 10/minute burst 5 packets } accept
             """ + "\n";
         Assert.Equal(expected, result.Candidate);
+    }
+
+    /// <summary>Schema 2 compiles ct status dnat before ct state and declares OriginalConnectionTuple.</summary>
+    [Fact]
+    public void Compile_Schema2MatchOriginalDestinationDnat_EmitsCtStatusDnat()
+    {
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept, DestinationPort: 18447,
+                Chain: FilterChainKind.Forward, InputInterface: "r_cli", OutputInterface: "r_srv",
+                ConnectionStates: ConnectionStateFlags.New, MatchOriginalDestinationDnat: true),
+        ]);
+        Assert.Contains(FirewallFeature.OriginalConnectionTuple, policy.GetRequiredFeatures());
+
+        var result = NftFilterCompiler.Compile(policy);
+        Assert.True(result.IsSuccess);
+        Assert.Contains("add rule inet nergal_filter forward meta nfproto ipv6 iifname \"r_cli\" oifname \"r_srv\" ct status dnat ct state new meta l4proto tcp tcp dport 18447 accept\n",
+            result.Candidate!, StringComparison.Ordinal);
     }
 
     private static CompilationResult Compile(FilterRule rule)

@@ -14,7 +14,11 @@ performs host operations. The web host does not reference the compiler.
   (`ConnectionStateFlags`: `New`, `Established`, `Related`, `Invalid`), canonical
   ICMP/ICMPv6 type matchers (`FilterIcmpTypes`, including IPv6 Neighbor Discovery), and
   optional per-source dynamic token-bucket meters (`PerSourceRateLimit` backed by named
-  `nergal_rl_<idx>` dynamic timeout sets). Schema-2 rules emit grouped by
+  `nergal_rl_<idx>` dynamic timeout sets), and `ct status dnat` original-tuple
+  matching (`MatchOriginalDestinationDnat`).
+- **Dual-stack NAT (`NatPolicy` / `NftNatCompiler`, [ADR 0026](decisions/0026-dual-stack-nat-and-original-tuple-matching.md))**:
+  prerouting destination NAT (`DnatRule`) and explicit postrouting source NAT
+  (`SnatRule`, without implicit masquerade) targeting `inet nergal_nat`. Schema-2 rules emit grouped by
   `(input, forward, output)` chain while preserving relative rule order within each chain.
   Schema 1 policies reject schema-2 fields.
 All unmatched packets receive the chain's explicit default. There are no implicit permits.
@@ -76,6 +80,13 @@ contain stable identifiers rather than caller-supplied policy data.
 | `rateLimit.rateOutOfRange` | Packets per window is outside `1..1000000`. |
 | `rateLimit.burstOutOfRange` | Rate-limit burst is outside `1..10000`. |
 | `rateLimit.timeoutOutOfRange` | Idle per-source timeout is outside `1..86400` seconds. |
+| `ctStatus.requiresSchema2` | Schema 1 rule requested `ct status dnat` matching. |
+| `nat.ruleRequired` | DNAT or SNAT rule entry is null. |
+| `nat.protocolUnsupported` | DNAT rule protocol is not `Any`, `Tcp`, or `Udp`. |
+| `nat.originalDestinationRequired` | DNAT rule missing original destination prefix. |
+| `nat.sourceRequired` | SNAT rule missing source prefix. |
+| `nat.translatedAddressInvalid` | NAT translated address is not a single un-scoped, non-CIDR IP address. |
+| `nat.translatedFamilyMismatch` | NAT translated address belongs to another IP family. |
 
 Successful results contain a complete deterministic native batch, its SHA-256
 `Digest` over exact UTF-8 bytes, and no diagnostics. Failed results contain no digest.
