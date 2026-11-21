@@ -6,14 +6,17 @@ performs host operations. The web host does not reference the compiler.
 
 - **Schema version 1**: single `input` chain, stateless matching (`Family`, `Protocol`,
   `Source`, `Destination`, `DestinationPort`) and `Accept`/`Drop` verdicts.
-- **Schema version 2** ([ADR 0024](decisions/0024-stateful-forwarding-and-icmpv6-policy.md)):
+- **Schema version 2** ([ADR 0024](decisions/0024-stateful-forwarding-and-icmpv6-policy.md),
+  [ADR 0025](decisions/0025-native-per-source-rate-limiting.md)):
   three base chains (`input`, `forward`, `output`) with explicit per-chain defaults
   (`InputDefaultVerdict`, `ForwardDefaultVerdict`, `OutputDefaultVerdict`), optional
   validated interface names (`InputInterface`, `OutputInterface`), conntrack state masks
-  (`ConnectionStateFlags`: `New`, `Established`, `Related`, `Invalid`), and canonical
-  ICMP/ICMPv6 type matchers (`FilterIcmpTypes`, including IPv6 Neighbor Discovery).
-  Schema-2 rules emit grouped by `(input, forward, output)` chain while preserving
-  relative rule order within each chain. Schema 1 policies reject schema-2 fields.
+  (`ConnectionStateFlags`: `New`, `Established`, `Related`, `Invalid`), canonical
+  ICMP/ICMPv6 type matchers (`FilterIcmpTypes`, including IPv6 Neighbor Discovery), and
+  optional per-source dynamic token-bucket meters (`PerSourceRateLimit` backed by named
+  `nergal_rl_<idx>` dynamic timeout sets). Schema-2 rules emit grouped by
+  `(input, forward, output)` chain while preserving relative rule order within each chain.
+  Schema 1 policies reject schema-2 fields.
 All unmatched packets receive the chain's explicit default. There are no implicit permits.
 
 ```csharp
@@ -68,6 +71,11 @@ contain stable identifiers rather than caller-supplied policy data.
 | `icmpType.requiresSchema2` | Schema 1 rule specified an ICMP/ICMPv6 type matcher. |
 | `icmpType.requiresIcmp` | ICMP type specified without ICMP or ICMPv6 protocol. |
 | `icmpType.unsupported` | ICMP type is not in the family's canonical allowlist. |
+| `rateLimit.requiresSchema2` | Schema 1 rule specified a per-source rate limit. |
+| `rateLimit.unitUnknown` | Rate-limit time unit is undefined. |
+| `rateLimit.rateOutOfRange` | Packets per window is outside `1..1000000`. |
+| `rateLimit.burstOutOfRange` | Rate-limit burst is outside `1..10000`. |
+| `rateLimit.timeoutOutOfRange` | Idle per-source timeout is outside `1..86400` seconds. |
 
 Successful results contain a complete deterministic native batch, its SHA-256
 `Digest` over exact UTF-8 bytes, and no diagnostics. Failed results contain no digest.

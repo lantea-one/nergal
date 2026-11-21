@@ -56,7 +56,7 @@ internal static class NativeNft
     {
         try
         {
-            var listed = await Run(["--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
+            var listed = await Run(["--terse", "--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
             return NftTableObservation.Parse(listed).Observation;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)

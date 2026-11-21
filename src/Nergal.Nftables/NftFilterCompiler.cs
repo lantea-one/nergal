@@ -155,6 +155,11 @@ public static class NftFilterCompiler
                 {
                     errors.Add(new("icmpType.requiresSchema2", path + ".icmpType"));
                 }
+
+                if (rule.RateLimit is not null)
+                {
+                    errors.Add(new("rateLimit.requiresSchema2", path + ".rateLimit"));
+                }
             }
             else
             {
@@ -203,6 +208,29 @@ public static class NftFilterCompiler
                         errors.Add(new("icmpType.unsupported", path + ".icmpType"));
                     }
                 }
+
+                if (rule.RateLimit is { } rateLimit)
+                {
+                    if (!Enum.IsDefined(rateLimit.WindowUnit))
+                    {
+                        errors.Add(new("rateLimit.unitUnknown", path + ".rateLimit.windowUnit"));
+                    }
+
+                    if (rateLimit.PacketsPerWindow is < 1 or > 1_000_000)
+                    {
+                        errors.Add(new("rateLimit.rateOutOfRange", path + ".rateLimit.packetsPerWindow"));
+                    }
+
+                    if (rateLimit.Burst is < 1 or > 10_000)
+                    {
+                        errors.Add(new("rateLimit.burstOutOfRange", path + ".rateLimit.burst"));
+                    }
+
+                    if (rateLimit.EntryTimeoutSeconds is < 1 or > 86_400)
+                    {
+                        errors.Add(new("rateLimit.timeoutOutOfRange", path + ".rateLimit.entryTimeoutSeconds"));
+                    }
+                }
             }
         }
 
@@ -226,7 +254,7 @@ public static class NftFilterCompiler
         {
             foreach (var draft in policy.Rules)
             {
-                AppendRule(text, draft!);
+                AppendRule(text, draft!, null);
             }
 
             return new(text.ToString(), []);
@@ -237,22 +265,41 @@ public static class NftFilterCompiler
         text.Append("add chain inet " + TableName + " output { type filter hook output priority 0; policy ")
             .Append(Verdict(policy.OutputDefaultVerdict)).Append("; }\n");
 
+        var orderedRules = new List<(FilterRule Rule, string? SetName)>(policy.Rules.Count);
+        var setIndex = 0;
         foreach (var chain in ChainOrder)
         {
             foreach (var draft in policy.Rules)
             {
                 var rule = draft!;
-                if (rule.Chain == chain)
+                if (rule.Chain != chain)
                 {
-                    AppendRule(text, rule);
+                    continue;
                 }
+
+                string? setName = null;
+                if (rule.RateLimit is not null)
+                {
+                    setName = "nergal_rl_" + setIndex.ToString(CultureInfo.InvariantCulture);
+                    setIndex++;
+                    var addrType = rule.Family == IpFamily.IPv4 ? "ipv4_addr" : "ipv6_addr";
+                    text.Append("add set inet " + TableName + ' ').Append(setName)
+                        .Append(" { type ").Append(addrType).Append("; size 65535; flags dynamic,timeout; }\n");
+                }
+
+                orderedRules.Add((rule, setName));
             }
+        }
+
+        foreach (var (rule, setName) in orderedRules)
+        {
+            AppendRule(text, rule, setName);
         }
 
         return new(text.ToString(), []);
     }
 
-    private static void AppendRule(StringBuilder text, FilterRule rule)
+    private static void AppendRule(StringBuilder text, FilterRule rule, string? rateLimitSetName)
     {
         var family = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
         text.Append("add rule inet " + TableName + ' ')
@@ -305,6 +352,21 @@ public static class NftFilterCompiler
             {
                 text.Append(protocol).Append(" dport ").Append(rule.DestinationPort.Value.ToString(CultureInfo.InvariantCulture)).Append(' ');
             }
+        }
+
+        if (rule.RateLimit is { } rateLimit && rateLimitSetName is not null)
+        {
+            var unit = rateLimit.WindowUnit switch
+            {
+                RateLimitTimeUnit.Second => "second",
+                RateLimitTimeUnit.Minute => "minute",
+                _ => throw new InvalidOperationException("Unvalidated rate-limit unit."),
+            };
+            text.Append("add @").Append(rateLimitSetName)
+                .Append(" { ").Append(family).Append(" saddr timeout ")
+                .Append(rateLimit.EntryTimeoutSeconds.ToString(CultureInfo.InvariantCulture)).Append("s limit rate ")
+                .Append(rateLimit.PacketsPerWindow.ToString(CultureInfo.InvariantCulture)).Append('/').Append(unit)
+                .Append(" burst ").Append(rateLimit.Burst.ToString(CultureInfo.InvariantCulture)).Append(" packets } ");
         }
 
         text.Append(Verdict(rule.Verdict)).Append('\n');

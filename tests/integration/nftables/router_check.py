@@ -13,9 +13,9 @@ def require(condition, message):
         raise AssertionError(message)
 
 
-require(len(sys.argv) == 6, "Invoke through check.sh with namespace guards and output paths")
-require(os.readlink('/proc/self/ns/net') != sys.argv[4], "Router network namespace was not isolated")
-require(os.readlink('/proc/self/ns/user') != sys.argv[5], "Router user namespace was not isolated")
+require(len(sys.argv) == 7, "Invoke through check.sh with namespace guards and output paths")
+require(os.readlink('/proc/self/ns/net') != sys.argv[5], "Router network namespace was not isolated")
+require(os.readlink('/proc/self/ns/user') != sys.argv[6], "Router user namespace was not isolated")
 require(os.getuid() == 0, "Expected namespace-local root")
 
 CLONE_NEWNET = 0x40000000
@@ -119,6 +119,46 @@ def check_ping(pid, flag, target, allowed):
             f"Unexpected ping ({flag} -> {target}, expected allowed={allowed}): {res.stdout}{res.stderr}")
 
 
+def check_rate_limit(client_pid, server_pid, family, server_ip, source_a, source_b, port):
+    with in_netns(server_pid):
+        server = socket.socket(family, socket.SOCK_DGRAM)
+        server.bind((server_ip, port))
+        server.settimeout(0.25)
+
+    try:
+        def recv_count():
+            received = []
+            while True:
+                try:
+                    data, _ = server.recvfrom(64)
+                    received.append(data)
+                except socket.timeout:
+                    return received
+
+        with in_netns(client_pid):
+            sock_a = socket.socket(family, socket.SOCK_DGRAM)
+            sock_b = socket.socket(family, socket.SOCK_DGRAM)
+            sock_a.bind((source_a, 0))
+            sock_b.bind((source_b, 0))
+            try:
+                for idx in range(5):
+                    sock_a.sendto(f'rl-a-{idx}'.encode(), (server_ip, port))
+                got_a = recv_count()
+                require(len(got_a) == 2,
+                        f"Expected burst=2 packets from {source_a}, got {len(got_a)}: {got_a}")
+
+                for idx in range(2):
+                    sock_b.sendto(f'rl-b-{idx}'.encode(), (server_ip, port))
+                got_b = recv_count()
+                require(len(got_b) == 2,
+                        f"Independent source {source_b} was throttled by {source_a}: {got_b}")
+            finally:
+                sock_a.close()
+                sock_b.close()
+    finally:
+        server.close()
+
+
 client_proc = spawn_netns()
 server_proc = spawn_netns()
 try:
@@ -148,7 +188,9 @@ try:
         Path('/proc/sys/net/ipv6/conf/veth_c/accept_dad').write_text('0')
     run_in(client_proc.pid, 'ip', 'link', 'set', 'veth_c', 'up')
     run_in(client_proc.pid, 'ip', 'addr', 'add', '192.0.2.2/24', 'dev', 'veth_c')
+    run_in(client_proc.pid, 'ip', 'addr', 'add', '192.0.2.3/24', 'dev', 'veth_c')
     run_in(client_proc.pid, 'ip', '-6', 'addr', 'add', '2001:db8:1::2/64', 'dev', 'veth_c', 'nodad')
+    run_in(client_proc.pid, 'ip', '-6', 'addr', 'add', '2001:db8:1::3/64', 'dev', 'veth_c', 'nodad')
     run_in(client_proc.pid, 'ip', 'route', 'add', 'default', 'via', '192.0.2.1')
     run_in(client_proc.pid, 'ip', '-6', 'route', 'add', 'default', 'via', '2001:db8:1::1')
 
@@ -167,8 +209,6 @@ try:
     router_batch = Path(sys.argv[1]).read_text()
     echo_json = nft(router_batch, '--echo', '--handle', '--json')
     Path(sys.argv[2]).write_text(echo_json)
-    list_json = run('nft', '--json', 'list', 'table', 'inet', 'nergal_filter')
-    Path(sys.argv[3]).write_text(list_json)
 
     for family in ('ip', 'ip6', 'inet', 'bridge'):
         table = run('nft', '--stateless', 'list', 'table', family, 'foreign_fixture')
@@ -192,7 +232,16 @@ try:
     check_ping(server_proc.pid, '-4', '192.0.2.2', False)
     check_ping(server_proc.pid, '-6', '2001:db8:1::2', False)
 
-    print('PASS: multi-namespace IPv4/IPv6 routed forwarding, stateful reply, interface matching, and IPv6 Neighbor Discovery')
+    check_rate_limit(client_proc.pid, server_proc.pid, socket.AF_INET, '198.51.100.2', '192.0.2.2', '192.0.2.3', 18445)
+    check_rate_limit(client_proc.pid, server_proc.pid, socket.AF_INET6, '2001:db8:2::2', '2001:db8:1::2', '2001:db8:1::3', 18445)
+
+    list_json = run('nft', '--json', 'list', 'table', 'inet', 'nergal_filter')
+    terse_json = run('nft', '--terse', '--json', 'list', 'table', 'inet', 'nergal_filter')
+    require('"elem"' in list_json, "Expected populated dynamic set elements in plain listing")
+    Path(sys.argv[3]).write_text(list_json)
+    Path(sys.argv[4]).write_text(terse_json)
+
+    print('PASS: multi-namespace IPv4/IPv6 routed forwarding, stateful reply, interface matching, IPv6 Neighbor Discovery, and per-source rate limiting')
 finally:
     for proc in (client_proc, server_proc):
         proc.terminate()

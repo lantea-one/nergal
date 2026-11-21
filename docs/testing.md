@@ -83,9 +83,9 @@ It requires Linux with unprivileged user/network namespaces, nft, ip, ping and
 Python 3. It fails if isolation is unavailable and never falls back to the host.
 See its [README](../tests/integration/nftables/README.md) for exact assertions and
 limits (input filtering plus 3-namespace routed IPv4/IPv6 forwarding, `iifname`/`oifname`,
-`ct state` return traffic, IPv6 Neighbor Discovery, and live `NftTableObservation`
-round-tripping). It is opt-in, separate from dotnet test and the default CI job.
-Successful local execution does not establish NAT, rate limits, bridge filtering, or rollback.
+`ct state` return traffic, IPv6 Neighbor Discovery, per-source dynamic rate limiting, and
+live `NftTableObservation` round-tripping). It is opt-in, separate from dotnet test and the
+default CI job. Successful local execution does not establish NAT, bridge filtering, or rollback.
 
 The independent watchdog fixture is under tests/integration/watchdog. Run
 `bash tests/integration/watchdog/check.sh` after the Release build. It uses actual

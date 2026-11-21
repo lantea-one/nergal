@@ -17,9 +17,10 @@ a peer-authorized read-only status listener (`status-serve`, [ADR 0020](docs/dec
 and receipt-aware local confirmed-apply, watchdog rollback, and boot reconciliation commands
 (`prepare`, `watch`, `apply`, `confirm`, `reconcile`, [ADR 0023](docs/decisions/0023-explicit-boot-reconciliation.md))
 alongside schema-1 input filtering and schema-2 stateful forwarding, output chains,
-interface matchers, and IPv6 Neighbor Discovery in `inet nergal_filter` ([ADR 0024](docs/decisions/0024-stateful-forwarding-and-icmpv6-policy.md));
-per-source rate limiting, NAT, bridge filtering, remote agent transport, web policy
-authoring, and systemd packaging remain subsequent phases.
+interface matchers, IPv6 Neighbor Discovery ([ADR 0024](docs/decisions/0024-stateful-forwarding-and-icmpv6-policy.md)),
+and native per-source rate limiting ([ADR 0025](docs/decisions/0025-native-per-source-rate-limiting.md))
+in `inet nergal_filter`; NAT, bridge filtering, multi-table commits, remote agent transport,
+web policy authoring, and systemd packaging remain subsequent phases.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 

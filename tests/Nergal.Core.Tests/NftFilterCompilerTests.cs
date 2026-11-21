@@ -200,7 +200,8 @@ public sealed class NftFilterCompilerTests
         [
             new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
                 Chain: FilterChainKind.Forward, InputInterface: "eth0", OutputInterface: "eth1",
-                ConnectionStates: ConnectionStateFlags.New, IcmpType: FilterIcmpTypes.EchoRequest),
+                ConnectionStates: ConnectionStateFlags.New, IcmpType: FilterIcmpTypes.EchoRequest,
+                RateLimit: new(5, RateLimitTimeUnit.Second, 3)),
         ]);
 
         var result = NftFilterCompiler.Compile(policy);
@@ -215,10 +216,11 @@ public sealed class NftFilterCompilerTests
             new("interface.requiresSchema2", "rules[0].outputInterface"),
             new("connectionState.requiresSchema2", "rules[0].connectionStates"),
             new("icmpType.requiresSchema2", "rules[0].icmpType"),
+            new("rateLimit.requiresSchema2", "rules[0].rateLimit"),
         ], result.Diagnostics);
     }
 
-    /// <summary>Invalid interface names, wrong chain interface directions, unknown conntrack bits, and bad ICMP types reject fail-closed.</summary>
+    /// <summary>Invalid interface names, wrong chain interface directions, unknown conntrack bits, bad ICMP types, and out-of-range rate limits reject fail-closed.</summary>
     [Fact]
     public void Compile_Schema2InvalidRules_ReturnsStableDiagnostics()
     {
@@ -228,7 +230,8 @@ public sealed class NftFilterCompilerTests
                 Chain: FilterChainKind.Output, InputInterface: "eth0", OutputInterface: "bad/if0"),
             new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
                 Chain: FilterChainKind.Input, OutputInterface: "eth1",
-                ConnectionStates: (ConnectionStateFlags)99, IcmpType: FilterIcmpTypes.EchoRequest),
+                ConnectionStates: (ConnectionStateFlags)99, IcmpType: FilterIcmpTypes.EchoRequest,
+                RateLimit: new(0, (RateLimitTimeUnit)99, 10001, 86401)),
             new(IpFamily.IPv4, FilterProtocol.Icmp, FilterVerdict.Accept,
                 Chain: FilterChainKind.Input, InputInterface: "0123456789abcdef", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
         ]);
@@ -243,9 +246,48 @@ public sealed class NftFilterCompilerTests
             new("interface.chainMismatch", "rules[1].outputInterface"),
             new("connectionState.unknown", "rules[1].connectionStates"),
             new("icmpType.requiresIcmp", "rules[1].icmpType"),
+            new("rateLimit.unitUnknown", "rules[1].rateLimit.windowUnit"),
+            new("rateLimit.rateOutOfRange", "rules[1].rateLimit.packetsPerWindow"),
+            new("rateLimit.burstOutOfRange", "rules[1].rateLimit.burst"),
+            new("rateLimit.timeoutOutOfRange", "rules[1].rateLimit.entryTimeoutSeconds"),
             new("interface.invalid", "rules[2].inputInterface"),
             new("icmpType.unsupported", "rules[2].icmpType"),
         ], result.Diagnostics);
+    }
+
+    /// <summary>Per-source rate limits allocate dynamic timeout sets and mark PerSourceRateLimiting as required.</summary>
+    [Fact]
+    public void Compile_Schema2RateLimit_EmitsDynamicSetsAndUpdatesRequirements()
+    {
+        var plainPolicy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, DestinationPort: 18445),
+        ]);
+        Assert.DoesNotContain(FirewallFeature.PerSourceRateLimiting, plainPolicy.GetRequiredFeatures());
+
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept, DestinationPort: 22,
+                Chain: FilterChainKind.Forward, InputInterface: "eth0", OutputInterface: "eth1",
+                RateLimit: new(10, RateLimitTimeUnit.Minute, 5, 120)),
+            new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, DestinationPort: 18445,
+                RateLimit: new(2, RateLimitTimeUnit.Second, 1, 30)),
+        ]);
+        Assert.Contains(FirewallFeature.PerSourceRateLimiting, policy.GetRequiredFeatures());
+
+        var result = NftFilterCompiler.Compile(policy);
+        Assert.True(result.IsSuccess);
+        var expected = """
+            create table inet nergal_filter
+            add chain inet nergal_filter input { type filter hook input priority 0; policy drop; }
+            add chain inet nergal_filter forward { type filter hook forward priority 0; policy drop; }
+            add chain inet nergal_filter output { type filter hook output priority 0; policy drop; }
+            add set inet nergal_filter nergal_rl_0 { type ipv4_addr; size 65535; flags dynamic,timeout; }
+            add set inet nergal_filter nergal_rl_1 { type ipv6_addr; size 65535; flags dynamic,timeout; }
+            add rule inet nergal_filter input meta nfproto ipv4 meta l4proto udp udp dport 18445 add @nergal_rl_0 { ip saddr timeout 30s limit rate 2/second burst 1 packets } accept
+            add rule inet nergal_filter forward meta nfproto ipv6 iifname "eth0" oifname "eth1" meta l4proto tcp tcp dport 22 add @nergal_rl_1 { ip6 saddr timeout 120s limit rate 10/minute burst 5 packets } accept
+            """ + "\n";
+        Assert.Equal(expected, result.Candidate);
     }
 
     private static CompilationResult Compile(FilterRule rule)
