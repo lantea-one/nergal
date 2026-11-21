@@ -61,13 +61,19 @@ public sealed class NftTableObservation
     /// <summary>Parses bounded native JSON without host access, accepting empty chains and canonical schema-1 input-filter rules.</summary>
     /// <remarks>Unknown objects, fields, duplicate keys and unsupported rule expressions fail closed. The trusted collector must supply a full table snapshot; omitted kernel objects cannot be detected from JSON alone.</remarks>
     /// <exception cref="ArgumentNullException">JSON is null.</exception>
-    public static NftObservationResult Parse(string json) => ParseNative(json, createEcho: false);
+    public static NftObservationResult Parse(string json) => ParseNative(json, EchoMode.None);
 
     /// <summary>Reads the handle-bearing echo of a successful local exclusive create of an empty accept baseline.</summary>
     /// <remarks>Caller must establish successful transaction exit and independently compare a complete listing before binding.</remarks>
-    public static NftObservationResult ParseEnrollmentEcho(string json) => ParseNative(json, createEcho: true);
+    public static NftObservationResult ParseEnrollmentEcho(string json) => ParseNative(json, EchoMode.Enrollment);
 
-    private static NftObservationResult ParseNative(string json, bool createEcho)
+    /// <summary>Reads the handle-bearing echo of a successful atomic table delete-and-recreate or rule-bearing create batch.</summary>
+    /// <remarks>Caller must establish successful transaction exit and independently compare a complete listing before recording receipts.</remarks>
+    public static NftObservationResult ParseReplacementEcho(string json) => ParseNative(json, EchoMode.Replacement);
+
+    private enum EchoMode { None, Enrollment, Replacement }
+
+    private static NftObservationResult ParseNative(string json, EchoMode mode)
     {
         ArgumentNullException.ThrowIfNull(json);
         try
@@ -91,15 +97,30 @@ public sealed class NftTableObservation
 
             var items = root.GetProperty("nftables").EnumerateArray().ToArray();
             JsonElement table, chain;
-            if (createEcho)
+            int ruleStartIndex;
+            if (mode == EchoMode.Enrollment)
             {
                 if (items.Length != 2 || !Properties(items[0], "create") || !Properties(items[1], "add") ||
                     !Properties(items[0].GetProperty("create"), "table") || !Properties(items[1].GetProperty("add"), "chain"))
                 {
                     return Deny("observation.createEcho");
                 }
+
                 table = items[0].GetProperty("create").GetProperty("table");
                 chain = items[1].GetProperty("add").GetProperty("chain");
+                ruleStartIndex = 2;
+            }
+            else if (mode == EchoMode.Replacement)
+            {
+                if (items.Length < 2 || !Properties(items[0], "create") || !Properties(items[1], "add") ||
+                    !Properties(items[0].GetProperty("create"), "table") || !Properties(items[1].GetProperty("add"), "chain"))
+                {
+                    return Deny("observation.replacementEcho");
+                }
+
+                table = items[0].GetProperty("create").GetProperty("table");
+                chain = items[1].GetProperty("add").GetProperty("chain");
+                ruleStartIndex = 2;
             }
             else
             {
@@ -116,8 +137,10 @@ public sealed class NftTableObservation
                 {
                     return Deny("observation.schema");
                 }
+
                 table = items[1].GetProperty("table");
                 chain = items[2].GetProperty("chain");
+                ruleStartIndex = 3;
             }
             if (!Properties(table, "family", "name", "handle", "comment") ||
                 !Properties(chain, "family", "table", "name", "handle", "type", "hook", "prio", "policy"))
@@ -147,17 +170,31 @@ public sealed class NftTableObservation
             }
 
             var verdict = chain.GetProperty("policy").GetString();
-            if (verdict is not ("accept" or "drop") || (createEcho && verdict != "accept"))
+            if (verdict is not ("accept" or "drop") || (mode == EchoMode.Enrollment && verdict != "accept"))
             {
                 return Deny("observation.policy");
             }
 
             var rules = new List<(ulong Handle, FilterRule Rule)>();
             var handles = new HashSet<ulong> { chainHandle };
-            for (var index = 3; index < items.Length; index++)
+            for (var index = ruleStartIndex; index < items.Length; index++)
             {
-                if (!Properties(items[index], "rule")) { return Deny("observation.unsupportedObjects"); }
-                var rule = items[index].GetProperty("rule");
+                JsonElement rule;
+                if (mode == EchoMode.Replacement)
+                {
+                    if (!Properties(items[index], "add") || !Properties(items[index].GetProperty("add"), "rule"))
+                    {
+                        return Deny("observation.replacementEcho");
+                    }
+
+                    rule = items[index].GetProperty("add").GetProperty("rule");
+                }
+                else
+                {
+                    if (!Properties(items[index], "rule")) { return Deny("observation.unsupportedObjects"); }
+                    rule = items[index].GetProperty("rule");
+                }
+
                 if (!Properties(rule, "family", "table", "chain", "handle", "expr")) { return Deny("observation.unsupportedObjects"); }
                 if (rule.GetProperty("family").GetString() != "inet" || rule.GetProperty("table").GetString() != NftFilterCompiler.TableName ||
                     rule.GetProperty("chain").GetString() != "input") { return Deny("observation.scope"); }

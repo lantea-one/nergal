@@ -121,10 +121,12 @@ disposable namespaces to check exclusive creation, handle-bearing echo binding
 against an independent listing, foreign-table preservation on collision, and
 repeat-invocation refusal (`journal.exists`) without modifying state; the `cli`
 scenario also starts `nergal-agent status-serve`, queries live `matched` and
-`drift` classifications over the Unix socket, and verifies clean `SIGTERM` socket
-removal. The `schema1` scenario binds a full schema-1 policy (CIDR prefixes, TCP/UDP
+`drift` classifications over the Unix socket, verifies clean `SIGTERM` socket
+removal, rejects same-boot `reconcile`, and exercises `prepare`, `watch`, `apply`,
+and `confirm` for both timeout-triggered IPv4/IPv6 packet rollback and confirmed
+revision-2 enforcement. The `schema1` scenario binds a full schema-1 policy (CIDR prefixes, TCP/UDP
 ports, ICMP/ICMPv6), checks loopback packet enforcement, and detects rule drift. Unit
-tests exercise full schema-1 observation/reconstruction (`Schema1Rules_ReconstructPolicyAndBindDigest`),
+tests exercise `ParseReplacementEcho`, `ReconcileBoot`, full schema-1 observation/reconstruction (`Schema1Rules_ReconstructPolicyAndBindDigest`),
 `ResourceExecutionLock` contention/inode hardening, `AgentStatusProvider`, CLI argument
 parsing, `ParseEnrollmentEcho`, `InitializeResourceIntent` (denying replay and legacy
 `Start` before binding), explicit quiescent schema migrations (`UpgradeFromVersion1` and

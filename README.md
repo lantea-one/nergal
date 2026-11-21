@@ -11,7 +11,14 @@ an authorized read-only local status listener, an MVC landing page and a Blazor 
 candidates; it cannot inspect, install or modify host firewall rules.
 A test-only independent watchdog exercises synthetic rollback in disposable
 namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
-Optional OIDC supports administrator group login. `nergal-agent` provides offline local operator enrollment (`enroll`) for `inet nergal_filter` using native creation-echo handle evidence ([ADR 0019](docs/decisions/0019-local-agent-enrollment.md)) and a peer-authorized read-only local status listener (`status-serve`, [ADR 0020](docs/decisions/0020-local-agent-status-listener.md)); receipt-aware apply/recovery and production deployment remain planned.
+Optional OIDC supports administrator group login. `nergal-agent` provides offline local
+operator enrollment (`enroll`, [ADR 0019](docs/decisions/0019-local-agent-enrollment.md)),
+a peer-authorized read-only status listener (`status-serve`, [ADR 0020](docs/decisions/0020-local-agent-status-listener.md)),
+and receipt-aware local confirmed-apply, watchdog rollback, and boot reconciliation commands
+(`prepare`, `watch`, `apply`, `confirm`, `reconcile`, [ADR 0023](docs/decisions/0023-explicit-boot-reconciliation.md))
+for the schema-1 `inet nergal_filter` input slice; remote agent transport, extended
+firewall semantics (NAT, stateful/forwarding, rate-limiting, bridge), web policy authoring,
+and systemd packaging remain subsequent milestones.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 
@@ -46,7 +53,11 @@ Bind this development build to loopback; it is not a secured administration endp
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
 - `Nergal.Admin`: offline initialization and singleton administrator provisioning
   for the private application account store. See [operator commands](docs/local-administrator-accounts.md).
-- `Nergal.Agent`: offline local operator enrollment (`enroll`) and peer-authorized read-only local status listener (`status-serve`) for `inet nergal_filter`, serialized with `ResourceExecutionLock` using protected baseline intent, native creation-echo handle evidence and complete listing reconciliation.
+- `Nergal.Agent`: offline local operator enrollment (`enroll`), peer-authorized read-only
+  local status listener (`status-serve`), receipt-aware confirmed-apply/watchdog CLI
+  (`prepare`, `watch`, `apply`, `confirm`), and explicit new-boot reconciliation (`reconcile`)
+  for `inet nergal_filter`, serialized with `ResourceExecutionLock` using native echo
+  handles and complete listing reconciliation.
 - `Nergal.Identity`: explicitly provisioned private singleton administrator store
   using standard Identity hashing/lockout and serialized SQLite decisions, plus
   certificate-encrypted persistent session keys and revocable local sessions.

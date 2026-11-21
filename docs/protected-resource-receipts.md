@@ -114,6 +114,16 @@ against an existing journal stops at `journal.exists` before invoking `/usr/sbin
 No controller endpoint can initiate enrollment, and existing journals/kernel tables
 are never automatically adopted, overwritten or deleted.
 
+## Local confirmed-apply CLI and boot reconciliation
+
+`nergal-agent` implements local operator receipt-aware apply (`prepare`, `watch`,
+`apply`, `confirm`) and explicit new-boot reconciliation (`reconcile`) under
+`ResourceExecutionLock`, following [ADR 0023](decisions/0023-explicit-boot-reconciliation.md).
+`ApplyJournal.ReconcileBoot` requires a new Linux `boot_id` (`reconcile.sameBoot`
+otherwise), exact ownership, verified recreated echo/listing matching the last-confirmed
+artifact, and marks any nonterminal prior-boot operation as interrupted (`RecoveryRequired`)
+without adopting preexisting tables.
+
 ## Evidence and remaining boundary
 
 Unit tests use real private SQLite files for binding, reopen/idempotence, stale/invalid
@@ -123,8 +133,8 @@ checks actual namespace resources, copied markers, drift, cross-namespace reject
 unchanged protected bytes/foreign tables. Existing packet/watchdog/UID fixtures remain
 separate evidence for their constrained resources.
 
-Protected intent/receipt persistence is implemented. Production exclusive-creation
-authority, arbitrary rule observation, receipt-aware apply/recovery, external-writer
-atomicity, reboot reconciliation, authenticated transport and production service
-installation remain unimplemented. Same-account/root and hostile-parent limitations
-from the local journal still apply.
+Protected intent/receipt persistence, schema-3 receipt-aware apply, local CLI watchdog
+rollback, and explicit new-boot baseline reconciliation are implemented for the schema-1
+`inet nergal_filter` input slice. Multi-table NAT/bridge semantics, authenticated remote/controller
+apply transport, and production service installation remain separate milestones. Same-account/root
+and hostile-parent limitations from the local journal still apply.

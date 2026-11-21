@@ -87,8 +87,10 @@ an otherwise valid arming transition. Null plans/evidence/digests throw
 
 These are in-process contracts, not a wire protocol. A future transport must reject
 unknown fields and must authenticate/authorize callers before accepting acknowledgments.
-Unit tests establish transition behavior only. Receipt-aware journal persistence now
-implements `StartBound`, `RecordCandidateAppliedBound`, `ConfirmBound`, and
-`RecordRollbackSucceededBound` ([ADR 0022](decisions/0022-receipt-aware-journal.md));
-the `nergal-agent` CLI apply/watchdog executor and atomic replacement echo parsing
-remain separate work before host apply is enabled.
+Unit tests establish transition behavior only. Receipt-aware journal persistence
+implements `StartBound`, `RecordCandidateAppliedBound`, `ConfirmBound`,
+`RecordRollbackSucceededBound`, and `ReconcileBoot` ([ADR 0022](decisions/0022-receipt-aware-journal.md)),
+while `nergal-agent` provides local CLI confirmed-apply, independent watchdog rollback,
+and explicit new-boot reconciliation for schema-1 `inet nergal_filter` policies
+([ADR 0023](decisions/0023-explicit-boot-reconciliation.md)). Authenticated remote
+control and web apply integration remain separate milestones.

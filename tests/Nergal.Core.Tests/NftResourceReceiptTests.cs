@@ -113,6 +113,37 @@ public sealed class NftResourceReceiptTests
         Assert.False(NftTableObservation.ParseEnrollmentEcho(CreationEcho().ToJsonString().Replace(before, after)).IsSuccess);
     }
 
+    /// <summary>Atomic replacement echo supports drop chains and schema-1 add-rule objects while rejecting non-replacement shapes.</summary>
+    [Fact]
+    public void ReplacementEcho_AcceptsRuleBearingEchoAndRejectsInvalidOperations()
+    {
+        var echo = CreationEcho();
+        echo["nftables"]![1]!["add"]!["chain"]!["policy"] = "drop";
+        echo["nftables"]!.AsArray().Add(new JsonObject
+        {
+            ["add"] = new JsonObject
+            {
+                ["rule"] = JsonNode.Parse("""{"family":"inet","table":"nergal_filter","chain":"input","handle":14,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"ip","field":"saddr"}},"right":{"prefix":{"addr":"192.0.2.0","len":24}}}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":443}},{"accept":null}]}""")
+            }
+        });
+
+        var parsed = NftTableObservation.ParseReplacementEcho(echo.ToJsonString());
+        Assert.True(parsed.IsSuccess, parsed.ErrorCode);
+        var observation = parsed.Observation!;
+        Assert.Equal(FilterVerdict.Drop, observation.DefaultVerdict);
+        var expectedRule = Assert.Single(observation.Policy.Rules)!;
+        Assert.Equal(IpFamily.IPv4, expectedRule.Family);
+        Assert.Equal("192.0.2.0/24", expectedRule.Source!.Value);
+        Assert.Equal(443, expectedRule.DestinationPort);
+
+        var bad = echo.DeepClone()!;
+        bad["nftables"]!.AsArray()[2] = new JsonObject { ["delete"] = new JsonObject { ["table"] = new JsonObject() } };
+        var badResult = NftTableObservation.ParseReplacementEcho(bad.ToJsonString());
+        Assert.False(badResult.IsSuccess);
+        Assert.Equal("observation.replacementEcho", badResult.ErrorCode);
+        Assert.False(NftTableObservation.ParseReplacementEcho(Json).IsSuccess);
+    }
+
     private const string FamilyRule = """
         {"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[
         {"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"drop":null}]}}

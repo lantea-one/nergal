@@ -115,6 +115,71 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
                 if listener.poll() is None:
                     listener.kill()
                     listener.communicate(timeout=5)
+
+            nft('add chain inet nergal_filter input { policy accept; }\n')
+            run(['ip', 'link', 'set', 'lo', 'up'])
+            def udp_loopback(family, address):
+                with socket.socket(family, socket.SOCK_DGRAM) as receiver, socket.socket(family, socket.SOCK_DGRAM) as sender:
+                    receiver.bind((address, 0))
+                    receiver.settimeout(0.4)
+                    sender.sendto(b'agent-apply', receiver.getsockname())
+                    try:
+                        return receiver.recv(32) == b'agent-apply'
+                    except TimeoutError:
+                        return False
+
+            require(udp_loopback(socket.AF_INET, '127.0.0.1') and udp_loopback(socket.AF_INET6, '::1'),
+                    'Initial loopback UDP baseline failed')
+            run(['dotnet', str(agent), 'reconcile', state], success=False, error='reconcile.sameBoot')
+
+            def launch_watch(op_id, wd_id):
+                proc = subprocess.Popen(
+                    ['dotnet', str(agent), 'watch', state, op_id, wd_id],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                ready_watch, _, _ = select.select([proc.stdout], [], [], 10)
+                require(ready_watch and proc.stdout.readline().strip() == 'WATCHING',
+                        'nergal-agent watch failed to arm rollback')
+                return proc
+
+            op1 = '00000000-0000-0000-0000-000000000101'
+            wd1 = '00000000-0000-0000-0000-000000000201'
+            run(['dotnet', str(agent), 'prepare', state, op1, '2', 'drop', 'ipv4:drop', 'ipv6:accept'])
+            watch1 = launch_watch(op1, wd1)
+            try:
+                run(['dotnet', str(agent), 'apply', state, op1, wd1])
+                require(not udp_loopback(socket.AF_INET, '127.0.0.1') and udp_loopback(socket.AF_INET6, '::1'),
+                        'Applied candidate did not enforce IPv4-drop/IPv6-accept')
+                out1, err1 = watch1.communicate(timeout=10)
+                require(watch1.returncode == 0 and out1.strip() == 'RolledBack',
+                        f'Watchdog rollback failed: rc={watch1.returncode} out={out1!r} err={err1!r}')
+            finally:
+                if watch1.poll() is None:
+                    watch1.kill()
+                    watch1.communicate(timeout=5)
+            require(udp_loopback(socket.AF_INET, '127.0.0.1') and udp_loopback(socket.AF_INET6, '::1'),
+                    'Watchdog rollback did not restore IPv4 loopback packets')
+            require(json.loads(probe('verify', observation()))['IsMatch'],
+                    'Receipt did not match restored baseline handle')
+
+            op2 = '00000000-0000-0000-0000-000000000102'
+            wd2 = '00000000-0000-0000-0000-000000000202'
+            run(['dotnet', str(agent), 'prepare', state, op2, '10', 'drop', 'ipv4:drop', 'ipv6:accept'])
+            watch2 = launch_watch(op2, wd2)
+            try:
+                run(['dotnet', str(agent), 'apply', state, op2, wd2])
+                run(['dotnet', str(agent), 'confirm', state, op2, wd2])
+                out2, err2 = watch2.communicate(timeout=10)
+                require(watch2.returncode == 0 and out2.strip() == 'Confirmed',
+                        f'Watchdog confirm observation failed: rc={watch2.returncode} out={out2!r} err={err2!r}')
+            finally:
+                if watch2.poll() is None:
+                    watch2.kill()
+                    watch2.communicate(timeout=5)
+            require(not udp_loopback(socket.AF_INET, '127.0.0.1') and udp_loopback(socket.AF_INET6, '::1'),
+                    'Confirmed candidate did not enforce IPv4-drop/IPv6-accept')
+            require(json.loads(probe('verify', observation()))['IsMatch'],
+                    'Confirmed candidate receipt did not match live observation')
+            print('PASS: nergal-agent confirmed-apply, timeout packet rollback, and confirmation contract', flush=True)
         print('PASS: local CLI exclusive creation, receipt and retry contract: ' + scenario, flush=True)
     else:
         mode = 'prepare-family' if scenario == 'family' else ('prepare-schema1' if scenario == 'schema1' else 'prepare')
