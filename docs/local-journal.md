@@ -12,6 +12,11 @@ changes. See [ADR 0004](decisions/0004-local-journal.md) for the storage threat 
   an existing absolute, nonsymlink 0700 directory with a trusted service-owned parent.
   The database is created with mode 0600. Existing databases or sidecars are refused.
   This explicit prototype bootstrap assertion does not adopt an existing firewall table.
+- `InitializeResourceIntent(directory, ownership, confirmedArtifact, clock)` performs
+  the same exclusive creation while also installing the
+  `enrollment_no_legacy_start` trigger inside the initialization transaction so that
+  an interrupted enrollment cannot permit legacy unbound `Start` operations before a
+  protected expected receipt is bound.
 - `Open` requires the database to exist, validates protection, application/schema
   identity and SQLite integrity, and never repairs, recreates or resets state.
   Schema 1 requires an explicit offline upgrade with all older writers stopped;

@@ -21,6 +21,20 @@ public sealed class ResourceReceiptStoreTests
     private static readonly ResourceOwnership Ownership = new(Agent, Owner, 1);
     private static string Artifact(FilterVerdict verdict) => NftFilterCompiler.Compile(new(1, verdict, []), new(Owner, Resource)).Candidate!;
 
+    /// <summary>A crash between intent and receipt cannot enable legacy operations or permit a second initializer.</summary>
+    [Fact]
+    public void FreshResourceIntent_DeniesReplayAndLegacyStartBeforeBinding()
+    {
+        using var fixture = new Fixture(resourceIntent: true);
+        var journal = ApplyJournal.Open(fixture.Path, fixture.Clock);
+        Reject("journal.exists", () => ApplyJournal.InitializeResourceIntent(fixture.Path, Ownership, Artifact(FilterVerdict.Accept), fixture.Clock));
+        Reject("database.error", () => journal.Start(fixture.Plan(), Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept)));
+        Assert.Null(journal.ReadActive());
+        Assert.Null(journal.ReadExpectedResource());
+        journal.BindExpectedResource(Ownership, Receipt(Observe()), Observe(), 42);
+        Assert.True(journal.VerifyExpectedResource(Observe(), 42).IsMatch);
+    }
+
     /// <summary>Only explicit binding establishes expected state, and reopening/retry preserves the same receipt.</summary>
     [Fact]
     public void Binding_IsExplicitPersistentAndIdempotent()
@@ -264,10 +278,11 @@ public sealed class ResourceReceiptStoreTests
         internal string Database => System.IO.Path.Combine(Path, "journal.db");
         internal TestClock Clock { get; } = new();
         internal ApplyJournal Store { get; }
-        internal Fixture()
+        internal Fixture(bool resourceIntent = false)
         {
             Directory.CreateDirectory(Path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            Store = ApplyJournal.Initialize(Path, Ownership, Artifact(FilterVerdict.Accept), Clock);
+            Store = resourceIntent ? ApplyJournal.InitializeResourceIntent(Path, Ownership, Artifact(FilterVerdict.Accept), Clock) :
+                ApplyJournal.Initialize(Path, Ownership, Artifact(FilterVerdict.Accept), Clock);
         }
         internal ApplyPlan Plan() => new(Guid.NewGuid(), Ownership, CandidateDigest.FromText(Artifact(FilterVerdict.Drop)),
             CandidateDigest.FromText(Artifact(FilterVerdict.Accept)), TimeSpan.FromSeconds(30));

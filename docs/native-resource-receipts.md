@@ -51,7 +51,15 @@ lock, not accept filtered or browser-supplied JSON as host evidence. Observation
 Observation errors are `observation.tooLarge`, `observation.invalidJson`,
 `observation.duplicateProperty`, `observation.shape`, `observation.unsupportedObjects`,
 `observation.schema`, `observation.fields`, `observation.scope`, `observation.handle`,
-`observation.identity`, `observation.policy` and `observation.rule`.
+`observation.identity`, `observation.policy`, `observation.rule` and `observation.createEcho`.
+
+`NftTableObservation.ParseEnrollmentEcho(json)` parses the handle-bearing JSON echo
+from a successful local exclusive creation of the tagged `inet nergal_filter` empty
+`accept` input chain (`create` table followed by `add` chain, both with positive
+handles). It rejects table listings, `add` table operations, `drop` policies,
+duplicate keys or extra objects with `observation.createEcho` (or the applicable
+scope/handle/identity/policy code). The caller must establish successful native
+transaction exit and independently compare a complete listing before binding.
 
 ## Expected receipt
 
