@@ -38,12 +38,19 @@ loopback device. Tests verify:
   and verifies dual-stack DNAT port forwarding, explicit SNAT source rewriting observed
   by the backend socket, `ct status dnat` filter discrimination, and live NAT/filter
   `NftNatTableObservation` / `NftTableObservation` round-tripping.
+- A Linux bridge topology (`bundle_check.py`) attaches two isolated endpoints to `br0`
+  and verifies `FirewallPolicyBundle` multi-table failure atomicity across all three
+  reserved tables, L2 bridge filtering (`arp`/`ip` permitted while omitting `ip6`),
+  targeted multi-table replacement removing `inet nergal_nat` and enabling L2 IPv6
+  with foreign sentinel tables preserved, and `NftBridgeTableObservation` round-tripping.
 
 Denied packet assertions use bounded socket receive/connect timeouts. Listener
 sockets exist before sending, so service startup timing does not determine results.
 No production rules or topology are read or changed, and no host ruleset is flushed.
 
-This suite covers schema-1/2 filtering, per-source rate limits, and dual-stack NAT;
-bridge filtering, coordinated multi-table atomic transactions, remote agent control,
-and web-driven confirmed apply belong to Phases 9–13.
+This suite covers the complete native nftables semantic surface (`FirewallFeature`
+conformance for schema-1/2 filtering, rate limiting, dual-stack DNAT/SNAT/`ct status dnat`,
+bridge filtering, atomic multi-table commit, and foreign table preservation);
+authenticated agent transport, controller persistence, RBAC, and web-driven confirmed
+apply belong to Milestones C–D.
 This fixture is opt-in and not run by the default CI job.

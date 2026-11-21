@@ -18,8 +18,12 @@ performs host operations. The web host does not reference the compiler.
   matching (`MatchOriginalDestinationDnat`).
 - **Dual-stack NAT (`NatPolicy` / `NftNatCompiler`, [ADR 0026](decisions/0026-dual-stack-nat-and-original-tuple-matching.md))**:
   prerouting destination NAT (`DnatRule`) and explicit postrouting source NAT
-  (`SnatRule`, without implicit masquerade) targeting `inet nergal_nat`. Schema-2 rules emit grouped by
-  `(input, forward, output)` chain while preserving relative rule order within each chain.
+  (`SnatRule`, without implicit masquerade) targeting `inet nergal_nat`.
+- **Bridge filtering & multi-table bundles (`BridgePolicy` / `FirewallPolicyBundle`, [ADR 0027](decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md))**:
+  L2 forward filtering in `bridge nergal_bridge` (`hook forward priority -200`) across
+  `arp`, `ip`, and `ip6` Ethernet types, coordinated atomically with `inet nergal_filter`
+  and `inet nergal_nat` via `NftPolicyBundleCompiler` without ever flushing foreign tables.
+  Schema-2 rules emit grouped by `(input, forward, output)` chain while preserving relative rule order within each chain.
   Schema 1 policies reject schema-2 fields.
 All unmatched packets receive the chain's explicit default. There are no implicit permits.
 
@@ -87,6 +91,8 @@ contain stable identifiers rather than caller-supplied policy data.
 | `nat.sourceRequired` | SNAT rule missing source prefix. |
 | `nat.translatedAddressInvalid` | NAT translated address is not a single un-scoped, non-CIDR IP address. |
 | `nat.translatedFamilyMismatch` | NAT translated address belongs to another IP family. |
+| `bridge.ruleRequired` | Bridge rule entry is null. |
+| `etherType.unknown` | Bridge rule Ethernet type is undefined. |
 
 Successful results contain a complete deterministic native batch, its SHA-256
 `Digest` over exact UTF-8 bytes, and no diagnostics. Failed results contain no digest.

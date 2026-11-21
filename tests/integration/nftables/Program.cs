@@ -137,7 +137,79 @@ if (mode == "verify-nat" && args.Length == 5)
     return 0;
 }
 
+if (mode == "bundle-create")
+{
+    var result = NftPolicyBundleCompiler.Compile(BuildBundleV1(), routerIdentity);
+    if (!result.IsSuccess)
+    {
+        throw new InvalidOperationException("Bundle v1 compile failed: " + string.Join(", ", result.Diagnostics));
+    }
+
+    Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "bundle-replace")
+{
+    var result = NftPolicyBundleCompiler.CompileAtomicReplacement(
+        BuildBundleV2(), routerIdentity, filterExists: true, natExists: true, bridgeExists: true);
+    if (!result.IsSuccess)
+    {
+        throw new InvalidOperationException("Bundle v2 replace compile failed: " + string.Join(", ", result.Diagnostics));
+    }
+
+    Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "verify-bundle" && args.Length == 3)
+{
+    var v2 = BuildBundleV2();
+    var expectedFilter = NftFilterCompiler.Compile(v2.Filter, routerIdentity).Candidate!;
+    var expectedBridge = NftBridgeCompiler.Compile(v2.Bridge!, routerIdentity).Candidate!;
+
+    var filterList = NftTableObservation.Parse(File.ReadAllText(args[1]));
+    if (!filterList.IsSuccess ||
+        NftFilterCompiler.Compile(filterList.Observation!.Policy, filterList.Observation.Identity).Candidate != expectedFilter)
+    {
+        throw new InvalidOperationException("Bundle filter listing failed.");
+    }
+
+    var bridgeList = NftBridgeTableObservation.Parse(File.ReadAllText(args[2]));
+    if (!bridgeList.IsSuccess ||
+        NftBridgeCompiler.Compile(bridgeList.Observation!.Policy, bridgeList.Observation.Identity).Candidate != expectedBridge)
+    {
+        throw new InvalidOperationException("Bundle bridge listing failed.");
+    }
+
+    return 0;
+}
+
 throw new ArgumentException("Unsupported fixture mode.");
+
+static FirewallPolicyBundle BuildBundleV1() => new(1,
+    new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, []),
+    new(1, [new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.99/32"), "192.0.2.20", 80, 8080)], []),
+    new(1, FilterVerdict.Drop,
+    [
+        new(BridgeEtherType.Arp, FilterVerdict.Accept, "veth_br_a", "veth_br_b"),
+        new(BridgeEtherType.Arp, FilterVerdict.Accept, "veth_br_b", "veth_br_a"),
+        new(BridgeEtherType.IPv4, FilterVerdict.Accept, "veth_br_a", "veth_br_b"),
+        new(BridgeEtherType.IPv4, FilterVerdict.Accept, "veth_br_b", "veth_br_a"),
+    ]));
+
+static FirewallPolicyBundle BuildBundleV2() => new(1,
+    new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, []),
+    null,
+    new(1, FilterVerdict.Drop,
+    [
+        new(BridgeEtherType.Arp, FilterVerdict.Accept, "veth_br_a", "veth_br_b"),
+        new(BridgeEtherType.Arp, FilterVerdict.Accept, "veth_br_b", "veth_br_a"),
+        new(BridgeEtherType.IPv4, FilterVerdict.Accept, "veth_br_a", "veth_br_b"),
+        new(BridgeEtherType.IPv4, FilterVerdict.Accept, "veth_br_b", "veth_br_a"),
+        new(BridgeEtherType.IPv6, FilterVerdict.Accept, "veth_br_a", "veth_br_b"),
+        new(BridgeEtherType.IPv6, FilterVerdict.Accept, "veth_br_b", "veth_br_a"),
+    ]));
 
 static FilterPolicy BuildNatFilterPolicy()
 {

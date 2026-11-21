@@ -35,3 +35,15 @@ dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- verify-nat \
     "$fixture/nat-filter-echo.json" "$fixture/nat-filter-list.json" \
     "$fixture/nat-echo.json" "$fixture/nat-list.json"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- bundle-create > "$fixture/bundle-v1.nft"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- bundle-replace > "$fixture/bundle-v2.nft"
+unshare --user --map-root-user --net \
+    python3 tests/integration/nftables/bundle_check.py \
+    "$fixture/bundle-v1.nft" "$fixture/bundle-v2.nft" \
+    "$fixture/bundle-filter-list.json" "$fixture/bundle-bridge-list.json" \
+    "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- verify-bundle \
+    "$fixture/bundle-filter-list.json" "$fixture/bundle-bridge-list.json"

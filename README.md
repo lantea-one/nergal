@@ -19,10 +19,12 @@ and receipt-aware local confirmed-apply, watchdog rollback, and boot reconciliat
 alongside schema-1 input filtering and schema-2 stateful forwarding, output chains,
 interface matchers, IPv6 Neighbor Discovery ([ADR 0024](docs/decisions/0024-stateful-forwarding-and-icmpv6-policy.md)),
 and native per-source rate limiting ([ADR 0025](docs/decisions/0025-native-per-source-rate-limiting.md))
-in `inet nergal_filter`, plus dual-stack DNAT, explicit SNAT, and `ct status dnat`
-(`inet nergal_nat`, [ADR 0026](docs/decisions/0026-dual-stack-nat-and-original-tuple-matching.md));
-bridge filtering, atomic multi-table transactions, remote agent transport, web policy
-authoring, and systemd packaging remain subsequent phases.
+in `inet nergal_filter`, dual-stack DNAT, explicit SNAT, and `ct status dnat`
+(`inet nergal_nat`, [ADR 0026](docs/decisions/0026-dual-stack-nat-and-original-tuple-matching.md)),
+plus L2 bridge filtering (`bridge nergal_bridge`) and coordinated atomic multi-table
+bundle compilation ([ADR 0027](docs/decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md));
+remote agent transport, controller persistence, RBAC, web policy authoring, and systemd
+packaging remain Milestones C and D.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 
