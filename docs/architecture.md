@@ -92,8 +92,10 @@ Typed identity markers and a strict observation/receipt comparator for empty cha
 family-wide rules, and complete schema-1 input-filter policies (CIDR addresses, TCP/UDP/ICMP/ICMPv6,
 and TCP/UDP destination ports per [ADR 0021](decisions/0021-observe-schema1-filter-rules.md)) now
 bind boot, namespace, marker, handle and complete recognized state. They perform no
-host operations. Schema 2 of LocalState persists explicit trusted expected receipts
-and provides read-only reconciliation; bound-resource apply remains disabled. See
+host operations. Schema 3 of `Nergal.LocalState` persists explicit trusted expected receipts,
+provides read-only reconciliation, and adds receipt-aware bound-resource journal operations
+(`StartBound`, `RecordCandidateAppliedBound`, `ConfirmBound`, `RecordRollbackSucceededBound`,
+[ADR 0022](decisions/0022-receipt-aware-journal.md)) while keeping legacy unbound `Start` blocked. See
 [the receipt contract](native-resource-receipts.md).
 
 The status-only listener now has real separate-UID socket conformance, bounded

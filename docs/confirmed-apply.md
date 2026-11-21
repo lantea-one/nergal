@@ -87,6 +87,8 @@ an otherwise valid arming transition. Null plans/evidence/digests throw
 
 These are in-process contracts, not a wire protocol. A future transport must reject
 unknown fields and must authenticate/authorize callers before accepting acknowledgments.
-Unit tests establish transition behavior only. The independent watchdog, durable
-confirmation/timeout decision, owned-state replacement and real packet recovery need
-separate implementation and isolated conformance testing before host apply is enabled.
+Unit tests establish transition behavior only. Receipt-aware journal persistence now
+implements `StartBound`, `RecordCandidateAppliedBound`, `ConfirmBound`, and
+`RecordRollbackSucceededBound` ([ADR 0022](decisions/0022-receipt-aware-journal.md));
+the `nergal-agent` CLI apply/watchdog executor and atomic replacement echo parsing
+remain separate work before host apply is enabled.

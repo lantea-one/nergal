@@ -1,8 +1,8 @@
 # Private local apply journal
 
-`Nergal.LocalState` schema 2 is a Linux-only persistence library separate from Core, the
+`Nergal.LocalState` schema 3 is a Linux-only persistence library separate from Core, the
 compiler and Web. It stores trusted bootstrap enrollment assertions, artifact text,
-operation bindings and replayable phase transitions in a private SQLite database.
+operation bindings, expected native receipts, and replayable apply transitions in a private SQLite database.
 It neither establishes live kernel ownership nor authorizes or executes firewall
 changes. See [ADR 0004](decisions/0004-local-journal.md) for the storage threat boundary.
 
@@ -19,8 +19,8 @@ changes. See [ADR 0004](decisions/0004-local-journal.md) for the storage threat 
   protected expected receipt is bound.
 - `Open` requires the database to exist, validates protection, application/schema
   identity and SQLite integrity, and never repairs, recreates or resets state.
-  Schema 1 requires an explicit offline upgrade with all older writers stopped;
-  see [protected receipt persistence](protected-resource-receipts.md).
+  Schemas 1 and 2 require explicit offline upgrades (`UpgradeFromVersion1` / `UpgradeFromVersion2`)
+  with all older writers stopped; see [protected receipt persistence](protected-resource-receipts.md).
   Directory/database/sidecar owners must equal the effective Linux UID. Symbolic
   links, unsafe modes, non-regular files and file link counts other than one are
   refused using no-follow statx metadata before SQLite opening.

@@ -18,8 +18,136 @@ public sealed class ResourceReceiptStoreTests
     private static readonly Guid Resource = Guid.Parse("00000000-0000-0000-0000-000000000003");
     private static readonly Guid Boot = Guid.Parse("00000000-0000-0000-0000-000000000004");
     private static readonly Guid Other = Guid.Parse("00000000-0000-0000-0000-000000000005");
+    private static readonly Guid Watchdog = Guid.Parse("00000000-0000-0000-0000-000000000006");
     private static readonly ResourceOwnership Ownership = new(Agent, Owner, 1);
     private static string Artifact(FilterVerdict verdict) => NftFilterCompiler.Compile(new(1, verdict, []), new(Owner, Resource)).Candidate!;
+
+    /// <summary>Receipt-aware bound apply records candidate evidence and atomically advances revision and expected receipt on confirmation.</summary>
+    [Fact]
+    public void BoundApply_ConfirmAdvancesRevisionAndReceiptAtomically()
+    {
+        using var fixture = new Fixture(resourceIntent: true);
+        var baseline = Observe(handle: 7, verdict: FilterVerdict.Accept);
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+
+        var plan = fixture.Plan();
+        var entry = fixture.Store.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        Assert.Equal(ApplyPhase.Prepared, entry.Session.Phase);
+        Assert.True(fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog).Accepted);
+
+        Reject("resource.boundReceiptRequired", () => fixture.Store.Advance(plan.OperationId, ApplyEvent.CandidateApplied, plan, Watchdog));
+        Reject("resource.boundReceiptRequired", () => fixture.Store.Advance(plan.OperationId, ApplyEvent.Confirm, plan, Watchdog));
+        Reject("resource.boundReceiptRequired", () => fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackSucceeded, plan, Watchdog));
+
+        var candidateObs = Observe(handle: 12, verdict: FilterVerdict.Drop);
+        fixture.Clock.Seconds = 105;
+        var applied = fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(candidateObs), candidateObs, 42);
+        Assert.True(applied.Accepted);
+        Assert.Equal(ApplyPhase.AwaitingConfirmation, applied.Entry.Session.Phase);
+
+        fixture.Clock.Seconds = 110;
+        var confirmed = fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, candidateObs, 42);
+        Assert.True(confirmed.Accepted);
+        Assert.Equal(ApplyPhase.Confirmed, confirmed.Entry.Session.Phase);
+        Assert.Null(fixture.Store.ReadActive());
+        Assert.Equal(2UL, fixture.Store.ReadEnrollment().Ownership.Revision);
+        Assert.Equal(Artifact(FilterVerdict.Drop), fixture.Store.ReadEnrollment().Artifact);
+        var stored = fixture.Store.ReadExpectedResource()!;
+        Assert.Equal(12UL, stored.TableHandle);
+        Assert.True(fixture.Store.VerifyExpectedResource(candidateObs, 42).IsMatch);
+    }
+
+    /// <summary>Bound rollback updates the expected receipt handle without advancing revision and enables subsequent bound applies.</summary>
+    [Fact]
+    public void BoundApply_RollbackUpdatesReceiptHandleWithoutAdvancingRevision()
+    {
+        using var fixture = new Fixture(resourceIntent: true);
+        var baseline = Observe(handle: 7, verdict: FilterVerdict.Accept);
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+
+        var plan = fixture.Plan();
+        fixture.Store.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        Assert.True(fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog).Accepted);
+        var candidateObs = Observe(handle: 12, verdict: FilterVerdict.Drop);
+        Assert.True(fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(candidateObs), candidateObs, 42).Accepted);
+
+        fixture.Clock.Seconds = 131;
+        var expired = fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, candidateObs, 42);
+        Assert.False(expired.Accepted);
+        Assert.Equal("deadline.expired", expired.ErrorCode);
+        Assert.Equal(ApplyPhase.RollbackRequired, expired.Entry.Session.Phase);
+
+        Reject("rollback.mismatch", () => fixture.Store.RecordRollbackSucceededBound(plan.OperationId, plan, Watchdog, Receipt(candidateObs), candidateObs, 42));
+
+        var restored = Observe(handle: 15, verdict: FilterVerdict.Accept);
+        var rolledBack = fixture.Store.RecordRollbackSucceededBound(plan.OperationId, plan, Watchdog, Receipt(restored), restored, 42);
+        Assert.True(rolledBack.Accepted);
+        Assert.Equal(ApplyPhase.RolledBack, rolledBack.Entry.Session.Phase);
+        Assert.Null(fixture.Store.ReadActive());
+        Assert.Equal(1UL, fixture.Store.ReadEnrollment().Ownership.Revision);
+        Assert.Equal(15UL, fixture.Store.ReadExpectedResource()!.TableHandle);
+
+        var nextPlan = fixture.Plan();
+        Assert.Equal(ApplyPhase.Prepared, fixture.Store.StartBound(nextPlan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), restored, 42).Session.Phase);
+    }
+
+    /// <summary>Bound apply operations fail closed on unbound journals, drifted observations, and mismatched candidate evidence.</summary>
+    [Fact]
+    public void BoundApply_RejectsDriftStaleAndMismatchedEvidence()
+    {
+        using var fixture = new Fixture();
+        Reject("resource.unbound", () => fixture.Store.StartBound(fixture.Plan(), Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), Observe(), 42));
+
+        var baseline = Observe(handle: 7, verdict: FilterVerdict.Accept);
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+
+        Reject("resource.receiptMismatch", () => fixture.Store.StartBound(fixture.Plan(), Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), Observe(handle: 99), 42));
+        Reject("resource.receiptMismatch", () => fixture.Store.StartBound(fixture.Plan(), Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 43));
+
+        var plan = fixture.Plan();
+        fixture.Store.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        Assert.True(fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog).Accepted);
+
+        var candidateObs = Observe(handle: 12, verdict: FilterVerdict.Drop);
+        Reject("resource.receiptMismatch", () => fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(Observe(handle: 13, verdict: FilterVerdict.Drop)), candidateObs, 42));
+        Reject("resource.candidateMismatch", () => fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(Observe(handle: 12, verdict: FilterVerdict.Accept)), Observe(handle: 12, verdict: FilterVerdict.Accept), 42));
+
+        Assert.True(fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(candidateObs), candidateObs, 42).Accepted);
+        Reject("resource.receiptMismatch", () => fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, Observe(handle: 13, verdict: FilterVerdict.Drop), 42));
+        Assert.Equal(ApplyPhase.AwaitingConfirmation, fixture.Store.ReadActive()!.Session.Phase);
+    }
+
+    /// <summary>Quiescent schema-2 migration preserves bound receipts and history while enabling schema-3 bound operations.</summary>
+    [Fact]
+    public void MigrationFromVersion2_PreservesBoundReceiptAndEnablesBoundApply()
+    {
+        using var fixture = new Fixture();
+        var baseline = Observe(handle: 7, verdict: FilterVerdict.Accept);
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+        fixture.MakeVersion2();
+
+        var before = File.ReadAllBytes(fixture.Database);
+        Reject("journal.schemaOrIntegrity", () => ApplyJournal.Open(fixture.Path, fixture.Clock));
+        Assert.Equal(before, File.ReadAllBytes(fixture.Database));
+
+        var upgraded = ApplyJournal.UpgradeFromVersion2(fixture.Path, fixture.Clock);
+        Assert.Equal(Receipt(baseline), upgraded.ReadExpectedResource());
+        var plan = fixture.Plan();
+        upgraded.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        Assert.True(upgraded.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog).Accepted);
+        var candidateObs = Observe(handle: 20, verdict: FilterVerdict.Drop);
+        Assert.True(upgraded.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(candidateObs), candidateObs, 42).Accepted);
+        Assert.True(upgraded.ConfirmBound(plan.OperationId, plan, Watchdog, candidateObs, 42).Accepted);
+        Assert.Equal(2UL, upgraded.ReadEnrollment().Ownership.Revision);
+
+        using var activeFixture = new Fixture();
+        var activePlan = activeFixture.Plan();
+        activeFixture.Store.Start(activePlan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept));
+        activeFixture.MakeVersion2();
+        var activeBefore = File.ReadAllBytes(activeFixture.Database);
+        Reject("migration.activeOperation", () => ApplyJournal.UpgradeFromVersion2(activeFixture.Path, activeFixture.Clock));
+        Assert.Equal(activeBefore, File.ReadAllBytes(activeFixture.Database));
+    }
 
     /// <summary>A crash between intent and receipt cannot enable legacy operations or permit a second initializer.</summary>
     [Fact]
@@ -270,7 +398,8 @@ public sealed class ResourceReceiptStoreTests
     private sealed class TestClock : IJournalClock
     {
         internal Guid BootId { get; set; } = Boot;
-        public JournalTime Read() => new(BootId, TimeSpan.FromSeconds(100));
+        internal int Seconds { get; set; } = 100;
+        public JournalTime Read() => new(BootId, TimeSpan.FromSeconds(Seconds));
     }
     private sealed class Fixture : IDisposable
     {
@@ -293,7 +422,15 @@ public sealed class ResourceReceiptStoreTests
                 Assert.True(Store.Advance(plan.OperationId, kind, plan, Other).Accepted);
             }
         }
-        internal void MakeLegacy() => Sql("DROP TRIGGER bound_resource_no_legacy_start; DROP TABLE resource_receipt; ALTER TABLE enrollment DROP COLUMN resource_bound; PRAGMA user_version=1");
+        internal void MakeLegacy() => Sql("DROP TRIGGER bound_resource_no_legacy_start; DROP TABLE bound_operations; DROP TABLE resource_receipt; ALTER TABLE enrollment DROP COLUMN resource_bound; PRAGMA user_version=1");
+        internal void MakeVersion2() => Sql("""
+            DROP TRIGGER bound_resource_no_legacy_start;
+            DROP TABLE bound_operations;
+            CREATE TRIGGER bound_resource_no_legacy_start BEFORE INSERT ON operations
+              WHEN (SELECT resource_bound FROM enrollment WHERE singleton=1)=1
+              BEGIN SELECT RAISE(ABORT,'bound resource apply is unavailable'); END;
+            PRAGMA user_version=2
+            """);
         internal void Sql(string sql)
         {
             using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = Database, Pooling = false }.ToString());
