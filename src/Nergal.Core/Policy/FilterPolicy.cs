@@ -33,6 +33,33 @@ public enum FilterProtocol
     IcmpV6,
 }
 
+/// <summary>Filter base chains supported by policy schema versions 1 and 2.</summary>
+public enum FilterChainKind
+{
+    /// <summary>Traffic destined to the local host (`hook input`).</summary>
+    Input,
+    /// <summary>Routed traffic traversing the host between interfaces (`hook forward`).</summary>
+    Forward,
+    /// <summary>Traffic originating from the local host (`hook output`).</summary>
+    Output,
+}
+
+/// <summary>Connection-tracking states matched against kernel conntrack state in schema version 2.</summary>
+[Flags]
+public enum ConnectionStateFlags
+{
+    /// <summary>No connection-state restriction (stateless match).</summary>
+    None = 0,
+    /// <summary>Initial packet establishing a tracked flow.</summary>
+    New = 1,
+    /// <summary>Packet matching an already established two-way flow.</summary>
+    Established = 2,
+    /// <summary>Packet starting a flow related to an existing tracked flow.</summary>
+    Related = 4,
+    /// <summary>Packet that cannot be associated with a known valid connection.</summary>
+    Invalid = 8,
+}
+
 /// <summary>An immutable rule draft; cross-field validity is assessed by the compiler.</summary>
 /// <param name="Family">The explicit IP family.</param>
 /// <param name="Protocol">The protocol; unknown enum values are rejected.</param>
@@ -40,27 +67,56 @@ public enum FilterProtocol
 /// <param name="Source">An optional canonical source network.</param>
 /// <param name="Destination">An optional canonical destination network.</param>
 /// <param name="DestinationPort">A TCP/UDP port in 1–65535, or null for all ports.</param>
+/// <param name="Chain">Target base filter chain; schema 1 permits only <see cref="FilterChainKind.Input"/>.</param>
+/// <param name="InputInterface">Optional ingress interface name (<c>iifname</c>), valid on <see cref="FilterChainKind.Input"/> and <see cref="FilterChainKind.Forward"/>.</param>
+/// <param name="OutputInterface">Optional egress interface name (<c>oifname</c>), valid on <see cref="FilterChainKind.Forward"/> and <see cref="FilterChainKind.Output"/>.</param>
+/// <param name="ConnectionStates">Optional conntrack state mask (`None` for stateless match; schema 2 only).</param>
+/// <param name="IcmpType">Optional canonical ICMP/ICMPv6 type name (schema 2 only).</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
     FilterVerdict Verdict,
     NetworkPrefix? Source = null,
     NetworkPrefix? Destination = null,
-    int? DestinationPort = null);
+    int? DestinationPort = null,
+    FilterChainKind Chain = FilterChainKind.Input,
+    string? InputInterface = null,
+    string? OutputInterface = null,
+    ConnectionStateFlags ConnectionStates = ConnectionStateFlags.None,
+    string? IcmpType = null);
 
-/// <summary>An immutable, versioned snapshot of ordered host input-filter rules.</summary>
+/// <summary>An immutable, versioned snapshot of ordered host and forwarding filter rules.</summary>
 public sealed class FilterPolicy
 {
-    /// <summary>Snapshots rules without silently discarding invalid drafts.</summary>
-    /// <param name="schemaVersion">Must be 1 for the current compiler.</param>
+    /// <summary>Snapshots rules without silently discarding invalid drafts; forward/output default to drop when omitted.</summary>
+    /// <param name="schemaVersion">1 for input-only stateless filtering; 2 for multi-chain stateful filtering.</param>
     /// <param name="defaultVerdict">Decision for unmatched input traffic.</param>
     /// <param name="rules">Ordered rules; null entries are retained for diagnostics.</param>
     /// <exception cref="ArgumentNullException">The collection is null.</exception>
     public FilterPolicy(int schemaVersion, FilterVerdict defaultVerdict, IEnumerable<FilterRule?> rules)
+        : this(schemaVersion, defaultVerdict, FilterVerdict.Drop, FilterVerdict.Drop, rules)
+    {
+    }
+
+    /// <summary>Snapshots rules with explicit per-chain default verdicts for input, forward, and output hooks.</summary>
+    /// <param name="schemaVersion">Schema version (1 requires Drop for forward/output and input-only rules; 2 enables all base chains).</param>
+    /// <param name="inputDefaultVerdict">Decision for unmatched traffic on the input hook.</param>
+    /// <param name="forwardDefaultVerdict">Decision for unmatched traffic on the forward hook.</param>
+    /// <param name="outputDefaultVerdict">Decision for unmatched traffic on the output hook.</param>
+    /// <param name="rules">Ordered rules; null entries are retained for diagnostics.</param>
+    /// <exception cref="ArgumentNullException">The collection is null.</exception>
+    public FilterPolicy(
+        int schemaVersion,
+        FilterVerdict inputDefaultVerdict,
+        FilterVerdict forwardDefaultVerdict,
+        FilterVerdict outputDefaultVerdict,
+        IEnumerable<FilterRule?> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
         SchemaVersion = schemaVersion;
-        DefaultVerdict = defaultVerdict;
+        InputDefaultVerdict = inputDefaultVerdict;
+        ForwardDefaultVerdict = forwardDefaultVerdict;
+        OutputDefaultVerdict = outputDefaultVerdict;
         Rules = Array.AsReadOnly(rules.ToArray());
     }
 
@@ -68,8 +124,27 @@ public sealed class FilterPolicy
     public int SchemaVersion { get; }
 
     /// <summary>Gets the explicit unmatched-input decision.</summary>
-    public FilterVerdict DefaultVerdict { get; }
+    public FilterVerdict DefaultVerdict => InputDefaultVerdict;
+
+    /// <summary>Gets the explicit unmatched-input decision.</summary>
+    public FilterVerdict InputDefaultVerdict { get; }
+
+    /// <summary>Gets the explicit unmatched-forward decision.</summary>
+    public FilterVerdict ForwardDefaultVerdict { get; }
+
+    /// <summary>Gets the explicit unmatched-output decision.</summary>
+    public FilterVerdict OutputDefaultVerdict { get; }
 
     /// <summary>Gets the defensive, ordered snapshot; no automatic permit rules exist.</summary>
     public IReadOnlyList<FilterRule?> Rules { get; }
+
+    /// <summary>Computes the semantic backend features required by this filter policy.</summary>
+    public IReadOnlySet<FirewallFeature> GetRequiredFeatures()
+    {
+        return new HashSet<FirewallFeature>
+        {
+            FirewallFeature.DualStackFiltering,
+            FirewallFeature.ForeignTablePreservation,
+        };
+    }
 }

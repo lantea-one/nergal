@@ -419,6 +419,101 @@ public sealed class NftResourceReceiptTests
         Assert.Equal(["state.drift"], NftReceiptVerifier.Verify(Receipt(Observe()), actual, Boot, 42).ErrorCodes);
     }
 
+    /// <summary>Schema-2 three-chain tables reconstruct stateful, interface, and ICMPv6 policies in full round-trip.</summary>
+    [Fact]
+    public void Schema2_ObservationAndReplacementEcho_RoundTripsAndDetectsDrift()
+    {
+        var identity = new NftTableIdentity(Owner, Resource);
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept,
+        [
+            new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept,
+                Chain: FilterChainKind.Input, InputInterface: "eth0", IcmpType: FilterIcmpTypes.NdNeighborSolicit),
+            new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
+                DestinationPort: 443, Chain: FilterChainKind.Forward, InputInterface: "eth0", OutputInterface: "eth1",
+                ConnectionStates: ConnectionStateFlags.New),
+            new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Accept,
+                Chain: FilterChainKind.Forward, InputInterface: "eth1", OutputInterface: "eth0",
+                ConnectionStates: ConnectionStateFlags.Established | ConnectionStateFlags.Related),
+            new(IpFamily.IPv6, FilterProtocol.Any, FilterVerdict.Drop,
+                Chain: FilterChainKind.Output, OutputInterface: "eth1", ConnectionStates: ConnectionStateFlags.Invalid),
+        ]);
+        var compiled = NftFilterCompiler.Compile(policy, identity);
+        Assert.True(compiled.IsSuccess);
+
+        var listing = Schema2Listing();
+        var parsed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(parsed.IsSuccess, parsed.ErrorCode);
+        var observation = parsed.Observation!;
+        Assert.Equal(2, observation.Policy.SchemaVersion);
+        Assert.Equal(11UL, observation.ForwardChainHandle);
+        Assert.Equal(12UL, observation.OutputChainHandle);
+        Assert.Equal(compiled.Candidate, NftFilterCompiler.Compile(observation.Policy, observation.Identity).Candidate);
+
+        var echo = Schema2ReplacementEcho();
+        var echoed = NftTableObservation.ParseReplacementEcho(echo.ToJsonString());
+        Assert.True(echoed.IsSuccess, echoed.ErrorCode);
+        Assert.Equal(observation.StateDigest, echoed.Observation!.StateDigest);
+
+        listing["nftables"]![3]!["chain"]!["policy"] = "accept";
+        var drifted = NftTableObservation.Parse(listing.ToJsonString()).Observation!;
+        Assert.NotEqual(observation.StateDigest, drifted.StateDigest);
+
+        var ruleMutated = Schema2Listing();
+        ruleMutated["nftables"]![6]!["rule"]!["expr"]![3]!["match"]!["right"] = "established";
+        Assert.NotEqual(observation.StateDigest, NftTableObservation.Parse(ruleMutated.ToJsonString()).Observation!.StateDigest);
+    }
+
+    /// <summary>Schema-2 observations fail closed on incomplete chains, out-of-order rules, bad conntrack order, or wrong interface directions.</summary>
+    [Fact]
+    public void Schema2_RejectsIncompleteChainsAndUnsupportedMatchers()
+    {
+        var twoChains = Schema2Listing();
+        twoChains["nftables"]!.AsArray().RemoveAt(4);
+        Reject(twoChains.ToJsonString(), "observation.unsupportedObjects");
+
+        var wrongStateOrder = Schema2Listing();
+        wrongStateOrder["nftables"]![7]!["rule"]!["expr"]![2]!["match"]!["right"] = JsonNode.Parse("""["related","established"]""")!;
+        Reject(wrongStateOrder.ToJsonString(), "observation.rule");
+
+        var wrongIifOnOutput = Schema2Listing();
+        wrongIifOnOutput["nftables"]![8]!["rule"]!["expr"]![1] = JsonNode.Parse("""{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth0"}}""")!;
+        Reject(wrongIifOnOutput.ToJsonString(), "observation.rule");
+
+        var outOfChainOrder = Schema2Listing();
+        var array = outOfChainOrder["nftables"]!.AsArray();
+        var fwdRule = array[6]!.DeepClone();
+        array.RemoveAt(6);
+        array.Add(fwdRule);
+        Reject(outOfChainOrder.ToJsonString(), "observation.scope");
+    }
+
+    private static JsonNode Schema2Listing() => JsonNode.Parse("""
+        {"nftables":[
+          {"metainfo":{"version":"1.1.7","release_name":"fixture","json_schema_version":1}},
+          {"table":{"family":"inet","name":"nergal_filter","handle":7,"comment":"MARKER"}},
+          {"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":9,"type":"filter","hook":"input","prio":0,"policy":"drop"}},
+          {"chain":{"family":"inet","table":"nergal_filter","name":"forward","handle":11,"type":"filter","hook":"forward","prio":0,"policy":"drop"}},
+          {"chain":{"family":"inet","table":"nergal_filter","name":"output","handle":12,"type":"filter","hook":"output","prio":0,"policy":"accept"}},
+          {"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":20,"expr":[{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth0"}},{"match":{"op":"==","left":{"payload":{"protocol":"icmpv6","field":"type"}},"right":"nd-neighbor-solicit"}},{"accept":null}]}},
+          {"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":21,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth0"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"eth1"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":"new"}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":443}},{"accept":null}]}},
+          {"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":22,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth1"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"eth0"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":["established","related"]}},{"accept":null}]}},
+          {"rule":{"family":"inet","table":"nergal_filter","chain":"output","handle":23,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv6"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"eth1"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":"invalid"}},{"drop":null}]}}
+        ]}
+        """.Replace("MARKER", new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal))!;
+
+    private static JsonNode Schema2ReplacementEcho() => JsonNode.Parse("""
+        {"nftables":[
+          {"create":{"table":{"family":"inet","name":"nergal_filter","handle":7,"comment":"MARKER"}}},
+          {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":9,"type":"filter","hook":"input","prio":0,"policy":"drop"}}},
+          {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"forward","handle":11,"type":"filter","hook":"forward","prio":0,"policy":"drop"}}},
+          {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"output","handle":12,"type":"filter","hook":"output","prio":0,"policy":"accept"}}},
+          {"add":{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":20,"expr":[{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth0"}},{"match":{"op":"==","left":{"payload":{"protocol":"icmpv6","field":"type"}},"right":"nd-neighbor-solicit"}},{"accept":null}]}}},
+          {"add":{"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":21,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth0"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"eth1"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":"new"}},{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":443}},{"accept":null}]}}},
+          {"add":{"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":22,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"match":{"op":"==","left":{"meta":{"key":"iifname"}},"right":"eth1"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"eth0"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":["established","related"]}},{"accept":null}]}}},
+          {"add":{"rule":{"family":"inet","table":"nergal_filter","chain":"output","handle":23,"expr":[{"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv6"}},{"match":{"op":"==","left":{"meta":{"key":"oifname"}},"right":"eth1"}},{"match":{"op":"in","left":{"ct":{"key":"state"}},"right":"invalid"}},{"drop":null}]}}}
+        ]}
+        """.Replace("MARKER", new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal))!;
+
     private static JsonObject Item(JsonNode root, string kind)
         => root["nftables"]!.AsArray().Select(value => value!.AsObject()).Single(value => value.ContainsKey(kind))[kind]!.AsObject();
     private static NftTableObservation Observe() => NftTableObservation.Parse(Json).Observation!;
