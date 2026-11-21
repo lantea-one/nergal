@@ -487,6 +487,87 @@ public sealed class NftResourceReceiptTests
         Reject(outOfChainOrder.ToJsonString(), "observation.scope");
     }
 
+    /// <summary>Schema-2 per-source rate-limit observations tolerate runtime set elements while binding handles, rates, and families.</summary>
+    [Fact]
+    public void Schema2_RateLimitObservation_RoundTripsAndDetectsConfigDrift()
+    {
+        var identity = new NftTableIdentity(Owner, Resource);
+        var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
+        [
+            new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, DestinationPort: 18445,
+                RateLimit: new(2, RateLimitTimeUnit.Minute, 2, 60)),
+            new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept, DestinationPort: 22,
+                Chain: FilterChainKind.Forward, RateLimit: new(10, RateLimitTimeUnit.Second, 5, 30)),
+        ]);
+        var compiled = NftFilterCompiler.Compile(policy, identity);
+        Assert.True(compiled.IsSuccess);
+
+        var listing = Schema2RateLimitListing(includeRuntimeElems: false);
+        var parsedClean = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(parsedClean.IsSuccess, parsedClean.ErrorCode);
+        Assert.Equal(compiled.Candidate, NftFilterCompiler.Compile(parsedClean.Observation!.Policy, identity).Candidate);
+
+        var liveWithElems = Schema2RateLimitListing(includeRuntimeElems: true);
+        var parsedLive = NftTableObservation.Parse(liveWithElems.ToJsonString());
+        Assert.True(parsedLive.IsSuccess, parsedLive.ErrorCode);
+        Assert.Equal(parsedClean.Observation.StateDigest, parsedLive.Observation!.StateDigest);
+
+        var echoed = NftTableObservation.ParseReplacementEcho(Schema2RateLimitReplacementEcho().ToJsonString());
+        Assert.True(echoed.IsSuccess, echoed.ErrorCode);
+        Assert.Equal(parsedClean.Observation.StateDigest, echoed.Observation!.StateDigest);
+
+        // Enforcement changes must change StateDigest, and unreferenced/misnamed sets fail closed.
+        liveWithElems["nftables"]![7]!["rule"]!["expr"]![1]!["set"]!["stmt"]![0]!["limit"]!["burst"] = 3;
+        Assert.NotEqual(parsedClean.Observation.StateDigest, NftTableObservation.Parse(liveWithElems.ToJsonString()).Observation!.StateDigest);
+
+        var badName = Schema2RateLimitListing(includeRuntimeElems: false);
+        badName["nftables"]![5]!["set"]!["name"] = "foreign_set";
+        Reject(badName.ToJsonString(), "observation.scope");
+
+        var echoWithCount = Schema2RateLimitReplacementEcho();
+        echoWithCount["nftables"]![4]!["add"]!["set"]!["count"] = 1;
+        Assert.False(NftTableObservation.ParseReplacementEcho(echoWithCount.ToJsonString()).IsSuccess);
+
+        var unreferenced = Schema2RateLimitListing(includeRuntimeElems: false);
+        unreferenced["nftables"]!.AsArray().RemoveAt(8);
+        Reject(unreferenced.ToJsonString(), "observation.unsupportedObjects");
+    }
+
+    private static JsonNode Schema2RateLimitListing(bool includeRuntimeElems)
+    {
+        var set0 = includeRuntimeElems
+            ? """{"set":{"family":"inet","name":"nergal_rl_0","table":"nergal_filter","type":"ipv4_addr","handle":15,"size":65535,"count":1,"flags":["timeout","dynamic"],"elem":[{"elem":{"val":"192.0.2.2","timeout":60,"expires":59,"limit":{"rate":2,"burst":2,"per":"minute"}}}]}}"""
+            : """{"set":{"family":"inet","name":"nergal_rl_0","table":"nergal_filter","type":"ipv4_addr","handle":15,"size":65535,"flags":["timeout","dynamic"]}}""";
+        return JsonNode.Parse("""
+            {"nftables":[
+              {"metainfo":{"version":"1.1.7","release_name":"fixture","json_schema_version":1}},
+              {"table":{"family":"inet","name":"nergal_filter","handle":7,"comment":"MARKER"}},
+              {"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":9,"type":"filter","hook":"input","prio":0,"policy":"drop"}},
+              {"chain":{"family":"inet","table":"nergal_filter","name":"forward","handle":11,"type":"filter","hook":"forward","prio":0,"policy":"drop"}},
+              {"chain":{"family":"inet","table":"nergal_filter","name":"output","handle":12,"type":"filter","hook":"output","prio":0,"policy":"drop"}},
+              SET0,
+              {"set":{"family":"inet","name":"nergal_rl_1","table":"nergal_filter","type":"ipv6_addr","handle":16,"size":65535,"flags":["timeout","dynamic"]}},
+              {"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":20,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"udp","field":"dport"}},"right":18445}},{"set":{"op":"add","elem":{"elem":{"val":{"payload":{"protocol":"ip","field":"saddr"}},"timeout":60}},"set":"@nergal_rl_0","stmt":[{"limit":{"rate":2,"burst":2,"per":"minute"}}]}},{"accept":null}]}},
+              {"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":21,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":22}},{"set":{"op":"add","elem":{"elem":{"val":{"payload":{"protocol":"ip6","field":"saddr"}},"timeout":30}},"set":"@nergal_rl_1","stmt":[{"limit":{"rate":10,"burst":5,"per":"second"}}]}},{"accept":null}]}}
+            ]}
+            """
+            .Replace("SET0", set0, StringComparison.Ordinal)
+            .Replace("MARKER", new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal))!;
+    }
+
+    private static JsonNode Schema2RateLimitReplacementEcho() => JsonNode.Parse("""
+        {"nftables":[
+          {"create":{"table":{"family":"inet","name":"nergal_filter","handle":7,"comment":"MARKER"}}},
+          {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":9,"type":"filter","hook":"input","prio":0,"policy":"drop"}}},
+          {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"forward","handle":11,"type":"filter","hook":"forward","prio":0,"policy":"drop"}}},
+          {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"output","handle":12,"type":"filter","hook":"output","prio":0,"policy":"drop"}}},
+          {"add":{"set":{"family":"inet","name":"nergal_rl_0","table":"nergal_filter","type":"ipv4_addr","handle":15,"size":65535,"flags":["timeout","dynamic"]}}},
+          {"add":{"set":{"family":"inet","name":"nergal_rl_1","table":"nergal_filter","type":"ipv6_addr","handle":16,"size":65535,"flags":["timeout","dynamic"]}}},
+          {"add":{"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":20,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"udp","field":"dport"}},"right":18445}},{"set":{"op":"add","elem":{"elem":{"val":{"payload":{"protocol":"ip","field":"saddr"}},"timeout":60}},"set":"@nergal_rl_0","stmt":[{"limit":{"rate":2,"burst":2,"per":"minute"}}]}},{"accept":null}]}}},
+          {"add":{"rule":{"family":"inet","table":"nergal_filter","chain":"forward","handle":21,"expr":[{"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":22}},{"set":{"op":"add","elem":{"elem":{"val":{"payload":{"protocol":"ip6","field":"saddr"}},"timeout":30}},"set":"@nergal_rl_1","stmt":[{"limit":{"rate":10,"burst":5,"per":"second"}}]}},{"accept":null}]}}}
+        ]}
+        """.Replace("MARKER", new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal))!;
+
     private static JsonNode Schema2Listing() => JsonNode.Parse("""
         {"nftables":[
           {"metainfo":{"version":"1.1.7","release_name":"fixture","json_schema_version":1}},

@@ -16,8 +16,8 @@ dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- router > "$fixture/router.nft"
 unshare --user --map-root-user --net \
     python3 tests/integration/nftables/router_check.py "$fixture/router.nft" \
-    "$fixture/router-echo.json" "$fixture/router-list.json" \
+    "$fixture/router-echo.json" "$fixture/router-list.json" "$fixture/router-terse.json" \
     "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- verify-router \
-    "$fixture/router-echo.json" "$fixture/router-list.json"
+    "$fixture/router-echo.json" "$fixture/router-list.json" "$fixture/router-terse.json"

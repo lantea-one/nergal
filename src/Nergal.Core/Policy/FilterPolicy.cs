@@ -60,6 +60,26 @@ public enum ConnectionStateFlags
     Invalid = 8,
 }
 
+/// <summary>Supported rate-limit window units for per-source dynamic sets.</summary>
+public enum RateLimitTimeUnit
+{
+    /// <summary>Packets permitted per second.</summary>
+    Second,
+    /// <summary>Packets permitted per minute.</summary>
+    Minute,
+}
+
+/// <summary>Per-source token-bucket rate limit backed by a native dynamic nftables set.</summary>
+/// <param name="PacketsPerWindow">Positive packet allowance per <paramref name="WindowUnit"/> (1–1000000).</param>
+/// <param name="WindowUnit">Rate time unit (<see cref="RateLimitTimeUnit.Second"/> or <see cref="RateLimitTimeUnit.Minute"/>).</param>
+/// <param name="Burst">Positive token-bucket burst size in packets (1–10000).</param>
+/// <param name="EntryTimeoutSeconds">Idle timeout in seconds before evicting per-source state (1–86400).</param>
+public sealed record PerSourceRateLimit(
+    int PacketsPerWindow,
+    RateLimitTimeUnit WindowUnit,
+    int Burst,
+    int EntryTimeoutSeconds = 60);
+
 /// <summary>An immutable rule draft; cross-field validity is assessed by the compiler.</summary>
 /// <param name="Family">The explicit IP family.</param>
 /// <param name="Protocol">The protocol; unknown enum values are rejected.</param>
@@ -72,6 +92,7 @@ public enum ConnectionStateFlags
 /// <param name="OutputInterface">Optional egress interface name (<c>oifname</c>), valid on <see cref="FilterChainKind.Forward"/> and <see cref="FilterChainKind.Output"/>.</param>
 /// <param name="ConnectionStates">Optional conntrack state mask (`None` for stateless match; schema 2 only).</param>
 /// <param name="IcmpType">Optional canonical ICMP/ICMPv6 type name (schema 2 only).</param>
+/// <param name="RateLimit">Optional per-source token-bucket rate limit backed by a dynamic set (schema 2 only).</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -83,7 +104,8 @@ public sealed record FilterRule(
     string? InputInterface = null,
     string? OutputInterface = null,
     ConnectionStateFlags ConnectionStates = ConnectionStateFlags.None,
-    string? IcmpType = null);
+    string? IcmpType = null,
+    PerSourceRateLimit? RateLimit = null);
 
 /// <summary>An immutable, versioned snapshot of ordered host and forwarding filter rules.</summary>
 public sealed class FilterPolicy
@@ -141,10 +163,16 @@ public sealed class FilterPolicy
     /// <summary>Computes the semantic backend features required by this filter policy.</summary>
     public IReadOnlySet<FirewallFeature> GetRequiredFeatures()
     {
-        return new HashSet<FirewallFeature>
+        var features = new HashSet<FirewallFeature>
         {
             FirewallFeature.DualStackFiltering,
             FirewallFeature.ForeignTablePreservation,
         };
+        if (Rules.Any(rule => rule?.RateLimit is not null))
+        {
+            features.Add(FirewallFeature.PerSourceRateLimiting);
+        }
+
+        return features;
     }
 }

@@ -31,13 +31,15 @@ loopback device. Tests verify:
   `input`/`forward`/`output` drop defaults, interface matching (`iifname`/`oifname`),
   IPv6 Neighbor Discovery (`nd-neighbor-solicit`, `nd-neighbor-advert`) over
   drop-default chains, stateful return forwarding (`ct state established,related`),
-  and deterministic `NftTableObservation` round-tripping from live kernel JSON.
+  per-source dynamic rate limiting (`nergal_rl_*` isolation between distinct IPv4 and
+  IPv6 client addresses), and deterministic `NftTableObservation` round-tripping across
+  both populated full listings and `--terse` listings.
 
 Denied packet assertions use bounded socket receive/connect timeouts. Listener
 sockets exist before sending, so service startup timing does not determine results.
 No production rules or topology are read or changed, and no host ruleset is flushed.
 
-This suite covers schema-1 input filtering and schema-2 stateful forwarding/ICMPv6
-rules; per-source rate limits, NAT, bridge filtering, multi-table transactions,
-and web-driven confirmed apply belong to Phases 7–13.
+This suite covers schema-1 input filtering and schema-2 stateful forwarding, ICMPv6,
+and per-source rate limiting; NAT, bridge filtering, multi-table transactions,
+and web-driven confirmed apply belong to Phases 8–13.
 This fixture is opt-in and not run by the default CI job.

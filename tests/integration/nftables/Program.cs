@@ -42,7 +42,7 @@ if (mode == "router")
     return 0;
 }
 
-if (mode == "verify-router" && args.Length == 3)
+if (mode == "verify-router" && args.Length is 3 or 4)
 {
     var expected = NftFilterCompiler.Compile(BuildRouterPolicy(), routerIdentity).Candidate!;
     var echoJson = File.ReadAllText(args[1]);
@@ -62,6 +62,20 @@ if (mode == "verify-router" && args.Length == 3)
     if (echoed.Observation!.StateDigest != listed.Observation!.StateDigest)
     {
         throw new InvalidOperationException("Router echo and listing state digests diverged.");
+    }
+
+    if (args.Length == 4)
+    {
+        var terse = NftTableObservation.Parse(File.ReadAllText(args[3]));
+        if (!terse.IsSuccess)
+        {
+            throw new InvalidOperationException("Router terse listing failed: " + terse.ErrorCode);
+        }
+
+        if (terse.Observation!.StateDigest != listed.Observation.StateDigest)
+        {
+            throw new InvalidOperationException("Router plain and terse state digests diverged.");
+        }
     }
 
     var recompiled = NftFilterCompiler.Compile(listed.Observation.Policy, listed.Observation.Identity).Candidate;
@@ -97,6 +111,9 @@ static FilterPolicy BuildRouterPolicy()
         new(IpFamily.IPv6, FilterProtocol.Tcp, FilterVerdict.Accept, new("2001:db8:1::/64"), new("2001:db8:2::/64"), 18443, FilterChainKind.Forward, "r_cli", "r_srv", ConnectionStateFlags.New | ConnectionStateFlags.Established),
         new(IpFamily.IPv4, FilterProtocol.Icmp, FilterVerdict.Accept, Chain: FilterChainKind.Forward, InputInterface: "r_cli", OutputInterface: "r_srv", ConnectionStates: ConnectionStateFlags.New | ConnectionStateFlags.Established, IcmpType: FilterIcmpTypes.EchoRequest),
         new(IpFamily.IPv6, FilterProtocol.IcmpV6, FilterVerdict.Accept, Chain: FilterChainKind.Forward, InputInterface: "r_cli", OutputInterface: "r_srv", ConnectionStates: ConnectionStateFlags.New | ConnectionStateFlags.Established, IcmpType: FilterIcmpTypes.EchoRequest),
+        // Forward: per-source UDP 18445 rate limit (burst 2, 2/minute).
+        new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, new("192.0.2.0/24"), new("198.51.100.0/24"), 18445, FilterChainKind.Forward, "r_cli", "r_srv", RateLimit: new(2, RateLimitTimeUnit.Minute, 2, 60)),
+        new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Accept, new("2001:db8:1::/64"), new("2001:db8:2::/64"), 18445, FilterChainKind.Forward, "r_cli", "r_srv", RateLimit: new(2, RateLimitTimeUnit.Minute, 2, 60)),
     };
 
     return new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, rules);
