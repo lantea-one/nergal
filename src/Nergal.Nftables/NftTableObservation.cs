@@ -45,7 +45,13 @@ public sealed class NftTableObservation
     /// <summary>Parses bounded native JSON without host access, accepting empty chains and explicit family-wide terminal rules.</summary>
     /// <remarks>Unknown objects, fields, duplicate keys and unsupported rule expressions fail closed. The trusted collector must supply a full table snapshot; omitted kernel objects cannot be detected from JSON alone.</remarks>
     /// <exception cref="ArgumentNullException">JSON is null.</exception>
-    public static NftObservationResult Parse(string json)
+    public static NftObservationResult Parse(string json) => ParseNative(json, createEcho: false);
+
+    /// <summary>Reads the handle-bearing echo of a successful local exclusive create of an empty accept baseline.</summary>
+    /// <remarks>Caller must establish successful transaction exit and independently compare a complete listing before binding.</remarks>
+    public static NftObservationResult ParseEnrollmentEcho(string json) => ParseNative(json, createEcho: true);
+
+    private static NftObservationResult ParseNative(string json, bool createEcho)
     {
         ArgumentNullException.ThrowIfNull(json);
         try
@@ -68,22 +74,35 @@ public sealed class NftTableObservation
             }
 
             var items = root.GetProperty("nftables").EnumerateArray().ToArray();
-            if (items.Length < 3 || !Properties(items[0], "metainfo") || !Properties(items[1], "table") || !Properties(items[2], "chain"))
+            JsonElement table, chain;
+            if (createEcho)
             {
-                return Deny("observation.unsupportedObjects");
+                if (items.Length != 2 || !Properties(items[0], "create") || !Properties(items[1], "add") ||
+                    !Properties(items[0].GetProperty("create"), "table") || !Properties(items[1].GetProperty("add"), "chain"))
+                {
+                    return Deny("observation.createEcho");
+                }
+                table = items[0].GetProperty("create").GetProperty("table");
+                chain = items[1].GetProperty("add").GetProperty("chain");
             }
-
-            var meta = items[0].GetProperty("metainfo");
-            if (!Properties(meta, "version", "release_name", "json_schema_version") ||
-                meta.GetProperty("version").ValueKind != JsonValueKind.String || meta.GetProperty("release_name").ValueKind != JsonValueKind.String ||
-                meta.GetProperty("json_schema_version").ValueKind != JsonValueKind.Number ||
-                !meta.GetProperty("json_schema_version").TryGetInt32(out var version) || version != 1)
+            else
             {
-                return Deny("observation.schema");
-            }
+                if (items.Length < 3 || !Properties(items[0], "metainfo") || !Properties(items[1], "table") || !Properties(items[2], "chain"))
+                {
+                    return Deny("observation.unsupportedObjects");
+                }
 
-            var table = items[1].GetProperty("table");
-            var chain = items[2].GetProperty("chain");
+                var meta = items[0].GetProperty("metainfo");
+                if (!Properties(meta, "version", "release_name", "json_schema_version") ||
+                    meta.GetProperty("version").ValueKind != JsonValueKind.String || meta.GetProperty("release_name").ValueKind != JsonValueKind.String ||
+                    meta.GetProperty("json_schema_version").ValueKind != JsonValueKind.Number ||
+                    !meta.GetProperty("json_schema_version").TryGetInt32(out var version) || version != 1)
+                {
+                    return Deny("observation.schema");
+                }
+                table = items[1].GetProperty("table");
+                chain = items[2].GetProperty("chain");
+            }
             if (!Properties(table, "family", "name", "handle", "comment") ||
                 !Properties(chain, "family", "table", "name", "handle", "type", "hook", "prio", "policy"))
             {
@@ -112,7 +131,7 @@ public sealed class NftTableObservation
             }
 
             var verdict = chain.GetProperty("policy").GetString();
-            if (verdict is not ("accept" or "drop"))
+            if (verdict is not ("accept" or "drop") || (createEcho && verdict != "accept"))
             {
                 return Deny("observation.policy");
             }

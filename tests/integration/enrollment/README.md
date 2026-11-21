@@ -38,3 +38,10 @@ baseline. It sends real loopback UDP packets before and after applying the
 synthetic candidate, inserts a first IPv4-accept rule and verifies both the
 changed packet outcome and protected receipt drift. A counter expression makes
 the observation unsupported. The original receipt and foreign tables survive.
+
+The `cli` and `cli-collision` scenarios execute `nergal-agent enroll` against
+disposable state directories inside isolated user/network namespaces. They verify
+exclusive creation of `inet nergal_filter` with an empty `accept` input chain,
+binding against an independent listing, preservation of a preexisting conflicting
+table without adoption (`cli-collision`), and refusal of repeated enrollment
+(`journal.exists`) without mutating kernel or journal state.

@@ -24,6 +24,13 @@ public sealed partial class ApplyJournal
     /// <remarks>Never adopts kernel state. Existing or incomplete databases are not overwritten.</remarks>
     /// <exception cref="JournalException">Path protection, artifact identity or database initialization fails.</exception>
     public static ApplyJournal Initialize(string directory, ResourceOwnership ownership, string confirmedArtifact, IJournalClock? clock = null)
+        => InitializeCore(directory, ownership, confirmedArtifact, clock, false);
+
+    /// <summary>Creates a fresh protected enrollment intent with legacy operations disabled even if exclusive kernel creation is interrupted.</summary>
+    public static ApplyJournal InitializeResourceIntent(string directory, ResourceOwnership ownership, string confirmedArtifact, IJournalClock? clock = null)
+        => InitializeCore(directory, ownership, confirmedArtifact, clock, true);
+
+    private static ApplyJournal InitializeCore(string directory, ResourceOwnership ownership, string confirmedArtifact, IJournalClock? clock, bool enrollmentOnly)
     {
         if (!OperatingSystem.IsLinux())
         {
@@ -53,6 +60,13 @@ public sealed partial class ApplyJournal
         using var transaction = connection.BeginTransaction(deferred: false);
         var now = journal.Now();
         Execute(connection, transaction, Schema);
+        if (enrollmentOnly)
+        {
+            Execute(connection, transaction, """
+                CREATE TRIGGER enrollment_no_legacy_start BEFORE INSERT ON operations
+                BEGIN SELECT RAISE(ABORT,'local enrollment requires receipt-aware apply'); END;
+                """);
+        }
         Execute(connection, transaction,
             "INSERT INTO enrollment(singleton,agent,owner,revision,artifact,digest,boot,active) VALUES(1,$agent,$owner,$revision,$artifact,$digest,$boot,NULL)",
             ("$agent", ownership.AgentId.ToString("D")), ("$owner", ownership.OwnerId.ToString("D")),

@@ -11,7 +11,7 @@ an authorized read-only local status listener, an MVC landing page and a Blazor 
 candidates; it cannot inspect, install or modify host firewall rules.
 A test-only independent watchdog exercises synthetic rollback in disposable
 namespaces; it is not a host agent. The web app has no compiler/editor endpoint.
-Optional OIDC supports administrator group login. The host agent and production deployment remain planned.
+Optional OIDC supports administrator group login. `nergal-agent enroll` provides offline local operator enrollment for `inet nergal_filter` using native creation-echo handle evidence ([ADR 0019](docs/decisions/0019-local-agent-enrollment.md)); receipt-aware apply/recovery and production deployment remain planned.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 
@@ -46,6 +46,7 @@ Bind this development build to loopback; it is not a secured administration endp
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
 - `Nergal.Admin`: offline initialization and singleton administrator provisioning
   for the private application account store. See [operator commands](docs/local-administrator-accounts.md).
+- `Nergal.Agent`: offline local operator enrollment for `inet nergal_filter` using protected baseline intent, native creation-echo handle evidence and complete listing reconciliation.
 - `Nergal.Identity`: explicitly provisioned private singleton administrator store
   using standard Identity hashing/lockout and serialized SQLite decisions, plus
   certificate-encrypted persistent session keys and revocable local sessions.

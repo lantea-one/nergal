@@ -49,75 +49,94 @@ with tempfile.TemporaryDirectory(prefix='nergal-enrollment-') as state:
     def probe(mode, text=None, success=True, error=None):
         return run(['dotnet', assembly, mode, state], text, success, error)
 
-    candidate = probe('prepare-family' if scenario == 'family' else 'prepare')  # Protected intent exists before any exclusive resource creation.
-    if scenario == 'collision':
-        nft(probe('foreign'))
-        before = run(['nft', '--stateless', 'list', 'ruleset'])
-        nft(candidate, success=False, check=True)
-        nft(candidate, success=False)
-        probe('bind', observation(), False, 'ownership.stale')
-        require(probe('receipt').strip() == 'UNBOUND', 'Foreign table was adopted')
-        require(run(['nft', '--stateless', 'list', 'ruleset']) == before, 'Conflicting foreign resource changed')
-        print('PASS: conflicting native resource is preserved and cannot be bound', flush=True)
-    elif scenario == 'family':
-        run(['ip', 'link', 'set', 'lo', 'up'])
-        def packet(family, address):
-            with socket.socket(family, socket.SOCK_DGRAM) as receiver, socket.socket(family, socket.SOCK_DGRAM) as sender:
-                receiver.bind((address, 0))
-                receiver.settimeout(0.5)
-                sender.sendto(b'fixture', receiver.getsockname())
-                try:
-                    return receiver.recv(32) == b'fixture'
-                except TimeoutError:
-                    return False
-
-        require(packet(socket.AF_INET, '127.0.0.1') and packet(socket.AF_INET6, '::1'), 'Loopback control failed')
-        nft(candidate, check=True)
-        nft(candidate)
-        probe('bind', observation())
-        require(json.loads(probe('verify', observation()))['IsMatch'], 'Ordered family baseline failed to bind')
-        require(not packet(socket.AF_INET, '127.0.0.1') and packet(socket.AF_INET6, '::1'), 'Family packet decisions differed')
+    if scenario in ('cli', 'cli-collision'):
+        agent = Path('src/Nergal.Agent/bin/Release/net10.0/nergal-agent.dll').resolve()
+        command = ['dotnet', str(agent), 'enroll', state]
+        if scenario == 'cli-collision':
+            nft(probe('foreign'))
+            original = observation()
+            run(command, success=False)
+            require(observation() == original and probe('receipt').strip() == 'UNBOUND', 'Collision changed ownership')
+        else:
+            run(command)
+            original = observation()
+            require(json.loads(probe('verify', original))['IsMatch'], 'CLI failed to bind the independently listed table')
+            listed = json.loads(original)['nftables']
+            require(len(listed) == 3 and listed[2]['chain']['policy'] == 'accept', 'Unexpected filtering policy')
         receipt = probe('receipt')
-        nft('insert rule inet nergal_filter input meta nfproto ipv4 accept\n')
-        require(packet(socket.AF_INET, '127.0.0.1'), 'Inserted first verdict did not change IPv4 outcome')
-        require('state.drift' in json.loads(probe('verify', observation(), False))['ErrorCodes'], 'Ordered rule drift missed')
-        probe('bind', observation(), False, 'resource.baselineMismatch')
-        nft('add rule inet nergal_filter input meta nfproto ipv4 counter accept\n')
-        probe('verify', observation(), False, 'observation.rule')
-        require(probe('receipt') == receipt, 'Drift or unsupported expressions changed the stored receipt')
-        print('PASS: rule-bearing receipt matches dual-stack packet outcomes and detects ordered changes', flush=True)
+        run(command, success=False, error='journal.exists')
+        require(observation() == original and probe('receipt') == receipt, 'Repeat invocation mutated protected state')
+        print('PASS: local CLI exclusive creation, receipt and retry contract: ' + scenario, flush=True)
     else:
-        nft(candidate, check=True)
-        nft(candidate)
-        original = observation()
-        probe('verify', original, False, 'resource.unbound')
-        probe('bind', original)
-        receipt = probe('receipt')
-        database = Path(state) / 'journal.db'
-        protected = database.read_bytes()
-        probe('bind', original)  # Lost-ack retry is idempotent, not a new enrollment.
-        require(json.loads(probe('verify', original))['IsMatch'], 'Protected receipt did not survive reopen')
-        probe('try-start', success=False, error='resource.boundApplyUnavailable')
-        require(database.read_bytes() == protected, 'Read-only reconciliation or denied apply changed state')
-        print('PASS: protected intent binds once, reopens, verifies and disables legacy apply', flush=True)
+        candidate = probe('prepare-family' if scenario == 'family' else 'prepare')  # Protected intent exists before any exclusive resource creation.
+        if scenario == 'collision':
+            nft(probe('foreign'))
+            before = run(['nft', '--stateless', 'list', 'ruleset'])
+            nft(candidate, success=False, check=True)
+            nft(candidate, success=False)
+            probe('bind', observation(), False, 'ownership.stale')
+            require(probe('receipt').strip() == 'UNBOUND', 'Foreign table was adopted')
+            require(run(['nft', '--stateless', 'list', 'ruleset']) == before, 'Conflicting foreign resource changed')
+            print('PASS: conflicting native resource is preserved and cannot be bound', flush=True)
+        elif scenario == 'family':
+            run(['ip', 'link', 'set', 'lo', 'up'])
+            def packet(family, address):
+                with socket.socket(family, socket.SOCK_DGRAM) as receiver, socket.socket(family, socket.SOCK_DGRAM) as sender:
+                    receiver.bind((address, 0))
+                    receiver.settimeout(0.5)
+                    sender.sendto(b'fixture', receiver.getsockname())
+                    try:
+                        return receiver.recv(32) == b'fixture'
+                    except TimeoutError:
+                        return False
 
-        nft('add chain inet nergal_filter input { policy drop; }\n')
-        mismatch = json.loads(probe('verify', observation(), False))
-        require('state.drift' in mismatch['ErrorCodes'], 'Policy drift was accepted')
-        probe('bind', observation(), False, 'resource.baselineMismatch')
-        nft('add chain inet nergal_filter input { policy accept; }\n')
-        nft('delete table inet nergal_filter\n' + candidate)
-        replacement = observation()
-        mismatch = json.loads(probe('verify', replacement, False))
-        require('handle.mismatch' in mismatch['ErrorCodes'], 'Recreated table was accepted')
-        probe('bind', replacement, False, 'resource.alreadyBound')
-        require(probe('receipt') == receipt and database.read_bytes() == protected, 'Rejected state replaced the protected receipt')
-        print('PASS: policy drift and copied-marker recreation cannot rewrite protected expected state', flush=True)
+            require(packet(socket.AF_INET, '127.0.0.1') and packet(socket.AF_INET6, '::1'), 'Loopback control failed')
+            nft(candidate, check=True)
+            nft(candidate)
+            probe('bind', observation())
+            require(json.loads(probe('verify', observation()))['IsMatch'], 'Ordered family baseline failed to bind')
+            require(not packet(socket.AF_INET, '127.0.0.1') and packet(socket.AF_INET6, '::1'), 'Family packet decisions differed')
+            receipt = probe('receipt')
+            nft('insert rule inet nergal_filter input meta nfproto ipv4 accept\n')
+            require(packet(socket.AF_INET, '127.0.0.1'), 'Inserted first verdict did not change IPv4 outcome')
+            require('state.drift' in json.loads(probe('verify', observation(), False))['ErrorCodes'], 'Ordered rule drift missed')
+            probe('bind', observation(), False, 'resource.baselineMismatch')
+            nft('add rule inet nergal_filter input meta nfproto ipv4 counter accept\n')
+            probe('verify', observation(), False, 'observation.rule')
+            require(probe('receipt') == receipt, 'Drift or unsupported expressions changed the stored receipt')
+            print('PASS: rule-bearing receipt matches dual-stack packet outcomes and detects ordered changes', flush=True)
+        else:
+            nft(candidate, check=True)
+            nft(candidate)
+            original = observation()
+            probe('verify', original, False, 'resource.unbound')
+            probe('bind', original)
+            receipt = probe('receipt')
+            database = Path(state) / 'journal.db'
+            protected = database.read_bytes()
+            probe('bind', original)  # Lost-ack retry is idempotent, not a new enrollment.
+            require(json.loads(probe('verify', original))['IsMatch'], 'Protected receipt did not survive reopen')
+            probe('try-start', success=False, error='resource.boundApplyUnavailable')
+            require(database.read_bytes() == protected, 'Read-only reconciliation or denied apply changed state')
+            print('PASS: protected intent binds once, reopens, verifies and disables legacy apply', flush=True)
 
-        payload = json.dumps({'candidate': candidate, 'state': state})
-        run(['unshare', '--net', sys.executable, str(Path(__file__).with_name('other_namespace.py')), assembly], payload)
-        require(probe('receipt') == receipt and database.read_bytes() == protected, 'Cross-namespace check changed protected state')
-        print('PASS: a second real namespace cannot satisfy the protected receipt', flush=True)
+            nft('add chain inet nergal_filter input { policy drop; }\n')
+            mismatch = json.loads(probe('verify', observation(), False))
+            require('state.drift' in mismatch['ErrorCodes'], 'Policy drift was accepted')
+            probe('bind', observation(), False, 'resource.baselineMismatch')
+            nft('add chain inet nergal_filter input { policy accept; }\n')
+            nft('delete table inet nergal_filter\n' + candidate)
+            replacement = observation()
+            mismatch = json.loads(probe('verify', replacement, False))
+            require('handle.mismatch' in mismatch['ErrorCodes'], 'Recreated table was accepted')
+            probe('bind', replacement, False, 'resource.alreadyBound')
+            require(probe('receipt') == receipt and database.read_bytes() == protected, 'Rejected state replaced the protected receipt')
+            print('PASS: policy drift and copied-marker recreation cannot rewrite protected expected state', flush=True)
+
+            payload = json.dumps({'candidate': candidate, 'state': state})
+            run(['unshare', '--net', sys.executable, str(Path(__file__).with_name('other_namespace.py')), assembly], payload)
+            require(probe('receipt') == receipt and database.read_bytes() == protected, 'Cross-namespace check changed protected state')
+            print('PASS: a second real namespace cannot satisfy the protected receipt', flush=True)
 
     for family, before in foreign.items():
         require(run(['nft', '--stateless', 'list', 'table', family, 'foreign_fixture']) == before, 'Foreign table changed')

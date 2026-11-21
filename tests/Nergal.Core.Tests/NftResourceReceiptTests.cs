@@ -76,6 +76,43 @@ public sealed class NftResourceReceiptTests
         Assert.NotEqual(digest, NftTableObservation.Parse(node.ToJsonString()).Observation!.StateDigest);
     }
 
+    private static JsonNode CreationEcho()
+    {
+        var objects = JsonNode.Parse(Json)!["nftables"]!.AsArray();
+        return new JsonObject
+        {
+            ["nftables"] = new JsonArray(new JsonObject { ["create"] = objects[1]!.DeepClone() },
+                new JsonObject { ["add"] = objects[2]!.DeepClone() })
+        };
+    }
+
+    /// <summary>The echoed transaction binds the actual handles independently of a subsequent listing.</summary>
+    [Fact]
+    public void EnrollmentEcho_RequiresExactCreateAndAcceptBaseline()
+    {
+        var echo = CreationEcho();
+        var parsed = NftTableObservation.ParseEnrollmentEcho(echo.ToJsonString()).Observation!;
+        Assert.Equal(Observe().StateDigest, parsed.StateDigest);
+        Assert.False(NftTableObservation.ParseEnrollmentEcho(Json).IsSuccess);
+        Assert.False(NftTableObservation.Parse(echo.ToJsonString()).IsSuccess);
+        var chain = echo["nftables"]![1]!["add"]!["chain"]!;
+        chain["handle"] = 99;
+        Assert.NotEqual(Observe().StateDigest, NftTableObservation.ParseEnrollmentEcho(echo.ToJsonString()).Observation!.StateDigest);
+        chain["policy"] = "drop";
+        Assert.False(NftTableObservation.ParseEnrollmentEcho(echo.ToJsonString()).IsSuccess);
+    }
+
+    /// <summary>An add, missing handle, additional operation or duplicate key cannot prove exclusive creation.</summary>
+    [Theory]
+    [InlineData("create", "add")]
+    [InlineData("handle", "unknown")]
+    [InlineData("\"create\":", "\"create\":{},\"create\":")]
+    [InlineData("]}", ",{}]}")]
+    public void EnrollmentEcho_RejectsAmbiguousOperations(string before, string after)
+    {
+        Assert.False(NftTableObservation.ParseEnrollmentEcho(CreationEcho().ToJsonString().Replace(before, after)).IsSuccess);
+    }
+
     private const string FamilyRule = """
         {"rule":{"family":"inet","table":"nergal_filter","chain":"input","handle":10,"expr":[
         {"match":{"op":"==","left":{"meta":{"key":"nfproto"}},"right":"ipv4"}},{"drop":null}]}}

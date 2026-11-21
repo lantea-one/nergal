@@ -82,6 +82,27 @@ as persisted contracts; they must not be renumbered. The migration fixture uses 
 schema-1 identifiers so changes to current enum declarations cannot rewrite history
 unnoticed. No repository startup code automatically upgrades an operator's database.
 
+## Offline operator enrollment (`nergal-agent enroll`)
+
+`nergal-agent enroll ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY` performs local offline
+baseline enrollment for `inet nergal_filter` following
+[ADR 0019](decisions/0019-local-agent-enrollment.md). It generates fresh agent,
+owner and resource UUIDs locally, compiles the canonical empty `accept` baseline,
+commits the protected intent via `ApplyJournal.InitializeResourceIntent` (creating
+`enrollment_no_legacy_start` before any kernel operation) and synchronizes the
+private state directory (`LinuxDirectoryDurability.Synchronize`). It then validates
+the candidate with `/usr/sbin/nft --check --file -`, submits one exclusive-create
+batch with `--echo --handle --json --file -`, parses the created table and chain
+handles with `NftTableObservation.ParseEnrollmentEcho`, independently executes
+`/usr/sbin/nft --json list table inet nergal_filter`, and binds the expected receipt
+with `BindExpectedResource`.
+
+If the table already exists (`cli-collision`), the transaction fails atomically and
+leaves the existing table untouched and the journal unbound. Repeating the command
+against an existing journal stops at `journal.exists` before invoking `/usr/sbin/nft`.
+No controller endpoint can initiate enrollment, and existing journals/kernel tables
+are never automatically adopted, overwritten or deleted.
+
 ## Evidence and remaining boundary
 
 Unit tests use real private SQLite files for binding, reopen/idempotence, stale/invalid
