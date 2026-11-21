@@ -84,9 +84,11 @@ Python 3. It fails if isolation is unavailable and never falls back to the host.
 See its [README](../tests/integration/nftables/README.md) for exact assertions and
 limits (input filtering, 3-namespace routed IPv4/IPv6 forwarding, `iifname`/`oifname`,
 `ct state` return traffic, IPv6 Neighbor Discovery, per-source dynamic rate limiting,
-dual-stack DNAT/explicit SNAT/`ct status dnat`, and live observation round-tripping).
+dual-stack DNAT/explicit SNAT/`ct status dnat`, Linux bridge `br0` L2 filtering,
+atomic multi-table transactions, and live observation round-tripping).
 It is opt-in, separate from dotnet test and the default CI job.
-Successful local execution does not establish bridge filtering, multi-table atomic commit, or rollback.
+Successful local execution establishes the native nftables semantics slice,
+not production remote transport, controller persistence, or web-driven rollback.
 
 The independent watchdog fixture is under tests/integration/watchdog. Run
 `bash tests/integration/watchdog/check.sh` after the Release build. It uses actual

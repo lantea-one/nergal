@@ -14,8 +14,9 @@ policy when the web console or identity provider is unavailable.
 3. The unprivileged `Nergal.Nftables` compiler produces deterministic, create-only
    candidates from schema 1 input-filter and schema 2 stateful/rate-limited policies
    (see [the contract](policy.md), [ADR 0024](decisions/0024-stateful-forwarding-and-icmpv6-policy.md),
-   [ADR 0025](decisions/0025-native-per-source-rate-limiting.md), and
-   `NftNatCompiler` / [ADR 0026](decisions/0026-dual-stack-nat-and-original-tuple-matching.md)).
+   [ADR 0025](decisions/0025-native-per-source-rate-limiting.md),
+   `NftNatCompiler` / [ADR 0026](decisions/0026-dual-stack-nat-and-original-tuple-matching.md),
+   and `NftBridgeCompiler` + `NftPolicyBundleCompiler` / [ADR 0027](decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md)).
    It performs no host operations and the web host does not reference it.
    Kernel JSON is an observation/command interface, not a lossless replacement
    for source metadata, comments and named definitions.
