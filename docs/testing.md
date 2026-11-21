@@ -127,8 +127,11 @@ ports, ICMP/ICMPv6), checks loopback packet enforcement, and detects rule drift.
 tests exercise full schema-1 observation/reconstruction (`Schema1Rules_ReconstructPolicyAndBindDigest`),
 `ResourceExecutionLock` contention/inode hardening, `AgentStatusProvider`, CLI argument
 parsing, `ParseEnrollmentEcho`, `InitializeResourceIntent` (denying replay and legacy
-`Start` before binding), explicit quiescent schema migration and unchanged state after
-denied migration; no production/user journal is upgraded.
+`Start` before binding), explicit quiescent schema migrations (`UpgradeFromVersion1` and
+`UpgradeFromVersion2`), receipt-aware bound operations (`StartBound`,
+`RecordCandidateAppliedBound`, `ConfirmBound`, `RecordRollbackSucceededBound`, and
+`resource.boundReceiptRequired` guards), and unchanged state after denied migration;
+no production/user journal is upgraded.
 Status tests cover one-snapshot revision/binding classification, unavailable status
 for active/recovery-blocked work, missing observations and changed unbound boot,
 drift without receipt replacement, and corruption rejection even without an observation.

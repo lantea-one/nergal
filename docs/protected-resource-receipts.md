@@ -1,8 +1,9 @@
 # Protected expected receipt persistence
 
-Schema 2 of `Nergal.LocalState` stores an immutable expected native receipt and a
-separate persistent bound marker. This extends [native receipt comparison](native-resource-receipts.md)
-and the [private journal](local-journal.md), following [ADR 0008](decisions/0008-protected-resource-receipts.md).
+Schema 3 of `Nergal.LocalState` stores an immutable expected native receipt, a
+separate persistent bound marker, and bound-operation receipt tracking (`bound_operations`). This extends [native receipt comparison](native-resource-receipts.md)
+and the [private journal](local-journal.md), following [ADR 0008](decisions/0008-protected-resource-receipts.md)
+and [ADR 0022](decisions/0022-receipt-aware-journal.md).
 No API here executes kernel operations, proves exclusive creation, adopts a table or
 authorizes a request. Web does not reference this infrastructure library.
 
@@ -52,26 +53,36 @@ This is advisory snapshot consistency inside SQLite, not atomicity between SQLit
 and kernel state or an apply authorization token. The test-only socket provider now
 uses this query; it still has no managed-side kernel writes. See ADR 0011.
 
-Once bound, `Start` rejects legacy operations with `resource.boundApplyUnavailable`.
-A database trigger also blocks operation insertion on a marked resource, including
-an older queued writer. Receipt-aware apply, replacement/rollback receipt updates and
-their crash ordering are absent. Keeping them disabled prevents revision changes
-from leaving stale protected authority behind. There is no unbind/reset/recovery bypass.
+Once bound, legacy `Start` continues to fail with `resource.boundApplyUnavailable`,
+and database triggers block unbound `INSERT INTO operations`. Bound resources instead
+use `StartBound`, `RecordCandidateAppliedBound`, `ConfirmBound`, and
+`RecordRollbackSucceededBound` ([ADR 0022](decisions/0022-receipt-aware-journal.md)):
+`StartBound` verifies the live observation against the bound receipt and compiled
+rollback artifact; `RecordCandidateAppliedBound` verifies the candidate echo receipt
+and listing before persisting candidate handle/digest bindings; `ConfirmBound`
+verifies the live candidate listing and atomically updates `enrollment` and
+`resource_receipt` to the new confirmed revision; and `RecordRollbackSucceededBound`
+verifies the restored echo receipt and listing before updating the receipt handle
+without advancing revision. Calling `Advance` directly with `CandidateApplied`,
+`Confirm`, or `RollbackSucceeded` on a bound operation is refused with
+`resource.boundReceiptRequired`.
 
-Additional binding errors are `ownership.stale`, `resource.busy`, `clock.bootChanged`,
-`resource.receiptMismatch`, `resource.baselineMismatch` and `resource.alreadyBound`.
+Additional binding and receipt-apply errors are `ownership.stale`, `resource.busy`, `clock.bootChanged`,
+`resource.receiptMismatch`, `resource.baselineMismatch`, `resource.candidateMismatch`,
+`resource.unboundOperation`, `resource.boundReceiptRequired` and `resource.alreadyBound`.
 Invalid stored evidence is `journal.corrupt`; standard argument exceptions apply to
 missing programming arguments. Native observation/comparison errors retain their
 [documented codes](native-resource-receipts.md).
 
-## Schema-1 upgrade
+## Schema-1 and schema-2 upgrades
 
-Initialize creates schema 2. Normal Open rejects schema 1 without changing it.
-`ApplyJournal.UpgradeFromVersion1(directory, clock)` is an explicit offline upgrade:
-stop **all older writers/watchdogs first**. It rejects active/recovery-blocked state
-with `migration.activeOperation`, verifies the legacy database and retained terminal
-histories, and adds the bound marker, receipt table and legacy-insert guard together
-with version 2 in one immediate transaction. Failures preserve schema 1 and history.
+Initialize creates schema 3. Normal Open rejects schemas 1 and 2 without changing them.
+`ApplyJournal.UpgradeFromVersion1(directory, clock)` and
+`ApplyJournal.UpgradeFromVersion2(directory, clock)` are explicit offline upgrades:
+stop **all older writers/watchdogs first**. Both reject active/recovery-blocked state
+with `migration.activeOperation`, verify retained terminal histories (and any schema-2
+receipt), and add the receipt/bound-operation structures together with version 3 in
+one immediate transaction. Failures preserve the prior schema and history.
 Active-state checks cannot prove process quiescence; live mixed-version upgrade is
 unsupported. Normal current-version transactions recheck their schema under lock.
 

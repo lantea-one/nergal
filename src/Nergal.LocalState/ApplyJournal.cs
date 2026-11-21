@@ -12,7 +12,7 @@ public sealed partial class ApplyJournal
     private readonly string directory;
     private readonly IJournalClock clock;
     private const int ArtifactLimit = 1024 * 1024;
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
 
     private ApplyJournal(string directory, IJournalClock clock)
     {
@@ -62,10 +62,7 @@ public sealed partial class ApplyJournal
         Execute(connection, transaction, Schema);
         if (enrollmentOnly)
         {
-            Execute(connection, transaction, """
-                CREATE TRIGGER enrollment_no_legacy_start BEFORE INSERT ON operations
-                BEGIN SELECT RAISE(ABORT,'local enrollment requires receipt-aware apply'); END;
-                """);
+            Execute(connection, transaction, EnrollmentNoLegacyStartTrigger);
         }
         Execute(connection, transaction,
             "INSERT INTO enrollment(singleton,agent,owner,revision,artifact,digest,boot,active) VALUES(1,$agent,$owner,$revision,$artifact,$digest,$boot,NULL)",
@@ -165,39 +162,57 @@ public sealed partial class ApplyJournal
     }
 
     /// <summary>Serializes acknowledgment with deadline evaluation using time sampled after acquiring the write lock.</summary>
-    /// <remarks>Confirmation and its enrolled revision commit together. RecoveryRequired blocks subsequent operations.</remarks>
+    /// <remarks>Confirmation and its enrolled revision commit together. RecoveryRequired blocks subsequent operations. Bound operations must supply native receipts for apply, confirmation, and rollback completion.</remarks>
     public JournalUpdate Advance(Guid operationId, ApplyEvent kind, ApplyPlan evidence, Guid watchdogId)
     {
         ArgumentNullException.ThrowIfNull(evidence);
         return Write((connection, transaction) =>
         {
-            var entry = Load(connection, transaction, operationId);
-            if (entry.Session.IsTerminal)
+            if (IsBoundOperation(connection, transaction, operationId) &&
+                kind is ApplyEvent.CandidateApplied or ApplyEvent.Confirm or ApplyEvent.RollbackSucceeded)
             {
-                return new JournalUpdate(entry, false, "phase.terminal");
+                throw new JournalException("resource.boundReceiptRequired");
             }
 
-            var enrollment = Enrollment(connection, transaction);
-            if (enrollment.Active != operationId || enrollment.Value.Ownership != entry.Session.Plan.Ownership || enrollment.Value.Artifact != entry.Rollback)
-            {
-                throw new JournalException("journal.corrupt");
-            }
-
-            var now = Now();
-            var elapsed = now.SinceBoot - entry.Started.SinceBoot;
-            string? clockError = now.BootId != entry.Started.BootId || now.BootId != enrollment.Boot ? "clock.bootChanged" :
-                elapsed < entry.Session.Elapsed ? "clock.regressed" : null;
-            var result = clockError is null
-                ? entry.Session.Advance(kind, evidence, watchdogId, elapsed)
-                : entry.Session.Advance(ApplyEvent.Interrupted, entry.Session.Plan, entry.Session.WatchdogId, entry.Session.Elapsed);
-            var next = new JournalEntry(result.Session, entry.Candidate, entry.Rollback, entry.Started);
-            if (next.Session.Phase != entry.Session.Phase)
-            {
-                Append(connection, transaction, entry, next.Session, clockError is null ? kind : ApplyEvent.Interrupted,
-                    clockError is null ? watchdogId : entry.Session.WatchdogId, result.ErrorCode);
-            }
-            return new JournalUpdate(next, clockError is null && result.Accepted, clockError ?? result.ErrorCode);
+            return AdvanceCore(connection, transaction, operationId, kind, evidence, watchdogId, null);
         });
+    }
+
+    private JournalUpdate AdvanceCore(SqliteConnection connection, SqliteTransaction transaction, Guid operationId,
+        ApplyEvent kind, ApplyPlan evidence, Guid watchdogId, Action<JournalEntry, JournalTime>? onAccepted)
+    {
+        var entry = Load(connection, transaction, operationId);
+        if (entry.Session.IsTerminal)
+        {
+            return new JournalUpdate(entry, false, "phase.terminal");
+        }
+
+        var enrollment = Enrollment(connection, transaction);
+        if (enrollment.Active != operationId || enrollment.Value.Ownership != entry.Session.Plan.Ownership || enrollment.Value.Artifact != entry.Rollback)
+        {
+            throw new JournalException("journal.corrupt");
+        }
+
+        var now = Now();
+        var elapsed = now.SinceBoot - entry.Started.SinceBoot;
+        string? clockError = now.BootId != entry.Started.BootId || now.BootId != enrollment.Boot ? "clock.bootChanged" :
+            elapsed < entry.Session.Elapsed ? "clock.regressed" : null;
+        var result = clockError is null
+            ? entry.Session.Advance(kind, evidence, watchdogId, elapsed)
+            : entry.Session.Advance(ApplyEvent.Interrupted, entry.Session.Plan, entry.Session.WatchdogId, entry.Session.Elapsed);
+        var next = new JournalEntry(result.Session, entry.Candidate, entry.Rollback, entry.Started);
+        if (clockError is null && result.Accepted)
+        {
+            onAccepted?.Invoke(entry, now);
+        }
+
+        if (next.Session.Phase != entry.Session.Phase)
+        {
+            Append(connection, transaction, entry, next.Session, clockError is null ? kind : ApplyEvent.Interrupted,
+                clockError is null ? watchdogId : entry.Session.WatchdogId, result.ErrorCode);
+        }
+
+        return new JournalUpdate(next, clockError is null && result.Accepted, clockError ?? result.ErrorCode);
     }
 
     private static void Append(SqliteConnection connection, SqliteTransaction transaction, JournalEntry prior,
@@ -446,7 +461,7 @@ public sealed partial class ApplyJournal
 
     private const string Schema = """
         PRAGMA application_id=0x4e52474c;
-        PRAGMA user_version=2;
+        PRAGMA user_version=3;
         CREATE TABLE operations(id TEXT PRIMARY KEY,agent TEXT NOT NULL,owner TEXT NOT NULL,revision TEXT NOT NULL,
           candidate TEXT NOT NULL,rollback TEXT NOT NULL,candidate_hash TEXT NOT NULL,rollback_hash TEXT NOT NULL,
           timeout INTEGER NOT NULL,boot TEXT NOT NULL,started INTEGER NOT NULL,phase INTEGER NOT NULL) STRICT;
