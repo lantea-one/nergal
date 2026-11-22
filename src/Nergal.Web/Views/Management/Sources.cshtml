@@ -38,10 +38,10 @@
     {
         <div class="table-wrap"><table>
             <caption>Immutable imported sources — no firewall changes</caption>
-            <thead><tr><th scope="col">Name</th><th scope="col">Imported (UTC)</th><th scope="col">Size</th><th scope="col">Actions</th></tr></thead>
+            <thead><tr><th scope="col">Name</th><th scope="col">Imported (local time)</th><th scope="col">Size</th><th scope="col">Actions</th></tr></thead>
             <tbody>@foreach (var source in Model.Sources)
             {
-                <tr><td>@source.Name</td><td>@source.ImportedAtUtc.UtcDateTime.ToString("u")</td><td>@source.ByteLength bytes</td>
+                <tr><td>@source.Name</td><td>@await Html.PartialAsync("_LocalTime", source.ImportedAtUtc)</td><td>@source.ByteLength bytes</td>
                     <td><a href="@Url.Action("Sources", new { sourceId = source.Id })">Review @source.Name</a> ·
                         <a aria-label="Download original @source.Name" href="@Url.Action("DownloadSource", new { sourceId = source.Id })">Download original</a></td></tr>
             }</tbody>

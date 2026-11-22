@@ -1133,7 +1133,7 @@
                                 <th>Revision</th>
                                 <th>Candidate SHA-256</th>
                                 <th>Created by</th>
-                                <th>UTC Timestamp</th>
+                                <th>Timestamp (local time)</th>
                                 <th>Summary</th>
                             </tr>
                         </thead>
@@ -1144,7 +1144,7 @@
                                     <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Load Rev @rev.Revision</a></td>
                                     <td><code>@rev.CandidateDigest</code></td>
                                     <td><code>@rev.CreatedByActor</code></td>
-                                    <td class="mono">@rev.CreatedAtUtc.ToString("u")</td>
+                                    <td class="mono">@await Html.PartialAsync("_LocalTime", rev.CreatedAtUtc)</td>
                                     <td>@(rev.Summary ?? "—")</td>
                                 </tr>
                             }

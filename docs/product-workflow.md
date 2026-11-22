@@ -84,6 +84,9 @@ must persist validated changes transactionally. Exports and generated configurat
 are derived artifacts of an explicitly selected database revision; local files,
 browser state and build artifacts must not become competing canonical stores.
 Preserve immutable revisions and enough change history to review and recover state.
+Store timestamps in UTC; display instants in the viewer's browser timezone with a
+clear timezone indication. APIs and exports retain UTC instants. See [timestamp
+presentation](time-display.md).
 
 Keep desired, dispatched, confirmed and observed state distinct. A database edit
 must not imply that a policy is active in the kernel. Store observations with their

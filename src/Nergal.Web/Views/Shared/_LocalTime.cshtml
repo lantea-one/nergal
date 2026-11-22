@@ -1,0 +1,6 @@
+@model DateTimeOffset
+@{
+    var utc = Model.UtcDateTime;
+    var instant = utc.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+}
+<time data-local-time datetime="@instant" title="Stored UTC: @instant">@utc.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", System.Globalization.CultureInfo.InvariantCulture)</time>

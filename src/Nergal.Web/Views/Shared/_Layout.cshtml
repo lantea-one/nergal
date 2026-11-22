@@ -52,6 +52,8 @@
 
     @RenderBody()
 
+    <footer class="time-zone-note muted">Times shown in your browser time zone: <span data-local-time-zone>UTC (local time unavailable)</span>.</footer>
+    <script src="@Url.Content("~/js/local-time.js")" defer></script>
     <script src="@Url.Content("~/js/nergal.js")" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -38,3 +38,11 @@ Imports and their audit records are atomic; no configuration is executed or
 converted. Existing controllers require an explicit offline `controller upgrade`.
 Additional SQL providers and semantic/generated-policy import/export remain future
 work. See [the source library guide](native-source-library.md).
+
+## Local timestamp display (unreleased)
+
+Dashboard/apply audit rows, audit/revision history and native source imports now
+render stored UTC instants in the viewer's browser timezone and locale. The page
+names that timezone and each timestamp retains its original UTC instant. DST uses
+the offset applicable to the event. Explicit UTC remains the fallback without
+JavaScript/Intl. Database and API timestamps remain UTC.

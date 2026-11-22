@@ -195,3 +195,7 @@ catalog is staging only. Web uploads never execute source text, and original-fil
 downloads use the verified database snapshot. Existing controllers require explicit
 offline `controller upgrade`; no additional SQL adapter is introduced. See
 [source library](native-source-library.md) and [ADR 0038](decisions/0038-database-native-source-snapshots.md).
+
+Timestamp persistence and API contracts use UTC instants. Shared MVC/Blazor time
+markup and a local browser formatter display the viewer's timezone without using
+the server timezone or mutating stored data; see [time display](time-display.md).

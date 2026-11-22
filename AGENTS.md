@@ -60,6 +60,8 @@ import semantics explicitly. Source inspection alone is not full import/conversi
 
 Use the database as the rolling source of truth for application-managed state,
 including reusable objects, imported content, settings and revision/audit history.
+Store timestamps in UTC and display them in the viewer's local timezone, with an
+explicit timezone indication. Do not use the server timezone for browser presentation.
 Generated files are derived artifacts. Keep desired and observed/applied state
 distinct, and preserve independently protected agent receipts/rollback decisions.
 Defer migrations for additional SQL backends until the logical schema stabilizes;

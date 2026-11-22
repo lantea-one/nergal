@@ -21,7 +21,7 @@ jobs:
         run: |
           npm ci --prefix tools/web-assets --ignore-scripts
           npm run verify --prefix tools/web-assets
-          node --test scripts/pages-theme.test.mjs
+          node --test scripts/pages-theme.test.mjs scripts/local-time.test.mjs
           python3 -B scripts/test-dev-watch.py
       - name: Restore locked dependencies
         run: dotnet restore Nergal.sln --locked-mode

@@ -157,11 +157,11 @@ line references using the application theme. The screenshots below use a synthet
 configuration only. Private server sources and reports are never published here.
 The review table scrolls within its container on narrow screens.
 
-![Source-bound migration review in dark mode](assets/screenshots/migration-review-dark.jpg)
+![Source-bound migration review in dark mode](assets/screenshots/source-library-dark.jpg)
 
-![Source-bound migration review in light mode](assets/screenshots/migration-review-light.jpg)
+![Source-bound migration review in light mode](assets/screenshots/source-library-light.jpg)
 
-![Source-bound migration review on mobile](assets/screenshots/migration-review-mobile.jpg)
+![Source-bound migration review on mobile](assets/screenshots/source-library-mobile.jpg)
 
 ## Planned reusable objects and file workflows
 
@@ -201,3 +201,7 @@ supported SQL backends are deferred until the logical schema stabilizes; each
 engine will require versioned upgrade and failure/recovery tests. Saved backend
 settings are not evidence of an implemented adapter. Bootstrap trust and protected
 key material retain explicit security boundaries.
+
+Application timestamps remain stored in UTC. Dashboard, audit, revision and source
+views display the viewer's browser-local time with a timezone indication; the
+original UTC instant remains in the tooltip and machine-readable metadata.

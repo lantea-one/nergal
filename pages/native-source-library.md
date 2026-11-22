@@ -6,7 +6,8 @@ file; field hints explain the limits. Uploads do not execute nft, resolve includ
 create managed policies or change firewall rules.
 
 Each import receives an independent identity, attributed audit event, UTC time,
-exact byte length and SHA-256. Repeated names or identical contents remain separate
+exact byte length and SHA-256. Times are stored in UTC and displayed in the
+viewer's browser timezone, named in the page footer; the tooltip retains UTC. Repeated names or identical contents remain separate
 snapshots. Select **Review** for one source's exact text and non-exhaustive migration
 review. **Download original** returns its exact bytes, including BOM and line endings,
 as `nftables.conf`. The JSON review download uses the stored source identity.
