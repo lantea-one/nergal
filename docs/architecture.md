@@ -170,7 +170,7 @@ source is accepted as an agent execution payload.
 [ADR 0035](decisions/0035-settings-intent-and-private-source-inspection.md) separates
 persisted settings intent from protected runtime configuration. Management appearance
 uses saved branding; stored auth/database/firewall choices do not hot-reconfigure
-services. Optional administrator-only native source inspection snapshots private
+services. Optional administrator-only operator source staging snapshots private
 operator-controlled files and never executes them. The [local sandbox](local-sandbox.md)
 uses separate containers for the unprivileged UI and native check-only workers.
 
@@ -185,6 +185,13 @@ runtime configuration.
 Private native migration review is an unprivileged, bounded lexical inventory
 ([ADR 0037](decisions/0037-private-native-migration-review.md)). It never invokes
 nft, resolves external files or returns a partial policy. The administrator-only
-report route selects an existing immutable startup snapshot by digest, never a
-request-supplied path. A source-bound inventory cannot authorize apply or certify
+report route selects an existing immutable database source by canonical identity,
+never a request-supplied path. Directory snapshots are optional staging inputs. A source-bound inventory cannot authorize apply or certify
 conversion. Exact sources and exported reports remain private.
+
+Native source ingestion now persists immutable exact UTF-8 snapshots and attributed
+audit entries transactionally in controller schema 2. The optional operator file
+catalog is staging only. Web uploads never execute source text, and original-file
+downloads use the verified database snapshot. Existing controllers require explicit
+offline `controller upgrade`; no additional SQL adapter is introduced. See
+[source library](native-source-library.md) and [ADR 0038](decisions/0038-database-native-source-snapshots.md).

@@ -480,6 +480,7 @@ pre {
 input[type="text"],
 input[type="password"],
 input[type="number"],
+input[type="file"],
 select,
 textarea {
   width: 100%;
@@ -796,3 +797,15 @@ a { color: var(--link, var(--primary)); }
 .code-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
 .code-editor-toolbar .muted { font-size: 0.85rem; }
 .code-editor-host .cm-search { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+
+/* File selection follows the same accessible control surface as other inputs. */
+input[type="file"]::file-selector-button {
+  padding: .35rem .6rem;
+  margin-right: .6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}

@@ -126,3 +126,11 @@ On remote managed hosts:
 - Native `nftables` is the supported backend (`firewalld` is excluded per ADR 0001).
 - Two-phase agent control (`prepare-apply`, `confirm`, `rollback`) operates on single-table `inet nergal_filter` policies (`FilterPolicy`); bundles carrying `nat` or `bridge` sections compile cleanly in `/manage/policies` diff previews but fail closed with `policy.unsupportedScope` at agent dispatch until dedicated multi-table agent receipts are added.
 - Run `nergal-agent reconcile /var/lib/nergal/agent` manually or from a pre-start dependency after host reboots when explicit new-boot reconciliation of owned tables is required.
+
+## Unreleased controller schema 2
+
+The database-backed native source library requires controller schema 2. Existing
+schema-1 controllers need an explicit offline `nergal-admin controller upgrade`
+after a verified backup and stopping writers. New stores initialize at schema 2.
+This upgrade does not change account or agent journal schemas. See
+[the source library upgrade procedure](native-source-library.md).

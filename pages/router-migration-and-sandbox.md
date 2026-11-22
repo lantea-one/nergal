@@ -75,9 +75,10 @@ The web container has no firewall capabilities or production agent connection.
 Each source has a separate container with no network access, a read-only source,
 and native check-only validation. A successful check establishes syntax in that
 container, not imported-policy equivalence or server packet correctness.
-Administrators can inspect exact escaped snapshots at **Native sources**; Auditors
-are denied. Sources are not applied. Each snapshot now has a source-bound migration
-review with line references and an administrator-only JSON download. The review
+Administrators can upload and inspect immutable database snapshots at **Native sources**;
+Auditors are denied. Optional directory files are staging inputs that must be imported
+explicitly. No source is applied. Each stored snapshot has a source-bound migration
+review with line references, a JSON review download, and an exact original-file download. The review
 highlights typed mapping work, definitions/includes, and gap signals such as maps,
 `notrack` and counters. It is a non-exhaustive lexical inventory: keyword occurrences
 can be identifiers, and unknown syntax is not validated. Every report keeps
@@ -174,8 +175,9 @@ the UI. Import retains the original source, reports semantic mapping and gaps, a
 separates review from revision creation and confirmed apply. Export will download
 the selected managed revision with its resolved objects and explicit scope; original
 source download is a separate operation. Round-trip and isolated packet acceptance
-must precede equivalence claims. These workflows remain planned; the current source
-catalog and lexical review do not perform full conversion or export.
+must precede equivalence claims. Reusable objects, semantic conversion and generated policy export remain planned.
+Database source ingestion and exact original downloads are implemented; lexical
+reviews do not establish policy equivalence.
 
 Planned authoring improvements also include an inline enabled/disabled checkbox
 on each rule, preserving its settings and order across revisions. Review/diffs must
@@ -192,8 +194,9 @@ revision/audit history. Generated configurations and exports derive from selecte
 database revisions. Desired and observed/applied firewall state remain distinct,
 with protected agent receipts and independent rollback decisions preserved.
 
-The current source catalog still loads operator-controlled files, so complete
-database-backed source management remains unfinished. Migrations for additional
+The [native source library](native-source-library.md) now stores uploaded and
+explicitly imported staging snapshots in the controller database. Remaining mapping
+and authoring workflows still require further implementation. Migrations for additional
 supported SQL backends are deferred until the logical schema stabilizes; each
 engine will require versioned upgrade and failure/recovery tests. Saved backend
 settings are not evidence of an implemented adapter. Bootstrap trust and protected

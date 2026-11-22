@@ -75,7 +75,10 @@ internal static class LocalSessionHost
             if (!context.Request.IsHttps || context.Features.Get<ITlsConnectionFeature>() is null)
             { context.Response.StatusCode = StatusCodes.Status400BadRequest; return; }
             context.Response.Headers.CacheControl = "no-store";
-            var maxBytes = context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
+            var maxBytes = HttpMethods.IsPost(context.Request.Method) &&
+                           context.Request.Path.Equals("/manage/sources/import", StringComparison.OrdinalIgnoreCase)
+                ? 600_000L
+                : context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
                            context.Request.Path.StartsWithSegments("/controller/policies", StringComparison.OrdinalIgnoreCase)
                 ? 524_288L
                 : context.Request.Path.StartsWithSegments("/manage/settings", StringComparison.OrdinalIgnoreCase)

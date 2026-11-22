@@ -7,6 +7,8 @@ dotnet restore Nergal.sln --locked-mode
 dotnet build Nergal.sln -c Release --no-restore
 dotnet publish src/Nergal.Web -c Release --no-build --no-restore -o artifacts/dev-stack/web
 dotnet publish src/Nergal.Admin -c Release --no-build --no-restore -o artifacts/dev-stack/admin
+# This disposable stack owns its private database. Stop its writer before the explicit offline upgrade.
+if docker container inspect nergal-dev-web-1 >/dev/null 2>&1; then docker stop nergal-dev-web-1 >/dev/null; fi
 python3 tools/dev-stack/provision.py "$@"
 export BUILDX_CONFIG="$PWD/artifacts/dev-stack/buildx"
 mkdir -p "$BUILDX_CONFIG"

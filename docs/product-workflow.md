@@ -93,11 +93,12 @@ database cannot grant host ownership or replace live verification. Credentials a
 key material retain explicit encryption and bootstrap trust boundaries rather than
 being moved into ordinary configuration rows.
 
-This direction is not yet fully implemented. The current private native source
-catalog uses operator-configured file snapshots, and some runtime configuration
-still comes from protected deployment files. Moving application-managed content
-into durable database records is required before claiming a complete database-backed
-workflow; deployment/bootstrap trust remains a separate boundary.
+This direction is not yet fully implemented. Native source uploads now persist
+immutable database snapshots with transactional audit and exact original downloads
+under ADR 0038. Operator-configured files are optional staging inputs. Some runtime
+configuration still comes from protected deployment files; reusable objects,
+semantic mapping records and other planned state remain future work.
+Deployment/bootstrap trust remains a separate boundary.
 
 Stabilize the logical schema before implementing migrations for additional SQL
 backends. Each supported backend needs explicit schema versions, ordered upgrade
@@ -131,7 +132,7 @@ mapping report accounting for declarations, named sets/maps, references, hooks,
 priorities, ordering, control flow and rule semantics. Resolve unsupported constructs
 and external includes explicitly; uploading a file grants no execution or ownership
 authority. Parsing and review stay separate from saving a revision and confirmed
-apply. The current read-only source catalog and lexical reviews are not full import.
+apply. The database source ingestion and lexical reviews are not semantic policy conversion.
 
 Export an explicitly selected managed policy revision and its resolved reusable
 objects as a deterministic native configuration. Identify its scope and revision;

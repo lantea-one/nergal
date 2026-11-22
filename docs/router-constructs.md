@@ -79,13 +79,14 @@ absent. Extended filter semantics use observation v7; extended NAT semantics use
 NAT observation v2. Native test recordings contain only synthetic addresses and
 locally administered MACs.
 
-## Private source inspection
+## Operator staging and private source ingestion
 
 An operator can configure `NativeSources:Directory` on an authenticated controller.
 Startup loads up to 32 non-linked `*.conf` files, each at most 512 KiB, from a trusted
-operator-controlled directory. Administrators can inspect escaped exact snapshots
-and SHA-256 content bindings at `/manage/sources`. Auditors are denied. There is no
-request-controlled file path, source execution, or automatic policy conversion.
+operator-controlled directory. Administrators can explicitly import these staging
+snapshots into the database at `/manage/sources`, then inspect escaped exact content
+and SHA-256 bindings. Auditors are denied. There is no request-controlled file path,
+source execution, or automatic policy conversion.
 Keep the trusted directory and its parents protected against concurrent replacement.
 
 The [local sandbox](local-sandbox.md) supplies a separate network-isolated native
@@ -111,3 +112,10 @@ Every declaration and ordered rule still requires explicit semantic mapping and
 packet-level equivalence checks. Reports contain line references and topic codes,
 not source literal values; source names and digests remain private. See
 [ADR 0037](decisions/0037-private-native-migration-review.md).
+
+The [native source library](native-source-library.md) now accepts authenticated
+bounded UTF-8 uploads into immutable controller database records and downloads their
+exact original bytes. Operator directory snapshots are optional staging inputs;
+reports and selected detail use stored source identities. This is source ingestion,
+not semantic conversion or generated policy export. Existing controller schema 1
+requires the explicit offline upgrade described in the library guide.

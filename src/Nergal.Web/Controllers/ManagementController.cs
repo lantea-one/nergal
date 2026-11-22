@@ -14,7 +14,7 @@ namespace Nergal.Web.Controllers;
 /// <summary>RBAC-gated fleet dashboard, policy authoring, compatibility/diff preview, confirmed apply, system settings, and audit viewer.</summary>
 [SupportedOSPlatform("linux")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class ManagementController(ControllerStateStore store, ApplyWorkflowService? applyWorkflow = null, NativePolicySourceCatalog? nativeSources = null) : Controller
+public sealed partial class ManagementController(ControllerStateStore store, ApplyWorkflowService? applyWorkflow = null, NativePolicySourceCatalog? nativeSources = null) : Controller
 {
     /// <summary>Populates live branding settings for the shared layout before action execution.</summary>
     public override void OnActionExecuting(ActionExecutingContext context)
@@ -28,33 +28,8 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
             ViewData["Branding"] = SystemSettingsSnapshot.Default.Branding;
         }
 
-        ViewData["ShowNativeSources"] = nativeSources is not null;
+        ViewData["ShowNativeSources"] = true;
         base.OnActionExecuting(context);
-    }
-
-    /// <summary>Inspects exact private native source snapshots without compiling or executing them.</summary>
-    [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
-    public IActionResult Sources()
-    {
-        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) || role != NergalRoles.Administrator) { return Forbid(); }
-        return nativeSources is null ? NotFound() : View(nativeSources.Sources);
-    }
-
-    /// <summary>Downloads a private read-only migration review selected by source digest, never by a file path.</summary>
-    [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
-    public IActionResult SourceReview(string? digest)
-    {
-        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) || role != NergalRoles.Administrator) { return Forbid(); }
-        var source = nativeSources?.Sources.FirstOrDefault(s => string.Equals(s.Digest, digest, StringComparison.Ordinal));
-        if (source is null) { return NotFound(); }
-        var report = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review);
-        return File(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(report, new System.Text.Json.JsonSerializerOptions
-        {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            WriteIndented = true,
-            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-        }),
-            "application/json", "migration-review-" + source.Digest[..12] + ".json");
     }
 
     /// <summary>Renders the overview and host fleet dashboard with live host health and recent audit entries (read-only for Auditors).</summary>

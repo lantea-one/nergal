@@ -28,3 +28,13 @@ and a private administrator-only report download. Conversion remains blocked:
 review signals do not establish syntax validity, exhaustive coverage or semantic
 equivalence. Named maps, tracking bypass and counters need explicit preservation
 work. No private sources or topology are published in these notes.
+
+## Database-backed native source library (unreleased)
+
+Administrators can upload bounded UTF-8 native sources into immutable controller
+schema-2 records, review one source, download its exact original bytes and obtain a
+source-bound lexical report. Optional file-directory snapshots are staging only.
+Imports and their audit records are atomic; no configuration is executed or
+converted. Existing controllers require an explicit offline `controller upgrade`.
+Additional SQL providers and semantic/generated-policy import/export remain future
+work. See [the source library guide](native-source-library.md).
