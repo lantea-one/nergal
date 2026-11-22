@@ -430,3 +430,22 @@ The local-session HTTPS fixture exercises all three types, invalid/duplicate/unk
 fields, retained stale input, escaping, history/search, restart persistence, CSRF
 and anonymous/Auditor boundaries. No native set or packet behavior is added by this
 slice; policy-reference and native compilation conformance remains future work.
+
+### Pinned policy object references
+
+`PolicyObjectReferenceTests` checks strict codec/digest/unknown-field denial,
+reference equality, schema/family/protocol/literal conflicts, overlap rejection,
+singletons and byte-identical native projection with MAC/negation preserved.
+`PolicyObjectBindingTests` uses real SQLite for version pinning, usage, forged and
+missing reference denial, and ordinary edit/reorder/removal preservation. HTTPS
+checks select a version, save a revision, edit the library and verify unchanged
+policy bytes plus historical reference visibility; CSRF and Auditor writes fail.
+
+Run `bash tests/integration/nftables/check-pinned-objects.sh` after Release build.
+It validates actual IPv4/IPv6 UDP admission and independent source/destination/port
+mismatch denial in a fresh user/network namespace, preserving foreign tables and
+round-tripping complete native echo/list observations. No host namespace fallback
+exists. `bash tools/integration/check-mapped-identities.sh` now pins controller-created
+IPv4/IPv6 source objects through the actual UI before its existing Unix/mTLS agent
+packet, confirmation and independent timed rollback checks. These verify static
+resolved references, not native named sets or semantic import.

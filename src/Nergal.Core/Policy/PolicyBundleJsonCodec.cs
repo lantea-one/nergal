@@ -152,7 +152,7 @@ public static partial class PolicyBundleJsonCodec
             if (item.ValueKind != JsonValueKind.Object ||
                 !HasOnlyProperties(item, "family", "protocol", "verdict", "source", "destination", "destinationPort",
                     "sourcePrefixes", "destinationPrefixes", "destinationPorts",
-                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac") ||
+                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject") ||
                 !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                 !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
                 !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
@@ -300,9 +300,13 @@ public static partial class PolicyBundleJsonCodec
 
             if (!TryReadRouterMatchers(item, out var router))
             { return new(null, [new("filter.routerFields", $"filter.rules[{index}]")]); }
+            if (!TryReadObjectReference(item, "sourceObject", out var sourceObject) ||
+                !TryReadObjectReference(item, "destinationObject", out var destinationObject) ||
+                !TryReadObjectReference(item, "destinationPortObject", out var portObject))
+            { return new(null, [new("filter.objectReference", $"filter.rules[{index}]")]); }
             rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports, description,
                 router.NegateInputInterface, router.NegateOutputInterface, router.NegateSource, router.NegateDestination,
-                router.SourceMac, router.SourceMacs, router.NegateSourceMac));
+                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject));
             index++;
         }
 
@@ -622,6 +626,9 @@ public static partial class PolicyBundleJsonCodec
                 foreach (var p in r.DestinationPorts) { writer.WriteNumberValue(p); }
                 writer.WriteEndArray();
             }
+            WriteObjectReference(writer, "sourceObject", r.SourceObject);
+            WriteObjectReference(writer, "destinationObject", r.DestinationObject);
+            WriteObjectReference(writer, "destinationPortObject", r.DestinationPortObject);
             WriteRouterMatchers(writer, r);
             writer.WriteString("chain", ChainName(r.Chain));
             if (r.InputInterface is not null) { writer.WriteString("inputInterface", r.InputInterface); }

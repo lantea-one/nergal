@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Nergal.Core.Controller;
@@ -95,8 +93,7 @@ public sealed partial class ControllerStateStore
         catch (Exception ex) when (ex is ArgumentException or JsonException or FormatException or OverflowException) { throw new ControllerStateException("object.corrupt", ex); }
     }
 
-    private static string ObjectDigest(ReusableObjectContent content) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
-        JsonSerializer.Serialize(new[] { content.Name, content.Kind.ToString(), content.Description, JsonSerializer.Serialize(content.Entries) }))));
+    private static string ObjectDigest(ReusableObjectContent content) => content.Digest;
 
     private static void ValidateObjectSchema(SqliteConnection conn, SqliteTransaction tx)
     {

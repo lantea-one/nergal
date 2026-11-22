@@ -36,3 +36,6 @@ role denial, atomic audit failure, capacity and trigger/digest corruption tests.
 Verify explicit schema-2 upgrade preserves sources and revisions. Exercise HTTPS
 read/write/CSRF/role boundaries, invalid and duplicate fields, escaped output and
 restart persistence. Public screenshots contain synthetic objects only.
+
+[ADR 0040](0040-pinned-controller-policy-references.md) implements pinned controller
+references while retaining the separate native named-set boundary described here.

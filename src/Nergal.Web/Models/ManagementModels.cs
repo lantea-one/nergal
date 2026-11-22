@@ -93,6 +93,9 @@ public sealed class PolicyEditorViewModel
     /// <summary>Gets whether the viewer can persist policy revisions.</summary>
     public required bool CanMutate { get; init; }
 
+    /// <summary>Gets selectable current library snapshots; selections are pinned to the displayed version.</summary>
+    public IReadOnlyList<ReusableObjectVersion> LibraryObjects { get; init; } = [];
+
     /// <summary>Gets current draft bundle JSON text displayed in the editor.</summary>
     public required string BundleJson { get; init; }
 

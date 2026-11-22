@@ -1171,7 +1171,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         };
     }
 
-    private static PolicyEditorViewModel BuildPolicyModel(
+    private PolicyEditorViewModel BuildPolicyModel(
         string role,
         string bundleJson,
         string? summary,
@@ -1183,6 +1183,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         {
             ActorRole = role,
             CanMutate = role == NergalRoles.Administrator,
+            LibraryObjects = store.ListReusableObjects(),
             BundleJson = bundleJson,
             Summary = summary,
             SelectedRevision = selectedRevision,

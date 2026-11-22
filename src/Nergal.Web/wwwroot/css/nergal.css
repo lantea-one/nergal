@@ -820,3 +820,8 @@ input[type="file"]::file-selector-button {
 @media (max-width: 640px) {
   .object-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Matcher cells must remain readable when pinned list names and contents are shown. */
+.policy-rules-table td:nth-child(5),
+.policy-rules-table td:nth-child(6) { min-width: 12rem; }
+.policy-rules-table td:nth-child(7) { min-width: 10rem; }

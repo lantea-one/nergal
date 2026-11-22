@@ -164,6 +164,9 @@ public sealed class RpFilterPolicy
 /// <param name="SourceMac">Optional L2 source MAC address (<c>ether saddr</c>; mutually exclusive with <paramref name="SourceMacs"/>; schema 2 only).</param>
 /// <param name="SourceMacs">Optional inline L2 source MAC address set (2–64 distinct MACs; mutually exclusive with <paramref name="SourceMac"/>; schema 2 only).</param>
 /// <param name="NegateSourceMac">When true, negates <paramref name="SourceMac"/> or <paramref name="SourceMacs"/> (<c>ether saddr !=</c>; schema 2 only).</param>
+/// <param name="SourceObject">Optional pinned address-list reference, exclusive with source literals.</param>
+/// <param name="DestinationObject">Optional pinned address-list reference, exclusive with destination literals.</param>
+/// <param name="DestinationPortObject">Optional pinned port-list reference, exclusive with destination-port literals.</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -188,7 +191,10 @@ public sealed record FilterRule(
     bool NegateDestination = false,
     MacAddress? SourceMac = null,
     IReadOnlyList<MacAddress>? SourceMacs = null,
-    bool NegateSourceMac = false)
+    bool NegateSourceMac = false,
+    PolicyObjectReference? SourceObject = null,
+    PolicyObjectReference? DestinationObject = null,
+    PolicyObjectReference? DestinationPortObject = null)
 {
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
@@ -226,7 +232,8 @@ public sealed record FilterRule(
             NegateDestination == other.NegateDestination &&
             Equals(SourceMac, other.SourceMac) &&
             SequenceEqual(SourceMacs, other.SourceMacs) &&
-            NegateSourceMac == other.NegateSourceMac;
+            NegateSourceMac == other.NegateSourceMac &&
+            Equals(SourceObject, other.SourceObject) && Equals(DestinationObject, other.DestinationObject) && Equals(DestinationPortObject, other.DestinationPortObject);
     }
 
     /// <inheritdoc />
@@ -257,6 +264,7 @@ public sealed record FilterRule(
         hash.Add(SourceMac);
         AddSequenceHash(ref hash, SourceMacs);
         hash.Add(NegateSourceMac);
+        hash.Add(SourceObject); hash.Add(DestinationObject); hash.Add(DestinationPortObject);
         return hash.ToHashCode();
     }
 

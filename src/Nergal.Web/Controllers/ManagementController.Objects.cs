@@ -47,7 +47,7 @@ public sealed partial class ManagementController
     {
         var objects = store.ListReusableObjects();
         if (!string.IsNullOrWhiteSpace(query)) { objects = objects.Where(o => o.Content.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || o.Content.Description.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray(); }
-        return new(objects, selected is null ? [] : store.ListReusableObjectVersions(selected.Id), selected, canMutate, query, input, error);
+        return new(objects, selected is null ? [] : store.ListReusableObjectVersions(selected.Id), selected, canMutate, query, input, error, selected is null ? [] : store.ListPolicyObjectUsage(selected.Id));
     }
     private IActionResult ObjectFailure(ObjectLibraryInput input, string error, int status = 400)
     {

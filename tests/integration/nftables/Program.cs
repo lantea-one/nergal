@@ -180,9 +180,9 @@ if (mode == "nat-filter")
     return 0;
 }
 
-if (mode == "sets")
+if (mode is "sets" or "pinned")
 {
-    var result = NftFilterCompiler.Compile(BuildSetsPolicy(), routerIdentity);
+    var result = NftFilterCompiler.Compile(mode == "pinned" ? BuildPinnedPolicy() : BuildSetsPolicy(), routerIdentity);
     if (!result.IsSuccess)
     {
         throw new InvalidOperationException("Sets policy failed: " + string.Join(", ", result.Diagnostics));
@@ -192,9 +192,9 @@ if (mode == "sets")
     return 0;
 }
 
-if (mode == "verify-sets" && args.Length == 3)
+if (mode is "verify-sets" or "verify-pinned" && args.Length == 3)
 {
-    var expected = NftFilterCompiler.Compile(BuildSetsPolicy(), routerIdentity).Candidate!;
+    var expected = NftFilterCompiler.Compile(mode == "verify-pinned" ? BuildPinnedPolicy() : BuildSetsPolicy(), routerIdentity).Candidate!;
     var echoed = NftTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
     if (!echoed.IsSuccess)
     {
@@ -422,3 +422,20 @@ static FilterPolicy BuildSetsPolicy() => new(
             Chain: FilterChainKind.Input,
             IcmpType: FilterIcmpTypes.ParameterProblem),
     ]);
+
+static FilterPolicy BuildPinnedPolicy()
+{
+    PolicyObjectReference Ref(string name, Nergal.Core.Controller.ReusableObjectKind kind, params string[] entries) =>
+        new(Guid.Parse("11111111-1111-4111-8111-111111111111"), 1, new(name, kind, "", entries));
+    var rules = new List<FilterRule?>();
+    foreach (var family in new[] { IpFamily.IPv4, IpFamily.IPv6 })
+    {
+        var v4 = family == IpFamily.IPv4;
+        var kind = v4 ? Nergal.Core.Controller.ReusableObjectKind.Ipv4 : Nergal.Core.Controller.ReusableObjectKind.Ipv6;
+        rules.Add(new(family, FilterProtocol.Udp, FilterVerdict.Accept,
+            SourceObject: Ref(v4 ? "clients4" : "clients6", kind, v4 ? "127.0.0.2" : "2001:db8::2", v4 ? "127.0.0.4" : "2001:db8::4"),
+            DestinationObject: Ref(v4 ? "server4" : "server6", kind, v4 ? "127.0.0.1" : "2001:db8::1"),
+            DestinationPortObject: Ref("services", Nergal.Core.Controller.ReusableObjectKind.Port, "19001", "19003")));
+    }
+    return new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept, rules);
+}
