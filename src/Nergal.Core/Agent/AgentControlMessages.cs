@@ -54,7 +54,8 @@ public sealed record AgentControlRequest
         Guid? operationId = null,
         Guid? watchdogId = null,
         int? confirmationTimeoutSeconds = null,
-        FilterPolicy? policy = null)
+        FilterPolicy? policy = null,
+        FirewallPolicyBundle? bundle = null)
     {
         if (!Enum.IsDefined(command))
         {
@@ -64,7 +65,7 @@ public sealed record AgentControlRequest
         switch (command)
         {
             case AgentControlCommand.Status:
-                if (operationId.HasValue || watchdogId.HasValue || confirmationTimeoutSeconds.HasValue || policy is not null)
+                if (operationId.HasValue || watchdogId.HasValue || confirmationTimeoutSeconds.HasValue || policy is not null || bundle is not null)
                 {
                     throw new ArgumentException("Status request takes no operation parameters.");
                 }
@@ -87,11 +88,17 @@ public sealed record AgentControlRequest
                     throw new ArgumentOutOfRangeException(nameof(confirmationTimeoutSeconds));
                 }
 
-                if (policy is null)
+                if (policy is null && bundle is null)
                 {
                     throw new ArgumentNullException(nameof(policy));
                 }
 
+                if (policy is not null && bundle is not null && !ReferenceEquals(policy, bundle.Filter))
+                {
+                    throw new ArgumentException("PrepareApply policy must match the supplied bundle filter.", nameof(policy));
+                }
+
+                policy ??= bundle!.Filter;
                 break;
 
             case AgentControlCommand.Confirm:
@@ -106,9 +113,9 @@ public sealed record AgentControlRequest
                     throw new ArgumentException("Watchdog ID is required.", nameof(watchdogId));
                 }
 
-                if (confirmationTimeoutSeconds.HasValue || policy is not null)
+                if (confirmationTimeoutSeconds.HasValue || policy is not null || bundle is not null)
                 {
-                    throw new ArgumentException("Confirm/Rollback request cannot carry timeout or policy fields.");
+                    throw new ArgumentException("Confirm/Rollback request cannot carry timeout, policy, or bundle fields.");
                 }
 
                 break;
@@ -119,6 +126,7 @@ public sealed record AgentControlRequest
         WatchdogId = watchdogId;
         ConfirmationTimeoutSeconds = confirmationTimeoutSeconds;
         Policy = policy;
+        Bundle = bundle;
     }
 
     /// <summary>Gets the requested control operation.</summary>
@@ -135,6 +143,13 @@ public sealed record AgentControlRequest
 
     /// <summary>Gets the typed filter policy snapshot for PrepareApply.</summary>
     public FilterPolicy? Policy { get; }
+
+    /// <summary>Gets the optional multi-table policy bundle for PrepareApply (including filter, NAT, and bridge tables).</summary>
+    public FirewallPolicyBundle? Bundle { get; }
+
+    /// <summary>Resolves the effective multi-table bundle for <see cref="AgentControlCommand.PrepareApply"/>.</summary>
+    public FirewallPolicyBundle ResolveBundle() =>
+        Bundle ?? new FirewallPolicyBundle(FirewallPolicyBundle.CurrentSchemaVersion, Policy ?? throw new InvalidOperationException("Request carries no policy."));
 }
 
 /// <summary>Immutable typed reply returned by an authenticated agent control listener.</summary>

@@ -214,9 +214,9 @@ public sealed class ConfirmedApplyWorkflowTests
         }
     }
 
-    /// <summary>Multi-table bundles containing NAT/bridge sections fail closed before dispatching over FilterPolicy control channel.</summary>
+    /// <summary>Multi-table bundles containing NAT/bridge sections dispatch over the control channel while Auditor mutation attempts fail closed with 403.</summary>
     [Fact]
-    public async Task Workflow_RejectsMultiTableBundleFailClosedAndEnforcesAuditorRbac()
+    public async Task Workflow_DispatchesMultiTableBundleAndEnforcesAuditorRbac()
     {
         if (!OperatingSystem.IsLinux())
         {
@@ -242,7 +242,18 @@ public sealed class ConfirmedApplyWorkflowTests
             Assert.True(eval.IsValid);
             var rev = store.SavePolicyRevision(eval.CanonicalJson!, eval.CandidateDigest!, adminId, NergalRoles.Administrator);
 
-            var dispatcher = new RecordingDispatcher((_, _) => new AgentControlReply(AgentControlOutcome.Matched, revision: 1));
+            var dispatcher = new RecordingDispatcher((_, req) => req.Command switch
+            {
+                AgentControlCommand.Status => new AgentControlReply(AgentControlOutcome.Matched, revision: 1),
+                AgentControlCommand.PrepareApply => new AgentControlReply(
+                    AgentControlOutcome.AppliedPendingConfirmation,
+                    revision: 1,
+                    operationId: req.OperationId,
+                    watchdogId: req.WatchdogId ?? Guid.NewGuid(),
+                    activePhase: ApplyPhase.AwaitingConfirmation,
+                    remainingSeconds: req.ConfirmationTimeoutSeconds),
+                _ => new AgentControlReply(AgentControlOutcome.Unavailable, errorCode: "unexpected"),
+            });
             var workflow = new ApplyWorkflowService(store, dispatcher);
 
             var auditorController = CreateController(store, workflow, auditorId, NergalRoles.Auditor);
@@ -257,16 +268,17 @@ public sealed class ConfirmedApplyWorkflowTests
             Assert.Single(dispatcher.Sent); // Only the Apply() read status query dispatched.
 
             var adminController = CreateController(store, workflow, adminId, NergalRoles.Administrator);
-            var rejectedView = Assert.IsType<ViewResult>(await adminController.StartApply(host.Id.ToString("D"), rev.Revision, 10));
-            Assert.Equal(StatusCodes.Status400BadRequest, adminController.Response.StatusCode);
-            var rejectedModel = Assert.IsType<ConfirmedApplyViewModel>(rejectedView.Model);
-            Assert.Contains("policy.unsupportedScope", rejectedModel.ErrorMessage);
-            Assert.Single(dispatcher.Sent); // No PrepareApply sent for unsupported NAT bundle.
+            var redirect = Assert.IsType<LocalRedirectResult>(await adminController.StartApply(host.Id.ToString("D"), rev.Revision, 10));
+            Assert.Contains("notice=appliedPendingConfirmation", redirect.Url, StringComparison.Ordinal);
+            Assert.Equal(2, dispatcher.Sent.Count);
+            var prepareRequest = dispatcher.Sent[1].Request;
+            Assert.Equal(AgentControlCommand.PrepareApply, prepareRequest.Command);
+            Assert.NotNull(prepareRequest.Bundle);
+            Assert.NotNull(prepareRequest.Bundle!.Nat);
 
             var latestAudit = store.ListAuditEntries()[0];
             Assert.Equal("apply.start", latestAudit.Action);
-            Assert.Equal("rejected", latestAudit.Outcome);
-            Assert.Equal("policy.unsupportedScope", latestAudit.DetailCode);
+            Assert.Equal("pending_confirmation", latestAudit.Outcome);
         }
         finally
         {

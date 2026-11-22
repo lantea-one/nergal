@@ -141,9 +141,13 @@ and `IAgentControlDispatcher`, sending typed `AgentControlRequest` frames over
 `UnixControlClient` (`SO_PEERCRED` peer-UID check) or `TlsControlClient`
 (pinned TLS 1.3 mTLS with owner-only `0600` client private keys) to an isolated
 `nergal-agent control-serve` or `tls-serve` process. Single-table `FilterPolicy`
-revisions dispatch via two-phase `prepare-apply` / `confirm` / `rollback`,
-synchronizing host revision metadata and recording `apply.start`, `apply.confirm`,
-and `apply.rollback` in `audit_log`; multi-table NAT/bridge bundles fail closed
-with `policy.unsupportedScope` at controller dispatch. Production multi-table
-agent apply and host-wide reboot recovery require their own design and conformance
-evidence.
+and multi-table `FirewallPolicyBundle` (`inet nergal_filter`, `inet nergal_nat`,
+and `bridge nergal_bridge`) revisions dispatch via two-phase `prepare-apply` /
+`confirm` / `rollback`, synchronizing host revision metadata and recording
+`apply.start`, `apply.confirm`, and `apply.rollback` in `audit_log` (see
+`docs/decisions/0032-multitable-agent-confirmed-apply.md`). On the agent side,
+`ReplaceAndVerifyAsync`, `WatchAsync`, and `AgentControlHandler` inspect auxiliary
+table presence and ownership (`nft --terse --json list tables`), fail closed on
+unowned table collisions or auxiliary drift, validate coordinated multi-table
+`--echo --handle --json` receipts, and remove or restore `inet nergal_nat` and
+`bridge nergal_bridge` atomically during rollback while preserving foreign tables.

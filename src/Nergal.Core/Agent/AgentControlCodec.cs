@@ -40,10 +40,16 @@ public static class AgentControlCodec
             writer.WriteNumber("confirmationTimeoutSeconds", timeoutSeconds);
         }
 
-        if (request.Policy is { } policy)
+        if (request.Bundle is { } bundle &&
+            (bundle.Nat is not null || bundle.Bridge is not null || bundle.SchemaVersion != FirewallPolicyBundle.CurrentSchemaVersion))
+        {
+            writer.WritePropertyName("bundle");
+            PolicyBundleJsonCodec.WriteBundle(writer, bundle);
+        }
+        else if (request.Policy is { } policy)
         {
             writer.WritePropertyName("policy");
-            WritePolicy(writer, policy);
+            PolicyBundleJsonCodec.WriteFilterPolicy(writer, policy);
         }
 
         writer.WriteEndObject();
@@ -97,9 +103,17 @@ public static class AgentControlCodec
             if (command == AgentControlCommand.PrepareApply)
             {
                 var hasWatchdog = root.TryGetProperty("watchdogId", out _);
+                var hasPolicy = root.TryGetProperty("policy", out var policyEl);
+                var hasBundle = root.TryGetProperty("bundle", out var bundleEl);
+                if (hasPolicy == hasBundle)
+                {
+                    return new(null, "request.fields");
+                }
+
+                var payloadField = hasBundle ? "bundle" : "policy";
                 var validProps = hasWatchdog
-                    ? Properties(root, "schemaVersion", "command", "operationId", "watchdogId", "confirmationTimeoutSeconds", "policy")
-                    : Properties(root, "schemaVersion", "command", "operationId", "confirmationTimeoutSeconds", "policy");
+                    ? Properties(root, "schemaVersion", "command", "operationId", "watchdogId", "confirmationTimeoutSeconds", payloadField)
+                    : Properties(root, "schemaVersion", "command", "operationId", "confirmationTimeoutSeconds", payloadField);
                 if (!validProps)
                 {
                     return new(null, "request.fields");
@@ -127,13 +141,24 @@ public static class AgentControlCodec
                     return new(null, "request.timeout");
                 }
 
-                var policy = ParsePolicy(root.GetProperty("policy"));
-                if (policy is null)
+                if (hasBundle)
+                {
+                    var decodedBundle = PolicyBundleJsonCodec.TryParseBundleElement(bundleEl);
+                    if (!decodedBundle.IsSuccess || decodedBundle.Value is null)
+                    {
+                        return new(null, "request.policy");
+                    }
+
+                    return new(new AgentControlRequest(AgentControlCommand.PrepareApply, opId, wdId, timeout, bundle: decodedBundle.Value), null);
+                }
+
+                var decodedFilter = PolicyBundleJsonCodec.TryParseFilterElement(policyEl);
+                if (!decodedFilter.IsSuccess || decodedFilter.Value is null)
                 {
                     return new(null, "request.policy");
                 }
 
-                return new(new AgentControlRequest(AgentControlCommand.PrepareApply, opId, wdId, timeout, policy), null);
+                return new(new AgentControlRequest(AgentControlCommand.PrepareApply, opId, wdId, timeout, decodedFilter.Value), null);
             }
 
             // Confirm / Rollback
@@ -335,197 +360,6 @@ public static class AgentControlCodec
         }
     }
 
-    private static void WritePolicy(Utf8JsonWriter writer, FilterPolicy policy)
-    {
-        writer.WriteStartObject();
-        writer.WriteNumber("schemaVersion", policy.SchemaVersion);
-        writer.WriteString("inputDefaultVerdict", VerdictName(policy.InputDefaultVerdict));
-        writer.WriteString("forwardDefaultVerdict", VerdictName(policy.ForwardDefaultVerdict));
-        writer.WriteString("outputDefaultVerdict", VerdictName(policy.OutputDefaultVerdict));
-        writer.WriteStartArray("rules");
-        foreach (var draft in policy.Rules)
-        {
-            if (draft is null)
-            {
-                throw new ArgumentException("Null rules cannot be serialized.");
-            }
-
-            writer.WriteStartObject();
-            writer.WriteString("family", draft.Family == IpFamily.IPv4 ? "ipv4" : "ipv6");
-            writer.WriteString("protocol", ProtocolName(draft.Protocol));
-            writer.WriteString("verdict", VerdictName(draft.Verdict));
-            if (draft.Source is not null) { writer.WriteString("source", draft.Source.Value); }
-            if (draft.Destination is not null) { writer.WriteString("destination", draft.Destination.Value); }
-            if (draft.DestinationPort is { } dport) { writer.WriteNumber("destinationPort", dport); }
-            writer.WriteString("chain", ChainName(draft.Chain));
-            if (draft.InputInterface is not null) { writer.WriteString("inputInterface", draft.InputInterface); }
-            if (draft.OutputInterface is not null) { writer.WriteString("outputInterface", draft.OutputInterface); }
-            writer.WriteNumber("connectionStates", (int)draft.ConnectionStates);
-            if (draft.IcmpType is not null) { writer.WriteString("icmpType", draft.IcmpType); }
-            if (draft.RateLimit is { } rl)
-            {
-                writer.WriteStartObject("rateLimit");
-                writer.WriteNumber("packetsPerWindow", rl.PacketsPerWindow);
-                writer.WriteString("windowUnit", rl.WindowUnit == RateLimitTimeUnit.Second ? "second" : "minute");
-                writer.WriteNumber("burst", rl.Burst);
-                writer.WriteNumber("entryTimeoutSeconds", rl.EntryTimeoutSeconds);
-                writer.WriteEndObject();
-            }
-
-            if (draft.MatchOriginalDestinationDnat)
-            {
-                writer.WriteBoolean("matchOriginalDestinationDnat", true);
-            }
-
-            writer.WriteEndObject();
-        }
-
-        writer.WriteEndArray();
-        writer.WriteEndObject();
-    }
-
-    private static FilterPolicy? ParsePolicy(JsonElement element)
-    {
-        if (element.ValueKind != JsonValueKind.Object ||
-            !Properties(element, "schemaVersion", "inputDefaultVerdict", "forwardDefaultVerdict", "outputDefaultVerdict", "rules"))
-        {
-            return null;
-        }
-
-        var verEl = element.GetProperty("schemaVersion");
-        if (verEl.ValueKind != JsonValueKind.Number || !verEl.TryGetInt32(out var schemaVersion) || schemaVersion is not (1 or 2))
-        {
-            return null;
-        }
-
-        var inDef = ParseVerdict(element.GetProperty("inputDefaultVerdict"));
-        var fwdDef = ParseVerdict(element.GetProperty("forwardDefaultVerdict"));
-        var outDef = ParseVerdict(element.GetProperty("outputDefaultVerdict"));
-        if (inDef is null || fwdDef is null || outDef is null)
-        {
-            return null;
-        }
-
-        var rulesEl = element.GetProperty("rules");
-        if (rulesEl.ValueKind != JsonValueKind.Array || rulesEl.GetArrayLength() > MaximumRuleCount)
-        {
-            return null;
-        }
-
-        var allowedRuleKeys = new HashSet<string>(
-            ["family", "protocol", "verdict", "source", "destination", "destinationPort", "chain",
-             "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat"],
-            StringComparer.Ordinal);
-        var rules = new List<FilterRule>(rulesEl.GetArrayLength());
-
-        foreach (var item in rulesEl.EnumerateArray())
-        {
-            if (item.ValueKind != JsonValueKind.Object) { return null; }
-            foreach (var p in item.EnumerateObject())
-            {
-                if (!allowedRuleKeys.Contains(p.Name)) { return null; }
-            }
-
-            if (!item.TryGetProperty("family", out var famEl) || famEl.ValueKind != JsonValueKind.String ||
-                !item.TryGetProperty("protocol", out var protoEl) || protoEl.ValueKind != JsonValueKind.String ||
-                !item.TryGetProperty("verdict", out var verdEl) ||
-                !item.TryGetProperty("chain", out var chainEl) || chainEl.ValueKind != JsonValueKind.String ||
-                !item.TryGetProperty("connectionStates", out var ctEl) || ctEl.ValueKind != JsonValueKind.Number ||
-                !ctEl.TryGetInt32(out var ctRaw))
-            {
-                return null;
-            }
-
-            IpFamily? family = famEl.GetString() switch { "ipv4" => IpFamily.IPv4, "ipv6" => IpFamily.IPv6, _ => null };
-            var protocol = ParseProtocol(protoEl.GetString());
-            var verdict = ParseVerdict(verdEl);
-            var chain = ParseChain(chainEl.GetString());
-            if (family is null || protocol is null || verdict is null || chain is null) { return null; }
-            var ctStates = (ConnectionStateFlags)ctRaw;
-            if ((ctStates & ~FilterPolicyValidation.AllConnectionStates) != 0) { return null; }
-
-            NetworkPrefix? source = null;
-            if (item.TryGetProperty("source", out var srcEl))
-            {
-                if (srcEl.ValueKind != JsonValueKind.String) { return null; }
-                source = new NetworkPrefix(srcEl.GetString()!);
-            }
-
-            NetworkPrefix? destination = null;
-            if (item.TryGetProperty("destination", out var dstEl))
-            {
-                if (dstEl.ValueKind != JsonValueKind.String) { return null; }
-                destination = new NetworkPrefix(dstEl.GetString()!);
-            }
-
-            int? dport = null;
-            if (item.TryGetProperty("destinationPort", out var dpEl))
-            {
-                if (dpEl.ValueKind != JsonValueKind.Number || !dpEl.TryGetInt32(out var p)) { return null; }
-                dport = p;
-            }
-
-            string? iif = null;
-            if (item.TryGetProperty("inputInterface", out var iifEl))
-            {
-                if (iifEl.ValueKind != JsonValueKind.String) { return null; }
-                iif = iifEl.GetString();
-            }
-
-            string? oif = null;
-            if (item.TryGetProperty("outputInterface", out var oifEl))
-            {
-                if (oifEl.ValueKind != JsonValueKind.String) { return null; }
-                oif = oifEl.GetString();
-            }
-
-            string? icmpType = null;
-            if (item.TryGetProperty("icmpType", out var icmpEl))
-            {
-                if (icmpEl.ValueKind != JsonValueKind.String) { return null; }
-                icmpType = icmpEl.GetString();
-            }
-
-            PerSourceRateLimit? rateLimit = null;
-            if (item.TryGetProperty("rateLimit", out var rlEl))
-            {
-                if (!Properties(rlEl, "packetsPerWindow", "windowUnit", "burst", "entryTimeoutSeconds")) { return null; }
-                var ppwEl = rlEl.GetProperty("packetsPerWindow");
-                var unitEl = rlEl.GetProperty("windowUnit");
-                var burstEl = rlEl.GetProperty("burst");
-                var toEl = rlEl.GetProperty("entryTimeoutSeconds");
-                if (ppwEl.ValueKind != JsonValueKind.Number || !ppwEl.TryGetInt32(out var ppw) ||
-                    unitEl.ValueKind != JsonValueKind.String ||
-                    burstEl.ValueKind != JsonValueKind.Number || !burstEl.TryGetInt32(out var burst) ||
-                    toEl.ValueKind != JsonValueKind.Number || !toEl.TryGetInt32(out var timeout))
-                {
-                    return null;
-                }
-
-                RateLimitTimeUnit? unit = unitEl.GetString() switch
-                {
-                    "second" => RateLimitTimeUnit.Second,
-                    "minute" => RateLimitTimeUnit.Minute,
-                    _ => null,
-                };
-                if (unit is null) { return null; }
-                rateLimit = new(ppw, unit.Value, burst, timeout);
-            }
-
-            var matchDnat = false;
-            if (item.TryGetProperty("matchOriginalDestinationDnat", out var dnatEl))
-            {
-                if (dnatEl.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) { return null; }
-                matchDnat = dnatEl.GetBoolean();
-            }
-
-            rules.Add(new(family.Value, protocol.Value, verdict.Value, source, destination, dport,
-                chain.Value, iif, oif, ctStates, icmpType, rateLimit, matchDnat));
-        }
-
-        return new(schemaVersion, inDef.Value, fwdDef.Value, outDef.Value, rules);
-    }
-
     private static bool TryParseGuid(JsonElement el, out Guid id)
     {
         id = Guid.Empty;
@@ -603,56 +437,6 @@ public static class AgentControlCodec
         "rollbackRequired" => ApplyPhase.RollbackRequired,
         "rolledBack" => ApplyPhase.RolledBack,
         "recoveryRequired" => ApplyPhase.RecoveryRequired,
-        _ => null,
-    };
-
-    private static string VerdictName(FilterVerdict v) => v switch
-    {
-        FilterVerdict.Accept => "accept",
-        FilterVerdict.Drop => "drop",
-        _ => throw new ArgumentOutOfRangeException(nameof(v)),
-    };
-
-    private static FilterVerdict? ParseVerdict(JsonElement el) => el.ValueKind == JsonValueKind.String ? el.GetString() switch
-    {
-        "accept" => FilterVerdict.Accept,
-        "drop" => FilterVerdict.Drop,
-        _ => null,
-    } : null;
-
-    private static string ProtocolName(FilterProtocol p) => p switch
-    {
-        FilterProtocol.Any => "any",
-        FilterProtocol.Tcp => "tcp",
-        FilterProtocol.Udp => "udp",
-        FilterProtocol.Icmp => "icmp",
-        FilterProtocol.IcmpV6 => "icmpv6",
-        _ => throw new ArgumentOutOfRangeException(nameof(p)),
-    };
-
-    private static FilterProtocol? ParseProtocol(string? v) => v switch
-    {
-        "any" => FilterProtocol.Any,
-        "tcp" => FilterProtocol.Tcp,
-        "udp" => FilterProtocol.Udp,
-        "icmp" => FilterProtocol.Icmp,
-        "icmpv6" => FilterProtocol.IcmpV6,
-        _ => null,
-    };
-
-    private static string ChainName(FilterChainKind c) => c switch
-    {
-        FilterChainKind.Input => "input",
-        FilterChainKind.Forward => "forward",
-        FilterChainKind.Output => "output",
-        _ => throw new ArgumentOutOfRangeException(nameof(c)),
-    };
-
-    private static FilterChainKind? ParseChain(string? v) => v switch
-    {
-        "input" => FilterChainKind.Input,
-        "forward" => FilterChainKind.Forward,
-        "output" => FilterChainKind.Output,
         _ => null,
     };
 
