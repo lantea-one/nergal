@@ -40,6 +40,8 @@ def main():
         (PRIVATE / 'access.txt').write_text('Local disposable sandbox only\nUsername: sandbox-admin\nPassword: ' + password + '\n')
     if not (PRIVATE / 'controller/controller.db').exists():
         run(*container, 'controller', 'init', '/state/controller')
+    else:
+        run(*container, 'controller', 'upgrade', '/state/controller')
     if not (PRIVATE / 'tls.crt').exists():
         for name in ('tls', 'wrapping'):
             run('openssl', 'req', '-x509', '-newkey', 'rsa:3072', '-nodes', '-days', '30',

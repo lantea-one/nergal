@@ -31,3 +31,8 @@ control flow, reject unsupported semantics without returning a partial candidate
 and produce a source-bound mapping report. Compare complete native observations
 and real packet outcomes in disposable namespaces before describing a converted
 server as equivalent. This inventory intentionally grants no conversion authority.
+
+[ADR 0038](0038-database-native-source-snapshots.md) subsequently adds immutable
+database source ingestion and exact original downloads. Lexical reviews derive
+from selected stored identities; this does not alter the conversion acceptance
+boundary above.

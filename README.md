@@ -43,7 +43,7 @@ installation and hardening details before live deployment.
 
 The development version includes [typed router constructs and explicit support limits](docs/router-constructs.md),
 a Lantea.One-inspired light/dark management UI, validated audited settings intent,
-and administrator-only private source inspection. Independent early inet tables and
+and an administrator-only [database-backed native source library](docs/native-source-library.md). Independent early inet tables and
 extended bridge jump/return support confirmed apply after complete native verification. New router fields are
 currently authored through **Advanced JSON & Revisions** in a locally bundled CodeMirror editor; simple forms retain them.
 See [the ordered product workflow](docs/product-workflow.md) for the remaining work.
@@ -157,6 +157,7 @@ rather than silently weakening policy (`firewalld` is excluded per ADR 0001).
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Original code
 is licensed under MIT. No FWCloud implementation or assets are included.
 
-Private source inspection also provides source-bound migration review downloads.
-These bounded lexical inventories locate review work; they never execute sources
-or produce a converted policy. See [migration status](docs/router-constructs.md).
+The native source library supports bounded file uploads, immutable database
+snapshots, source-bound reviews and exact original-file downloads. These are source
+ingestion/review workflows; semantic conversion and generated policy export remain
+unfinished. See [source library](docs/native-source-library.md) and [migration status](docs/router-constructs.md).

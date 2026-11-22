@@ -1,0 +1,45 @@
+@model Nergal.Core.Controller.NativeSourceSnapshot
+@{
+    var source = new Nergal.Web.NativePolicySource(Model.Content.Name, Model.Content.Text, Model.Content.Digest);
+}
+            <p class="muted">Source SHA-256 <code>@source.Digest</code></p>
+            <div class="alert alert-warning">
+                <strong>Conversion blocked — explicit mapping required.</strong>
+                Review topics help locate work; they do not validate or convert the configuration.
+                Keywords may be identifiers, so inspect each occurrence in context. No policy has been created or applied.
+            </div>
+            <p><strong>@source.Review.TableDeclarations</strong> declarative table headers ·
+                <strong>@source.Review.ChainDeclarations</strong> declarative chain headers ·
+                <strong>@source.Review.Signals.Count</strong> review topics</p>
+            @if (!source.Review.InventoryComplete)
+            {
+                <p class="alert alert-danger" role="alert">Inventory incomplete: <code>@source.Review.Diagnostic</code>. Review the exact source below.</p>
+            }
+            @if (source.Review.Signals.Count > 0)
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <caption>Migration review signals — non-exhaustive, not semantic validation</caption>
+                        <thead><tr><th scope="col">Review area</th><th scope="col">Work to preserve behavior</th><th scope="col">Source lines</th></tr></thead>
+                        <tbody>
+                        @foreach (var signal in source.Review.Signals)
+                        {
+                            <tr>
+                                <td>@(signal.Kind == Nergal.Nftables.MigrationSignalKind.ContractGap ? "Contract gap signal" : signal.Kind == Nergal.Nftables.MigrationSignalKind.SourceResolution ? "Source resolution" : "Explicit typed mapping")</td>
+                                <td>@signal.Description <br /><small class="muted">@signal.Code</small></td>
+                                <td>@string.Join(", ", signal.Lines.Take(12))@(signal.Lines.Count > 12 ? $" (+{signal.Lines.Count - 12} more in report)" : "")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p>No catalogued keywords were found. This does not establish compatibility or completeness.</p>
+            }
+            <p>Every table still needs explicit ownership, hook and rule-order mapping. Counters, definitions,
+                named objects and control flow must be accounted for before an equivalent policy can be reviewed.</p>
+            <a class="btn btn-secondary" href="@Url.Action("SourceReview", new { sourceId = Model.Summary.Id })">Download migration review</a>
+            <details class="disclosure mt-2"><summary>Exact source snapshot</summary><pre><code>@source.Text</code></pre></details>
+

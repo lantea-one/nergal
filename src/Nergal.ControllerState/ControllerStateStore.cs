@@ -9,10 +9,10 @@ namespace Nergal.ControllerState;
 
 /// <summary>Mode-checked SQLite WAL store for registered hosts, policy revisions, and append-only audit logs.</summary>
 [SupportedOSPlatform("linux")]
-public sealed class ControllerStateStore
+public sealed partial class ControllerStateStore
 {
     private const int ApplicationId = 0x4e524743; // 'NRGC'
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private const string DatabaseFileName = "controller.db";
 
     private readonly ControllerStateOptions _options;
@@ -66,12 +66,13 @@ public sealed class ControllerStateStore
                 PRAGMA synchronous=FULL;
                 PRAGMA foreign_keys=ON;
                 PRAGMA application_id=0x4e524743;
-                PRAGMA user_version=1;
+                PRAGMA user_version=2;
                 """);
 
             using (var tx = connection.BeginTransaction())
             {
                 ExecuteNonQuery(connection, tx, SchemaSql);
+                ExecuteNonQuery(connection, tx, NativeSourcesSchemaSql);
                 tx.Commit();
             }
 
@@ -673,6 +674,8 @@ public sealed class ControllerStateStore
             throw new ControllerStateException("controller.corrupt");
         }
 
+        ValidateAuditDefinitions(conn, tx);
+        ValidateNativeSourceSchema(conn, tx);
         return true;
     }
 

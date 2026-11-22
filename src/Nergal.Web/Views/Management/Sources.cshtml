@@ -1,4 +1,4 @@
-@model IReadOnlyList<Nergal.Web.NativePolicySource>
+@model Nergal.Web.NativeSourcesPageModel
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Native sources";
@@ -7,58 +7,67 @@
 }
 <main class="container">
     <div class="page-header">
-        <div><h1>Native source inspection</h1><p class="page-subtitle">Review private source snapshots, locate migration work, and download source-bound reports.</p></div>
+        <div><h1>Native source library</h1><p class="page-subtitle">Import configuration snapshots into database history, review migration work, and download original files.</p></div>
         <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">Policy builder</a>
     </div>
-    <p class="muted">Read-only snapshots. Open a source to locate review topics, download its report, or inspect the exact configuration.</p>
-    @if (Model.Count == 0)
-    {
-        <p class="empty-state">No source snapshots are configured. A local operator can configure the private source directory.</p>
-    }
-    @foreach (var source in Model)
-    {
-        <details class="disclosure mb-0 mt-2">
-            <summary>@source.Name <span class="badge badge-neutral">Imported · not applied</span></summary>
-            <p class="muted">Source SHA-256 <code>@source.Digest</code></p>
-            <div class="alert alert-warning">
-                <strong>Conversion blocked — explicit mapping required.</strong>
-                Review topics help locate work; they do not validate or convert the configuration.
-                Keywords may be identifiers, so inspect each occurrence in context. No policy has been created or applied.
+    <p class="muted">Import stores a private source snapshot. It does not convert a policy or apply firewall rules.</p>
+    @if (Model.Error is not null)
+    { <p class="alert alert-danger" role="alert">@Model.Error</p> }
+    <section class="card" aria-labelledby="import-heading">
+        <div class="card-header"><h2 id="import-heading">Import nftables.conf</h2></div>
+        <form method="post" enctype="multipart/form-data" action="@Url.Action("ImportSource")">
+            @Html.AntiForgeryToken()
+            <div class="form-grid">
+            <div class="field"><label for="source-name">Display name</label>
+                <input id="source-name" type="text" autocomplete="off" name="name" maxlength="120" required aria-describedby="source-name-hint" />
+                <span id="source-name-hint" class="hint">Use a descriptive label, such as “Gateway baseline”. Names may repeat; each import has its own identity and history.</span>
             </div>
-            <p><strong>@source.Review.TableDeclarations</strong> declarative table headers ·
-                <strong>@source.Review.ChainDeclarations</strong> declarative chain headers ·
-                <strong>@source.Review.Signals.Count</strong> review topics</p>
-            @if (!source.Review.InventoryComplete)
+            <div class="field"><label for="source-file">Configuration file</label>
+                <input id="source-file" name="sourceFile" type="file" accept=".conf,.nft,text/plain" required aria-describedby="source-file-hint" />
+                <span id="source-file-hint" class="hint">Choose UTF-8 text, up to 512 KiB. Original bytes and line endings are retained. Includes are not opened and the file is not executed.</span>
+            </div>
+            </div>
+            <div class="mt-2"><button type="submit" class="btn">Import source snapshot</button></div>
+        </form>
+        <p class="muted">Capacity: @Model.Sources.Count / 128 immutable snapshots, up to 32 MiB total source bytes. Importing the same file again creates another snapshot.</p>
+    </section>
+    <h2>Database snapshots</h2>
+    @if (Model.Sources.Count == 0)
+    { <p class="empty-state">No imported snapshots yet. Upload a configuration or import an operator-staged source below.</p> }
+    else
+    {
+        <div class="table-wrap"><table>
+            <caption>Immutable imported sources — no firewall changes</caption>
+            <thead><tr><th scope="col">Name</th><th scope="col">Imported (UTC)</th><th scope="col">Size</th><th scope="col">Actions</th></tr></thead>
+            <tbody>@foreach (var source in Model.Sources)
             {
-                <p class="alert alert-danger" role="alert">Inventory incomplete: <code>@source.Review.Diagnostic</code>. Review the exact source below.</p>
-            }
-            @if (source.Review.Signals.Count > 0)
+                <tr><td>@source.Name</td><td>@source.ImportedAtUtc.UtcDateTime.ToString("u")</td><td>@source.ByteLength bytes</td>
+                    <td><a href="@Url.Action("Sources", new { sourceId = source.Id })">Review @source.Name</a> ·
+                        <a aria-label="Download original @source.Name" href="@Url.Action("DownloadSource", new { sourceId = source.Id })">Download original</a></td></tr>
+            }</tbody>
+        </table></div>
+    }
+    @if (Model.Selected is { } selected)
+    {
+        <section class="card mt-2" aria-labelledby="selected-source-heading">
+            <h2 id="selected-source-heading">@selected.Summary.Name <span class="badge badge-neutral">Stored · not applied</span></h2>
+            <p class="muted">Snapshot <code>@selected.Summary.Id</code>. This review uses immutable database content.</p>
+            @await Html.PartialAsync("_NativeSourceReview", selected)
+        </section>
+    }
+    @if (Model.Staged.Count > 0)
+    {
+        <details class="disclosure mt-2"><summary>Operator-staged sources (@Model.Staged.Count)</summary>
+            <p class="muted">These optional file snapshots are staging inputs. Import explicitly to retain a database record; later file changes cannot alter an imported snapshot.</p>
+            @foreach (var staged in Model.Staged)
             {
-                <div class="table-wrap">
-                    <table class="table">
-                        <caption>Migration review signals — non-exhaustive, not semantic validation</caption>
-                        <thead><tr><th scope="col">Review area</th><th scope="col">Work to preserve behavior</th><th scope="col">Source lines</th></tr></thead>
-                        <tbody>
-                        @foreach (var signal in source.Review.Signals)
-                        {
-                            <tr>
-                                <td>@(signal.Kind == Nergal.Nftables.MigrationSignalKind.ContractGap ? "Contract gap signal" : signal.Kind == Nergal.Nftables.MigrationSignalKind.SourceResolution ? "Source resolution" : "Explicit typed mapping")</td>
-                                <td>@signal.Description <br /><small class="muted">@signal.Code</small></td>
-                                <td>@string.Join(", ", signal.Lines.Take(12))@(signal.Lines.Count > 12 ? $" (+{signal.Lines.Count - 12} more in report)" : "")</td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
+                <form method="post" action="@Url.Action("ImportStagedSource")" class="mt-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="name" value="@staged.Name" /><input type="hidden" name="digest" value="@staged.Digest" />
+                    <button type="submit" class="btn btn-secondary">Import staged @staged.Name</button>
+                    <span class="muted">SHA-256 <code>@staged.Digest</code></span>
+                </form>
             }
-            else
-            {
-                <p>No catalogued keywords were found. This does not establish compatibility or completeness.</p>
-            }
-            <p>Every table still needs explicit ownership, hook and rule-order mapping. Counters, definitions,
-                named objects and control flow must be accounted for before an equivalent policy can be reviewed.</p>
-            <a class="btn btn-secondary" href="@Url.Action("SourceReview", new { digest = source.Digest })">Download migration review</a>
-            <details class="disclosure mt-2"><summary>Exact source snapshot</summary><pre><code>@source.Text</code></pre></details>
         </details>
     }
 </main>

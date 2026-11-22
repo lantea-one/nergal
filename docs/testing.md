@@ -391,3 +391,19 @@ and bind report content to the immutable source digest after its file changes.
 These tests cover lexical inventory, not native parsing or conversion equivalence.
 Run `python3 -B scripts/test-dev-watch.py` to check source/test refresh detection
 and exclusion of generated build artifacts from the sandbox supervisor.
+
+### Database source ingestion
+
+`NativeSourceContentTests` and `NativeSourceStoreTests` verify strict UTF-8 byte
+bounds, rejected names, exact BOM/CRLF content, independent duplicate identities,
+reopen persistence, atomic audit failure, role denial, retained-byte/record caps,
+immutability trigger definitions and digest corruption denial. Offline SQLite
+upgrade tests preserve hosts, settings, revisions/audit and reject unknown versions,
+source-table collisions or forged legacy protections without partial changes.
+
+The local-session HTTPS fixture exercises staged import and multipart upload,
+original attachment downloads, database persistence across restart, source escaping,
+CSRF, invalid UTF-8, maximum valid file size, request/file size rejection and
+anonymous/Auditor boundaries. The admin fixture checks explicit idempotent schema
+upgrade and unknown-version denial. These checks add no native firewall operation;
+conversion equivalence and generated export remain unverified/unimplemented.

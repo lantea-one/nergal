@@ -28,3 +28,8 @@ Local development uses an unprivileged controller container and independent
 network-isolated check-only workers. Neither the UI nor the workers can alter a
 production firewall. Native validation outcomes are not migration-equivalence or
 packet-enforcement claims. See [sandbox operation](../local-sandbox.md).
+
+The original file-only source inspection boundary is extended by
+[ADR 0038](0038-database-native-source-snapshots.md): directory snapshots are now
+optional staging, with explicit source ingestion into immutable controller database
+records and exact original-file downloads. Semantic conversion remains unimplemented.

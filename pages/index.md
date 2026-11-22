@@ -13,10 +13,11 @@ service. Migration is optional: operators must also be able to author new polici
 through the UI. This is the product direction, not a claim that every planned
 workflow is complete.
 
-Planned UI workflows include a reusable sets/IP lists library and `nftables.conf`
-import/export. Shared object changes require visible reference/impact review and
+The [native source library](native-source-library.md) accepts `nftables.conf` uploads
+into immutable database history and downloads exact originals. Planned UI workflows
+include a reusable sets/IP lists library, semantic conversion and generated policy export. Shared object changes require visible reference/impact review and
 immutable saved revisions. File import must report unsupported semantics explicitly;
-current source inspection is not full conversion. Generated export identifies the
+source ingestion and lexical inspection are not semantic policy conversion. Generated export identifies the
 selected managed revision and scope. Per-rule inline enable/disable controls and
 contextual accessible form hints are also planned authoring requirements. The database
 is intended to be the rolling source of truth for application-managed state and

@@ -38,7 +38,7 @@ class Browser:
         self.tls = tls
         self.cookies = {}
 
-    def request(self, path, expected, fields=None, plain=False, headers=None):
+    def request(self, path, expected, fields=None, plain=False, headers=None, raw=None):
         connection = (http.client.HTTPConnection("127.0.0.1", self.ports["http"], timeout=10)
                       if plain else http.client.HTTPSConnection("127.0.0.1", self.ports["https"],
                                                                 context=self.tls, timeout=10))
@@ -48,8 +48,8 @@ class Browser:
         if fields is not None:
             values["Content-Type"] = "application/x-www-form-urlencoded"
         try:
-            connection.request("GET" if fields is None else "POST", path,
-                               None if fields is None else urlencode(fields), values)
+            connection.request("POST" if fields is not None or raw is not None else "GET", path,
+                               raw if raw is not None else None if fields is None else urlencode(fields), values)
             response = connection.getresponse()
             body = response.read().decode()
             assert response.status == expected, f"{path}: expected {expected}, received {response.status}"
@@ -64,8 +64,10 @@ class Browser:
                     if key == ADMIN and cookie:
                         assert not any(a.startswith(("max-age=", "expires=")) for a in attrs)
                     self.cookies[key] = cookie
+            self.last_headers = {k.lower(): v for k, v in response.getheaders()}
+            self.location = response.getheader("Location")
             if expected == 302:
-                assert response.getheader("Location") in ("/login", "/session")
+                assert self.location in ("/login", "/session") or self.location.startswith("/manage/sources?sourceId=")
             assert PASSWORD not in body
             return body
         finally:
@@ -150,11 +152,15 @@ def exercise(temp):
     source_path = sources / "synthetic.conf"
     source_path.write_text(source)
     source_digest = hashlib.sha256(source.encode()).hexdigest()
-    report_path = "/manage/sources/review?digest=" + source_digest
-    with host(temp, tls, {"ControllerState__Enabled": "true", "ControllerState__Directory": str(ctrl_state),
-                          "NativeSources__Directory": str(sources)}) as browser:
+    report_path = "/manage/sources/review?sourceId=00000000-0000-0000-0000-000000000000"
+    controller_settings = {"ControllerState__Enabled": "true", "ControllerState__Directory": str(ctrl_state),
+                           "NativeSources__Directory": str(sources)}
+    with host(temp, tls, controller_settings) as browser:
         browser.request("/manage/sources", 401)
         browser.request(report_path, 401)
+        browser.request("/manage/sources/download?sourceId=00000000-0000-0000-0000-000000000000", 401)
+        browser.request("/manage/sources/import", 401, {"name": "denied"})
+        browser.request("/manage/sources/stage", 401, {"name": "denied"})
         assert 'href="/login"' in browser.request("/", 200)
         browser.request("/login", 400, plain=True, headers={"X-Forwarded-Proto": "https"})
         browser.request("/session", 401)
@@ -165,23 +171,74 @@ def exercise(temp):
         browser.request("/login", 400, {"username": "fixture-admin", "password": PASSWORD})
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 302, fields)
         source_html = browser.request("/manage/sources", 200)
-        assert 'href="' + report_path + '"' in source_html, "Report must be a real routed download link"
-        assert "Conversion blocked" in source_html
+        assert "No imported snapshots yet" in source_html and "Operator-staged sources" in source_html
+        browser.request("/manage/sources/stage", 400, {"name": "synthetic", "digest": source_digest})
+        browser.request("/manage/sources/stage", 302, {"name": "synthetic", "digest": source_digest,
+                        "__RequestVerificationToken": browser.token("/manage/sources")})
+        source_id = browser.location.split("sourceId=")[1]
+        report_path = "/manage/sources/review?sourceId=" + source_id
+        download_path = "/manage/sources/download?sourceId=" + source_id
+        source_html = browser.request("/manage/sources?sourceId=" + source_id, 200)
+        assert 'href="' + report_path + '"' in source_html and "Conversion blocked" in source_html
         source_path.write_text("changed after startup")
         report = json.loads(browser.request(report_path, 200))
         assert report["sourceSha256"] == source_digest and report["schemaVersion"] == 1
         assert report["review"]["canConvert"] is False and report["review"]["tableDeclarations"] == 1
         assert {"gap.counters", "source.includes"} <= {s["code"] for s in report["review"]["signals"]}
         assert "text" not in report and "candidate" not in report
-        browser.request("/manage/sources/review?digest=..%2F..%2Fetc%2Fpasswd", 404)
+        assert browser.request(download_path, 200).encode() == source.encode()
+        assert browser.last_headers["content-type"] == "application/octet-stream"
+        assert browser.last_headers["content-disposition"].startswith("attachment; filename=nftables.conf")
+        assert "no-store" in {v.strip() for v in browser.last_headers["cache-control"].split(",")}
+        browser.request("/manage/sources/stage", 404, {"name": "../../etc/passwd", "digest": source_digest,
+                        "__RequestVerificationToken": browser.token("/manage/sources")})
+
+        def upload(name, payload, expected=302, csrf=True, extra=(), extra_file=False):
+            boundary = "nergal-synthetic-boundary"
+            fields = {"name": name}
+            if csrf:
+                fields["__RequestVerificationToken"] = browser.token("/manage/sources")
+            parts = []
+            for key, value in [*fields.items(), *extra]:
+                parts.append((f'--{boundary}\r\nContent-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n').encode())
+            header = (f'--{boundary}\r\nContent-Disposition: form-data; name="sourceFile"; filename="../../untrusted.conf"\r\nContent-Type: text/plain\r\n\r\n').encode()
+            parts.extend([header, payload, b'\r\n'])
+            if extra_file:
+                parts.extend([header, b'accept\r\n'])
+            parts.append((f'--{boundary}--\r\n').encode())
+            return browser.request("/manage/sources/import", expected, raw=b''.join(parts),
+                                   headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
+
+        upload("missing token", b'accept', 400, csrf=False)
+        upload("invalid encoding", b'\xff', 400)
+        upload("unknown field", b'accept', 400, extra=[("unknown", "x")])
+        upload("ambiguous name", b'accept', 400, extra=[("name", "other")])
+        upload("multiple files", b'accept', 400, extra_file=True)
+        upload("invalid size", b'a' * 524_289, 400)
+        upload("oversized request", b'a' * 600_001, 413)
+        upload("../invalid name", b'accept', 400)
+        exact = b'\xef\xbb\xbf# synthetic <script>alert(1)</script>\r\ntable inet sample { }\r\n'
+        exact += b'#' + b'x' * (524_288 - len(exact) - 2) + b'\n'
+        assert len(exact) == 524_288
+        upload("Uploaded snapshot", exact)
+        upload_id = browser.location.split("sourceId=")[1]
+        with sqlite3.connect(ctrl_state / "controller.db") as db:
+            assert db.execute("SELECT name FROM native_sources WHERE id=?", (upload_id,)).fetchone() == ("Uploaded snapshot",)
+        assert browser.request("/manage/sources/download?sourceId=" + upload_id, 200).encode() == exact
+        html = browser.request("/manage/sources?sourceId=" + upload_id, 200)
+        assert "<script>alert(1)</script>" not in html and "&lt;script&gt;" in html
+        with sqlite3.connect(ctrl_state / "controller.db") as db:
+            assert db.execute("SELECT count(*) FROM native_sources").fetchone() == (2,)
+            assert db.execute("SELECT count(*) FROM audit_log WHERE action='source.import'").fetchone() == (2,)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
         browser.request("/agent/status", 404)
         browser.cookies[ADMIN] = "invalid-ticket"
         browser.request("/session", 401)
-    with host(temp, tls) as browser:
+    with host(temp, tls, controller_settings) as browser:
         browser.cookies[ADMIN] = session
+        assert browser.request(download_path, 200).encode() == source.encode()
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
         browser.cookies[ADMIN] = session
@@ -244,9 +301,13 @@ def exercise(temp):
         })
         auditor_browser.request("/manage/sources", 403)
         auditor_browser.request(report_path, 403)
+        auditor_browser.request(download_path, 403)
+        auditor_browser.request("/manage/sources/stage", 403, {"name": "synthetic", "digest": source_digest,
+                                "__RequestVerificationToken": auditor_browser.token("/session")})
+        auditor_browser.request("/manage/sources/import", 403, {"name": "denied", "__RequestVerificationToken": auditor_browser.token("/session")})
         assert "Append-only audit log" in auditor_browser.request("/manage/audit", 200)
 
-    print("PASS: routed source-bound migration downloads, immutable startup snapshots, and anonymous/auditor denial")
+    print("PASS: database source ingestion, exact original downloads, restart persistence, XSS/CSRF/UTF-8/size denial and anonymous/auditor boundaries")
     print("PASS: HTTPS, cookie attributes, CSRF, durable sessions, revocation, lockout, RBAC auditor boundaries and request rate limits")
 
 
