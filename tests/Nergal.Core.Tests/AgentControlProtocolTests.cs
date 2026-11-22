@@ -438,7 +438,8 @@ public sealed class AgentControlProtocolTests
               {"create":{"table":{"family":"inet","name":"nergal_filter","handle":10,"comment":"__COMMENT__"}}},
               {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":1,"type":"filter","hook":"input","prio":0,"policy":"accept"}}},
               {"create":{"table":{"family":"inet","name":"nergal_nat","handle":11,"comment":"__COMMENT__"}}},
-              {"add":{"chain":{"family":"inet","table":"nergal_nat","name":"postrouting","handle":2,"type":"nat","hook":"postrouting","prio":100}}},
+              {"add":{"chain":{"family":"inet","table":"nergal_nat","name":"prerouting","handle":1,"type":"nat","hook":"prerouting","prio":-100,"policy":"accept"}}},
+              {"add":{"chain":{"family":"inet","table":"nergal_nat","name":"postrouting","handle":2,"type":"nat","hook":"postrouting","prio":100,"policy":"accept"}}},
               {"create":{"table":{"family":"bridge","name":"nergal_bridge","handle":12,"comment":"__COMMENT__"}}},
               {"add":{"chain":{"family":"bridge","table":"nergal_bridge","name":"forward","handle":3,"type":"filter","hook":"forward","prio":0,"policy":"accept"}}}
             ]}

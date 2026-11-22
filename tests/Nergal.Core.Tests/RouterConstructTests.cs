@@ -71,15 +71,16 @@ public sealed class RouterConstructTests
         Assert.Contains(result.Diagnostics, d => d.Code == "nat.actionConflictsWithAddress");
     }
 
-    /// <summary>Incomplete auxiliary ownership/rollback support must deny atomic agent replacement.</summary>
+    /// <summary>The pure compiler supports targeted replacement but rejects cyclic or missing jump targets.</summary>
     [Fact]
-    public void ExtendedBridgeAndAuxiliary_ArePreviewOnlyAndRejectCycles()
+    public void ExtendedBridgeAndAuxiliary_CompileTargetedReplacementAndRejectCycles()
     {
         var identity = new NftTableIdentity(Guid.NewGuid(), Guid.NewGuid());
         var bundle = new FirewallPolicyBundle(1, new(1, FilterVerdict.Drop, []), bridge: RouterPolicySamples.Bridge());
         Assert.True(NftPolicyBundleCompiler.Compile(bundle).IsSuccess);
-        var denied = NftPolicyBundleCompiler.CompileAtomicReplacement(bundle, identity, true, false, true);
-        Assert.Contains(denied.Diagnostics, d => d.Code == "policy.previewOnlyScope");
+        var replacement = NftPolicyBundleCompiler.CompileAtomicReplacement(bundle, identity, true, false, true);
+        Assert.True(replacement.IsSuccess);
+        Assert.Contains("delete table bridge nergal_bridge\n", replacement.Candidate);
         var cycle = new BridgePolicy(1, FilterVerdict.Accept, [], subChains:
             [new("cycle", [new(BridgeEtherType.Any, FilterVerdict.Drop, JumpTarget: "cycle")])]);
         Assert.Contains(NftBridgeCompiler.Compile(cycle).Diagnostics, d => d.Code == "jump.cycleOrDepth");

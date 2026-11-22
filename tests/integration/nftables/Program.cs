@@ -8,6 +8,34 @@ var routerIdentity = new NftTableIdentity(
     Guid.Parse("00000000-0000-0000-0000-000000000010"),
     Guid.Parse("00000000-0000-0000-0000-000000000020"));
 
+if (mode == "router-complete-bundle")
+{
+    var compiled = NftPolicyBundleCompiler.Compile(CompleteBundle(), routerIdentity);
+    if (!compiled.IsSuccess) { throw new InvalidOperationException(string.Join(", ", compiled.Diagnostics)); }
+    Console.Write(compiled.Candidate);
+    return 0;
+}
+if (mode == "verify-complete-bundle" && args.Length == 6)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[1]), routerIdentity, true, true, true);
+    var primary = NftTableObservation.Parse(File.ReadAllText(args[2])).Observation;
+    var nat = NftNatTableObservation.Parse(File.ReadAllText(args[3])).Observation;
+    var bridge = NftBridgeTableObservation.Parse(File.ReadAllText(args[4])).Observation;
+    var auxiliary = NftAuxiliaryTableObservation.Parse(File.ReadAllText(args[5]));
+    if (!echo.IsSuccess || primary is null || nat is null || bridge is null || auxiliary is null)
+    { throw new InvalidOperationException("Complete bundle observation failed: " + echo.ErrorCode); }
+    var listed = NftTableObservation.Combine(primary, nat, bridge, auxiliary);
+    if (echo.Observation!.StateDigest != listed.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listed.Bundle, routerIdentity).Candidate != NftPolicyBundleCompiler.Compile(CompleteBundle(), routerIdentity).Candidate)
+    { throw new InvalidOperationException("Complete bundle native round-trip diverged."); }
+    return 0;
+}
+
+static FirewallPolicyBundle CompleteBundle() => new(1, RouterPolicySamples.Filter(), RouterPolicySamples.Nat(), RouterPolicySamples.Bridge(),
+    new(-5, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
+        [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop, Destination: new("192.0.2.1/32"),
+            DestinationPorts: [8080, 8443], InputInterface: "lo", NegateInputInterface: true)])));
+
 if (mode is "router-packets" or "router-packet-nat" or "router-bridge" or "router-auxiliary")
 {
     var result = mode switch

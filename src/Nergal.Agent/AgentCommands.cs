@@ -380,24 +380,15 @@ internal static class AgentCommands
 
                     var liveAux = await NativeNft.TryInspectAuxiliaryTablesAsync(expected.Identity)
                         ?? throw new IOException("Auxiliary table observation unavailable.");
-                    if ((liveAux.NatExists && !liveAux.NatOwned) || (liveAux.BridgeExists && !liveAux.BridgeOwned))
+                    if ((liveAux.NatExists && !liveAux.NatOwned) || (liveAux.BridgeExists && !liveAux.BridgeOwned) || (liveAux.AuxiliaryExists && !liveAux.AuxiliaryOwned))
                     {
                         throw new IOException("Unowned auxiliary table collision.");
                     }
 
-                    var liveCandidate = NftFilterCompiler.Compile(live.Policy, live.Identity).Candidate;
-                    var rollbackPrimary = ExtractPrimaryFilterArtifact(entry.Rollback);
-                    var candidatePrimary = ExtractPrimaryFilterArtifact(entry.Candidate);
-                    var auxiliaryRulesAmbiguous =
-                        string.Equals(rollbackPrimary, candidatePrimary, StringComparison.Ordinal) &&
-                        (ArtifactHasNat(entry.Rollback) || ArtifactHasBridge(entry.Rollback)) &&
-                        ArtifactHasNat(entry.Rollback) == ArtifactHasNat(entry.Candidate) &&
-                        ArtifactHasBridge(entry.Rollback) == ArtifactHasBridge(entry.Candidate);
-
+                    var liveCandidate = NftPolicyBundleCompiler.Compile(live.Bundle, live.Identity).Candidate;
                     NftTableReceipt restoredReceipt;
                     NftTableObservation restoredListing;
-                    if (!auxiliaryRulesAmbiguous &&
-                        liveCandidate == rollbackPrimary &&
+                    if (liveCandidate == entry.Rollback &&
                         AuxiliaryTablesMatchArtifact(liveAux, entry.Rollback))
                     {
                         if (now.BootId != expected.BootId || ns != expected.NetworkNamespace)
@@ -408,7 +399,7 @@ internal static class AgentCommands
                         restoredReceipt = new NftTableReceipt(now.BootId, ns, live.Identity, live.TableHandle, live.StateDigest);
                         restoredListing = live;
                     }
-                    else if (liveCandidate == candidatePrimary &&
+                    else if (liveCandidate == entry.Candidate &&
                              AuxiliaryTablesMatchArtifact(liveAux, entry.Candidate))
                     {
                         (restoredReceipt, restoredListing) = await ReplaceAndVerifyAsync(entry.Rollback, now.BootId, ns, expected.Identity);
@@ -549,10 +540,11 @@ internal static class AgentCommands
             var ns = AgentStatusProvider.ReadNetworkNamespace();
             var expectNat = ArtifactHasNat(enrollment.Artifact);
             var expectBridge = ArtifactHasBridge(enrollment.Artifact);
+            var expectAuxiliary = NftPolicyBundleCompiler.ArtifactContainsAuxiliary(enrollment.Artifact);
             await NativeNft.Run(["--check", "--file", "-"], enrollment.Artifact);
             var echo = await NativeNft.Run(["--echo", "--handle", "--json", "--file", "-"], enrollment.Artifact);
-            var created = (expectNat || expectBridge
-                ? NftTableObservation.ParseBundleReplacementEcho(echo, prior.Identity, expectNat, expectBridge)
+            var created = (expectNat || expectBridge || expectAuxiliary
+                ? NftTableObservation.ParseBundleReplacementEcho(echo, prior.Identity, expectNat, expectBridge, expectAuxiliary)
                 : NftTableObservation.ParseReplacementEcho(echo)).Observation;
             if (created is null || created.Identity != prior.Identity)
             {
@@ -584,8 +576,7 @@ internal static class AgentCommands
 
     private static async Task<NftTableObservation> ObserveLiveAsync(CancellationToken cancellation = default)
     {
-        var listed = await NativeNft.Run(["--terse", "--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
-        return NftTableObservation.Parse(listed).Observation ?? throw new IOException("Complete observation unavailable.");
+        return await NativeNft.TryObserveAsync(cancellation) ?? throw new IOException("Complete observation unavailable.");
     }
 
     internal static bool ArtifactHasNat(string artifact) =>
@@ -602,12 +593,13 @@ internal static class AgentCommands
 
     internal static string BuildDeletePrefix(AuxiliaryTablePresence presence)
     {
-        if ((presence.NatExists && !presence.NatOwned) || (presence.BridgeExists && !presence.BridgeOwned))
+        if ((presence.NatExists && !presence.NatOwned) || (presence.BridgeExists && !presence.BridgeOwned) || (presence.AuxiliaryExists && !presence.AuxiliaryOwned))
         {
             throw new IOException("Unowned auxiliary table collision.");
         }
 
         var prefix = new StringBuilder();
+        if (presence.AuxiliaryExists) { prefix.Append("delete table inet ").Append(NftAuxiliaryTableObservation.TableName).Append('\n'); }
         if (presence.BridgeExists)
         {
             prefix.Append("delete table bridge ").Append(NftBridgeCompiler.TableName).Append('\n');
@@ -632,8 +624,9 @@ internal static class AgentCommands
         var echo = await NativeNft.Run(["--echo", "--handle", "--json", "--file", "-"], batch);
         var expectNat = ArtifactHasNat(artifact);
         var expectBridge = ArtifactHasBridge(artifact);
-        var created = (expectNat || expectBridge
-            ? NftTableObservation.ParseBundleReplacementEcho(echo, expectedIdentity, expectNat, expectBridge)
+        var expectAuxiliary = NftPolicyBundleCompiler.ArtifactContainsAuxiliary(artifact);
+        var created = (expectNat || expectBridge || expectAuxiliary
+            ? NftTableObservation.ParseBundleReplacementEcho(echo, expectedIdentity, expectNat, expectBridge, expectAuxiliary)
             : NftTableObservation.ParseReplacementEcho(echo)).Observation;
         if (created is null || created.Identity != expectedIdentity)
         {

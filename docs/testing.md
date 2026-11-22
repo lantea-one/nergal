@@ -266,3 +266,36 @@ visual editing, missing/cyclic jump targets, and preview-only dispatch denial.
 The screenshots in `pages/assets/screenshots/` capture the local test controller
 with synthetic/default UI data. They demonstrate appearance and readable UI state,
 not packet enforcement or production deployment.
+
+### Complete bundle observation work
+
+`bash tests/integration/nftables/check-complete-observation.sh` applies only a
+synthetic four-table candidate in a fresh user/network namespace. It compares
+native creation echo with independent terse listings, reconstructs every table,
+and requires identical complete fingerprints and byte-identical recompiled intent.
+Unit checks independently reject auxiliary handle recreation, unknown expressions,
+wrong ownership, missing objects, inconsistent priorities and invalid jump targets.
+Protected journal tests deny primary-only baseline binding and auxiliary-only
+candidate drift while the primary policy remains identical.
+
+This proves native observation, not extended bridge packet enforcement or safe
+auxiliary confirmed apply. Those dispatch gates remain active pending the full
+packet, independent watchdog and restart conformance required by
+[ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md).
+
+`npm ci --prefix tools/web-assets --ignore-scripts` followed by
+`npm run verify --prefix tools/web-assets` verifies the committed CodeMirror bundle
+and complete dependency license notices against the locked packages. CI performs
+this check independently of the .NET build. Browser QA additionally exercises
+edited form submission, invalid JSON retention, semantic/duplicate-key rejection,
+keyboard navigation and live light/dark switching. See
+[asset maintenance](../tools/web-assets/README.md).
+
+`bash tests/integration/enrollment/check-bundle-control.sh` independently exercises
+the real Unix agent and watchdog in a fresh user/network namespace: complete
+multi-table confirmation, agent restart, explicit rollback, timeout rollback for
+an auxiliary-only policy change, dual-stack packet continuity and copied-marker
+auxiliary recreation denial. It deliberately uses the same namespace UID for the
+client and agent. It does **not** verify the separate-UID authorization boundary
+or replace `tests/integration/local-status/check.sh`, which requires working
+subordinate-UID mapping helpers.

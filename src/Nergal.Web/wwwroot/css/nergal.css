@@ -783,3 +783,16 @@ a { color: var(--link, var(--primary)); }
   .nav-links { flex-wrap: nowrap; overflow-x: auto; }
   .nav-link { flex: 0 0 auto; }
 }
+
+/* CodeMirror uses the same theme tokens as the surrounding console. */
+:root { --editor-property: #174b8f; --editor-string: #17633b; --editor-literal: #843b10; --editor-selection: #cce4fa; }
+:root[data-theme="dark"] { --editor-property: #9cc8ff; --editor-string: #86efac; --editor-literal: #fdba74; --editor-selection: #294764; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --editor-property: #9cc8ff; --editor-string: #86efac; --editor-literal: #fdba74; --editor-selection: #294764; }
+}
+.code-editor-host { min-width: 0; max-width: 100%; }
+.code-editor-host .cm-editor { height: 360px; max-height: 65vh; }
+.code-editor-host .cm-scroller { overflow: auto; }
+.code-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.code-editor-toolbar .muted { font-size: 0.85rem; }
+.code-editor-host .cm-search { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }

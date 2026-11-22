@@ -83,3 +83,27 @@ fixture provide separate evidence. A mapped-UID local-status fixture requires
 working `newuidmap` capabilities and must be reported unverified when unavailable.
 Passing unit tests and source syntax checks do not prove production deployment or
 complete new-feature rollback. No production firewall is touched by this workflow.
+
+## Complete observation milestone
+
+The development branch now reconstructs complete owned NAT, extended bridge and
+early inet snapshots. A disposable namespace check compares native echo and
+independent listings across all four owned tables. Unit and protected-journal
+checks detect auxiliary-only drift even when the primary filter is unchanged.
+This does not enable extended bridge or early inet dispatch: packet, watchdog and
+restart conformance remains required. See the [testing guide](testing-and-conformance.md)
+and [receipt design](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0036-complete-bundle-observation-and-rollback.md).
+
+## JSON code editor
+
+Advanced policy authoring uses a locally bundled CodeMirror editor with line
+numbers, folding, syntax highlighting, search, bracket matching, indentation and
+JSON syntax diagnostics. Both console themes are supported. Preview still performs
+strict server policy validation, and invalid input stays visible for correction.
+The editor does not permit raw native firewall transactions.
+
+![Policy JSON code editor in light mode](assets/screenshots/editor-light.jpg)
+
+![Policy JSON code editor in dark mode](assets/screenshots/editor-dark.jpg)
+
+![Policy JSON editor on a narrow mobile viewport](assets/screenshots/editor-mobile.jpg)

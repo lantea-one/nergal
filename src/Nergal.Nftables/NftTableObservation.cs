@@ -2,13 +2,14 @@ using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Nergal.Core.Deployment;
 using Nergal.Core.Policy;
 
 namespace Nergal.Nftables;
 
 /// <summary>Observed presence and ownership state of managed auxiliary tables (<c>inet nergal_nat</c> and <c>bridge nergal_bridge</c>).</summary>
-public sealed record AuxiliaryTablePresence(bool NatExists, bool NatOwned, bool BridgeExists, bool BridgeOwned);
+public sealed record AuxiliaryTablePresence(bool NatExists, bool NatOwned, bool BridgeExists, bool BridgeOwned, bool AuxiliaryExists = false, bool AuxiliaryOwned = false);
 
 /// <summary>Immutable native observation of one tagged table and supported ordered rules; never a claim of authority.</summary>
 public sealed partial class NftTableObservation
@@ -199,7 +200,7 @@ public sealed partial class NftTableObservation
                 return false;
             }
 
-            bool natExists = false, natOwned = false, bridgeExists = false, bridgeOwned = false;
+            bool natExists = false, natOwned = false, bridgeExists = false, bridgeOwned = false, auxiliaryExists = false, auxiliaryOwned = false;
             var first = true;
             foreach (var item in root.GetProperty("nftables").EnumerateArray())
             {
@@ -247,6 +248,12 @@ public sealed partial class NftTableObservation
                     natExists = true;
                     natOwned = string.Equals(comment, expectedIdentity.Comment, StringComparison.Ordinal);
                 }
+                else if (family == "inet" && name == NftAuxiliaryTableObservation.TableName)
+                {
+                    if (auxiliaryExists) { errorCode = "observation.duplicateTable"; return false; }
+                    auxiliaryExists = true;
+                    auxiliaryOwned = string.Equals(comment, expectedIdentity.Comment, StringComparison.Ordinal);
+                }
                 else if (family == "bridge" && name == NftBridgeCompiler.TableName)
                 {
                     if (bridgeExists)
@@ -260,7 +267,7 @@ public sealed partial class NftTableObservation
                 }
             }
 
-            presence = new AuxiliaryTablePresence(natExists, natOwned, bridgeExists, bridgeOwned);
+            presence = new AuxiliaryTablePresence(natExists, natOwned, bridgeExists, bridgeOwned, auxiliaryExists, auxiliaryOwned);
             errorCode = null;
             return true;
         }
@@ -271,144 +278,55 @@ public sealed partial class NftTableObservation
         }
     }
 
-    /// <summary>Reads a coordinated multi-table replacement echo, validating primary <c>nergal_filter</c> receipt plus owned auxiliary tables.</summary>
+    /// <summary>Reads a complete coordinated replacement echo, binding every expected table's recognized semantics and native handles.</summary>
     public static NftObservationResult ParseBundleReplacementEcho(
-        string json,
-        NftTableIdentity expectedIdentity,
-        bool expectNat,
-        bool expectBridge)
+        string json, NftTableIdentity expectedIdentity, bool expectNat, bool expectBridge, bool expectAuxiliary = false)
     {
         ArgumentNullException.ThrowIfNull(json);
         ArgumentNullException.ThrowIfNull(expectedIdentity);
-
         try
         {
-            if (new UTF8Encoding(false, true).GetByteCount(json) > 65536)
+            if (Encoding.UTF8.GetByteCount(json) > 65536) { return Deny("observation.tooLarge"); }
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
+            if (HasDuplicateProperties(doc.RootElement)) { return Deny("observation.duplicateProperty"); }
+            if (!Properties(doc.RootElement, "nftables") || doc.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { return Deny("observation.shape"); }
+            var groups = new Dictionary<string, JsonArray>(StringComparer.Ordinal);
+            JsonArray? active = null;
+            var rank = -1;
+            foreach (var item in doc.RootElement.GetProperty("nftables").EnumerateArray())
             {
-                return Deny("observation.tooLarge");
-            }
-
-            using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
-            if (HasDuplicateProperties(document.RootElement))
-            {
-                return Deny("observation.duplicateProperty");
-            }
-
-            var root = document.RootElement;
-            if (!Properties(root, "nftables") || root.GetProperty("nftables").ValueKind != JsonValueKind.Array)
-            {
-                return Deny("observation.shape");
-            }
-
-            var items = root.GetProperty("nftables").EnumerateArray().ToArray();
-            var auxStart = items.Length;
-            for (var i = 1; i < items.Length; i++)
-            {
-                if (Properties(items[i], "create") && Properties(items[i].GetProperty("create"), "table"))
-                {
-                    auxStart = i;
-                    break;
-                }
-            }
-
-            var buffer = new ArrayBufferWriter<byte>();
-            using (var writer = new Utf8JsonWriter(buffer))
-            {
-                writer.WriteStartObject();
-                writer.WriteStartArray("nftables");
-                for (var i = 0; i < auxStart; i++)
-                {
-                    items[i].WriteTo(writer);
-                }
-
-                writer.WriteEndArray();
-                writer.WriteEndObject();
-            }
-
-            var primaryJson = Encoding.UTF8.GetString(buffer.WrittenSpan);
-            var primary = ParseReplacementEcho(primaryJson);
-            if (!primary.IsSuccess || primary.Observation is null)
-            {
-                return primary;
-            }
-
-            if (primary.Observation.Identity != expectedIdentity)
-            {
-                return Deny("observation.identity");
-            }
-
-            var seenNat = false;
-            var seenBridge = false;
-            string? activeFamily = null;
-            string? activeTable = null;
-            for (var i = auxStart; i < items.Length; i++)
-            {
-                var item = items[i];
                 if (Properties(item, "create") && Properties(item.GetProperty("create"), "table"))
                 {
-                    var tbl = item.GetProperty("create").GetProperty("table");
-                    if (!Properties(tbl, "family", "name", "handle", "comment") ||
-                        tbl.GetProperty("family").ValueKind != JsonValueKind.String ||
-                        tbl.GetProperty("name").ValueKind != JsonValueKind.String ||
-                        tbl.GetProperty("handle").ValueKind != JsonValueKind.Number ||
-                        !tbl.GetProperty("handle").TryGetUInt64(out var tblHandle) || tblHandle == 0 ||
-                        tbl.GetProperty("comment").ValueKind != JsonValueKind.String ||
-                        !string.Equals(tbl.GetProperty("comment").GetString(), expectedIdentity.Comment, StringComparison.Ordinal))
+                    var table = item.GetProperty("create").GetProperty("table");
+                    if (!Properties(table, "family", "name", "handle", "comment")) { return Deny("observation.fields"); }
+                    var key = table.GetProperty("family").GetString() + " " + table.GetProperty("name").GetString();
+                    var next = key switch
                     {
-                        return Deny("observation.identity");
-                    }
-
-                    var fam = tbl.GetProperty("family").GetString()!;
-                    var name = tbl.GetProperty("name").GetString()!;
-                    if (fam == "inet" && name == NftNatCompiler.TableName && expectNat && !seenNat)
-                    {
-                        seenNat = true;
-                        activeFamily = fam;
-                        activeTable = name;
-                    }
-                    else if (fam == "bridge" && name == NftBridgeCompiler.TableName && expectBridge && !seenBridge)
-                    {
-                        seenBridge = true;
-                        activeFamily = fam;
-                        activeTable = name;
-                    }
-                    else
-                    {
-                        return Deny("observation.scope");
-                    }
+                        "inet nergal_filter" => 0,
+                        "inet nergal_nat" when expectNat => 1,
+                        "bridge nergal_bridge" when expectBridge => 2,
+                        "inet nergal_aux" when expectAuxiliary => 3,
+                        _ => -1,
+                    };
+                    if (next < 0 || next <= rank || (rank == -1 && next != 0) || groups.ContainsKey(key)) { return Deny("observation.scope"); }
+                    rank = next; active = new JsonArray(); groups.Add(key, active);
                 }
-                else if (activeFamily is not null && activeTable is not null && Properties(item, "add"))
-                {
-                    var addObj = item.GetProperty("add");
-                    JsonElement inner;
-                    if (Properties(addObj, "chain")) { inner = addObj.GetProperty("chain"); }
-                    else if (Properties(addObj, "rule")) { inner = addObj.GetProperty("rule"); }
-                    else if (Properties(addObj, "set")) { inner = addObj.GetProperty("set"); }
-                    else { return Deny("observation.replacementEcho"); }
-
-                    if (!inner.TryGetProperty("family", out var fEl) || fEl.GetString() != activeFamily ||
-                        !inner.TryGetProperty("table", out var tEl) || tEl.GetString() != activeTable)
-                    {
-                        return Deny("observation.scope");
-                    }
-                }
-                else
-                {
-                    return Deny("observation.replacementEcho");
-                }
+                if (active is null) { return Deny("observation.replacementEcho"); }
+                active.Add(JsonNode.Parse(item.GetRawText()));
             }
-
-            if (seenNat != expectNat || seenBridge != expectBridge)
-            {
-                return Deny("observation.scope");
-            }
-
-            return primary;
+            if (!groups.ContainsKey("inet nergal_filter") || groups.ContainsKey("inet nergal_nat") != expectNat ||
+                groups.ContainsKey("bridge nergal_bridge") != expectBridge || groups.ContainsKey("inet nergal_aux") != expectAuxiliary) { return Deny("observation.scope"); }
+            string Snapshot(string key) => new JsonObject { ["nftables"] = groups[key] }.ToJsonString();
+            var primary = ParseReplacementEcho(Snapshot("inet nergal_filter"));
+            if (!primary.IsSuccess || primary.Observation!.Identity != expectedIdentity) { return Deny("observation.identity"); }
+            var nat = expectNat ? NftNatTableObservation.ParseReplacementEcho(Snapshot("inet nergal_nat")).Observation : null;
+            var bridge = expectBridge ? NftBridgeTableObservation.ParseReplacementEcho(Snapshot("bridge nergal_bridge")).Observation : null;
+            var auxiliary = expectAuxiliary ? NftAuxiliaryTableObservation.ParseReplacementEcho(Snapshot("inet nergal_aux")) : null;
+            if ((expectNat && nat is null) || (expectBridge && bridge is null) || (expectAuxiliary && auxiliary is null)) { return Deny("observation.auxiliary"); }
+            return new(Combine(primary.Observation, nat, bridge, auxiliary), null);
         }
-        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
-        {
-            return Deny("observation.invalidJson");
-        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or ArgumentException or KeyNotFoundException)
+        { return Deny("observation.invalidJson"); }
     }
 
     private enum EchoMode { None, Enrollment, Replacement }

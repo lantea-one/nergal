@@ -53,5 +53,6 @@
     @RenderBody()
 
     <script src="@Url.Content("~/js/nergal.js")" defer></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
