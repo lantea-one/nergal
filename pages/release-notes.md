@@ -20,3 +20,11 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+## Source-bound migration review
+
+Native source inspection includes a bounded lexical inventory, line references
+and a private administrator-only report download. Conversion remains blocked:
+review signals do not establish syntax validity, exhaustive coverage or semantic
+equivalence. Named maps, tracking bypass and counters need explicit preservation
+work. No private sources or topology are published in these notes.

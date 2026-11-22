@@ -150,3 +150,7 @@ rather than silently weakening policy (`firewalld` is excluded per ADR 0001).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Original code
 is licensed under MIT. No FWCloud implementation or assets are included.
+
+Private source inspection also provides source-bound migration review downloads.
+These bounded lexical inventories locate review work; they never execute sources
+or produce a converted policy. See [migration status](docs/router-constructs.md).

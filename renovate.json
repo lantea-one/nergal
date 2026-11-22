@@ -14,6 +14,18 @@
         "/^Microsoft\\.EntityFrameworkCore\\./"
       ],
       "allowedVersions": "<11.0.0"
+    },
+    {
+      "description": "Keep .NET container runtimes aligned with the pinned .NET 10 application target",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "mcr.microsoft.com/dotnet/aspnet",
+        "mcr.microsoft.com/dotnet/sdk",
+        "mcr.microsoft.com/dotnet/runtime"
+      ],
+      "allowedVersions": "/^10\\./"
     }
   ],
   "dependencyDashboard": {

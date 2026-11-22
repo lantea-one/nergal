@@ -87,3 +87,7 @@ contents or credentials visible. The Pages gallery also includes policy and mobi
 ![Settings in dark mode](../pages/assets/screenshots/settings-dark.jpg)
 
 ![Settings in light mode](../pages/assets/screenshots/settings-light.jpg)
+
+The sandbox's ASP.NET runtime stays on .NET 10, matching the application target
+and pinned SDK. Renovate may propose servicing updates within 10.x; a runtime-only
+major upgrade is not a supported substitute for an intentional target migration.

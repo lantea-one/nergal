@@ -92,3 +92,22 @@ The [local sandbox](local-sandbox.md) supplies a separate network-isolated nativ
 check-only worker per private input. A successful `nft --check` establishes syntax
 and kernel validation in that worker's namespace; it does not establish equivalence
 to a managed policy, deployed topology, or packet correctness of a server export.
+
+## Source-bound migration reviews
+
+The Native sources screen now inventories review keywords with one-based line
+references and offers an administrator-only JSON report bound to the source
+SHA-256. Reports separate typed mapping work, source resolution and known contract
+gap signals such as maps, counters and `notrack`. The underlying library performs
+bounded lexical scanning only: words may be identifiers, unknown syntax is not
+validated, and the signal catalog is not exhaustive. Comments, quoted strings
+and variable references do not create signals. Incomplete inventories have stable
+diagnostics and never return partial findings.
+
+Every report keeps `canConvert: false`. No source text is executed, no includes
+are opened, and no managed candidate or revision is created. Table/chain counts
+are recognized declarative headers, not proof of native syntax or complete scope.
+Every declaration and ordered rule still requires explicit semantic mapping and
+packet-level equivalence checks. Reports contain line references and topic codes,
+not source literal values; source names and digests remain private. See
+[ADR 0037](decisions/0037-private-native-migration-review.md).

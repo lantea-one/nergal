@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Runtime.Versioning;
 using Nergal.Linux;
 using System.Text;
+using Nergal.Nftables;
 
 namespace Nergal.Web;
 
@@ -9,7 +10,18 @@ namespace Nergal.Web;
 /// <param name="Name">Local operator-assigned source name.</param>
 /// <param name="Text">Exact native source, retained for inspection without lossy translation.</param>
 /// <param name="Digest">SHA-256 of the original UTF-8 bytes.</param>
-public sealed record NativePolicySource(string Name, string Text, string Digest);
+public sealed record NativePolicySource(string Name, string Text, string Digest)
+{
+    /// <summary>Gets the read-only lexical review of this immutable source snapshot.</summary>
+    public NativeMigrationReview Review { get; } = NativeMigrationReviewer.Review(Text);
+}
+
+/// <summary>A private downloadable review bound to the exact source bytes; it contains no executable candidate.</summary>
+public sealed record NativeSourceMigrationReport(string Name, string SourceSha256, NativeMigrationReview Review)
+{
+    /// <summary>Gets the report contract version, independent of the policy schema.</summary>
+    public int SchemaVersion => 1;
+}
 
 /// <summary>Bounded startup snapshots from an explicitly configured private import directory.</summary>
 /// <remarks>Only trusted deployment configuration selects the directory. HTTP input never selects a path.

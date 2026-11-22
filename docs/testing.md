@@ -380,3 +380,14 @@ Run `bash tools/integration/check-mapped-identities.sh` for the complete distinc
 HTTPS/mTLS and all-four-table path. Real server imports and production packet
 outcomes remain unverified. Native observations retain their documented 64 KiB
 bound; this acceptance is not a large-policy capacity claim.
+
+### Private migration review
+
+`NativeMigrationReviewerTests` checks source line bindings, exclusion of comments,
+quoted strings and variables, immutable reports, explicit byte/token/encoding and
+malformed-input failures, and conversion denial for empty/unknown input. Web
+source tests deny anonymous/auditor report access, reject path-shaped selectors,
+and bind report content to the immutable source digest after its file changes.
+These tests cover lexical inventory, not native parsing or conversion equivalence.
+Run `python3 -B scripts/test-dev-watch.py` to check source/test refresh detection
+and exclusion of generated build artifacts from the sandbox supervisor.
