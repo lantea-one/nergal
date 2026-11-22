@@ -173,8 +173,6 @@ internal sealed class AgentControlHandler
                 return new AgentControlReply(AgentControlOutcome.Rejected, revision: enrollment.Ownership.Revision, errorCode: "policy.invalid");
             }
 
-            if (bundle.RequiresExtendedApplySupport)
-            { return new AgentControlReply(AgentControlOutcome.Rejected, revision: enrollment.Ownership.Revision, errorCode: "policy.previewOnlyScope"); }
             var compiled = NftPolicyBundleCompiler.Compile(bundle, expected.Identity);
             if (!compiled.IsSuccess || compiled.Candidate is null)
             {
@@ -259,6 +257,9 @@ internal sealed class AgentControlHandler
             (NftTableReceipt EchoReceipt, NftTableObservation Listing) replaced;
             try
             {
+                var fresh = await NativeNft.TryObserveAsync(cancellationToken).ConfigureAwait(false);
+                if (fresh is null || !journal.VerifyExpectedResource(fresh, ns).IsMatch)
+                { throw new IOException("Baseline changed while the watchdog was arming."); }
                 replaced = await AgentCommands.ReplaceAndVerifyAsync(candidateArtifact, bootId, ns, identity).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is IOException or InvalidOperationException)
@@ -469,9 +470,9 @@ internal sealed class AgentControlHandler
             (NftTableReceipt EchoReceipt, NftTableObservation Listing) restored;
             try
             {
-                restored = await AgentCommands.ReplaceAndVerifyAsync(active.Rollback, bootId, ns, expected.Identity).ConfigureAwait(false);
+                restored = await AgentCommands.RestoreBoundBaselineAsync(journal, requested.Entry, bootId, ns).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is IOException or InvalidOperationException)
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or JournalException)
             {
                 _ = journal.Advance(operationId, ApplyEvent.RollbackFailed, active.Session.Plan, watchdogId);
                 return new AgentControlReply(
@@ -535,8 +536,9 @@ internal sealed class AgentControlHandler
         {
             try
             {
-                var restored = await AgentCommands.ReplaceAndVerifyAsync(entry.Rollback, bootId, ns, identity).ConfigureAwait(false);
-                _ = journal.RecordRollbackSucceededBound(entry.Session.Plan.OperationId, entry.Session.Plan, watchdogId, restored.EchoReceipt, restored.Listing, ns);
+                var restored = await AgentCommands.RestoreBoundBaselineAsync(journal, req.Entry, bootId, ns).ConfigureAwait(false);
+                var completed = journal.RecordRollbackSucceededBound(entry.Session.Plan.OperationId, entry.Session.Plan, watchdogId, restored.EchoReceipt, restored.Listing, ns);
+                if (!completed.Accepted) { throw new IOException("Rollback acknowledgement denied."); }
                 return new AgentControlReply(
                     AgentControlOutcome.RolledBack,
                     revision: entry.Session.Plan.Ownership.Revision,

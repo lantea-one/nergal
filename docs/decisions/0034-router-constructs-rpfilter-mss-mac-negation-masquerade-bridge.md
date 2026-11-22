@@ -47,3 +47,7 @@ The existing integration suite continues to cover its prior semantics separately
 All native recordings and packet fixtures use synthetic addresses and MACs.
 Private source inspection retains exact exports without claiming automatic import
 or full policy parity. See [the contract and status](../router-constructs.md).
+
+The initial auxiliary preview gate described above is superseded by
+[ADR 0036](0036-complete-bundle-observation-and-rollback.md), whose complete
+observation, packet and recovery acceptance now enables the supported typed slice.

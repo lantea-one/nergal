@@ -6,10 +6,11 @@ expert representation, not a prerequisite for supported policy authoring.
 
 ## Implementation sequence
 
-1. Complete auxiliary/extended bridge ownership, observation, atomic apply, and
-   independent rollback; retain the apply gate until packet conformance passes.
-2. Extend packet tests for remaining combinations and unblock mapped-UID tests
-   without weakening isolation or modifying production firewalls.
+1. Completed: auxiliary/extended bridge ownership, complete observation, atomic
+   confirmed apply and independent rollback under ADR 0036.
+2. Completed: dedicated auxiliary packet/recovery acceptance and a working
+   mapped-UID runner. Additional real-server combinations remain part of migration
+   gap assessment; synthetic conformance is not production equivalence.
 3. Convert private source configurations explicitly, preserving all semantics;
    keep an auditable migration report and mark unsupported items clearly.
 4. Complete structured authoring for every supported construct, with plain-language
@@ -56,6 +57,6 @@ The separate mapped-UID fixture environment is now reproducible through
 `tools/integration/check-mapped-identities.sh`. Its full isolation and status/
 control/HTTPS suite passes using disposable container-local accounts and nested
 namespaces. No host account/mapping changes or fixture guard relaxations are
-required. This resolves the test-environment gap; extended bridge/early inet packet
-and watchdog acceptance remains the next firewall milestone before migration/UI
-completion.
+required. The auxiliary/extended bridge packet and watchdog acceptance milestone now also
+passes under ADR 0036. The next milestone is explicit private server conversion,
+followed by complete structured authoring and the broader UX/profile/chart work.

@@ -92,13 +92,13 @@ supplied assertions. Receipt and current context must not be accepted from brows
 request claims as authority. A caller must not turn a rejected current observation
 into a new expected receipt to make the mismatch disappear.
 
-Protected receipt persistence and read-only reconciliation now exist in LocalState.
-Production resource enrollment, receipt-aware apply/recovery, reboot reconciliation,
-kernel/journal compare-and-swap and authenticated agent transport remain unimplemented.
-Bound-resource legacy apply is disabled until those mutation boundaries are designed
-and tested.
+Protected receipt persistence, explicit enrollment/reconciliation, authenticated
+agent transport and receipt-aware confirmed apply are implemented. Kernel replacement
+and journal acknowledgement are separate transactions; ambiguous crash windows fail
+closed rather than claiming a cross-system atomic commit. Legacy unbound apply is
+not an alternative to receipt verification.
 
-## Complete multi-table observations under development
+## Complete multi-table observations and rollback
 
 The development implementation reconstructs all present owned NAT, bridge and
 early inet tables. Its composite fingerprint binds each table's native object
@@ -112,5 +112,8 @@ complete fingerprints. They fail closed; no observation silently upgrades them.
 Do not mix old and new binaries or deploy this change over an active operation.
 A trusted maintenance procedure must recreate and verify protected intent before
 using the new receipt format. See [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md).
-Extended bridge and early inet agent dispatch remain disabled until the remaining
-packet and rollback conformance passes.
+Extended bridge and early inet dispatch use the same receipt-bound transaction.
+Explicit and watchdog rollback require either the protected baseline or the
+durably recorded candidate fingerprint. A semantic lookalike with different
+native handles cannot authorize replacement. Unacknowledged replacements and
+restore-before-acknowledgement crash windows require manual recovery.

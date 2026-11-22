@@ -18,7 +18,7 @@ nergal requires deterministic unit tests plus real kernel verification in dispos
 ## Unreleased router and settings work
 
 See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
-current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
 
@@ -38,5 +38,5 @@ peer authorization, pinned mTLS, packet enforcement, independent rollback and ba
 multi-table confirmation/rollback. The runner changes no host accounts or mapping
 files and mounts neither private exports nor credentials. Its namespace capability
 and relaxed container seccomp configuration belong only to test tooling; the web
-sandbox remains unprivileged. Extended auxiliary dispatch is still gated pending
-its own acceptance evidence.
+sandbox remains unprivileged. Extended auxiliary dispatch now has dedicated packet and receipt-bound recovery
+acceptance evidence, documented in the router support matrix.

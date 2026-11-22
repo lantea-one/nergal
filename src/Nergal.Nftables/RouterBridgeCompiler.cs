@@ -5,7 +5,7 @@ using Nergal.Core.Policy;
 namespace Nergal.Nftables;
 
 // Extended bridge policies retain their own hook and regular-chain semantics.
-// They are preview-only until the agent's complete bridge observation supports them.
+// Agent replacement must bind their complete native observation and local rollback receipt.
 internal static class RouterBridgeCompiler
 {
     internal static CompilationResult Compile(BridgePolicy p, NftTableIdentity? identity)

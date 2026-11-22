@@ -253,15 +253,16 @@ destination-keyed meters, IPv4 reverse-path denial and UDP source-port bypass.
 Fixed synthetic neighbor entries isolate firewall behavior from NDP timing; the
 existing router fixture independently tests live IPv6 Neighbor Discovery.
 Filter/NAT native echo and terse listings must reconstruct byte-identical candidates
-and equal fingerprints. Bridge/auxiliary extensions receive native syntax checks
-only; their packet and rollback behavior remains unverified and agent apply denied.
+and equal fingerprints. The dedicated auxiliary acceptance launcher below verifies extended bridge/early
+inet packet and receipt-bound recovery behavior separately.
 
 Run `python3 -B tests/integration/local-sessions/check-settings.py` for HTTPS settings
 save/validation, CSRF denial, exactly one successful audit record, and Auditor denial
 of mutations and private native source inspection. This uses disposable synthetic
 accounts and sources and never executes a firewall command. Unit regressions cover
 nested snapshot isolation, unknown/corrupt input, preserved advanced matchers during
-visual editing, missing/cyclic jump targets, and preview-only dispatch denial.
+visual editing, missing/cyclic jump targets, complete auxiliary dispatch and
+preservation of agent denials in the audit.
 
 The screenshots in `pages/assets/screenshots/` capture the local test controller
 with synthetic/default UI data. They demonstrate appearance and readable UI state,
@@ -278,10 +279,9 @@ wrong ownership, missing objects, inconsistent priorities and invalid jump targe
 Protected journal tests deny primary-only baseline binding and auxiliary-only
 candidate drift while the primary policy remains identical.
 
-This proves native observation, not extended bridge packet enforcement or safe
-auxiliary confirmed apply. Those dispatch gates remain active pending the full
-packet, independent watchdog and restart conformance required by
-[ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md).
+This check proves native observation only. Dedicated packet, independent watchdog
+and restart conformance below establishes the supported auxiliary confirmed-apply
+slice under [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md).
 
 `npm ci --prefix tools/web-assets --ignore-scripts` followed by
 `npm run verify --prefix tools/web-assets` verifies the committed CodeMirror bundle
@@ -333,8 +333,8 @@ apply checks pass through this runner, including real separate-UID denial, pinne
 mTLS, dual-stack packets, autonomous rollback, confirmation and basic multi-table
 apply/rollback. The host mapping restriction remains; the container fallback
 resolves test execution without weakening the fixtures or modifying host identity
-configuration. Extended bridge/early inet packet and watchdog acceptance remains
-separate work. See [runner details](../tools/integration/README.md).
+configuration. The HTTPS apply fixture now includes filter/NAT/extended bridge
+and early inet tables together; packet-specific acceptance runs separately below. See [runner details](../tools/integration/README.md).
 
 ### Documentation appearance
 
@@ -346,3 +346,37 @@ asset drift as well as broken links and missing screenshots. Run
 theme selection and storage-denial fallback. Browser checks cover both themes,
 reload persistence, search, navigation, diagrams, code/tables, skip navigation and
 the mobile menu/content width. See [Pages styling maintenance](pages-styling.md).
+
+
+### Extended bridge and early inet acceptance
+
+After a Release build, run:
+
+```sh
+bash tests/integration/enrollment/check-auxiliary-apply.sh
+bash tests/integration/enrollment/check-auxiliary-apply.sh --agent
+```
+
+Every case uses fresh user/network namespaces, synthetic bridge/veth peers, static
+neighbors and private temporary state. Native packet checks cover IPv4/IPv6 MAC+IP
+pinning, source/destination MAC negation with working control connections, bridge
+master matching and jump/return. Foreign counters at priority -4 establish that
+priority -5 drops run first. Early inet acceptance never bypasses a later primary
+drop. Agent checks keep primary semantics identical across auxiliary-only changes,
+and cover confirmation, controller loss, independent timeout rollback, watchdog
+restart, agent restart, explicit rollback and removal/restoration of auxiliary
+scope. Foreign probe semantics remain unchanged throughout.
+
+Separate cases preserve drifted auxiliary rules, copied-marker recreation, missing
+tables, unknown native expressions and foreign collisions rather than repairing
+or adopting them. Explicit and watchdog rollback require durable native receipts;
+unit tests deny unacknowledged replacements and verify complete new-boot intent.
+A replacement or restoration interrupted before its native receipt is durably
+acknowledged is ambiguous and requires manual recovery. The original generic
+watchdog kill-point fixture is separate from production receipt-aware agent logic;
+its semantic retry assumptions do not establish safe adoption of recreated tables.
+
+Run `bash tools/integration/check-mapped-identities.sh` for the complete distinct-UID
+HTTPS/mTLS and all-four-table path. Real server imports and production packet
+outcomes remain unverified. Native observations retain their documented 64 KiB
+bound; this acceptance is not a large-policy capacity claim.

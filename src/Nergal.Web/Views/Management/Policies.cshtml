@@ -51,14 +51,14 @@
         <p>Use the JSON editor for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation,
             destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return.
             The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits.</p>
-        <p>Independent priority tables and extended bridge jump/return chains can be previewed and saved.
-            Applying them is blocked with <code>policy.previewOnlyScope</code> until their complete ownership and rollback verification is available.</p>
+        <p>Independent priority tables and extended bridge jump/return chains support confirmed apply with complete bundle receipts.
+            Every owned table is validated and replaced together. Missing confirmation triggers local rollback; unexpected native drift requires manual recovery.</p>
         @if (bundle?.Filter.RpFilter is { } rp)
         { <p><strong>Raw rpfilter:</strong> @rp.Rules.Count ordered rules.</p> }
         @if (bundle?.Filter.ForwardTcpMssClamp is { } mss)
         { <p><strong>Forward TCP SYN MSS:</strong> @mss bytes.</p> }
         @if (bundle?.RequiresExtendedApplySupport == true)
-        { <p class="alert alert-warning">This draft includes preview-only tables or bridge constructs. Agent apply is denied.</p> }
+        { <p class="alert alert-info">This draft includes auxiliary tables or extended bridge chains. Use an updated agent with complete bundle receipts; confirmation and local rollback cover the entire bundle.</p> }
     </details>
 
     <!-- Top Save / Preview Bar -->

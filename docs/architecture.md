@@ -157,7 +157,7 @@ unowned table collisions or auxiliary drift, validate coordinated multi-table
 [ADR 0034](decisions/0034-router-constructs-rpfilter-mss-mac-negation-masquerade-bridge.md)
 extends typed filter/NAT models with raw prerouting, MSS, MAC pinning, destination
 meters, negation, and masquerade/return. Extended bridge and independent early inet
-tables are preview-only and rejected before agent apply (`policy.previewOnlyScope`).
+tables use complete receipt-bound confirmed apply under ADR 0036.
 See [support and verification limits](router-constructs.md). No arbitrary native
 source is accepted as an agent execution payload.
 
@@ -168,10 +168,10 @@ services. Optional administrator-only native source inspection snapshots private
 operator-controlled files and never executes them. The [local sandbox](local-sandbox.md)
 uses separate containers for the unprivileged UI and native check-only workers.
 
-Complete multi-table observation is being implemented under
+Complete multi-table observation and confirmed apply are implemented under
 [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md). A composite
 receipt includes complete owned NAT, bridge and early inet state rather than only
-auxiliary ownership comments. Extended dispatch remains gated pending the required
-packet and rollback evidence. [The product workflow](product-workflow.md) tracks
+auxiliary ownership comments. Packet and recovery acceptance includes dual-stack
+bridge pinning, priority ordering, controller loss, watchdog restart and drift denial. [The product workflow](product-workflow.md) tracks
 the ordered UI, migration and profile work without treating saved intent as live
 runtime configuration.

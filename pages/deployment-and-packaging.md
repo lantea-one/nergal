@@ -35,6 +35,6 @@ Release builds produce reproducible Linux `x64` artifacts via `scripts/package-r
 ## Unreleased router and settings work
 
 See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
-current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.

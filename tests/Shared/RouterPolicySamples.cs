@@ -35,6 +35,27 @@ internal static class RouterPolicySamples
         Source: new("192.0.2.2/32"), Protocol: FilterProtocol.Tcp, DestinationPort: 8080, Return: true),
      new(BridgeEtherType.Any, FilterVerdict.Drop)])]);
 
+    // Synthetic acceptance topology; the primary table is identical for both early-inet variants.
+    internal static FirewallPolicyBundle AuxiliaryAcceptance(bool blocked = true) => new(1,
+        new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
+            [new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001),
+             new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001)]),
+        bridge: new(1, FilterVerdict.Accept,
+            [new(BridgeEtherType.Any, FilterVerdict.Drop, InputInterface: "lan0", OutputInterface: "lan1", BridgeName: "br0",
+                DestinationMac: new("02:00:00:00:00:02"), Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081], JumpTarget: "service"),
+             new(BridgeEtherType.Any, FilterVerdict.Drop, BridgeName: "br0", DestinationMac: new("02:00:00:00:00:02"),
+                NegateDestinationMac: true, Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081])], -5,
+            [new("service",
+                [new(BridgeEtherType.Any, FilterVerdict.Drop, SourceMac: new("02:00:00:00:00:01"), NegateSourceMac: true),
+                 new(BridgeEtherType.Any, FilterVerdict.Drop, SourceMac: new("02:00:00:00:00:01"), Family: IpFamily.IPv4,
+                    Source: new("192.0.2.2/32"), Protocol: FilterProtocol.Tcp, DestinationPort: 18080, Return: true),
+                 new(BridgeEtherType.Any, FilterVerdict.Drop, SourceMac: new("02:00:00:00:00:01"), Family: IpFamily.IPv6,
+                    Source: new("2001:db8:1::2/128"), Protocol: FilterProtocol.Tcp, DestinationPort: 18080, Return: true),
+                 new(BridgeEtherType.Any, FilterVerdict.Drop)])]),
+        auxiliaryFilter: new(-5, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
+            [new(IpFamily.IPv4, FilterProtocol.Udp, blocked ? FilterVerdict.Drop : FilterVerdict.Accept, DestinationPort: 19000),
+             new(IpFamily.IPv6, FilterProtocol.Udp, blocked ? FilterVerdict.Drop : FilterVerdict.Accept, DestinationPort: 19000)])));
+
     internal static FilterPolicy PacketFilter() => new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept,
     [
         new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, DestinationPort: 19000),

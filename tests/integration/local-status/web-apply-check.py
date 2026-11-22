@@ -114,9 +114,9 @@ def nft(text):
     run(['nft', '--file', '-'], text)
 
 
-def udp_loopback(family, address):
+def udp_loopback(family, address, port=0):
     with socket.socket(family, socket.SOCK_DGRAM) as receiver, socket.socket(family, socket.SOCK_DGRAM) as sender:
-        receiver.bind((address, 0))
+        receiver.bind((address, port))
         receiver.settimeout(0.35)
         sender.sendto(b'nergal-web-apply', receiver.getsockname())
         try:
@@ -387,11 +387,16 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
             },
             'bridge': {
                 'schemaVersion': 1,
-                'defaultVerdict': 'accept',
+                'defaultVerdict': 'accept', 'priority': -5,
                 'rules': [
-                    {'verdict': 'drop', 'inputInterface': 'br0', 'etherType': 'ipv4'},
+                    {'verdict': 'drop', 'bridgeName': 'br0', 'etherType': 'ipv4', 'jumpTarget': 'service'},
                 ],
+                'subChains': [{'name': 'service', 'rules': [{'etherType': 'any', 'verdict': 'drop', 'return': True}]}],
             },
+            'auxiliaryFilter': {'priority': -5, 'filter': {
+                'schemaVersion': 2, 'inputDefaultVerdict': 'accept', 'forwardDefaultVerdict': 'accept', 'outputDefaultVerdict': 'accept',
+                'rules': [{'family': family, 'protocol': 'udp', 'verdict': 'drop', 'destinationPort': 19003, 'chain': 'input'} for family in ('ipv4', 'ipv6')],
+            }},
         })
 
         for idx, (bundle, note) in enumerate([(rev1_json, 'drop-v4-udp'), (rev2_json, 'drop-v6-udp'), (rev3_bundle_json, 'multitable-filter-nat-bridge')], start=1):
@@ -500,6 +505,8 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         require(mt_start1['outcome'] == 'appliedPendingConfirmation', f'Multi-table start1 failed: {mt_start1}')
         nat_ok, nat_out = table_exists('inet', 'nergal_nat')
         br_ok, br_out = table_exists('bridge', 'nergal_bridge')
+        require(table_exists('inet', 'nergal_aux')[0], 'Early inet table missing during pending HTTPS apply')
+        require(not udp_loopback(socket.AF_INET, '127.0.0.1', 19003) and not udp_loopback(socket.AF_INET6, '::1', 19003), 'Early inet HTTPS apply did not enforce dual-stack packets')
         require(nat_ok and 'nergal:v1:' in nat_out and '198.51.100.2' in nat_out, f'nergal_nat missing during pending apply: {nat_out}')
         require(br_ok and 'nergal:v1:' in br_out and 'br0' in br_out, f'nergal_bridge missing during pending apply: {br_out}')
 
@@ -509,7 +516,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
             timeout=10.0,
             message='Watchdog did not roll back unconfirmed multi-table apply')
         require(mt_restored['revision'] == '3', f'Unexpected post-multitable-rollback status: {mt_restored}')
-        require(not table_exists('inet', 'nergal_nat')[0] and not table_exists('bridge', 'nergal_bridge')[0],
+        require(not table_exists('inet', 'nergal_aux')[0] and not table_exists('inet', 'nergal_nat')[0] and not table_exists('bridge', 'nergal_bridge')[0],
                 'Autonomous watchdog rollback did not delete auxiliary NAT/bridge tables')
 
         mt_start2 = json.loads(admin.request('/controller/apply/start', 200, json_body={
@@ -524,7 +531,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         }, headers={'RequestVerificationToken': admin_csrf})[0])
         require(mt_conf['outcome'] == 'confirmed' and mt_conf['revision'] == '4' and mt_conf['lastKnownRevision'] == '4',
                 f'Multi-table confirm failed: {mt_conf}')
-        require(table_exists('inet', 'nergal_nat')[0] and table_exists('bridge', 'nergal_bridge')[0],
+        require(table_exists('inet', 'nergal_aux')[0] and table_exists('inet', 'nergal_nat')[0] and table_exists('bridge', 'nergal_bridge')[0],
                 'Confirmed multi-table apply did not persist auxiliary NAT and bridge tables')
         require(udp_loopback(socket.AF_INET, '127.0.0.1') and udp_loopback(socket.AF_INET6, '::1'),
                 'Confirmed multi-table apply did not update filter table enforcement')

@@ -359,9 +359,9 @@ public sealed class ConfirmedApplyWorkflowTests
         }
     }
 
-    /// <summary>Preview-only tables must be rejected before any privileged dispatch and recorded in the audit.</summary>
+    /// <summary>Complete auxiliary bundles reach the agent intact, whose rejection is preserved in the audit.</summary>
     [Fact]
-    public async Task Workflow_DeniesExtendedScopeWithoutCallingAgent()
+    public async Task Workflow_DispatchesCompleteAuxiliaryScopeAndPreservesAgentDenial()
     {
         if (!OperatingSystem.IsLinux()) { return; }
         var dir = CreateOwnerOnlyTempDirectory();
@@ -372,17 +372,22 @@ public sealed class ConfirmedApplyWorkflowTests
             var host = new ManagedHostRecord(Guid.NewGuid(), "synthetic", AgentTransportKind.Unix, "/run/nergal/synthetic.sock", expectedServerUserId: 0);
             store.RegisterHost(host, actor, NergalRoles.Administrator);
             var bundle = new Nergal.Core.Policy.FirewallPolicyBundle(1,
-                new(1, Nergal.Core.Policy.FilterVerdict.Drop, []), auxiliaryFilter: new(-5,
+                new(1, Nergal.Core.Policy.FilterVerdict.Drop, []),
+                bridge: new(1, Nergal.Core.Policy.FilterVerdict.Accept, [], priority: -5,
+                    subChains: [new("service", [new(Nergal.Core.Policy.BridgeEtherType.Any, Nergal.Core.Policy.FilterVerdict.Drop, Return: true)])]),
+                auxiliaryFilter: new(-5,
                     new(2, Nergal.Core.Policy.FilterVerdict.Accept, Nergal.Core.Policy.FilterVerdict.Accept, Nergal.Core.Policy.FilterVerdict.Accept, [])));
             var report = PolicyAuthoringService.EvaluateDraft(Nergal.Core.Policy.PolicyBundleJsonCodec.EncodeBundle(bundle));
             Assert.True(report.IsValid);
             var revision = store.SavePolicyRevision(report.CanonicalJson!, report.CandidateDigest!, actor, NergalRoles.Administrator, "Synthetic preview");
-            var dispatcher = new RecordingDispatcher((_, _) => throw new InvalidOperationException("Must not contact agent"));
+            var dispatcher = new RecordingDispatcher((_, _) => new AgentControlReply(AgentControlOutcome.Rejected, errorCode: "fixture.agentDenied"));
             var workflow = new ApplyWorkflowService(store, dispatcher);
             var result = await workflow.StartApplyAsync(host.Id, revision.Revision, 30, actor, NergalRoles.Administrator, TestContext.Current.CancellationToken);
-            Assert.Equal("policy.previewOnlyScope", result.Reply!.ErrorCode);
-            Assert.Empty(dispatcher.Sent);
-            Assert.Contains(store.ListAuditEntries(), e => e.Action == "apply.start" && e.Outcome == "rejected" && e.DetailCode == "policy.previewOnlyScope");
+            Assert.Equal("fixture.agentDenied", result.Reply!.ErrorCode);
+            var sent = Assert.Single(dispatcher.Sent).Request.ResolveBundle();
+            Assert.NotNull(sent);
+            Assert.Equal(Nergal.Core.Policy.PolicyBundleJsonCodec.EncodeBundle(bundle), Nergal.Core.Policy.PolicyBundleJsonCodec.EncodeBundle(sent));
+            Assert.Contains(store.ListAuditEntries(), e => e.Action == "apply.start" && e.Outcome == "rejected" && e.DetailCode == "fixture.agentDenied");
         }
         finally { TryDelete(dir); }
     }
