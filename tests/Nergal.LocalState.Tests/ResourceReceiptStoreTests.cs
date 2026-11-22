@@ -414,6 +414,42 @@ public sealed class ResourceReceiptStoreTests
         Assert.Equal(before, File.ReadAllBytes(fixture.Database));
     }
 
+    /// <summary>Complete auxiliary intent is checked at binding and confirmation; identical primary policy cannot hide auxiliary drift.</summary>
+    [Fact]
+    public void CompleteBundle_RejectsMissingBaselineAndChangedAuxiliaryCandidate()
+    {
+        var assembly = typeof(ResourceReceiptStoreTests).Assembly;
+        using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(n => n.EndsWith("bundle-echo.json", StringComparison.Ordinal)))!;
+        using var reader = new StreamReader(stream);
+        var json = reader.ReadToEnd().Replace(new NftTableIdentity(
+            Guid.Parse("00000000-0000-0000-0000-000000000010"), Guid.Parse("00000000-0000-0000-0000-000000000020")).Comment,
+            new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal);
+        NftTableObservation Parse(string text) => NftTableObservation.ParseBundleReplacementEcho(text, new(Owner, Resource), true, true, true).Observation!;
+        var baseline = Parse(json);
+        var artifact = NftPolicyBundleCompiler.Compile(baseline.Bundle, baseline.Identity).Candidate!;
+        using var fixture = new Fixture(resourceIntent: true, artifact: artifact);
+        var primary = NftTableObservation.ParseReplacementEcho(new System.Text.Json.Nodes.JsonObject
+        {
+            ["nftables"] = new System.Text.Json.Nodes.JsonArray(System.Text.Json.Nodes.JsonNode.Parse(json)!["nftables"]!.AsArray()
+                .TakeWhile(i => i?["create"]?["table"]?["name"]?.GetValue<string>() != "nergal_nat").Select(i => i!.DeepClone()).ToArray()),
+        }.ToJsonString()).Observation!;
+        Reject("resource.baselineMismatch", () => fixture.Store.BindExpectedResource(Ownership, Receipt(primary), primary, 42));
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+        var changed = System.Text.Json.Nodes.JsonNode.Parse(json)!;
+        var rule = changed["nftables"]!.AsArray().Select(i => i?["add"]?["rule"]).First(i => (string?)i?["table"] == "nergal_aux")!;
+        rule["expr"]!.AsArray()[^1] = new System.Text.Json.Nodes.JsonObject { ["accept"] = null };
+        var candidate = Parse(changed.ToJsonString());
+        var candidateArtifact = NftPolicyBundleCompiler.Compile(candidate.Bundle, candidate.Identity).Candidate!;
+        var plan = new ApplyPlan(Guid.NewGuid(), Ownership, CandidateDigest.FromText(candidateArtifact), CandidateDigest.FromText(artifact), TimeSpan.FromSeconds(30));
+        fixture.Store.StartBound(plan, candidateArtifact, artifact, baseline, 42);
+        Assert.True(fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog).Accepted);
+        Reject("resource.candidateMismatch", () => fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(baseline), baseline, 42));
+        Assert.True(fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(candidate), candidate, 42).Accepted);
+        Reject("resource.receiptMismatch", () => fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, baseline, 42));
+        Assert.Equal(1UL, fixture.Store.ReadEnrollment().Ownership.Revision);
+        Assert.True(fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, candidate, 42).Accepted);
+    }
+
     private static NftTableObservation Observe(ulong handle = 7, FilterVerdict verdict = FilterVerdict.Accept, Guid? resource = null)
     {
         var text = JsonSerializer.Serialize(new
@@ -442,10 +478,10 @@ public sealed class ResourceReceiptStoreTests
         internal string Database => System.IO.Path.Combine(Path, "journal.db");
         internal TestClock Clock { get; } = new();
         internal ApplyJournal Store { get; }
-        internal Fixture(bool resourceIntent = false)
+        internal Fixture(bool resourceIntent = false, string? artifact = null)
         {
             Directory.CreateDirectory(Path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            Store = resourceIntent ? ApplyJournal.InitializeResourceIntent(Path, Ownership, Artifact(FilterVerdict.Accept), Clock) :
+            Store = resourceIntent ? ApplyJournal.InitializeResourceIntent(Path, Ownership, artifact ?? Artifact(FilterVerdict.Accept), Clock) :
                 ApplyJournal.Initialize(Path, Ownership, Artifact(FilterVerdict.Accept), Clock);
         }
         internal ApplyPlan Plan() => new(Guid.NewGuid(), Ownership, CandidateDigest.FromText(Artifact(FilterVerdict.Drop)),

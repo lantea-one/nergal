@@ -97,3 +97,20 @@ Production resource enrollment, receipt-aware apply/recovery, reboot reconciliat
 kernel/journal compare-and-swap and authenticated agent transport remain unimplemented.
 Bound-resource legacy apply is disabled until those mutation boundaries are designed
 and tested.
+
+## Complete multi-table observations under development
+
+The development implementation reconstructs all present owned NAT, bridge and
+early inet tables. Its composite fingerprint binds each table's native object
+handles and complete supported semantics, in addition to the primary filter.
+Single-table fingerprints are unchanged. Journal binding, candidate evidence,
+confirmation and reconciliation compare the entire compiled bundle with protected
+intent. A copied ownership comment is not an authorization to adopt a table.
+
+Existing primary-only receipts for multi-table deployments cannot match these
+complete fingerprints. They fail closed; no observation silently upgrades them.
+Do not mix old and new binaries or deploy this change over an active operation.
+A trusted maintenance procedure must recreate and verify protected intent before
+using the new receipt format. See [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md).
+Extended bridge and early inet agent dispatch remain disabled until the remaining
+packet and rollback conformance passes.

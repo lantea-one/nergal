@@ -26,6 +26,9 @@ REQUIRED_FILES = [
     "assets/screenshots/settings-light.jpg",
     "assets/screenshots/policies-light.jpg",
     "assets/screenshots/policies-mobile.jpg",
+    "assets/screenshots/editor-light.jpg",
+    "assets/screenshots/editor-dark.jpg",
+    "assets/screenshots/editor-mobile.jpg",
 ]
 
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")

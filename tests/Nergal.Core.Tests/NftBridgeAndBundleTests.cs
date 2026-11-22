@@ -136,8 +136,10 @@ public sealed class NftBridgeAndBundleTests
         var wrongPrio = SampleBridgeListing(identity.Comment);
         wrongPrio["nftables"]![2]!["chain"]!["prio"] = 0;
         var badPrio = NftBridgeTableObservation.Parse(wrongPrio.ToJsonString());
-        Assert.False(badPrio.IsSuccess);
-        Assert.Equal("observation.scope", badPrio.ErrorCode);
+        Assert.True(badPrio.IsSuccess, badPrio.ErrorCode);
+        Assert.NotEqual(parsedList.Observation.StateDigest, badPrio.Observation!.StateDigest);
+        wrongPrio["nftables"]![2]!["chain"]!["prio"] = 301;
+        Assert.False(NftBridgeTableObservation.Parse(wrongPrio.ToJsonString()).IsSuccess);
     }
 
     /// <summary>An error in any table blocks bundle compilation, and atomic replacements only delete owned reserved tables.</summary>

@@ -11,7 +11,7 @@
     var natCount = (bundle?.Nat?.DnatRules.Count ?? 0) + (bundle?.Nat?.SnatRules.Count ?? 0);
     var bridgeCount = bundle?.Bridge?.Rules.Count ?? 0;
 }
-<main class="container">
+<main class="container" data-tab-scope="policies" data-initial-tab="@(bundle is null ? "tab-json" : "")">
     <div class="page-header">
         <div>
             <h1>Policy bundle builder &amp; candidate diff</h1>
@@ -1103,7 +1103,8 @@
                 </div>
                 <div class="field">
                     <label for="raw-bundle-json">Bundle JSON</label>
-                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson">@Model.BundleJson</textarea>
+                    <p id="bundle-editor-help" class="muted">JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics.</p>
+                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json" data-editor-label="Policy bundle JSON" aria-describedby="bundle-editor-help">@Model.BundleJson</textarea>
                 </div>
                 <div class="btn-group mt-2">
                     <button type="submit" class="btn btn-secondary">Preview compatibility &amp; nftables diff</button>
@@ -1154,3 +1155,7 @@
         </section>
     </div>
 </main>
+
+@section Scripts {
+    <script src="@Url.Content("~/js/code-editor.bundle.js")" asp-append-version="true" defer></script>
+}

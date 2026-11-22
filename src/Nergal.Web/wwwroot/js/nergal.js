@@ -32,7 +32,8 @@
   // 3. Page tabs (remembers active tab per page path in sessionStorage across form posts).
   const tabButtons = document.querySelectorAll("[data-tab-target]");
   if (tabButtons.length > 0) {
-    const tabStorageKey = "nergal-tab:" + window.location.pathname;
+    const tabScope = document.querySelector("[data-tab-scope]");
+    const tabStorageKey = "nergal-tab:" + (tabScope?.getAttribute("data-tab-scope") || window.location.pathname);
     const activateTab = function (id) {
       tabButtons.forEach(function (btn) {
         const active = btn.getAttribute("data-tab-target") === id;
@@ -42,7 +43,7 @@
       document.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
         panel.classList.toggle("hidden", panel.getAttribute("data-tab-panel") !== id);
       });
-      sessionStorage.setItem(tabStorageKey, id);
+      try { sessionStorage.setItem(tabStorageKey, id); } catch { /* Tabs also work with storage disabled. */ }
     };
 
     tabButtons.forEach(function (btn) {
@@ -51,7 +52,10 @@
       });
     });
 
-    const initialTab = sessionStorage.getItem(tabStorageKey);
+    let initialTab = tabScope?.getAttribute("data-initial-tab");
+    if (!initialTab) {
+      try { initialTab = sessionStorage.getItem(tabStorageKey); } catch { /* Use the first tab. */ }
+    }
     if (initialTab && document.querySelector('[data-tab-panel="' + initialTab + '"]')) {
       activateTab(initialTab);
     } else {

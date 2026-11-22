@@ -57,14 +57,39 @@ internal static class NativeNft
         try
         {
             var listed = await Run(["--terse", "--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
-            return NftTableObservation.Parse(listed).Observation;
+            var primary = NftTableObservation.Parse(listed).Observation;
+            if (primary is null) { return null; }
+            var presence = await TryInspectAuxiliaryTablesAsync(primary.Identity, cancellation);
+            if (presence is null) { return null; }
+            NftNatTableObservation? nat = null;
+            NftBridgeTableObservation? bridge = null;
+            NftAuxiliaryTableObservation? auxiliary = null;
+            if (presence.NatExists && presence.NatOwned)
+            {
+                var snapshot = await Run(["--terse", "--json", "list", "table", "inet", NftNatCompiler.TableName], "", cancellation);
+                nat = NftNatTableObservation.Parse(snapshot).Observation;
+                if (nat is null) { return null; }
+            }
+            if (presence.BridgeExists && presence.BridgeOwned)
+            {
+                var snapshot = await Run(["--terse", "--json", "list", "table", "bridge", NftBridgeCompiler.TableName], "", cancellation);
+                bridge = NftBridgeTableObservation.Parse(snapshot).Observation;
+                if (bridge is null) { return null; }
+            }
+            if (presence.AuxiliaryExists && presence.AuxiliaryOwned)
+            {
+                var snapshot = await Run(["--terse", "--json", "list", "table", "inet", NftAuxiliaryTableObservation.TableName], "", cancellation);
+                auxiliary = NftAuxiliaryTableObservation.Parse(snapshot);
+                if (auxiliary is null) { return null; }
+            }
+            return NftTableObservation.Combine(primary, nat, bridge, auxiliary);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
             throw;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or
-            OperationCanceledException or DecoderFallbackException)
+            OperationCanceledException or DecoderFallbackException or ArgumentException)
         {
             return null;
         }

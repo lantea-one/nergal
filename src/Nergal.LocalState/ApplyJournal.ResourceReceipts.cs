@@ -183,8 +183,8 @@ public sealed partial class ApplyJournal
                 throw new JournalException("resource.receiptMismatch");
             }
 
-            var reconstructed = NftFilterCompiler.Compile(actual.Policy, actual.Identity);
-            if (reconstructed.Candidate != NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(enrollment.Value.Artifact))
+            var reconstructed = NftPolicyBundleCompiler.Compile(actual.Bundle, actual.Identity);
+            if (reconstructed.Candidate != enrollment.Value.Artifact)
             {
                 throw new JournalException("resource.baselineMismatch");
             }
@@ -256,8 +256,8 @@ public sealed partial class ApplyJournal
                 throw new JournalException("resource.receiptMismatch");
             }
 
-            var reconstructed = NftFilterCompiler.Compile(currentObservation.Policy, currentObservation.Identity);
-            if (reconstructed.Candidate != NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(rollback))
+            var reconstructed = NftPolicyBundleCompiler.Compile(currentObservation.Bundle, currentObservation.Identity);
+            if (reconstructed.Candidate != rollback)
             {
                 throw new JournalException("resource.baselineMismatch");
             }
@@ -313,8 +313,8 @@ public sealed partial class ApplyJournal
                     throw new JournalException("resource.receiptMismatch");
                 }
 
-                var reconstructed = NftFilterCompiler.Compile(candidateListing.Policy, candidateListing.Identity);
-                if (reconstructed.Candidate != NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(entry.Candidate))
+                var reconstructed = NftPolicyBundleCompiler.Compile(candidateListing.Bundle, candidateListing.Identity);
+                if (reconstructed.Candidate != entry.Candidate)
                 {
                     throw new JournalException("resource.candidateMismatch");
                 }
@@ -357,8 +357,8 @@ public sealed partial class ApplyJournal
                     throw new JournalException("resource.receiptMismatch");
                 }
 
-                var reconstructed = NftFilterCompiler.Compile(currentListing.Policy, currentListing.Identity);
-                if (reconstructed.Candidate != NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(entry.Candidate))
+                var reconstructed = NftPolicyBundleCompiler.Compile(currentListing.Bundle, currentListing.Identity);
+                if (reconstructed.Candidate != entry.Candidate)
                 {
                     throw new JournalException("resource.candidateMismatch");
                 }
@@ -400,8 +400,8 @@ public sealed partial class ApplyJournal
                     throw new JournalException("resource.receiptMismatch");
                 }
 
-                var reconstructed = NftFilterCompiler.Compile(restoredListing.Policy, restoredListing.Identity);
-                if (reconstructed.Candidate != NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(entry.Rollback))
+                var reconstructed = NftPolicyBundleCompiler.Compile(restoredListing.Bundle, restoredListing.Identity);
+                if (reconstructed.Candidate != entry.Rollback)
                 {
                     throw new JournalException("rollback.mismatch");
                 }
@@ -445,8 +445,8 @@ public sealed partial class ApplyJournal
                 throw new JournalException("resource.receiptMismatch");
             }
 
-            var reconstructed = NftFilterCompiler.Compile(recreatedActual.Policy, recreatedActual.Identity);
-            if (reconstructed.Candidate != NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(enrollment.Value.Artifact))
+            var reconstructed = NftPolicyBundleCompiler.Compile(recreatedActual.Bundle, recreatedActual.Identity);
+            if (reconstructed.Candidate != enrollment.Value.Artifact)
             {
                 throw new JournalException("resource.baselineMismatch");
             }

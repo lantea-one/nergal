@@ -13,3 +13,5 @@ coverage/
 *.key
 state/
 artifacts/
+
+**/node_modules/

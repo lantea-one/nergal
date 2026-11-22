@@ -25,308 +25,122 @@ public sealed class NftBridgeObservationResult
     public bool IsSuccess => Observation is not null;
 }
 
-/// <summary>Immutable native observation of <c>bridge nergal_bridge</c> forward chain and ordered L2 rules.</summary>
-public sealed class NftBridgeTableObservation
+/// <summary>Complete native bridge observation, including regular-chain control flow.</summary>
+public sealed partial class NftBridgeTableObservation
 {
-    private NftBridgeTableObservation(
-        NftTableIdentity identity,
-        ulong tableHandle,
-        ulong forwardChainHandle,
-        BridgePolicy policy,
-        List<(ulong Handle, BridgeFilterRule Rule)> rules)
+    private NftBridgeTableObservation(NftTableIdentity identity, ulong tableHandle, ulong chainHandle,
+        BridgePolicy policy, IReadOnlyList<(string Name, ulong Handle)> chains, IReadOnlyList<(string Chain, ulong Handle, BridgeFilterRule Rule)> rules)
     {
-        Identity = identity;
-        TableHandle = tableHandle;
-        ForwardChainHandle = forwardChainHandle;
-        Policy = policy;
-
+        Identity = identity; TableHandle = tableHandle; ForwardChainHandle = chainHandle; Policy = policy;
         var projection = new StringBuilder(string.Join('\n',
-            "nergal-bridge-observation-v1",
-            identity.Comment,
+            policy.HasExtendedRules ? "nergal-bridge-observation-v2" : "nergal-bridge-observation-v1", identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture),
-            string.Join(' ',
-                forwardChainHandle.ToString(CultureInfo.InvariantCulture),
-                "bridge", NftBridgeCompiler.TableName, "forward", "filter", "forward", "-200",
-                policy.DefaultVerdict == FilterVerdict.Accept ? "accept" : "drop")));
-
-        foreach (var (handle, rule) in rules)
+            string.Join(' ', chainHandle.ToString(CultureInfo.InvariantCulture), "bridge", NftBridgeCompiler.TableName,
+                "forward", "filter", "forward", policy.Priority.ToString(CultureInfo.InvariantCulture), policy.DefaultVerdict == FilterVerdict.Accept ? "accept" : "drop")));
+        if (!policy.HasExtendedRules)
         {
-            projection.Append('\n')
-                .Append(handle.ToString(CultureInfo.InvariantCulture)).Append(' ')
-                .Append(rule.InputInterface ?? "-").Append(' ')
-                .Append(rule.OutputInterface ?? "-").Append(' ')
-                .Append(rule.EtherType).Append(' ')
-                .Append(rule.Verdict == FilterVerdict.Accept ? "accept" : "drop");
+            foreach (var (_, handle, rule) in rules)
+            {
+                projection.Append('\n').Append(handle.ToString(CultureInfo.InvariantCulture)).Append(' ')
+                    .Append(rule.InputInterface ?? "-").Append(' ').Append(rule.OutputInterface ?? "-").Append(' ')
+                    .Append(rule.EtherType).Append(' ').Append(rule.Verdict == FilterVerdict.Accept ? "accept" : "drop");
+            }
         }
-
+        else
+        {
+            foreach (var (name, handle) in chains) { projection.Append('\n').Append(name).Append(' ').Append(handle.ToString(CultureInfo.InvariantCulture)); }
+            foreach (var (name, handle, _) in rules) { projection.Append('\n').Append(name).Append(' ').Append(handle.ToString(CultureInfo.InvariantCulture)); }
+            // The canonical compiler includes every matcher/action and preserves rule/chain order.
+            projection.Append('\n').Append(NftBridgeCompiler.Compile(policy, identity).Candidate);
+        }
         StateDigest = CandidateDigest.FromText(projection.ToString());
     }
-
-    /// <summary>Gets the canonical owner/resource marker parsed from the table comment.</summary>
+    /// <summary>Gets the native owner/resource marker.</summary>
     public NftTableIdentity Identity { get; }
-
     /// <summary>Gets the positive native table handle.</summary>
     public ulong TableHandle { get; }
-
-    /// <summary>Gets the positive native forward chain handle.</summary>
+    /// <summary>Gets the positive base-chain handle.</summary>
     public ulong ForwardChainHandle { get; }
-
-    /// <summary>Gets the reconstructed typed bridge policy.</summary>
+    /// <summary>Gets the reconstructed complete bridge policy.</summary>
     public BridgePolicy Policy { get; }
-
-    /// <summary>Gets the SHA-256 fingerprint over all recognized bridge objects, handles, and rules.</summary>
+    /// <summary>Gets a fingerprint binding every native object handle and semantic field.</summary>
     public CandidateDigest StateDigest { get; }
+    /// <summary>Parses a complete native bridge listing, rejecting unknown or partial objects.</summary>
+    public static NftBridgeObservationResult Parse(string json) => ParseNative(json, false);
+    /// <summary>Parses complete handle-bearing bridge creation echo.</summary>
+    public static NftBridgeObservationResult ParseReplacementEcho(string json) => ParseNative(json, true);
 
-    /// <summary>Parses a full native <c>nft --json list table bridge nergal_bridge</c> snapshot.</summary>
-    /// <exception cref="ArgumentNullException"><paramref name="json"/> is null.</exception>
-    public static NftBridgeObservationResult Parse(string json) => ParseNative(json, isEcho: false);
-
-    /// <summary>Parses handle-bearing <c>nft --echo --handle --json</c> output for <c>bridge nergal_bridge</c>.</summary>
-    /// <exception cref="ArgumentNullException"><paramref name="json"/> is null.</exception>
-    public static NftBridgeObservationResult ParseReplacementEcho(string json) => ParseNative(json, isEcho: true);
-
-    private static NftBridgeObservationResult ParseNative(string json, bool isEcho)
+    private static NftBridgeObservationResult ParseNative(string json, bool echo)
     {
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            if (new UTF8Encoding(false, true).GetByteCount(json) > 65536)
-            {
-                return Deny("observation.tooLarge");
-            }
-
-            using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
-            if (NftJsonHelpers.HasDuplicateProperties(document.RootElement))
-            {
-                return Deny("observation.duplicateProperty");
-            }
-
-            var root = document.RootElement;
-            if (!NftJsonHelpers.Properties(root, "nftables") || root.GetProperty("nftables").ValueKind != JsonValueKind.Array)
-            {
-                return Deny("observation.shape");
-            }
-
-            var items = root.GetProperty("nftables").EnumerateArray().ToArray();
-            JsonElement table, chain;
-            int ruleStartIndex;
-            if (isEcho)
-            {
-                if (items.Length < 2 ||
-                    !NftJsonHelpers.Properties(items[0], "create") || !NftJsonHelpers.Properties(items[0].GetProperty("create"), "table") ||
-                    !NftJsonHelpers.Properties(items[1], "add") || !NftJsonHelpers.Properties(items[1].GetProperty("add"), "chain"))
-                {
-                    return Deny("observation.replacementEcho");
-                }
-
-                table = items[0].GetProperty("create").GetProperty("table");
-                chain = items[1].GetProperty("add").GetProperty("chain");
-                ruleStartIndex = 2;
-            }
-            else
-            {
-                if (items.Length < 3 || !NftJsonHelpers.Properties(items[0], "metainfo"))
-                {
-                    return Deny("observation.unsupportedObjects");
-                }
-
-                if (!NftJsonHelpers.TryReadMetaHeader(items))
-                {
-                    return Deny("observation.schema");
-                }
-
-                if (!NftJsonHelpers.Properties(items[1], "table") || !NftJsonHelpers.Properties(items[2], "chain"))
-                {
-                    return Deny("observation.unsupportedObjects");
-                }
-
-                table = items[1].GetProperty("table");
-                chain = items[2].GetProperty("chain");
-                ruleStartIndex = 3;
-            }
-
+            if (Encoding.UTF8.GetByteCount(json) > 65536) { return Deny("observation.tooLarge"); }
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
+            if (NftJsonHelpers.HasDuplicateProperties(doc.RootElement)) { return Deny("observation.duplicateProperty"); }
+            if (!NftJsonHelpers.Properties(doc.RootElement, "nftables") || doc.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { return Deny("observation.shape"); }
+            var items = doc.RootElement.GetProperty("nftables").EnumerateArray().ToArray();
+            if (!echo && !NftJsonHelpers.TryReadMetaHeader(items)) { return Deny("observation.schema"); }
+            var offset = echo ? 0 : 1;
+            if (items.Length < offset + 2) { return Deny("observation.unsupportedObjects"); }
+            var table = Unwrap(items[offset], "table", echo, true);
+            var baseChain = Unwrap(items[offset + 1], "chain", echo);
             if (!NftJsonHelpers.Properties(table, "family", "name", "handle", "comment") ||
-                !NftJsonHelpers.Properties(chain, "family", "table", "name", "handle", "type", "hook", "prio", "policy"))
-            {
-                return Deny("observation.fields");
-            }
-
+                !NftJsonHelpers.Properties(baseChain, "family", "table", "name", "handle", "type", "hook", "prio", "policy")) { return Deny("observation.fields"); }
             if (table.GetProperty("family").GetString() != "bridge" || table.GetProperty("name").GetString() != NftBridgeCompiler.TableName ||
-                chain.GetProperty("family").GetString() != "bridge" || chain.GetProperty("table").GetString() != NftBridgeCompiler.TableName ||
-                chain.GetProperty("name").GetString() != "forward" || chain.GetProperty("type").GetString() != "filter" ||
-                chain.GetProperty("hook").GetString() != "forward" || chain.GetProperty("prio").ValueKind != JsonValueKind.Number ||
-                !chain.GetProperty("prio").TryGetInt32(out var priority) || priority != -200)
-            {
-                return Deny("observation.scope");
-            }
-
-            if (table.GetProperty("handle").ValueKind != JsonValueKind.Number || !table.GetProperty("handle").TryGetUInt64(out var tableHandle) || tableHandle == 0 ||
-                chain.GetProperty("handle").ValueKind != JsonValueKind.Number || !chain.GetProperty("handle").TryGetUInt64(out var chainHandle) || chainHandle == 0)
-            {
-                return Deny("observation.handle");
-            }
-
+                !Scope(baseChain) || baseChain.GetProperty("name").GetString() != "forward" || baseChain.GetProperty("type").GetString() != "filter" ||
+                baseChain.GetProperty("hook").GetString() != "forward" || !baseChain.GetProperty("prio").TryGetInt32(out var priority) || priority is < -300 or > 300) { return Deny("observation.scope"); }
+            if (!table.GetProperty("handle").TryGetUInt64(out var tableHandle) || tableHandle == 0 ||
+                !baseChain.GetProperty("handle").TryGetUInt64(out var chainHandle) || chainHandle == 0) { return Deny("observation.handle"); }
             var identity = NftTableIdentity.Parse(table.GetProperty("comment").GetString() ?? "");
-            if (identity is null)
-            {
-                return Deny("observation.identity");
-            }
-
-            var policyToken = chain.GetProperty("policy").GetString();
-            if (policyToken is not ("accept" or "drop"))
-            {
-                return Deny("observation.policy");
-            }
-
-            var defaultVerdict = policyToken == "accept" ? FilterVerdict.Accept : FilterVerdict.Drop;
+            if (identity is null) { return Deny("observation.identity"); }
+            var token = baseChain.GetProperty("policy").GetString();
+            if (token is not ("accept" or "drop")) { return Deny("observation.policy"); }
+            var chains = new List<(string Name, ulong Handle)> { ("forward", chainHandle) };
+            var names = new HashSet<string>(StringComparer.Ordinal) { "forward" };
             var handles = new HashSet<ulong> { chainHandle };
-            var rules = new List<(ulong Handle, BridgeFilterRule Rule)>();
-
-            for (var index = ruleStartIndex; index < items.Length; index++)
+            var index = offset + 2;
+            while (index < items.Length && Unwrap(items[index], "chain", echo).ValueKind != JsonValueKind.Undefined)
             {
-                JsonElement rule;
-                if (isEcho)
-                {
-                    if (!NftJsonHelpers.Properties(items[index], "add") || !NftJsonHelpers.Properties(items[index].GetProperty("add"), "rule"))
-                    {
-                        return Deny("observation.replacementEcho");
-                    }
-
-                    rule = items[index].GetProperty("add").GetProperty("rule");
-                }
-                else
-                {
-                    if (!NftJsonHelpers.Properties(items[index], "rule"))
-                    {
-                        return Deny("observation.unsupportedObjects");
-                    }
-
-                    rule = items[index].GetProperty("rule");
-                }
-
-                if (!NftJsonHelpers.Properties(rule, "family", "table", "chain", "handle", "expr"))
-                {
-                    return Deny("observation.unsupportedObjects");
-                }
-
-                if (rule.GetProperty("family").GetString() != "bridge" ||
-                    rule.GetProperty("table").GetString() != NftBridgeCompiler.TableName ||
-                    rule.GetProperty("chain").GetString() != "forward")
-                {
-                    return Deny("observation.scope");
-                }
-
-                if (!rule.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle))
-                {
-                    return Deny("observation.handle");
-                }
-
-                var parsed = ParseBridgeRule(rule.GetProperty("expr"));
-                if (parsed is null)
-                {
-                    return Deny("observation.rule");
-                }
-
-                rules.Add((handle, parsed));
+                var c = Unwrap(items[index++], "chain", echo);
+                if (!NftJsonHelpers.Properties(c, "family", "table", "name", "handle") || !Scope(c)) { return Deny("observation.scope"); }
+                var name = c.GetProperty("name").GetString();
+                if (name is null || !names.Add(name) || names.Count > 33) { return Deny("observation.scope"); }
+                if (!c.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle)) { return Deny("observation.handle"); }
+                chains.Add((name, handle));
             }
-
-            var policy = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, defaultVerdict, rules.Select(entry => entry.Rule));
-            return new(new(identity, tableHandle, chainHandle, policy, rules), null);
+            var rules = new List<(string Chain, ulong Handle, BridgeFilterRule Rule)>();
+            var previous = 0;
+            for (; index < items.Length; index++)
+            {
+                var r = Unwrap(items[index], "rule", echo);
+                if (!NftJsonHelpers.Properties(r, "family", "table", "chain", "handle", "expr")) { return Deny("observation.unsupportedObjects"); }
+                if (!Scope(r)) { return Deny("observation.scope"); }
+                var name = r.GetProperty("chain").GetString();
+                var rank = chains.FindIndex(c => c.Name == name);
+                if (rank < previous || rank < 0) { return Deny("observation.scope"); }
+                previous = rank;
+                if (!r.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle)) { return Deny("observation.handle"); }
+                var rule = ParseRule(r.GetProperty("expr"));
+                if (rule is null) { return Deny("observation.rule"); }
+                rules.Add((name!, handle, rule));
+            }
+            var policy = new BridgePolicy(1, token == "accept" ? FilterVerdict.Accept : FilterVerdict.Drop,
+                rules.Where(r => r.Chain == "forward").Select(r => r.Rule), priority,
+                chains.Skip(1).Select(c => new BridgeSubChain(c.Name, rules.Where(r => r.Chain == c.Name).Select(r => r.Rule))));
+            if (!NftBridgeCompiler.Compile(policy).IsSuccess) { return Deny("observation.rule"); }
+            return new(new(identity, tableHandle, chainHandle, policy, chains, rules), null);
         }
-        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
-        {
-            return Deny("observation.invalidJson");
-        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException or ArgumentException)
+        { return Deny("observation.invalidJson"); }
     }
-
-    private static BridgeFilterRule? ParseBridgeRule(JsonElement expressions)
+    private static JsonElement Unwrap(JsonElement item, string kind, bool echo, bool create = false)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 4)
-        {
-            return null;
-        }
-
-        var count = expressions.GetArrayLength();
-        var terminal = expressions[count - 1];
-        var accept = NftJsonHelpers.Properties(terminal, "accept");
-        if ((!accept && !NftJsonHelpers.Properties(terminal, "drop")) ||
-            terminal.GetProperty(accept ? "accept" : "drop").ValueKind != JsonValueKind.Null)
-        {
-            return null;
-        }
-
-        string? inputInterface = null;
-        string? outputInterface = null;
-        var etherType = BridgeEtherType.Any;
-        var stage = -1;
-
-        for (var index = 0; index < count - 1; index++)
-        {
-            if (!NftJsonHelpers.Properties(expressions[index], "match")) { return null; }
-            var match = expressions[index].GetProperty("match");
-            if (!NftJsonHelpers.Properties(match, "op", "left", "right") ||
-                match.GetProperty("op").ValueKind != JsonValueKind.String ||
-                match.GetProperty("op").GetString() != "==")
-            {
-                return null;
-            }
-
-            var left = match.GetProperty("left");
-            var right = match.GetProperty("right");
-            if (NftJsonHelpers.Properties(left, "meta") && NftJsonHelpers.Properties(left.GetProperty("meta"), "key"))
-            {
-                var key = left.GetProperty("meta").GetProperty("key");
-                if (key.ValueKind != JsonValueKind.String || right.ValueKind != JsonValueKind.String) { return null; }
-                var keyName = key.GetString();
-                var iface = right.GetString();
-                if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
-
-                if (keyName == "iifname" && stage < 0)
-                {
-                    inputInterface = iface;
-                    stage = 0;
-                    continue;
-                }
-
-                if (keyName == "oifname" && stage < 1)
-                {
-                    outputInterface = iface;
-                    stage = 1;
-                    continue;
-                }
-
-                return null;
-            }
-
-            if (NftJsonHelpers.Properties(left, "payload") && NftJsonHelpers.Properties(left.GetProperty("payload"), "protocol", "field"))
-            {
-                var payload = left.GetProperty("payload");
-                if (stage >= 2 ||
-                    payload.GetProperty("protocol").GetString() != "ether" ||
-                    payload.GetProperty("field").GetString() != "type" ||
-                    right.ValueKind != JsonValueKind.String)
-                {
-                    return null;
-                }
-
-                BridgeEtherType? parsedEther = right.GetString() switch
-                {
-                    "ip" => BridgeEtherType.IPv4,
-                    "ip6" => BridgeEtherType.IPv6,
-                    "arp" => BridgeEtherType.Arp,
-                    _ => null,
-                };
-                if (parsedEther is null) { return null; }
-                etherType = parsedEther.Value;
-                stage = 2;
-                continue;
-            }
-
-            return null;
-        }
-
-        return new(etherType, accept ? FilterVerdict.Accept : FilterVerdict.Drop, inputInterface, outputInterface);
+        if (!echo) { return NftJsonHelpers.Properties(item, kind) ? item.GetProperty(kind) : default; }
+        var command = create ? "create" : "add";
+        return NftJsonHelpers.Properties(item, command) && NftJsonHelpers.Properties(item.GetProperty(command), kind)
+            ? item.GetProperty(command).GetProperty(kind) : default;
     }
-
+    private static bool Scope(JsonElement e) => e.GetProperty("family").GetString() == "bridge" && e.GetProperty("table").GetString() == NftBridgeCompiler.TableName;
     private static NftBridgeObservationResult Deny(string code) => new(null, code);
 }

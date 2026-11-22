@@ -167,3 +167,11 @@ uses saved branding; stored auth/database/firewall choices do not hot-reconfigur
 services. Optional administrator-only native source inspection snapshots private
 operator-controlled files and never executes them. The [local sandbox](local-sandbox.md)
 uses separate containers for the unprivileged UI and native check-only workers.
+
+Complete multi-table observation is being implemented under
+[ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md). A composite
+receipt includes complete owned NAT, bridge and early inet state rather than only
+auxiliary ownership comments. Extended dispatch remains gated pending the required
+packet and rollback evidence. [The product workflow](product-workflow.md) tracks
+the ordered UI, migration and profile work without treating saved intent as live
+runtime configuration.

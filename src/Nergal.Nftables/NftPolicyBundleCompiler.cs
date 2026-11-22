@@ -11,7 +11,7 @@ public static class NftPolicyBundleCompiler
     /// <param name="bundle">Coordinated policy bundle.</param>
     /// <returns>Complete batch candidate or component-prefixed diagnostics with no partial output.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="bundle"/> is null.</exception>
-    public static CompilationResult Compile(FirewallPolicyBundle bundle) => CompileCore(bundle, null, false, false, false, false);
+    public static CompilationResult Compile(FirewallPolicyBundle bundle) => CompileCore(bundle, null, false, false, false, false, false);
 
     /// <summary>Validates all bundle tables and emits a tagged multi-table create-only batch.</summary>
     /// <param name="bundle">Coordinated policy bundle.</param>
@@ -20,7 +20,7 @@ public static class NftPolicyBundleCompiler
     public static CompilationResult Compile(FirewallPolicyBundle bundle, NftTableIdentity identity)
     {
         ArgumentNullException.ThrowIfNull(identity);
-        return CompileCore(bundle, identity, false, false, false, false);
+        return CompileCore(bundle, identity, false, false, false, false, false);
     }
 
     /// <summary>Validates all bundle tables and emits one atomic delete-and-recreate multi-table batch.</summary>
@@ -29,6 +29,7 @@ public static class NftPolicyBundleCompiler
     /// <param name="filterExists">Whether <c>inet nergal_filter</c> currently exists under verified ownership.</param>
     /// <param name="natExists">Whether <c>inet nergal_nat</c> currently exists under verified ownership.</param>
     /// <param name="bridgeExists">Whether <c>bridge nergal_bridge</c> currently exists under verified ownership.</param>
+    /// <param name="auxiliaryExists">Whether the early inet table currently exists under verified ownership.</param>
     /// <returns>Single-transaction native batch or component-prefixed diagnostics.</returns>
     /// <exception cref="ArgumentNullException">Bundle or identity is null.</exception>
     public static CompilationResult CompileAtomicReplacement(
@@ -36,10 +37,11 @@ public static class NftPolicyBundleCompiler
         NftTableIdentity identity,
         bool filterExists,
         bool natExists,
-        bool bridgeExists)
+        bool bridgeExists,
+        bool auxiliaryExists = false)
     {
         ArgumentNullException.ThrowIfNull(identity);
-        return CompileCore(bundle, identity, true, filterExists, natExists, bridgeExists);
+        return CompileCore(bundle, identity, true, filterExists, natExists, bridgeExists, auxiliaryExists);
     }
 
     private static CompilationResult CompileCore(
@@ -48,7 +50,8 @@ public static class NftPolicyBundleCompiler
         bool isAtomicReplacement,
         bool filterExists,
         bool natExists,
-        bool bridgeExists)
+        bool bridgeExists,
+        bool auxiliaryExists)
     {
         ArgumentNullException.ThrowIfNull(bundle);
         var errors = new List<PolicyDiagnostic>();
@@ -57,8 +60,6 @@ public static class NftPolicyBundleCompiler
             errors.Add(new("schema.unsupported", "schemaVersion"));
         }
 
-        if (isAtomicReplacement && bundle.RequiresExtendedApplySupport)
-        { return new(null, [new("policy.previewOnlyScope", "bundle")]); }
         CompilationResult? auxiliaryResult = null;
         if (bundle.AuxiliaryFilter is { } auxiliary)
         {
@@ -117,6 +118,7 @@ public static class NftPolicyBundleCompiler
         var text = new StringBuilder();
         if (isAtomicReplacement)
         {
+            if (auxiliaryExists) { text.Append("delete table inet ").Append(NftAuxiliaryTableObservation.TableName).Append('\n'); }
             if (bridgeExists)
             {
                 text.Append("delete table bridge ").Append(NftBridgeCompiler.TableName).Append('\n');
@@ -166,25 +168,16 @@ public static class NftPolicyBundleCompiler
     public static string ExtractPrimaryFilterArtifact(string artifact)
     {
         ArgumentNullException.ThrowIfNull(artifact);
-        var natMarker = "\ncreate table inet " + NftNatCompiler.TableName + " ";
-        var bridgeMarker = "\ncreate table bridge " + NftBridgeCompiler.TableName + " ";
-        var natIdx = artifact.IndexOf(natMarker, StringComparison.Ordinal);
-        var bridgeIdx = artifact.IndexOf(bridgeMarker, StringComparison.Ordinal);
-        var cut = -1;
-        if (natIdx >= 0 && bridgeIdx >= 0)
-        {
-            cut = Math.Min(natIdx, bridgeIdx) + 1;
-        }
-        else if (natIdx >= 0)
-        {
-            cut = natIdx + 1;
-        }
-        else if (bridgeIdx >= 0)
-        {
-            cut = bridgeIdx + 1;
-        }
+        var markers = new[] { "\ncreate table inet nergal_nat", "\ncreate table bridge nergal_bridge", "\ncreate table inet nergal_aux" };
+        var cut = markers.Select(m => artifact.IndexOf(m, StringComparison.Ordinal)).Where(i => i >= 0).DefaultIfEmpty(-1).Min();
+        return cut >= 0 ? artifact[..(cut + 1)] : artifact;
+    }
 
-        return cut >= 0 ? artifact[..cut] : artifact;
+    /// <summary>Returns whether the artifact contains the owned early inet table.</summary>
+    public static bool ArtifactContainsAuxiliary(string artifact)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+        return artifact.Contains("create table inet nergal_aux ", StringComparison.Ordinal) || artifact.Contains("create table inet nergal_aux\n", StringComparison.Ordinal);
     }
 
     /// <summary>Returns whether observed auxiliary table presence and ownership agree with a compiled bundle artifact.</summary>
@@ -192,12 +185,13 @@ public static class NftPolicyBundleCompiler
     {
         ArgumentNullException.ThrowIfNull(presence);
         ArgumentNullException.ThrowIfNull(artifact);
-        if ((presence.NatExists && !presence.NatOwned) || (presence.BridgeExists && !presence.BridgeOwned))
+        if ((presence.NatExists && !presence.NatOwned) || (presence.BridgeExists && !presence.BridgeOwned) || (presence.AuxiliaryExists && !presence.AuxiliaryOwned))
         {
             return false;
         }
 
         return presence.NatExists == ArtifactContainsNat(artifact) &&
-               presence.BridgeExists == ArtifactContainsBridge(artifact);
+               presence.BridgeExists == ArtifactContainsBridge(artifact) &&
+               presence.AuxiliaryExists == ArtifactContainsAuxiliary(artifact);
     }
 }

@@ -35,12 +35,13 @@ installation and hardening details before live deployment.
 
 ## Current development work
 
-The local development branch adds [typed router constructs and explicit support limits](docs/router-constructs.md),
+The development version includes [typed router constructs and explicit support limits](docs/router-constructs.md),
 a Lantea.One-inspired light/dark management UI, validated audited settings intent,
 and administrator-only private source inspection. Independent early inet tables and
 extended bridge jump/return are compiler previews; live dispatch is explicitly denied
 until their complete ownership/rollback path is implemented. New router fields are
-currently authored through **Advanced JSON & Revisions**; simple forms retain them.
+currently authored through **Advanced JSON & Revisions** in a locally bundled CodeMirror editor; simple forms retain them.
+See [the ordered product workflow](docs/product-workflow.md) for the remaining work.
 
 For a persistent, isolated local controller and check-only source containers, see
 [the local sandbox guide](docs/local-sandbox.md). Private exports and credentials
