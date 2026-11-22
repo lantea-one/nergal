@@ -91,8 +91,8 @@ public sealed class NftTableObservation
                     .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ')
                     .Append(rule.InputInterface ?? "-").Append(' ')
                     .Append(rule.OutputInterface ?? "-").Append(' ')
-                    .Append(rule.Source?.Value ?? "-").Append(' ')
-                    .Append(rule.Destination?.Value ?? "-").Append(' ');
+                    .Append(PrefixOrSetProjection(rule.Source, rule.SourcePrefixes)).Append(' ')
+                    .Append(PrefixOrSetProjection(rule.Destination, rule.DestinationPrefixes)).Append(' ');
                 if (hasDnatStatus)
                 {
                     projection.Append(rule.MatchOriginalDestinationDnat ? "dnat" : "-").Append(' ');
@@ -100,7 +100,7 @@ public sealed class NftTableObservation
 
                 projection.Append(ConnectionStateProjection(rule.ConnectionStates)).Append(' ')
                     .Append(ProtocolToken(rule.Protocol)).Append(' ')
-                    .Append(rule.DestinationPort?.ToString(CultureInfo.InvariantCulture) ?? "-").Append(' ')
+                    .Append(PortOrSetProjection(rule.DestinationPort, rule.DestinationPorts)).Append(' ')
                     .Append(rule.IcmpType ?? "-").Append(' ');
                 if (hasSets || hasDnatStatus)
                 {
@@ -997,10 +997,13 @@ public sealed class NftTableObservation
         string? outputInterface = null;
         NetworkPrefix? source = null;
         NetworkPrefix? destination = null;
+        IReadOnlyList<NetworkPrefix>? sourcePrefixes = null;
+        IReadOnlyList<NetworkPrefix>? destinationPrefixes = null;
         var matchOriginalDestinationDnat = false;
         var connectionStates = ConnectionStateFlags.None;
         var protocol = FilterProtocol.Any;
         int? destinationPort = null;
+        IReadOnlyList<int>? destinationPorts = null;
         string? icmpType = null;
         PerSourceRateLimit? rateLimit = null;
         var hasNfproto = false;
@@ -1155,18 +1158,43 @@ public sealed class NftTableObservation
                     if (stage >= nextStage || payloadProtocol is not ("ip" or "ip6")) { return null; }
                     var exprFamily = payloadProtocol == "ip" ? IpFamily.IPv4 : IpFamily.IPv6;
                     if (family is { } existing && existing != exprFamily) { return null; }
-                    var prefix = ParseNetworkPrefix(right, exprFamily);
-                    if (prefix is null) { return null; }
-                    family = exprFamily;
-                    if (nextStage == 3) { source = prefix; } else { destination = prefix; }
+                    if (right.ValueKind == JsonValueKind.Object && Properties(right, "set"))
+                    {
+                        var prefixSet = ParseNetworkPrefixSet(right.GetProperty("set"), exprFamily);
+                        if (prefixSet is null) { return null; }
+                        family = exprFamily;
+                        if (nextStage == 3) { sourcePrefixes = prefixSet; } else { destinationPrefixes = prefixSet; }
+                    }
+                    else
+                    {
+                        var prefix = ParseNetworkPrefix(right, exprFamily);
+                        if (prefix is null) { return null; }
+                        family = exprFamily;
+                        if (nextStage == 3) { source = prefix; } else { destination = prefix; }
+                    }
+
                     stage = nextStage;
                     continue;
                 }
 
                 if (field == "dport")
                 {
-                    if (stage >= 7 || payloadProtocol is not ("tcp" or "udp") ||
-                        right.ValueKind != JsonValueKind.Number || !right.TryGetInt32(out var port) ||
+                    if (stage >= 7 || payloadProtocol is not ("tcp" or "udp"))
+                    {
+                        return null;
+                    }
+
+                    if (right.ValueKind == JsonValueKind.Object && Properties(right, "set"))
+                    {
+                        var portSet = ParsePortSet(right.GetProperty("set"));
+                        if (portSet is null) { return null; }
+                        protocol = payloadProtocol == "tcp" ? FilterProtocol.Tcp : FilterProtocol.Udp;
+                        destinationPorts = portSet;
+                        stage = 8;
+                        continue;
+                    }
+
+                    if (right.ValueKind != JsonValueKind.Number || !right.TryGetInt32(out var port) ||
                         port is < 1 or > 65535)
                     {
                         return null;
@@ -1202,9 +1230,11 @@ public sealed class NftTableObservation
             return null;
         }
 
-        var expectNfproto = source is null && destination is null && icmpType is null && rateLimit is null &&
+        var expectNfproto = source is null && destination is null &&
+            sourcePrefixes is null && destinationPrefixes is null &&
+            icmpType is null && rateLimit is null &&
             protocol is FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp;
-        var expectL4Proto = protocol != FilterProtocol.Any && !destinationPort.HasValue && icmpType is null;
+        var expectL4Proto = protocol != FilterProtocol.Any && !destinationPort.HasValue && destinationPorts is null && icmpType is null;
         if (hasNfproto != expectNfproto || hasL4Proto != expectL4Proto)
         {
             return null;
@@ -1218,7 +1248,85 @@ public sealed class NftTableObservation
 
         return new(resolvedFamily, protocol, accept ? FilterVerdict.Accept : FilterVerdict.Drop,
             source, destination, destinationPort, chain, inputInterface, outputInterface, connectionStates, icmpType, rateLimit,
-            matchOriginalDestinationDnat);
+            matchOriginalDestinationDnat, sourcePrefixes, destinationPrefixes, destinationPorts);
+    }
+
+    private static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
+    {
+        if (setArray.ValueKind != JsonValueKind.Array || setArray.GetArrayLength() is < 2 or > 64)
+        {
+            return null;
+        }
+
+        var items = new List<NetworkPrefix>(setArray.GetArrayLength());
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var entry in setArray.EnumerateArray())
+        {
+            var parsed = ParseNetworkPrefix(entry, family);
+            if (parsed is null || !seen.Add(parsed.Value))
+            {
+                return null;
+            }
+
+            items.Add(parsed);
+        }
+
+        items.Sort((a, b) => string.CompareOrdinal(a.Value, b.Value));
+        return Array.AsReadOnly(items.ToArray());
+    }
+
+    private static IReadOnlyList<int>? ParsePortSet(JsonElement setArray)
+    {
+        if (setArray.ValueKind != JsonValueKind.Array || setArray.GetArrayLength() is < 2 or > 64)
+        {
+            return null;
+        }
+
+        var items = new List<int>(setArray.GetArrayLength());
+        var seen = new HashSet<int>();
+        foreach (var entry in setArray.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Number || !entry.TryGetInt32(out var port) ||
+                port is < 1 or > 65535 || !seen.Add(port))
+            {
+                return null;
+            }
+
+            items.Add(port);
+        }
+
+        items.Sort();
+        return Array.AsReadOnly(items.ToArray());
+    }
+
+    private static string PrefixOrSetProjection(NetworkPrefix? scalar, IReadOnlyList<NetworkPrefix>? set)
+    {
+        if (scalar is not null)
+        {
+            return scalar.Value;
+        }
+
+        if (set is { Count: > 0 })
+        {
+            return "{" + string.Join(',', set.Select(p => p.Value).Order(StringComparer.Ordinal)) + "}";
+        }
+
+        return "-";
+    }
+
+    private static string PortOrSetProjection(int? scalar, IReadOnlyList<int>? set)
+    {
+        if (scalar.HasValue)
+        {
+            return scalar.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (set is { Count: > 0 })
+        {
+            return "{" + string.Join(',', set.Order().Select(p => p.ToString(CultureInfo.InvariantCulture))) + "}";
+        }
+
+        return "-";
     }
 
     private static PerSourceRateLimit? ParseRateLimitExpression(JsonElement setExpr, string expectedSetName, IpFamily expectedFamily)

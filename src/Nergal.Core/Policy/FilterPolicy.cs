@@ -94,6 +94,9 @@ public sealed record PerSourceRateLimit(
 /// <param name="IcmpType">Optional canonical ICMP/ICMPv6 type name (schema 2 only).</param>
 /// <param name="RateLimit">Optional per-source token-bucket rate limit backed by a dynamic set (schema 2 only).</param>
 /// <param name="MatchOriginalDestinationDnat">Matches packets whose conntrack entry indicates destination NAT (<c>ct status dnat</c>; schema 2 only).</param>
+/// <param name="SourcePrefixes">Optional inline source CIDR set (2–64 distinct prefixes; mutually exclusive with <paramref name="Source"/>; schema 2 only).</param>
+/// <param name="DestinationPrefixes">Optional inline destination CIDR set (2–64 distinct prefixes; mutually exclusive with <paramref name="Destination"/>; schema 2 only).</param>
+/// <param name="DestinationPorts">Optional inline TCP/UDP destination port set (2–64 distinct ports in 1–65535; mutually exclusive with <paramref name="DestinationPort"/>; schema 2 only).</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -107,7 +110,104 @@ public sealed record FilterRule(
     ConnectionStateFlags ConnectionStates = ConnectionStateFlags.None,
     string? IcmpType = null,
     PerSourceRateLimit? RateLimit = null,
-    bool MatchOriginalDestinationDnat = false);
+    bool MatchOriginalDestinationDnat = false,
+    IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
+    IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
+    IReadOnlyList<int>? DestinationPorts = null)
+{
+    /// <inheritdoc />
+    public bool Equals(FilterRule? other)
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (other is null)
+        {
+            return false;
+        }
+
+        return Family == other.Family &&
+            Protocol == other.Protocol &&
+            Verdict == other.Verdict &&
+            Equals(Source, other.Source) &&
+            Equals(Destination, other.Destination) &&
+            DestinationPort == other.DestinationPort &&
+            Chain == other.Chain &&
+            string.Equals(InputInterface, other.InputInterface, StringComparison.Ordinal) &&
+            string.Equals(OutputInterface, other.OutputInterface, StringComparison.Ordinal) &&
+            ConnectionStates == other.ConnectionStates &&
+            string.Equals(IcmpType, other.IcmpType, StringComparison.Ordinal) &&
+            Equals(RateLimit, other.RateLimit) &&
+            MatchOriginalDestinationDnat == other.MatchOriginalDestinationDnat &&
+            SequenceEqual(SourcePrefixes, other.SourcePrefixes) &&
+            SequenceEqual(DestinationPrefixes, other.DestinationPrefixes) &&
+            SequenceEqual(DestinationPorts, other.DestinationPorts);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Family);
+        hash.Add(Protocol);
+        hash.Add(Verdict);
+        hash.Add(Source);
+        hash.Add(Destination);
+        hash.Add(DestinationPort);
+        hash.Add(Chain);
+        hash.Add(InputInterface, StringComparer.Ordinal);
+        hash.Add(OutputInterface, StringComparer.Ordinal);
+        hash.Add(ConnectionStates);
+        hash.Add(IcmpType, StringComparer.Ordinal);
+        hash.Add(RateLimit);
+        hash.Add(MatchOriginalDestinationDnat);
+        AddSequenceHash(ref hash, SourcePrefixes);
+        AddSequenceHash(ref hash, DestinationPrefixes);
+        AddSequenceHash(ref hash, DestinationPorts);
+        return hash.ToHashCode();
+    }
+
+    private static bool SequenceEqual<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b)
+    {
+        if (ReferenceEquals(a, b))
+        {
+            return true;
+        }
+
+        if (a is null || b is null || a.Count != b.Count)
+        {
+            return false;
+        }
+
+        var comparer = EqualityComparer<T>.Default;
+        for (var i = 0; i < a.Count; i++)
+        {
+            if (!comparer.Equals(a[i], b[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void AddSequenceHash<T>(ref HashCode hash, IReadOnlyList<T>? list)
+    {
+        if (list is null)
+        {
+            hash.Add(-1);
+            return;
+        }
+
+        hash.Add(list.Count);
+        for (var i = 0; i < list.Count; i++)
+        {
+            hash.Add(list[i]);
+        }
+    }
+}
 
 /// <summary>An immutable, versioned snapshot of ordered host and forwarding filter rules.</summary>
 public sealed class FilterPolicy

@@ -23,7 +23,7 @@ public static class FilterIcmpTypes
     /// <summary>IPv6 packet too big (Path MTU Discovery).</summary>
     public const string PacketTooBig = "packet-too-big";
 
-    /// <summary>IPv6 parameter problem.</summary>
+    /// <summary>IPv4 and IPv6 parameter problem.</summary>
     public const string ParameterProblem = "parameter-problem";
 
     /// <summary>IPv6 Neighbor Discovery router solicitation.</summary>
@@ -44,6 +44,7 @@ public static class FilterIcmpTypes
         EchoReply,
         DestinationUnreachable,
         TimeExceeded,
+        ParameterProblem,
     }.ToFrozenSet(StringComparer.Ordinal);
 
     private static readonly FrozenSet<string> Ipv6Types = new[]

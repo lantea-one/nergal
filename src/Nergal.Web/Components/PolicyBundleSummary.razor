@@ -1,0 +1,113 @@
+@using Nergal.Core.Policy
+
+@if (Bundle is not null)
+{
+    <section aria-label="Structured policy bundle summary">
+        <h2>Visual policy summary</h2>
+        <p>
+            Filter schema <code>v@Bundle.Filter.SchemaVersion</code>
+            — defaults: input <code>@Bundle.Filter.InputDefaultVerdict.ToString().ToLowerInvariant()</code>,
+            forward <code>@Bundle.Filter.ForwardDefaultVerdict.ToString().ToLowerInvariant()</code>,
+            output <code>@Bundle.Filter.OutputDefaultVerdict.ToString().ToLowerInvariant()</code>.
+        </p>
+
+        @if (Bundle.Filter.Rules.Count == 0)
+        {
+            <p>No filter rules defined.</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Chain</th>
+                        <th>Family</th>
+                        <th>Protocol / ICMP</th>
+                        <th>Source</th>
+                        <th>Destination</th>
+                        <th>Ports</th>
+                        <th>Interfaces</th>
+                        <th>States</th>
+                        <th>Verdict</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Bundle.Filter.Rules.Count; i++)
+                    {
+                        var rule = Bundle.Filter.Rules[i];
+                        if (rule is null) { continue; }
+                        <tr>
+                            <td>@(i + 1)</td>
+                            <td><code>@rule.Chain.ToString().ToLowerInvariant()</code></td>
+                            <td><code>@rule.Family.ToString().ToLowerInvariant()</code></td>
+                            <td>
+                                <code>@rule.Protocol.ToString().ToLowerInvariant()</code>
+                                @if (!string.IsNullOrEmpty(rule.IcmpType))
+                                {
+                                    <span>(<code>@rule.IcmpType</code>)</span>
+                                }
+                            </td>
+                            <td><code>@FormatPrefixes(rule.Source, rule.SourcePrefixes)</code></td>
+                            <td><code>@FormatPrefixes(rule.Destination, rule.DestinationPrefixes)</code></td>
+                            <td><code>@FormatPorts(rule.DestinationPort, rule.DestinationPorts)</code></td>
+                            <td><code>@FormatInterfaces(rule.InputInterface, rule.OutputInterface)</code></td>
+                            <td><code>@FormatStates(rule.ConnectionStates)</code></td>
+                            <td><strong>@rule.Verdict.ToString().ToLowerInvariant()</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (Bundle.Nat is { } nat)
+        {
+            <h3>NAT rules (<code>inet nergal_nat</code>)</h3>
+            <p>DNAT rules: <strong>@nat.DnatRules.Count</strong> · SNAT rules: <strong>@nat.SnatRules.Count</strong></p>
+        }
+
+        @if (Bundle.Bridge is { } bridge)
+        {
+            <h3>Bridge rules (<code>bridge nergal_bridge</code>)</h3>
+            <p>Default verdict: <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · Rules: <strong>@bridge.Rules.Count</strong></p>
+        }
+    </section>
+}
+
+@code {
+    /// <summary>Gets or sets the decoded policy bundle to render.</summary>
+    [Parameter]
+    public FirewallPolicyBundle? Bundle { get; set; }
+
+    private static string FormatPrefixes(NetworkPrefix? single, IReadOnlyList<NetworkPrefix>? set)
+    {
+        if (single is not null) { return single.Value; }
+        if (set is { Count: > 0 }) { return "{ " + string.Join(", ", set.Select(p => p.Value)) + " }"; }
+        return "any";
+    }
+
+    private static string FormatPorts(int? single, IReadOnlyList<int>? set)
+    {
+        if (single.HasValue) { return single.Value.ToString(System.Globalization.CultureInfo.InvariantCulture); }
+        if (set is { Count: > 0 }) { return "{ " + string.Join(", ", set) + " }"; }
+        return "any";
+    }
+
+    private static string FormatInterfaces(string? iif, string? oif)
+    {
+        if (iif is null && oif is null) { return "any"; }
+        if (iif is not null && oif is not null) { return $"in:{iif} out:{oif}"; }
+        return iif is not null ? $"in:{iif}" : $"out:{oif}";
+    }
+
+    private static string FormatStates(ConnectionStateFlags states)
+    {
+        if (states == ConnectionStateFlags.None) { return "stateless"; }
+        var parts = new List<string>(4);
+        if ((states & ConnectionStateFlags.New) != 0) { parts.Add("new"); }
+        if ((states & ConnectionStateFlags.Established) != 0) { parts.Add("established"); }
+        if ((states & ConnectionStateFlags.Related) != 0) { parts.Add("related"); }
+        if ((states & ConnectionStateFlags.Invalid) != 0) { parts.Add("invalid"); }
+        return string.Join(", ", parts);
+    }
+}

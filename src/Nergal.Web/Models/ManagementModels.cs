@@ -52,6 +52,9 @@ public sealed class PolicyEditorViewModel
     /// <summary>Gets persisted policy revisions ordered newest-first.</summary>
     public required IReadOnlyList<PolicyRevisionRecord> Revisions { get; init; }
 
+    /// <summary>Gets the decoded policy bundle when valid, for structured summary rendering.</summary>
+    public Core.Policy.FirewallPolicyBundle? Bundle { get; init; }
+
     /// <summary>Gets the native backend compatibility result when bundle parsed.</summary>
     public Core.BackendCompatibilityReport? Compatibility { get; init; }
 
