@@ -14,8 +14,10 @@ through the UI. This is the product direction, not a claim that every planned
 workflow is complete.
 
 The [native source library](native-source-library.md) accepts `nftables.conf` uploads
-into immutable database history and downloads exact originals. Planned UI workflows
-include a reusable sets/IP lists library, semantic conversion and generated policy export. Shared object changes require visible reference/impact review and
+into immutable database history and downloads exact originals. The [typed sets/IP lists
+library](reusable-object-library.md) supports creation, edits, search and immutable
+history. Policy-reference integration, semantic conversion and generated policy
+export remain planned. Shared object changes require visible reference/impact review and
 immutable saved revisions. File import must report unsupported semantics explicitly;
 source ingestion and lexical inspection are not semantic policy conversion. Generated export identifies the
 selected managed revision and scope. Per-rule inline enable/disable controls and

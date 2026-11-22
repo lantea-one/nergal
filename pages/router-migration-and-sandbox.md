@@ -163,11 +163,12 @@ The review table scrolls within its container on narrow screens.
 
 ![Source-bound migration review on mobile](assets/screenshots/source-library-mobile.jpg)
 
-## Planned reusable objects and file workflows
+## Reusable objects and planned file workflows
 
-A dedicated UI library will manage reusable typed sets and IPv4/IPv6 address/CIDR
-lists, show policy references and change impact, and prevent dangling references
-or silent changes to saved revisions. Authoring will reuse these objects directly.
+The [Sets & IP lists library](reusable-object-library.md) now supports creating,
+editing and searching typed IPv4/IPv6 address/CIDR and port lists, with immutable
+version history and stale-edit protection. Policy references and impact visibility
+remain future work. Library edits do not change a saved policy or a firewall.
 Native set scope, flags and dynamic behavior require explicit supported semantics.
 
 The product roadmap also includes `nftables.conf` file import and export through
@@ -175,7 +176,8 @@ the UI. Import retains the original source, reports semantic mapping and gaps, a
 separates review from revision creation and confirmed apply. Export will download
 the selected managed revision with its resolved objects and explicit scope; original
 source download is a separate operation. Round-trip and isolated packet acceptance
-must precede equivalence claims. Reusable objects, semantic conversion and generated policy export remain planned.
+must precede equivalence claims. Policy-reference integration, semantic conversion
+and generated policy export remain planned.
 Database source ingestion and exact original downloads are implemented; lexical
 reviews do not establish policy equivalence.
 
@@ -196,7 +198,8 @@ with protected agent receipts and independent rollback decisions preserved.
 
 The [native source library](native-source-library.md) now stores uploaded and
 explicitly imported staging snapshots in the controller database. Remaining mapping
-and authoring workflows still require further implementation. Migrations for additional
+and authoring workflows still require further implementation. Typed lists now also
+persist immutable versions and audit history in controller schema 3. Migrations for additional
 supported SQL backends are deferred until the logical schema stabilizes; each
 engine will require versioned upgrade and failure/recovery tests. Saved backend
 settings are not evidence of an implemented adapter. Bootstrap trust and protected

@@ -43,6 +43,7 @@ installation and hardening details before live deployment.
 
 The development version includes [typed router constructs and explicit support limits](docs/router-constructs.md),
 a Lantea.One-inspired light/dark management UI, validated audited settings intent,
+a [versioned typed list library](docs/reusable-object-library.md),
 and an administrator-only [database-backed native source library](docs/native-source-library.md). Independent early inet tables and
 extended bridge jump/return support confirmed apply after complete native verification. New router fields are
 currently authored through **Advanced JSON & Revisions** in a locally bundled CodeMirror editor; simple forms retain them.

@@ -190,7 +190,7 @@ never a request-supplied path. Directory snapshots are optional staging inputs. 
 conversion. Exact sources and exported reports remain private.
 
 Native source ingestion now persists immutable exact UTF-8 snapshots and attributed
-audit entries transactionally in controller schema 2. The optional operator file
+audit entries transactionally (introduced in controller schema 2, retained in schema 3). The optional operator file
 catalog is staging only. Web uploads never execute source text, and original-file
 downloads use the verified database snapshot. Existing controllers require explicit
 offline `controller upgrade`; no additional SQL adapter is introduced. See
@@ -199,3 +199,10 @@ offline `controller upgrade`; no additional SQL adapter is introduced. See
 Timestamp persistence and API contracts use UTC instants. Shared MVC/Blazor time
 markup and a local browser formatter display the viewer's timezone without using
 the server timezone or mutating stored data; see [time display](time-display.md).
+
+The [typed object library](reusable-object-library.md) stores stable identities and
+immutable IPv4/IPv6/port-list versions under controller schema 3 (ADR 0039). Library
+edits require Administrator authorization, CSRF and exact expected-version checks,
+with transactional audit. Auditors can inspect history. These records have no
+native execution or policy-reference authority yet; saved policies cannot change
+as a side effect of editing a library object.

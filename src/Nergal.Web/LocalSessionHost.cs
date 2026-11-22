@@ -78,6 +78,8 @@ internal static class LocalSessionHost
             var maxBytes = HttpMethods.IsPost(context.Request.Method) &&
                            context.Request.Path.Equals("/manage/sources/import", StringComparison.OrdinalIgnoreCase)
                 ? 600_000L
+                : context.Request.Path.StartsWithSegments("/manage/objects", StringComparison.OrdinalIgnoreCase)
+                    ? 24_576L
                 : context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
                            context.Request.Path.StartsWithSegments("/controller/policies", StringComparison.OrdinalIgnoreCase)
                 ? 524_288L

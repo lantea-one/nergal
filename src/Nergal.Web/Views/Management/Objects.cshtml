@@ -1,0 +1,71 @@
+@using Nergal.Core.Controller
+@using Nergal.Web
+@model Nergal.Web.ObjectLibraryPageModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Sets & IP lists";
+    ViewData["ActiveNav"] = "objects";
+    ViewData["ShowManageNav"] = true;
+    var selected = Model.Selected;
+    var input = Model.Input ?? new ObjectLibraryInput(selected?.Id, selected?.Version ?? 0, selected?.Content.Name ?? "", selected?.Content.Kind switch { ReusableObjectKind.Ipv6 => "ipv6", ReusableObjectKind.Port => "port", _ => "ipv4" }, selected?.Content.Description ?? "", selected is null ? "" : string.Join("\n", selected.Content.Entries));
+    var historical = selected is not null && Model.History.FirstOrDefault()?.Version != selected.Version;
+}
+<main class="container">
+    <div class="page-header"><div><h1>Sets &amp; IP lists</h1><p class="page-subtitle">Keep typed lists in one place, with a permanent history of every saved version.</p></div>
+        <a class="btn btn-secondary" href="@Url.Action("Objects")">New list</a></div>
+    <p class="alert alert-info">Library management is available. Connecting these lists to policy rules is the next step; saving a list does not change a policy or a firewall.</p>
+    @if (Model.Error is not null) { <p class="alert alert-danger" role="alert" id="object-error">@Model.Error</p> }
+    <section class="card" aria-labelledby="library-heading">
+        <h2 id="library-heading">Library</h2>
+        <form method="get" action="@Url.Action("Objects")"><div class="field"><label for="object-search">Find a list</label>
+            <input type="text" id="object-search" name="q" value="@Model.Query" maxlength="120" aria-describedby="search-hint" />
+            <span class="hint" id="search-hint">Search names and descriptions. Clear the search to see every list.</span></div>
+            <button class="btn btn-secondary mt-2" type="submit">Search</button></form>
+        @if (Model.Objects.Count == 0) { <p class="empty-state">No matching lists. Create a list below or change your search.</p> }
+        else
+        { <div class="table-wrap mt-2"><table><caption>Current library versions · stored, not applied</caption>
+            <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Entries</th><th scope="col">Version</th><th scope="col">Saved (local time)</th></tr></thead>
+            <tbody>@foreach (var item in Model.Objects)
+            { <tr><td><a href="@Url.Action("Objects", new { objectId = item.Id })">@item.Content.Name</a><div class="muted">@item.Content.Description</div></td><td>@(item.Content.Kind switch { ReusableObjectKind.Ipv4 => "IPv4", ReusableObjectKind.Ipv6 => "IPv6", _ => "Ports" })</td><td>@item.Content.Entries.Count</td><td>@item.Version</td><td>@await Html.PartialAsync("_LocalTime", item.UpdatedAtUtc)</td></tr> }</tbody>
+        </table></div> }
+    </section>
+    @if (selected is not null)
+    {
+        <section class="card mt-2" aria-labelledby="history-heading"><h2 id="history-heading">@selected.Content.Name · version @selected.Version</h2>
+            <p>@selected.Content.Description</p>
+            <ul>@foreach (var entry in selected.Content.Entries) { <li><code>@entry</code></li> }</ul>
+            <details class="disclosure mt-2"><summary>Technical identifiers</summary><p class="muted">Object <code>@selected.Id</code>. Content SHA-256 <code>@selected.Digest</code>.</p></details>
+            <details class="disclosure"><summary>Version history (@Model.History.Count)</summary>
+                <p class="hint">Every version is immutable. Selecting an older version is read-only and never restores or applies it.</p>
+                <ul>@foreach (var item in Model.History) { <li><a href="@Url.Action("Objects", new { objectId = item.Id, version = item.Version })">Version @item.Version</a> · @await Html.PartialAsync("_LocalTime", item.UpdatedAtUtc) · @item.Content.Entries.Count entries</li> }</ul>
+            </details>
+        </section>
+    }
+    @if (Model.CanMutate && !historical)
+    {
+        <section class="card mt-2" aria-labelledby="edit-object-heading"><h2 id="edit-object-heading">@(input.Id.HasValue ? "Save a new list version" : "Create a list")</h2>
+            <form method="post" action="@Url.Action("SaveObject")" aria-describedby="object-save-hint @(Model.Error is null ? "" : "object-error")">
+                @Html.AntiForgeryToken()
+                @if (input.Id.HasValue) { <input type="hidden" name="id" value="@input.Id" /> }
+                <input type="hidden" name="expectedVersion" value="@input.ExpectedVersion" />
+                <div class="form-grid object-form-grid">
+                    <div class="field"><label for="object-name">List name</label>
+                        <input type="text" id="object-name" name="name" value="@input.Name" maxlength="64" required readonly="@(input.Id.HasValue)" aria-describedby="object-name-hint" />
+                        <span class="hint" id="object-name-hint">1–64 lowercase letters, digits or underscores; start with a letter. For example, trusted_clients. Names are unique and remain fixed.</span></div>
+                    <div class="field"><label for="object-kind">Entry type</label>
+                        @if (input.Id.HasValue) { <input type="hidden" name="kind" value="@input.Kind" /><input type="text" id="object-kind" value="@input.Kind" readonly aria-describedby="object-kind-hint" /> }
+                        else { <select id="object-kind" name="kind" aria-describedby="object-kind-hint"><option value="ipv4" selected="@(input.Kind == "ipv4")">IPv4 addresses / CIDRs</option><option value="ipv6" selected="@(input.Kind == "ipv6")">IPv6 addresses / CIDRs</option><option value="port" selected="@(input.Kind == "port")">Transport ports</option></select> }
+                        <span class="hint" id="object-kind-hint">Choose one type per list. Separate IPv4 and IPv6. Port lists contain numbers; a future policy rule chooses TCP or UDP.</span></div>
+                    <div class="field"><label for="object-description">Description (optional)</label><textarea id="object-description" name="description" maxlength="500" rows="3" aria-describedby="object-description-hint">@input.Description</textarea>
+                        <span class="hint" id="object-description-hint">Up to 500 characters explaining the purpose and who maintains this list.</span></div>
+                    <div class="field"><label for="object-entries">Entries</label><textarea id="object-entries" name="entries" maxlength="8192" rows="7" required aria-describedby="object-entries-hint">@input.Entries</textarea>
+                        <span class="hint" id="object-entries-hint">1–64 entries, one per line. Examples: 192.0.2.10, 198.51.100.0/24; for IPv6, 2001:db8::/64; for ports, 443. Use zero host bits in CIDRs. No hostnames, ranges, duplicates, dynamic flags or timeouts. Blank lines are ignored.</span></div>
+                </div>
+                <p class="hint" id="object-save-hint">Save retains an immutable version and audit entry. Addresses are stored as canonical CIDRs. Overlapping prefixes are retained without merging. Existing versions are unchanged.</p>
+                <button type="submit" class="btn">@(input.Id.HasValue ? "Save new version" : "Create list")</button>
+            </form>
+        </section>
+    }
+    else if (historical) { <p class="muted mt-2">Viewing historical contents. <a href="@Url.Action("Objects", new { objectId = selected!.Id })">Open the current version to edit</a>.</p> }
+    else { <p class="muted mt-2">Auditor access is read-only. An Administrator can create and edit lists.</p> }
+</main>

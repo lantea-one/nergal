@@ -41,3 +41,7 @@ transactional audit, capacity rejection, corruption denial and offline upgrades.
 Exercise the real HTTPS upload/staging/download routes, CSRF and anonymous/auditor
 boundaries. Browser screenshots use synthetic data only. This adds no firewall
 operation and establishes no source-to-policy equivalence.
+
+Controller schema 3 under [ADR 0039](0039-versioned-typed-object-library.md) now
+retains these source protections and extends the explicit offline upgrade from
+schemas 1 and 2. New stores initialize at schema 3.

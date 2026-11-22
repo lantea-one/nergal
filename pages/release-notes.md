@@ -46,3 +46,12 @@ render stored UTC instants in the viewer's browser timezone and locale. The page
 names that timezone and each timestamp retains its original UTC instant. DST uses
 the offset applicable to the event. Explicit UTC remains the fallback without
 JavaScript/Intl. Database and API timestamps remain UTC.
+
+## Unreleased typed object library
+
+[Sets & IP lists](reusable-object-library.md) now supports typed IPv4/IPv6/port
+lists with accessible forms, search, immutable version history, UTC storage/local
+display, transactional audit and stale-edit protection. Controller schema 3 has an
+explicit offline upgrade preserving schema-1/2 state. Policy references, native
+named sets and impact review remain a separate milestone; library saves do not
+change policies or firewalls.

@@ -112,7 +112,7 @@ public sealed class NativeSourceStoreTests
             store.RegisterHost(host, Actor, NergalRoles.Administrator);
             store.SaveSystemSettings(SystemSettingsSnapshot.Default, Actor, NergalRoles.Administrator);
             var audits = store.ListAuditEntries();
-            Sql(path, "DROP TABLE native_sources; PRAGMA user_version=1;");
+            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
             Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path)));
             var upgraded = ControllerStateStore.Upgrade(new(path));
             Assert.Equal(revision, upgraded.GetPolicyRevision(revision.Revision));
@@ -128,7 +128,7 @@ public sealed class NativeSourceStoreTests
     {
         WithStore((_, path) =>
         {
-            Sql(path, "DROP TABLE native_sources; PRAGMA user_version=99;");
+            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=99;");
             Assert.Equal("controller.upgradeUnsupported", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path))).Code);
             using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
             cmd.CommandText = "PRAGMA user_version"; Assert.Equal(99L, cmd.ExecuteScalar());
@@ -144,7 +144,7 @@ public sealed class NativeSourceStoreTests
     {
         WithStore((_, path) =>
         {
-            Sql(path, "DROP TABLE native_sources; PRAGMA user_version=1;");
+            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
             if (collision) { Sql(path, "CREATE TABLE native_sources(foreign_value TEXT); INSERT INTO native_sources VALUES('preserve');"); }
             else { Sql(path, "DROP TRIGGER audit_no_update; CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_log BEGIN SELECT 1; END;"); }
             Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path)));
@@ -180,8 +180,9 @@ public sealed class NativeSourceStoreTests
             store.SavePolicyRevision("{}", new string('a', 64), Actor, NergalRoles.Administrator);
             store.SaveSystemSettings(SystemSettingsSnapshot.Default, Actor, NergalRoles.Administrator);
             store.ImportNativeSource(new("synthetic", "accept"), Actor, NergalRoles.Administrator);
+            store.SaveReusableObject(null, 0, new("synthetic", ReusableObjectKind.Port, "", ["443"]), Actor, NergalRoles.Administrator);
             using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT created_at_utc FROM hosts UNION ALL SELECT created_at_utc FROM policy_revisions UNION ALL SELECT updated_at_utc FROM system_settings UNION ALL SELECT imported_at_utc FROM native_sources UNION ALL SELECT timestamp_utc FROM audit_log";
+            cmd.CommandText = "SELECT created_at_utc FROM hosts UNION ALL SELECT created_at_utc FROM policy_revisions UNION ALL SELECT updated_at_utc FROM system_settings UNION ALL SELECT imported_at_utc FROM native_sources UNION ALL SELECT timestamp_utc FROM audit_log UNION ALL SELECT updated_at_utc FROM reusable_object_versions";
             using var reader = cmd.ExecuteReader(); var timestamps = new List<DateTimeOffset>();
             while (reader.Read()) { timestamps.Add(DateTimeOffset.Parse(reader.GetString(0), System.Globalization.CultureInfo.InvariantCulture)); }
             Assert.NotEmpty(timestamps);
