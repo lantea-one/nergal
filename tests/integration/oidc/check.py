@@ -293,6 +293,54 @@ def exercise(temp):
             assert any(a == "host.register" and t == "local-agent" and act.startswith("local:") and r == "nergal:administrator"
                        for a, t, act, r in actions)
 
+            bundle_v1 = json.dumps({
+                "schemaVersion": 1,
+                "filter": {"schemaVersion": 1, "inputDefaultVerdict": "drop", "rules": []},
+            })
+            bundle_v2 = json.dumps({
+                "schemaVersion": 1,
+                "filter": {
+                    "schemaVersion": 2,
+                    "inputDefaultVerdict": "drop",
+                    "forwardDefaultVerdict": "drop",
+                    "outputDefaultVerdict": "accept",
+                    "rules": [
+                        {"family": "ipv4", "protocol": "tcp", "destinationPort": 443, "verdict": "accept", "chain": "input"}
+                    ],
+                },
+            })
+
+            auditor_rp.request("/manage", 200)
+            assert "Save policy revision" not in auditor_rp.request("/manage/policies", 200)[0]
+            auditor_rp.request("/manage/policies/save", 403, {
+                "bundleJson": bundle_v1,
+                "__RequestVerificationToken": auditor_rp.token("/manage/policies"),
+            })
+
+            _, rev1_loc = admin_rp.request("/manage/policies/save", 302, {
+                "bundleJson": bundle_v1,
+                "summary": "Rev 1 baseline",
+                "__RequestVerificationToken": admin_rp.token("/manage/policies"),
+            })
+            assert rev1_loc == "/manage/policies?revision=1"
+            admin_rp.request("/manage/policies/save", 400, {
+                "bundleJson": "{invalid",
+                "__RequestVerificationToken": admin_rp.token("/manage/policies"),
+            })
+
+            _, rev2_loc = local_admin.request("/manage/policies/save", 302, {
+                "bundleJson": bundle_v2,
+                "summary": "Rev 2 https",
+                "compareToRevision": "1",
+                "__RequestVerificationToken": local_admin.token("/manage/policies"),
+            })
+            assert rev2_loc == "/manage/policies?revision=2"
+
+            diff_page = auditor_rp.request("/manage/policies?revision=2&compareTo=1", 200)[0]
+            assert "tcp dport 443 accept" in diff_page
+            audit_page = auditor_rp.request("/manage/audit", 200)[0]
+            assert "Rev 2 https" in audit_page and "policy.save" in audit_page
+
     print("PASS: real discovery, code/PKCE exchange, signed group/role authorization, issuer/audience/nonce/age denial, logout replay, independent local login and audit attribution")
 
 

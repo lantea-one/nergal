@@ -1,0 +1,107 @@
+@{ Layout = null; }
+@model Nergal.Web.PolicyEditorViewModel
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Policy editor &amp; diff · nergal</title>
+</head>
+<body>
+<main>
+    <h1>Policy bundle editor &amp; candidate diff</h1>
+    <p>Role: <code>@Model.ActorRole</code>.</p>
+    <nav>
+        <a href="@Url.Content("~/manage")">Fleet dashboard</a> ·
+        <a href="@Url.Content("~/manage/audit")">Audit history</a> ·
+        <a href="@Url.Content("~/session")">Session</a>
+    </nav>
+
+    <section>
+        <h2>Bundle draft (JSON)</h2>
+        <form method="post" action="@Url.Content("~/manage/policies/preview")">
+            @Html.AntiForgeryToken()
+            <label>Compare against revision
+                <select name="compareToRevision">
+                    <option value="">(empty baseline)</option>
+                    @foreach (var rev in Model.Revisions)
+                    {
+                        <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">Revision @rev.Revision (@rev.CandidateDigest[..8])</option>
+                    }
+                </select>
+            </label>
+            <label>Summary <input type="text" name="summary" value="@Model.Summary" maxlength="256" /></label>
+            <div>
+                <textarea name="bundleJson" rows="16" cols="90">@Model.BundleJson</textarea>
+            </div>
+            <button type="submit">Preview compatibility &amp; nftables diff</button>
+            @if (Model.CanMutate)
+            {
+                <button type="submit" formaction="@Url.Content("~/manage/policies/save")">Save policy revision</button>
+            }
+        </form>
+    </section>
+
+    @if (Model.Diagnostics.Count > 0)
+    {
+        <section role="alert">
+            <h2>Validation diagnostics</h2>
+            <ul>
+                @foreach (var d in Model.Diagnostics)
+                {
+                    <li><code>@d.Code</code> at <code>@d.Path</code></li>
+                }
+            </ul>
+        </section>
+    }
+
+    @if (Model.Compatibility is { } compat)
+    {
+        <section>
+            <h2>Backend compatibility (@compat.BackendId)</h2>
+            <p>Compatible: @(compat.IsCompatible ? "yes" : "no").</p>
+        </section>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.CandidateText))
+    {
+        <section>
+            <h2>Compiled candidate (SHA-256: <code>@Model.CandidateDigest</code>)</h2>
+            <pre>@Model.CandidateText</pre>
+        </section>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.UnifiedDiff))
+    {
+        <section>
+            <h2>Candidate diff preview</h2>
+            <pre>@Model.UnifiedDiff</pre>
+        </section>
+    }
+
+    <section>
+        <h2>Saved policy revisions</h2>
+        @if (Model.Revisions.Count == 0)
+        {
+            <p>No policy revisions persisted.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var rev in Model.Revisions)
+                {
+                    <li>
+                        <a href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Revision @rev.Revision</a>
+                        — <code>@rev.CandidateDigest</code> by <code>@rev.CreatedByActor</code> (@rev.CreatedAtUtc.ToString("u"))
+                        @if (!string.IsNullOrWhiteSpace(rev.Summary))
+                        {
+                            <span>— @rev.Summary</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</main>
+</body>
+</html>

@@ -26,11 +26,22 @@ internal static class ControllerStateHost
         app.MapGet("/controller/hosts", ListHostsAsync)
             .RequireAuthorization(ControllerAuthorizationPolicies.Reader);
 
+        app.MapGet("/controller/policies", ListPoliciesAsync)
+            .RequireAuthorization(ControllerAuthorizationPolicies.Reader);
+
         app.MapPost("/controller/hosts", RegisterHostAsync)
             .RequireAuthorization(ControllerAuthorizationPolicies.Administrator);
 
         app.MapDelete("/controller/hosts/{id}", DeleteHostAsync)
             .RequireAuthorization(ControllerAuthorizationPolicies.Administrator);
+
+        app.MapControllerRoute("manage-dashboard", "manage", new { controller = "Management", action = "Index" });
+        app.MapControllerRoute("manage-hosts-add", "manage/hosts/add", new { controller = "Management", action = "AddHost" });
+        app.MapControllerRoute("manage-hosts-delete", "manage/hosts/delete", new { controller = "Management", action = "DeleteHost" });
+        app.MapControllerRoute("manage-policies", "manage/policies", new { controller = "Management", action = "Policies" });
+        app.MapControllerRoute("manage-policies-preview", "manage/policies/preview", new { controller = "Management", action = "PreviewPolicy" });
+        app.MapControllerRoute("manage-policies-save", "manage/policies/save", new { controller = "Management", action = "SavePolicy" });
+        app.MapControllerRoute("manage-audit", "manage/audit", new { controller = "Management", action = "Audit" });
     }
 
     internal static IResult ListAudit(HttpContext context, ControllerStateStore store)
@@ -80,6 +91,25 @@ internal static class ControllerStateHost
         });
 
         return Task.FromResult(Results.Json(new { hosts }));
+    }
+
+    private static Task<IResult> ListPoliciesAsync(HttpContext context, ControllerStateStore store)
+    {
+        if (!ControllerAuthorization.TryResolveActor(context.User, out _, out _))
+        {
+            return Task.FromResult(Results.StatusCode(StatusCodes.Status403Forbidden));
+        }
+
+        var revisions = store.ListPolicyRevisions().Select(r => new
+        {
+            revision = r.Revision.ToString(CultureInfo.InvariantCulture),
+            candidateDigest = r.CandidateDigest,
+            createdByActor = r.CreatedByActor,
+            createdAtUtc = r.CreatedAtUtc,
+            summary = r.Summary,
+        });
+
+        return Task.FromResult(Results.Json(new { revisions }));
     }
 
     private static async Task<IResult> RegisterHostAsync(

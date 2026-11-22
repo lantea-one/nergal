@@ -208,16 +208,21 @@ browser tests supplement unit tests rather than replacing them.
 
 The `tests/Nergal.Web.Tests` suite also verifies `ControllerStateStore` permissions,
 monotonic policy revisions, SQLite append-only audit triggers (`UPDATE`/`DELETE`
-denial and missing-trigger tamper detection), local/OIDC role claim resolution, and
-`NergalAdministrator` vs read-only `NergalReader` policy enforcement.
+denial and missing-trigger tamper detection), local/OIDC role claim resolution,
+`NergalAdministrator` vs read-only `NergalReader` policy enforcement, and
+`PolicyAuthoringService` / `ManagementController` bundle decoding, compatibility
+evaluation, deterministic candidate compilation, and unified line diffing.
 
 The local session fixture (`tests/integration/local-sessions/check.py`) additionally
 provisions a `fixture-auditor` account (`--role auditor`) against an initialized
-`controller.db`, confirming `Auditor` can inspect `/controller/audit` and
-`/controller/hosts` (`200`) while mutations on `/controller/hosts` fail with `403`.
-`tests/integration/oidc/check.py` verifies `Oidc:AuditorGroups` (`403` on mutations) vs
-`Oidc:AdministratorGroups` (`201`/`204` host lifecycle with valid CSRF) and checks that
-both `oidc:<issuer>:<subject>` and `local:<uuid>` audit attributions persist.
+`controller.db`, confirming `Auditor` can inspect `/controller/audit`,
+`/controller/hosts`, `/manage`, `/manage/policies`, `POST /manage/policies/preview`,
+and `/manage/audit` (`200`) while mutations on `/controller/hosts` and
+`/manage/policies/save` fail with `403`. `tests/integration/oidc/check.py` verifies
+`Oidc:AuditorGroups` (`403` on host and policy mutations) vs `Oidc:AdministratorGroups`
+(`201`/`204` host lifecycle and `302` policy revision saves with valid CSRF) and checks
+that both `oidc:<issuer>:<subject>` and `local:<uuid>` audit attributions persist
+across both JSON and MVC audit views.
 
 ## Continuous integration
 

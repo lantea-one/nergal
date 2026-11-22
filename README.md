@@ -77,8 +77,10 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.Identity`: explicitly provisioned private singleton administrator store
   using standard Identity hashing/lockout and serialized SQLite decisions, plus
   certificate-encrypted persistent session keys and revocable local sessions.
-- `Nergal.Web`: MVC controllers/views and Blazor components. It must never gain
-  the production Docker socket, unrestricted SSH or arbitrary shell execution.
+- `Nergal.Web`: MVC controllers/views and Blazor components providing fleet dashboards,
+  typed policy bundle authoring with `BackendCompatibilityEvaluator` checks, deterministic
+  nftables candidate diff previews (`Nergal.Nftables`), and audit/revision viewers when
+  explicitly enabled on HTTPS. It has no Docker socket, SSH, or shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
   invalid inputs and defensive snapshots.
 - `tests/integration/nftables`: opt-in real kernel and dual-stack packet checks

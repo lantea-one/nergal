@@ -203,6 +203,24 @@ def exercise(temp):
             "pinnedServerThumbprint": "a" * 64,
             "__RequestVerificationToken": auditor_browser.token("/session"),
         })
+        assert "Register agent host" not in auditor_browser.request("/manage", 200)
+        assert "Save policy revision" not in auditor_browser.request("/manage/policies", 200)
+        preview_html = auditor_browser.request("/manage/policies/preview", 200, {
+            "bundleJson": json.dumps({
+                "schemaVersion": 1,
+                "filter": {"schemaVersion": 1, "inputDefaultVerdict": "drop", "rules": []}
+            }),
+            "__RequestVerificationToken": auditor_browser.token("/manage/policies"),
+        })
+        assert "create table inet nergal_filter" in preview_html
+        auditor_browser.request("/manage/policies/save", 403, {
+            "bundleJson": json.dumps({
+                "schemaVersion": 1,
+                "filter": {"schemaVersion": 1, "inputDefaultVerdict": "drop", "rules": []}
+            }),
+            "__RequestVerificationToken": auditor_browser.token("/manage/policies"),
+        })
+        assert "Append-only audit log" in auditor_browser.request("/manage/audit", 200)
 
     print("PASS: HTTPS, cookie attributes, CSRF, durable sessions, revocation, lockout, RBAC auditor boundaries and request rate limits")
 
