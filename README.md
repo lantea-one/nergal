@@ -62,8 +62,12 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.RemoteTransport`: TLS 1.3 pinned mTLS control listener/client (`TlsControlServer`,
   `TlsControlClient`) validating client/server leaf certificates by SHA-256 thumbprint,
   EKU OID (`serverAuth`/`clientAuth`), and validity window without ambient CA trust.
-- `Nergal.Admin`: offline initialization and singleton administrator provisioning
-  for the private application account store. See [operator commands](docs/local-administrator-accounts.md).
+- `Nergal.Admin`: offline initialization and singleton account provisioning (`account init`,
+  `account provision [--role administrator|auditor]`, `controller init`)
+  for private account and controller stores. See [operator commands](docs/local-administrator-accounts.md).
+- `Nergal.ControllerState`: mode-checked `0700`/`0600` SQLite WAL store for registered agent
+  hosts, monotonic policy bundle revisions, and trigger-enforced append-only audit logs
+  ([ADR 0029](docs/decisions/0029-controller-persistence-rbac-and-audit.md)).
 - `Nergal.Agent`: offline local operator enrollment (`enroll`), peer-authorized read-only
   local status listener (`status-serve`), authenticated local/remote control listeners
   (`control-serve`, `tls-serve`), receipt-aware confirmed-apply/watchdog CLI

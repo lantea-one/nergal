@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
 using Nergal.Core.Agent;
+using Nergal.Core.Identity;
 using Nergal.Linux;
 using Nergal.LocalTransport;
 
@@ -28,7 +29,9 @@ internal static class ControllerStatus
             limiter.QueueLimit = 0;
         }));
         services.AddAuthorization(options => options.AddPolicy("LocalAgentStatus", policy =>
-            policy.AddAuthenticationSchemes(federated ? FederatedLogin.Browser : IdentityConstants.ApplicationScheme).RequireAuthenticatedUser()));
+            policy.AddAuthenticationSchemes(federated ? FederatedLogin.Browser : IdentityConstants.ApplicationScheme)
+                .RequireAuthenticatedUser()
+                .RequireRole(NergalRoles.Administrator, NergalRoles.Auditor)));
     }
 
     internal static void Map(WebApplication app)

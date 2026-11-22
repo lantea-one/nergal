@@ -2,6 +2,8 @@
   <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <InternalsVisibleTo Include="Nergal.Web.Tests" />
+    <ProjectReference Include="../Nergal.Core/Nergal.Core.csproj" />
     <ProjectReference Include="../Nergal.Linux/Nergal.Linux.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.15" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.15" />

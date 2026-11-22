@@ -5,6 +5,7 @@
     <AssemblyName>nergal-admin</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Nergal.ControllerState/Nergal.ControllerState.csproj" />
     <ProjectReference Include="../Nergal.Identity/Nergal.Identity.csproj" />
     <InternalsVisibleTo Include="Nergal.LocalState.Tests" />
   </ItemGroup>

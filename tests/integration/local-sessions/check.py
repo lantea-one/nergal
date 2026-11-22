@@ -2,6 +2,7 @@
 import contextlib
 import http.client
 from html.parser import HTMLParser
+import json
 import os
 from pathlib import Path
 import re
@@ -83,7 +84,7 @@ class Browser:
 @contextlib.contextmanager
 def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
     env = {k: v for k, v in os.environ.items()
-           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "oidc__", "logging__"))}
+           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "controllerstate__", "oidc__", "logging__"))}
     env.update({
         "HOME": str(temp / "profile"),
         "XDG_DATA_HOME": str(temp / "profile"),
@@ -170,7 +171,40 @@ def exercise(temp):
             browser.login(expected=401)
         browser.login(expected=429)
     assert not list((temp / "profile").rglob("key-*.xml")), "Unexpected profile key persistence"
-    print("PASS: HTTPS, cookie attributes, CSRF, durable sessions, revocation, lockout and request rate limits")
+
+    auditor_accounts = temp / "auditor-accounts"
+    ctrl_state = temp / "controller-state"
+    auditor_accounts.mkdir(mode=0o700)
+    ctrl_state.mkdir(mode=0o700)
+    subprocess.run(["dotnet", ADMIN_TOOL, "account", "init", auditor_accounts], check=True)
+    subprocess.run(["dotnet", ADMIN_TOOL, "account", "provision", auditor_accounts, "fixture-auditor", "--role", "auditor", "--password-stdin"],
+                   input=PASSWORD.encode() + b"\n", check=True)
+    subprocess.run(["dotnet", ADMIN_TOOL, "controller", "init", ctrl_state], check=True)
+    auditor_settings = {
+        "LocalSessions__AccountDirectory": str(auditor_accounts),
+        "ControllerState__Enabled": "true",
+        "ControllerState__Directory": str(ctrl_state),
+    }
+    with host(temp, tls, auditor_settings) as auditor_browser:
+        auditor_browser.request("/controller/audit", 401)
+        auditor_browser.request("/login", 302, {
+            "username": "fixture-auditor",
+            "password": PASSWORD,
+            "__RequestVerificationToken": auditor_browser.token("/login"),
+        })
+        audit_payload = json.loads(auditor_browser.request("/controller/audit", 200))
+        assert audit_payload["role"] == "nergal:auditor"
+        assert audit_payload["actorId"].startswith("local:")
+        assert json.loads(auditor_browser.request("/controller/hosts", 200))["hosts"] == []
+        auditor_browser.request("/controller/hosts", 403, {
+            "name": "denied-host",
+            "transportKind": "tls",
+            "endpoint": "192.0.2.50:8443",
+            "pinnedServerThumbprint": "a" * 64,
+            "__RequestVerificationToken": auditor_browser.token("/session"),
+        })
+
+    print("PASS: HTTPS, cookie attributes, CSRF, durable sessions, revocation, lockout, RBAC auditor boundaries and request rate limits")
 
 
 if __name__ == "__main__":

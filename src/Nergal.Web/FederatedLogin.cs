@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using Nergal.Core.Identity;
 using Nergal.Identity;
 
 namespace Nergal.Web;
@@ -21,8 +22,14 @@ internal static class FederatedLogin
 
     internal static void Configure(IServiceCollection services, IConfigurationSection config, IDataProtectionProvider keys)
     {
+        var adminGroups = config.GetSection("AdministratorGroups").GetChildren().Select(entry => entry.Value ?? "").ToArray();
+        if (adminGroups.Length == 0)
+        {
+            adminGroups = config.GetSection("AllowedGroups").GetChildren().Select(entry => entry.Value ?? "").ToArray();
+        }
+        var auditorGroups = config.GetSection("AuditorGroups").GetChildren().Select(entry => entry.Value ?? "").ToArray();
         var policy = new FederatedAdministratorPolicy(config["Issuer"] ?? "", config["ClientId"] ?? "", config["GroupClaim"] ?? "",
-            config.GetSection("AdministratorGroups").GetChildren().Select(entry => entry.Value ?? ""));
+            adminGroups, auditorGroups);
         if (!Uri.TryCreate(config["CallbackUri"], UriKind.Absolute, out var callback) || callback.Scheme != "https" ||
             callback.UserInfo.Length != 0 || callback.PathAndQuery != "/signin-oidc" || callback.Fragment.Length != 0)
         { throw new InvalidOperationException("A fixed direct HTTPS callback at /signin-oidc is required."); }
@@ -47,7 +54,7 @@ internal static class FederatedLogin
             {
                 var principal = context.Principal;
                 if (!Registry(context.HttpContext).IsCurrent(principal?.FindFirstValue("sid"),
-                    principal?.FindFirstValue("iss"), principal?.FindFirstValue("sub")))
+                    principal?.FindFirstValue("iss"), principal?.FindFirstValue("sub"), principal?.FindFirstValue(ClaimTypes.Role)))
                 { context.RejectPrincipal(); }
                 return Task.CompletedTask;
             };
@@ -136,6 +143,8 @@ internal static class FederatedLogin
                 id.AddClaim(new("sub", admin.Subject));
                 id.AddClaim(new(ClaimTypes.NameIdentifier, WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(admin.Issuer)) + "." + WebEncoders.Base64UrlEncode(Encoding.ASCII.GetBytes(admin.Subject))));
                 id.AddClaim(new(ClaimTypes.Name, admin.Subject));
+                id.AddClaim(new(ClaimTypes.Role, admin.Role));
+                id.AddClaim(new(ControllerActorIdentity.ActorClaimType, ControllerActorIdentity.FromFederatedAccount(admin.Issuer, admin.Subject)));
                 context.Principal = new(id);
                 context.Properties!.ExpiresUtc = admin.Expires;
                 context.Properties.AllowRefresh = false;
@@ -145,7 +154,8 @@ internal static class FederatedLogin
             options.Events.OnTicketReceived = async context =>
             {
                 var principal = context.Principal!;
-                var admin = new FederatedAdministrator(principal.FindFirstValue("iss")!, principal.FindFirstValue("sub")!, context.Properties!.ExpiresUtc!.Value);
+                var role = principal.FindFirstValue(ClaimTypes.Role) ?? NergalRoles.Administrator;
+                var admin = new FederatedAdministrator(principal.FindFirstValue("iss")!, principal.FindFirstValue("sub")!, context.Properties!.ExpiresUtc!.Value, role);
                 await context.HttpContext.SignOutAsync(Session);
                 await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
                 ((ClaimsIdentity)principal.Identity!).AddClaim(new("sid", Registry(context.HttpContext).Register(admin)));

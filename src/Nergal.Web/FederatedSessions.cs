@@ -24,13 +24,15 @@ internal sealed class FederatedSessions(TimeProvider clock)
         }
     }
 
-    internal bool IsCurrent(string? id, string? issuer, string? subject)
+    internal bool IsCurrent(string? id, string? issuer, string? subject, string? role = null)
     {
         lock (gate)
         {
             if (id is null || !active.TryGetValue(id, out var identity)) { return false; }
             if (identity.Expires <= clock.GetUtcNow()) { active.Remove(id); return false; }
-            return identity.Issuer == issuer && identity.Subject == subject;
+            return identity.Issuer == issuer &&
+                   identity.Subject == subject &&
+                   (role is null || string.Equals(identity.Role, role, StringComparison.Ordinal));
         }
     }
 

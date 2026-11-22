@@ -371,6 +371,7 @@
       "nergal-admin": {
         "type": "Project",
         "dependencies": {
+          "Nergal.ControllerState": "[1.0.0, )",
           "Nergal.Identity": "[1.0.0, )"
         }
       },
@@ -382,6 +383,14 @@
           "Nergal.RemoteTransport": "[1.0.0, )"
         }
       },
+      "nergal.controllerstate": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Data.Sqlite": "[10.0.15, )",
+          "Nergal.Core": "[1.0.0, )",
+          "Nergal.Linux": "[1.0.0, )"
+        }
+      },
       "nergal.core": {
         "type": "Project"
       },
@@ -390,6 +399,7 @@
         "dependencies": {
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.15, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.15, )",
+          "Nergal.Core": "[1.0.0, )",
           "Nergal.Linux": "[1.0.0, )"
         }
       },

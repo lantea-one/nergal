@@ -29,12 +29,23 @@ if (oidcEnabled)
     if (keys is null) { throw new InvalidOperationException("OIDC requires the protected local session host."); }
     FederatedLogin.Configure(builder.Services, oidc, keys);
 }
+if (enabled && OperatingSystem.IsLinux())
+{
+    ControllerAuthorization.Configure(builder.Services, oidcEnabled);
+}
 var agentSettings = builder.Configuration.GetSection("AgentStatus");
 var statusEnabled = agentSettings.GetValue<bool>("Enabled");
 if (statusEnabled)
 {
     if (!OperatingSystem.IsLinux() || !enabled) { throw new InvalidOperationException("Agent status requires local administrator sessions on Linux."); }
     ControllerStatus.Configure(builder.Services, agentSettings, oidcEnabled);
+}
+var controllerStateSettings = builder.Configuration.GetSection("ControllerState");
+var controllerStateEnabled = controllerStateSettings.GetValue<bool>("Enabled");
+if (controllerStateEnabled)
+{
+    if (!OperatingSystem.IsLinux() || !enabled) { throw new InvalidOperationException("Controller state requires local administrator sessions on Linux."); }
+    ControllerStateHost.Configure(builder.Services, controllerStateSettings);
 }
 var app = builder.Build();
 if (enabled && OperatingSystem.IsLinux()) { await LocalSessionHost.EnableAsync(app); }
@@ -47,5 +58,6 @@ if (oidcEnabled)
     app.MapControllerRoute("federated-login", "login/oidc", new { controller = "Session", action = "Federated" });
 }
 if (statusEnabled && OperatingSystem.IsLinux()) { ControllerStatus.Map(app); }
+if (controllerStateEnabled && OperatingSystem.IsLinux()) { ControllerStateHost.Map(app); }
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();

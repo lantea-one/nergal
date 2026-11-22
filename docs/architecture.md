@@ -64,11 +64,20 @@ policy when the web console or identity provider is unavailable.
    [ADR 0028](decisions/0028-authenticated-agent-control-protocol.md).
 8. `Nergal.Identity` provides separate private local application-account storage
    and standard Identity password/lockout verification. Explicit bootstrap creates
-   at most one administrator; no default account or public registration exists.
+   at most one local account with an explicit controller role (`nergal:administrator`
+   or `nergal:auditor`); no default account or public registration exists.
    Its framework/database types remain outside Core. Web can enable [local administrator sessions](local-sessions.md) over direct HTTPS.
    A separate protected Data Protection provider now persists encrypted session
    keys, rejects partial/ambient key loading and refreshes existing protectors on
    appended revocation; see [the key contract](protected-session-keys.md).
+9. `Nergal.ControllerState` persists registered managed agent hosts, monotonic
+   policy bundle revisions, and an append-only audit log in a private `0700`/`0600`
+   SQLite WAL store (`controller.db`) separated from `accounts.db` and agent
+   `journal.db`. SQLite triggers prevent `UPDATE` or `DELETE` on `audit_log`, and
+   `Nergal.Web` maps `ControllerAuthorizationPolicies` (`NergalAdministrator` and
+   read-only `NergalReader`) across both local and OIDC sessions with explicit
+   `local:<uuid>` and `oidc:<issuer>:<subject>` actor attribution
+   ([ADR 0029](decisions/0029-controller-persistence-rbac-and-audit.md)).
 
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy

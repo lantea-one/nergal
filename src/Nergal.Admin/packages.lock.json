@@ -24,6 +24,16 @@
           "Microsoft.Extensions.Identity.Stores": "10.0.15"
         }
       },
+      "Microsoft.Data.Sqlite": {
+        "type": "Transitive",
+        "resolved": "10.0.15",
+        "contentHash": "PtnNCUloQOLAXhB09id+0CL2c9yd+9/wi0QHCHPa+zrTKEJTdu07jlUgblFjorYhKnwcHN1VS0z75jN8vFruuQ==",
+        "dependencies": {
+          "Microsoft.Data.Sqlite.Core": "10.0.15",
+          "SQLitePCLRaw.bundle_e_sqlite3": "2.1.13",
+          "SQLitePCLRaw.core": "2.1.13"
+        }
+      },
       "Microsoft.Data.Sqlite.Core": {
         "type": "Transitive",
         "resolved": "10.0.15",
@@ -267,11 +277,23 @@
           "SQLitePCLRaw.core": "2.1.13"
         }
       },
+      "nergal.controllerstate": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Data.Sqlite": "[10.0.15, )",
+          "Nergal.Core": "[1.0.0, )",
+          "Nergal.Linux": "[1.0.0, )"
+        }
+      },
+      "nergal.core": {
+        "type": "Project"
+      },
       "nergal.identity": {
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.15, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.15, )",
+          "Nergal.Core": "[1.0.0, )",
           "Nergal.Linux": "[1.0.0, )"
         }
       },

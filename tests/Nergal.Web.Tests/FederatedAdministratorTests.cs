@@ -85,6 +85,27 @@ public sealed class FederatedAdministratorTests
         Assert.Throws<InvalidOperationException>(() => registry.Register(actor));
     }
 
+    /// <summary>Disjoint AuditorGroups resolve to nergal:auditor and overlapping or empty role groups fail closed.</summary>
+    [Fact]
+    public void Authorization_MapsAuditorGroupsAndRejectsOverlap()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new FederatedAdministratorPolicy(Issuer, "controller", "groups", ["Admins"], ["Admins"]));
+        Assert.Throws<ArgumentException>(() =>
+            new FederatedAdministratorPolicy(Issuer, "controller", "groups", [], []));
+
+        var policy = new FederatedAdministratorPolicy(Issuer, "controller", "groups", ["Admins"], ["Auditors"]);
+        using var auditorToken = JsonDocument.Parse(
+            """{"iss":"https://issuer.example","sub":"auditor-sub","aud":"controller","groups":["Auditors"],"iat":9990,"exp":20000}""");
+        var resolved = policy.AuthorizeVerifiedClaims(auditorToken.RootElement, Now);
+        Assert.NotNull(resolved);
+        Assert.Equal(Nergal.Core.Identity.NergalRoles.Auditor, resolved!.Role);
+
+        using var bothToken = JsonDocument.Parse(
+            """{"iss":"https://issuer.example","sub":"both-sub","aud":"controller","groups":["Auditors","Admins"],"iat":9990,"exp":20000}""");
+        Assert.Equal(Nergal.Core.Identity.NergalRoles.Administrator, policy.AuthorizeVerifiedClaims(bothToken.RootElement, Now)!.Role);
+    }
+
     private sealed class Clock : TimeProvider
     {
         internal DateTimeOffset Now { get; set; } = FederatedAdministratorTests.Now;

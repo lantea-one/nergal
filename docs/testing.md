@@ -206,6 +206,19 @@ database is opened. This check runs separately from the ordinary CI fixture.
 Multi-controller sessions remain unverified. Integration and
 browser tests supplement unit tests rather than replacing them.
 
+The `tests/Nergal.Web.Tests` suite also verifies `ControllerStateStore` permissions,
+monotonic policy revisions, SQLite append-only audit triggers (`UPDATE`/`DELETE`
+denial and missing-trigger tamper detection), local/OIDC role claim resolution, and
+`NergalAdministrator` vs read-only `NergalReader` policy enforcement.
+
+The local session fixture (`tests/integration/local-sessions/check.py`) additionally
+provisions a `fixture-auditor` account (`--role auditor`) against an initialized
+`controller.db`, confirming `Auditor` can inspect `/controller/audit` and
+`/controller/hosts` (`200`) while mutations on `/controller/hosts` fail with `403`.
+`tests/integration/oidc/check.py` verifies `Oidc:AuditorGroups` (`403` on mutations) vs
+`Oidc:AdministratorGroups` (`201`/`204` host lifecycle with valid CSRF) and checks that
+both `oidc:<issuer>:<subject>` and `local:<uuid>` audit attributions persist.
+
 ## Continuous integration
 
 The Forgejo workflow builds, checks formatting, runs unit tests with coverage
