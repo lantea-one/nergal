@@ -22,9 +22,10 @@ and native per-source rate limiting ([ADR 0025](docs/decisions/0025-native-per-s
 in `inet nergal_filter`, dual-stack DNAT, explicit SNAT, and `ct status dnat`
 (`inet nergal_nat`, [ADR 0026](docs/decisions/0026-dual-stack-nat-and-original-tuple-matching.md)),
 plus L2 bridge filtering (`bridge nergal_bridge`) and coordinated atomic multi-table
-bundle compilation ([ADR 0027](docs/decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md));
-remote agent transport, controller persistence, RBAC, web policy authoring, and systemd
-packaging remain Milestones C and D.
+bundle compilation ([ADR 0027](docs/decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md)),
+and an authenticated local/TLS 1.3 pinned mTLS agent control protocol (`control-serve`,
+`tls-serve`, [ADR 0028](docs/decisions/0028-authenticated-agent-control-protocol.md));
+controller persistence, RBAC, web policy authoring, and systemd packaging remain Milestones C and D.
 Isolated local administrator credentials and protected persistent Data Protection
 keys support an opt-in HTTPS administrator login and session page. A separately enabled administrator route reads one configured local agent status snapshot.
 
@@ -55,12 +56,17 @@ Bind this development build to loopback; it is not a secured administration endp
   serialized transitions, exact artifact/revision persistence, protected resource
   receipts, explicit offline schema upgrade and effective-UID/type/mode/link checks. No kernel operations.
 - `Nergal.Linux`: shared no-follow metadata and local kernel identity inspection.
-- `Nergal.LocalTransport`: bounded status-only Unix socket listener/client with
+- `Nergal.LocalTransport`: bounded status-only (`UnixStatusServer`/`UnixStatusClient`) and
+  control (`UnixControlServer`/`UnixControlClient`) Unix socket listeners/clients with
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.
+- `Nergal.RemoteTransport`: TLS 1.3 pinned mTLS control listener/client (`TlsControlServer`,
+  `TlsControlClient`) validating client/server leaf certificates by SHA-256 thumbprint,
+  EKU OID (`serverAuth`/`clientAuth`), and validity window without ambient CA trust.
 - `Nergal.Admin`: offline initialization and singleton administrator provisioning
   for the private application account store. See [operator commands](docs/local-administrator-accounts.md).
 - `Nergal.Agent`: offline local operator enrollment (`enroll`), peer-authorized read-only
-  local status listener (`status-serve`), receipt-aware confirmed-apply/watchdog CLI
+  local status listener (`status-serve`), authenticated local/remote control listeners
+  (`control-serve`, `tls-serve`), receipt-aware confirmed-apply/watchdog CLI
   (`prepare`, `watch`, `apply`, `confirm`), and explicit new-boot reconciliation (`reconcile`)
   for `inet nergal_filter`, serialized with `ResourceExecutionLock` using native echo
   handles and complete listing reconciliation.

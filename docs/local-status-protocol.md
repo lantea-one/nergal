@@ -128,9 +128,20 @@ The optional [controller status route](controller-status.md) requires direct HTT
 a local administrator session and explicit socket and identity configuration.
 `nergal-agent status-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY ABSOLUTE_SOCKET_PATH ALLOWED_PEER_UID [SOCKET_GROUP_ID]`
 provides the local CLI status listener ([ADR 0020](decisions/0020-local-agent-status-listener.md)),
-holding `ResourceExecutionLock` across read-only `nft --json list table inet nergal_filter`
+holding `ResourceExecutionLock` across read-only `nft --terse --json list table inet nergal_filter`
 observation and `ApplyJournal.ReadResourceStatus` and removing only its owned socket
-inode on `SIGINT`/`SIGTERM`. There is no installed daemon, remote transport or
-receipt-aware apply/confirmation/recovery command. Bound apply stays disabled. A
-production receipt-aware apply path additionally needs complete
-candidate validation, atomic receipt transitions and independent timed recovery.
+inode on `SIGINT`/`SIGTERM`.
+
+For authenticated confirmed-apply control ([ADR 0028](decisions/0028-authenticated-agent-control-protocol.md)),
+`Nergal.Core.Agent` defines `AgentControlFrame` (capped at 262,144 bytes) and `AgentControlCodec`
+(`status`, `prepare-apply` carrying schema-1/2 `FilterPolicy`, `confirm`, and `rollback`), paired with:
+
+- `UnixControlServer` / `UnixControlClient` (`Nergal.LocalTransport`) and
+  `nergal-agent control-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY ABSOLUTE_SOCKET_PATH ALLOWED_PEER_UID [SOCKET_GROUP_ID]`
+  using mutual `SO_PEERCRED` peer-UID verification; and
+- `TlsControlServer` / `TlsControlClient` (`Nergal.RemoteTransport`) and
+  `nergal-agent tls-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY LISTEN_IP:PORT ABSOLUTE_SERVER_CERT_PEM ABSOLUTE_SERVER_KEY_PEM CLIENT_SHA256_THUMBPRINT[,...]`
+  requiring TLS 1.3 (`SslProtocols.Tls13`), client certificates, owner-only `0600` private key mode checks,
+  non-CA leaf EKU validation (`serverAuth`/`clientAuth`), validity window checks, and constant-time SHA-256
+  thumbprint pinning without ambient root CAs. Before mutating kernel state on `prepare-apply`,
+  `nergal-agent` spawns an independent `nergal-agent watch` child process and awaits `WATCHING` readiness.

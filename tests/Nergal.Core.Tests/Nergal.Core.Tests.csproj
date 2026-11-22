@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Nergal.Core\Nergal.Core.csproj" />
     <ProjectReference Include="../../src/Nergal.Nftables/Nergal.Nftables.csproj" />
     <ProjectReference Include="../../src/Nergal.LocalTransport/Nergal.LocalTransport.csproj" />
+    <ProjectReference Include="../../src/Nergal.RemoteTransport/Nergal.RemoteTransport.csproj" />
   </ItemGroup>
 
 </Project>

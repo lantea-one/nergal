@@ -24,7 +24,9 @@ policy when the web console or identity provider is unavailable.
    (`nergal-agent enroll ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY`,
    [ADR 0019](decisions/0019-local-agent-enrollment.md)), the peer-authorized
    read-only status listener (`nergal-agent status-serve`,
-   [ADR 0020](decisions/0020-local-agent-status-listener.md)), and local operator
+   [ADR 0020](decisions/0020-local-agent-status-listener.md)), authenticated
+   local and remote control listeners (`control-serve` and `tls-serve`,
+   [ADR 0028](decisions/0028-authenticated-agent-control-protocol.md)), and local operator
    receipt-aware confirmed-apply, watchdog, and boot-reconciliation commands
    (`prepare`, `watch`, `apply`, `confirm`, `reconcile`,
    [ADR 0023](decisions/0023-explicit-boot-reconciliation.md)). All mutate/observe
@@ -46,14 +48,20 @@ policy when the web console or identity provider is unavailable.
    validate a complete candidate, snapshot owned state, arm local rollback, apply
    atomically, verify and confirm. Revisions and runtime state need explicit
    reconciliation even with a durable journal.
-7. `Nergal.LocalTransport` serves/queries only bounded versioned read-only status intent.
-   Accepted Unix sockets are authorized by kernel peer UID before parsing or
-   provider access. Clients verify kernel server UID before sending intent and
-   require a complete bounded reply/EOF. `Nergal.Linux` shares no-follow metadata with LocalState.
+7. `Nergal.LocalTransport` serves/queries both bounded versioned read-only status intent
+   (`UnixStatusServer`/`UnixStatusClient`) and typed control exchanges
+   (`UnixControlServer`/`UnixControlClient`). Accepted Unix sockets are authorized by
+   kernel peer UID before parsing or handler dispatch. Clients verify kernel server UID
+   before sending intent and require a complete bounded reply/EOF. `Nergal.RemoteTransport`
+   (`TlsControlServer`/`TlsControlClient`) provides remote agent control strictly over
+   TLS 1.3 with required client certificates and constant-time SHA-256 leaf thumbprint
+   pinning, EKU validation, and validity-window enforcement without ambient root CA trust.
+   `Nergal.Linux` shares no-follow metadata with LocalState.
    The journal derives status revision/binding/classification in one protected read
    snapshot; native collection remains a separate trusted caller obligation.
-   Web uses only the status client for its opt-in [controller route](controller-status.md). No production daemon,
-   collector or apply API is installed; see [the protocol](local-status-protocol.md).
+   Web uses only the status client for its opt-in [controller route](controller-status.md).
+   See [the protocol](local-status-protocol.md) and
+   [ADR 0028](decisions/0028-authenticated-agent-control-protocol.md).
 8. `Nergal.Identity` provides separate private local application-account storage
    and standard Identity password/lockout verification. Explicit bootstrap creates
    at most one administrator; no default account or public registration exists.

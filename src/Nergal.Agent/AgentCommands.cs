@@ -20,6 +20,8 @@ internal static class AgentCommands
         Usage:
           nergal-agent enroll ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY
           nergal-agent status-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY ABSOLUTE_SOCKET_PATH ALLOWED_PEER_UID [SOCKET_GROUP_ID]
+          nergal-agent control-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY ABSOLUTE_SOCKET_PATH ALLOWED_PEER_UID [SOCKET_GROUP_ID]
+          nergal-agent tls-serve ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY LISTEN_IP:PORT ABSOLUTE_SERVER_CERT_PEM ABSOLUTE_SERVER_KEY_PEM CLIENT_SHA256_THUMBPRINT[,...]
           nergal-agent prepare ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY OPERATION_UUID TIMEOUT_SECONDS <accept|drop> [ipv4|ipv6:accept|drop ...]
           nergal-agent watch ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY OPERATION_UUID WATCHDOG_UUID
           nergal-agent apply ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY OPERATION_UUID WATCHDOG_UUID
@@ -37,7 +39,7 @@ internal static class AgentCommands
             return 1;
         }
 
-        if (!TryParseCommand(args, out var command))
+        if (!AgentControlCli.TryParse(args, out var command) && !TryParseCommand(args, out command))
         {
             error.WriteLine(Usage);
             return 2;
@@ -47,6 +49,8 @@ internal static class AgentCommands
         {
             EnrollCommand enroll => await EnrollAsync(enroll.Directory, output, error),
             StatusServeCommand serve => await ServeStatusAsync(serve, output, error),
+            ControlServeCommand control => await AgentControlCli.ServeControlAsync(control, output, error),
+            TlsServeCommand tls => await AgentControlCli.ServeTlsAsync(tls, output, error),
             PrepareCommand prepare => await PrepareAsync(prepare, output, error),
             WatchCommand watch => await WatchAsync(watch, output, error),
             ApplyCommand apply => await ApplyAsync(apply, output, error),
@@ -533,11 +537,11 @@ internal static class AgentCommands
 
     private static async Task<NftTableObservation> ObserveLiveAsync(CancellationToken cancellation = default)
     {
-        var listed = await NativeNft.Run(["--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
+        var listed = await NativeNft.Run(["--terse", "--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
         return NftTableObservation.Parse(listed).Observation ?? throw new IOException("Complete observation unavailable.");
     }
 
-    private static async Task<(NftTableReceipt EchoReceipt, NftTableObservation Listing)> ReplaceAndVerifyAsync(
+    internal static async Task<(NftTableReceipt EchoReceipt, NftTableObservation Listing)> ReplaceAndVerifyAsync(
         string artifact, Guid boot, ulong ns, NftTableIdentity expectedIdentity)
     {
         var batch = "delete table inet " + NftFilterCompiler.TableName + "\n" + artifact;
@@ -557,6 +561,8 @@ internal static class AgentCommands
     internal abstract record AgentCommand;
     internal sealed record EnrollCommand(string Directory) : AgentCommand;
     internal sealed record StatusServeCommand(string Directory, string SocketPath, uint AllowedPeerUid, uint? SocketGroupId) : AgentCommand;
+    internal sealed record ControlServeCommand(string Directory, string SocketPath, uint AllowedPeerUid, uint? SocketGroupId) : AgentCommand;
+    internal sealed record TlsServeCommand(string Directory, System.Net.IPEndPoint ListenEndPoint, string ServerCertPath, string ServerKeyPath, IReadOnlyList<string> TrustedClientThumbprints) : AgentCommand;
     internal sealed record PrepareCommand(string Directory, Guid OperationId, int TimeoutSeconds, FilterVerdict DefaultVerdict, IReadOnlyList<FilterRule> Rules) : AgentCommand;
     internal sealed record WatchCommand(string Directory, Guid OperationId, Guid WatchdogId) : AgentCommand;
     internal sealed record ApplyCommand(string Directory, Guid OperationId, Guid WatchdogId) : AgentCommand;
