@@ -84,3 +84,12 @@ intent and rejection of rollback without durable native evidence.
 This acceptance covers the typed supported slice and disposable synthetic topology.
 It does not establish lossless import of arbitrary native configurations or an
 atomic kernel/SQLite acknowledgement. Those limits remain explicit above.
+
+The runtime repeats its complete native receipt comparison immediately before
+replacement validation. Its execution lock coordinates cooperating agent writers;
+administrators must not run competing privileged writers against owned resources
+during an operation. Native table deletion uses names: the tested nft userspace
+crashes when handle-only deletion and rule-bearing recreation use JSON echo.
+A separate observer cannot close the final observation-to-transaction race against
+an unrelated privileged writer. Such concurrent modification is unsupported;
+receipt checks detect subsequent drift but cannot provide kernel compare-and-swap.

@@ -260,7 +260,7 @@ internal sealed class AgentControlHandler
                 var fresh = await NativeNft.TryObserveAsync(cancellationToken).ConfigureAwait(false);
                 if (fresh is null || !journal.VerifyExpectedResource(fresh, ns).IsMatch)
                 { throw new IOException("Baseline changed while the watchdog was arming."); }
-                replaced = await AgentCommands.ReplaceAndVerifyAsync(candidateArtifact, bootId, ns, identity).ConfigureAwait(false);
+                replaced = await AgentCommands.ReplaceAndVerifyAsync(candidateArtifact, bootId, ns, identity, fresh).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is IOException or InvalidOperationException)
             {
