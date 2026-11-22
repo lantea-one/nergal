@@ -161,3 +161,18 @@ The review table scrolls within its container on narrow screens.
 ![Source-bound migration review in light mode](assets/screenshots/migration-review-light.jpg)
 
 ![Source-bound migration review on mobile](assets/screenshots/migration-review-mobile.jpg)
+
+## Planned reusable objects and file workflows
+
+A dedicated UI library will manage reusable typed sets and IPv4/IPv6 address/CIDR
+lists, show policy references and change impact, and prevent dangling references
+or silent changes to saved revisions. Authoring will reuse these objects directly.
+Native set scope, flags and dynamic behavior require explicit supported semantics.
+
+The product roadmap also includes `nftables.conf` file import and export through
+the UI. Import retains the original source, reports semantic mapping and gaps, and
+separates review from revision creation and confirmed apply. Export will download
+the selected managed revision with its resolved objects and explicit scope; original
+source download is a separate operation. Round-trip and isolated packet acceptance
+must precede equivalence claims. These workflows remain planned; the current source
+catalog and lexical review do not perform full conversion or export.

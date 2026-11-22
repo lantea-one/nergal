@@ -13,6 +13,12 @@ service. Migration is optional: operators must also be able to author new polici
 through the UI. This is the product direction, not a claim that every planned
 workflow is complete.
 
+Planned UI workflows include a reusable sets/IP lists library and `nftables.conf`
+import/export. Shared object changes require visible reference/impact review and
+immutable saved revisions. File import must report unsupported semantics explicitly;
+current source inspection is not full conversion. Generated export identifies the
+selected managed revision and scope. See [migration and authoring status](router-migration-and-sandbox.md).
+
 ## Core Design Principles
 
 - **Native `nftables` first**: Compiles directly to canonical `inet nergal_filter`, `inet nergal_nat`, and `bridge nergal_bridge` tables without shelling out untrusted strings or flushing foreign tables.
