@@ -117,7 +117,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-status-') as root:
     try:
         os.chmod(endpoint, 0o2770)
         rejected = subprocess.run(command(), stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10)
-        require(rejected.returncode == 1 and rejected.stderr.strip() == 'socket.parentPolicy', 'Writable shared parent was accepted')
+        require(rejected.returncode == 1 and rejected.stderr.strip() == 'socket.parentPolicy', f'Writable-parent denial differed: exit={rejected.returncode}, stderr={rejected.stderr.strip()}')
         require(not socket_path.exists(), 'Unsafe parent created a listener')
         os.chmod(endpoint, 0o2710)
         linked = root / 'linked'

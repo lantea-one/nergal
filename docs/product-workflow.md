@@ -49,3 +49,13 @@ See [asset maintenance](../tools/web-assets/README.md) for locked dependency and
 reproducible bundle/license verification. JavaScript-disabled browsers retain the
 textarea and the same server validation. Native candidate and source views are
 read-only; no raw nft transaction can be submitted from this editor.
+
+## Verification runner milestone
+
+The separate mapped-UID fixture environment is now reproducible through
+`tools/integration/check-mapped-identities.sh`. Its full isolation and status/
+control/HTTPS suite passes using disposable container-local accounts and nested
+namespaces. No host account/mapping changes or fixture guard relaxations are
+required. This resolves the test-environment gap; extended bridge/early inet packet
+and watchdog acceptance remains the next firewall milestone before migration/UI
+completion.

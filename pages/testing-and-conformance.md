@@ -28,3 +28,15 @@ Unit tests use `xunit.v3` executable .NET 10 assemblies while retaining the VSTe
 and Coverlet workflow. `scripts/test-unit.sh` requires one nonempty coverage report
 from each of the three test projects. The framework migration retains all denied
 operation and safety regressions; it is independent of native packet conformance.
+
+## Reproducible mapped-identity checks
+
+`tools/integration/check-mapped-identities.sh` runs the existing separate-UID
+isolation and status/control/HTTPS fixtures inside a disposable container and fresh
+nested namespaces. The full suite passed on November 22, 2026, including kernel
+peer authorization, pinned mTLS, packet enforcement, independent rollback and basic
+multi-table confirmation/rollback. The runner changes no host accounts or mapping
+files and mounts neither private exports nor credentials. Its namespace capability
+and relaxed container seccomp configuration belong only to test tooling; the web
+sandbox remains unprivileged. Extended auxiliary dispatch is still gated pending
+its own acceptance evidence.
