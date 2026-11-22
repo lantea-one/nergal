@@ -234,17 +234,17 @@ public sealed class ControllerStateAndRbacTests
         try
         {
             var options = new LocalAccountOptions(dir);
-            await LocalAccountDatabase.InitializeAsync(options);
+            await LocalAccountDatabase.InitializeAsync(options, TestContext.Current.CancellationToken);
             using var services = new ServiceCollection()
                 .AddLogging()
                 .AddLocalAdministratorAccounts(options)
                 .BuildServiceProvider();
             using var scope = services.CreateScope();
             var accounts = scope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>();
-            var invalid = await accounts.ProvisionAsync("auditor", "long enough password 123", "invalid-role");
+            var invalid = await accounts.ProvisionAsync("auditor", "long enough password 123", "invalid-role", TestContext.Current.CancellationToken);
             Assert.False(invalid.Succeeded);
 
-            var ok = await accounts.ProvisionAsync("auditor", "long enough password 123", NergalRoles.Auditor);
+            var ok = await accounts.ProvisionAsync("auditor", "long enough password 123", NergalRoles.Auditor, TestContext.Current.CancellationToken);
             Assert.True(ok.Succeeded);
 
             var factory = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.IUserClaimsPrincipalFactory<LocalAdministrator>>();

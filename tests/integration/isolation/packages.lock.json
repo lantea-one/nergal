@@ -285,8 +285,8 @@
         "dependencies": {
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.15, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.15, )",
-          "Nergal.Core": "[1.0.0, )",
-          "Nergal.Linux": "[1.0.0, )"
+          "Nergal.Core": "[2026.11.21.1, )",
+          "Nergal.Linux": "[2026.11.21.1, )"
         }
       },
       "nergal.linux": {
@@ -296,15 +296,15 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Data.Sqlite": "[10.0.15, )",
-          "Nergal.Core": "[1.0.0, )",
-          "Nergal.Linux": "[1.0.0, )",
-          "Nergal.Nftables": "[1.0.0, )"
+          "Nergal.Core": "[2026.11.21.1, )",
+          "Nergal.Linux": "[2026.11.21.1, )",
+          "Nergal.Nftables": "[2026.11.21.1, )"
         }
       },
       "nergal.nftables": {
         "type": "Project",
         "dependencies": {
-          "Nergal.Core": "[1.0.0, )"
+          "Nergal.Core": "[2026.11.21.1, )"
         }
       }
     }
