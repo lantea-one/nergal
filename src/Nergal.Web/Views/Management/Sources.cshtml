@@ -7,19 +7,58 @@
 }
 <main class="container">
     <div class="page-header">
-        <div><h1>Native source inspection</h1><p class="page-subtitle">Private source snapshots for migration review.</p></div>
+        <div><h1>Native source inspection</h1><p class="page-subtitle">Review private source snapshots, locate migration work, and download source-bound reports.</p></div>
         <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">Policy builder</a>
     </div>
-    <div class="alert alert-warning" role="status">
-        These are exact read-only imports. They have not been converted into managed policies or applied to any firewall.
-        Review every table, jump, matcher, and action before authoring an equivalent typed bundle. Unsupported constructs must remain explicit.
-    </div>
+    <p class="muted">Read-only snapshots. Open a source to locate review topics, download its report, or inspect the exact configuration.</p>
+    @if (Model.Count == 0)
+    {
+        <p class="empty-state">No source snapshots are configured. A local operator can configure the private source directory.</p>
+    }
     @foreach (var source in Model)
     {
         <details class="disclosure mb-0 mt-2">
             <summary>@source.Name <span class="badge badge-neutral">Imported · not applied</span></summary>
-            <p class="muted">SHA-256 <code>@source.Digest</code></p>
-            <pre><code>@source.Text</code></pre>
+            <p class="muted">Source SHA-256 <code>@source.Digest</code></p>
+            <div class="alert alert-warning">
+                <strong>Conversion blocked — explicit mapping required.</strong>
+                Review topics help locate work; they do not validate or convert the configuration.
+                Keywords may be identifiers, so inspect each occurrence in context. No policy has been created or applied.
+            </div>
+            <p><strong>@source.Review.TableDeclarations</strong> declarative table headers ·
+                <strong>@source.Review.ChainDeclarations</strong> declarative chain headers ·
+                <strong>@source.Review.Signals.Count</strong> review topics</p>
+            @if (!source.Review.InventoryComplete)
+            {
+                <p class="alert alert-danger" role="alert">Inventory incomplete: <code>@source.Review.Diagnostic</code>. Review the exact source below.</p>
+            }
+            @if (source.Review.Signals.Count > 0)
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <caption>Migration review signals — non-exhaustive, not semantic validation</caption>
+                        <thead><tr><th scope="col">Review area</th><th scope="col">Work to preserve behavior</th><th scope="col">Source lines</th></tr></thead>
+                        <tbody>
+                        @foreach (var signal in source.Review.Signals)
+                        {
+                            <tr>
+                                <td>@(signal.Kind == Nergal.Nftables.MigrationSignalKind.ContractGap ? "Contract gap signal" : signal.Kind == Nergal.Nftables.MigrationSignalKind.SourceResolution ? "Source resolution" : "Explicit typed mapping")</td>
+                                <td>@signal.Description <br /><small class="muted">@signal.Code</small></td>
+                                <td>@string.Join(", ", signal.Lines.Take(12))@(signal.Lines.Count > 12 ? $" (+{signal.Lines.Count - 12} more in report)" : "")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p>No catalogued keywords were found. This does not establish compatibility or completeness.</p>
+            }
+            <p>Every table still needs explicit ownership, hook and rule-order mapping. Counters, definitions,
+                named objects and control flow must be accounted for before an equivalent policy can be reviewed.</p>
+            <a class="btn btn-secondary" href="@Url.Action("SourceReview", new { digest = source.Digest })">Download migration review</a>
+            <details class="disclosure mt-2"><summary>Exact source snapshot</summary><pre><code>@source.Text</code></pre></details>
         </details>
     }
 </main>

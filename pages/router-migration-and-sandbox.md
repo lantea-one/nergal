@@ -70,7 +70,14 @@ Each source has a separate container with no network access, a read-only source,
 and native check-only validation. A successful check establishes syntax in that
 container, not imported-policy equivalence or server packet correctness.
 Administrators can inspect exact escaped snapshots at **Native sources**; Auditors
-are denied. Sources are not applied.
+are denied. Sources are not applied. Each snapshot now has a source-bound migration
+review with line references and an administrator-only JSON download. The review
+highlights typed mapping work, definitions/includes, and gap signals such as maps,
+`notrack` and counters. It is a non-exhaustive lexical inventory: keyword occurrences
+can be identifiers, and unknown syntax is not validated. Every report keeps
+conversion blocked; no managed candidate is created. Empty or familiar input never
+becomes implicitly compatible. The five private sources still need explicit rule
+mapping and packet-level equivalence work.
 
 `tools/dev-stack/watch.py` supervises application/source refreshes while the local
 process runs. It preserves private accounts, keys, and saved UI data and reports
@@ -131,7 +138,20 @@ table. An unchanged primary table cannot conceal auxiliary drift. Recreated tabl
 with copied markers, missing tables, unknown expressions and foreign collisions
 are denied without repair or adoption. The watchdog can resume a recorded operation
 after restart; a kernel replacement with no durable receipt remains a manual
-recovery case. Private server conversion and complete structured authoring are the
-next product milestones.
+recovery case. Source-bound private migration reviews are available; explicit
+server conversion and complete structured authoring remain the next milestones.
 
 ![Auxiliary apply readiness in the policy editor](assets/screenshots/auxiliary-readiness.jpg)
+
+## Migration review appearance
+
+The administrator-only Native sources screen presents review topics and source
+line references using the application theme. The screenshots below use a synthetic
+configuration only. Private server sources and reports are never published here.
+The review table scrolls within its container on narrow screens.
+
+![Source-bound migration review in dark mode](assets/screenshots/migration-review-dark.jpg)
+
+![Source-bound migration review in light mode](assets/screenshots/migration-review-light.jpg)
+
+![Source-bound migration review on mobile](assets/screenshots/migration-review-mobile.jpg)

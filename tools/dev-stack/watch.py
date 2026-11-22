@@ -11,7 +11,7 @@ LOCK = ROOT / 'artifacts/dev-stack/watch.lock'
 
 def fingerprint():
     files = [*ROOT.glob('*.props'), *ROOT.glob('*.targets'), ROOT / 'global.json']
-    for root in (ROOT / 'src', ROOT / 'tools/dev-stack'):
+    for root in (ROOT / 'src', ROOT / 'tests', ROOT / 'tools/dev-stack'):
         files.extend(p for p in root.rglob('*') if p.is_file() and not {'bin', 'obj', '__pycache__'} & set(p.parts))
     mapping = ROOT / 'artifacts/dev-stack/source-map.txt'
     if mapping.exists():

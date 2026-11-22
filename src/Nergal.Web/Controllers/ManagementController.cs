@@ -40,6 +40,23 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         return nativeSources is null ? NotFound() : View(nativeSources.Sources);
     }
 
+    /// <summary>Downloads a private read-only migration review selected by source digest, never by a file path.</summary>
+    [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
+    public IActionResult SourceReview(string? digest)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) || role != NergalRoles.Administrator) { return Forbid(); }
+        var source = nativeSources?.Sources.FirstOrDefault(s => string.Equals(s.Digest, digest, StringComparison.Ordinal));
+        if (source is null) { return NotFound(); }
+        var report = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review);
+        return File(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(report, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        }),
+            "application/json", "migration-review-" + source.Digest[..12] + ".json");
+    }
+
     /// <summary>Renders the overview and host fleet dashboard with live host health and recent audit entries (read-only for Auditors).</summary>
     [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
     public async Task<IActionResult> Index()

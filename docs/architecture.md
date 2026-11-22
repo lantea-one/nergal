@@ -175,3 +175,10 @@ auxiliary ownership comments. Packet and recovery acceptance includes dual-stack
 bridge pinning, priority ordering, controller loss, watchdog restart and drift denial. [The product workflow](product-workflow.md) tracks
 the ordered UI, migration and profile work without treating saved intent as live
 runtime configuration.
+
+Private native migration review is an unprivileged, bounded lexical inventory
+([ADR 0037](decisions/0037-private-native-migration-review.md)). It never invokes
+nft, resolves external files or returns a partial policy. The administrator-only
+report route selects an existing immutable startup snapshot by digest, never a
+request-supplied path. A source-bound inventory cannot authorize apply or certify
+conversion. Exact sources and exported reports remain private.

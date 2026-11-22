@@ -1,6 +1,7 @@
 """Exercise the real Kestrel session boundary using disposable application accounts and keys."""
 import contextlib
 import http.client
+import hashlib
 from html.parser import HTMLParser
 import json
 import os
@@ -140,7 +141,20 @@ def provision(temp):
 
 def exercise(temp):
     tls = provision(temp)
-    with host(temp, tls) as browser:
+    ctrl_state = temp / "controller-state"
+    ctrl_state.mkdir(mode=0o700)
+    subprocess.run(["dotnet", ADMIN_TOOL, "controller", "init", ctrl_state], check=True)
+    sources = temp / "sources"
+    sources.mkdir(mode=0o700)
+    source = 'include "/unresolved-synthetic.conf"\ntable inet synthetic { chain forward { counter accept } }\n'
+    source_path = sources / "synthetic.conf"
+    source_path.write_text(source)
+    source_digest = hashlib.sha256(source.encode()).hexdigest()
+    report_path = "/manage/sources/review?digest=" + source_digest
+    with host(temp, tls, {"ControllerState__Enabled": "true", "ControllerState__Directory": str(ctrl_state),
+                          "NativeSources__Directory": str(sources)}) as browser:
+        browser.request("/manage/sources", 401)
+        browser.request(report_path, 401)
         assert 'href="/login"' in browser.request("/", 200)
         browser.request("/login", 400, plain=True, headers={"X-Forwarded-Proto": "https"})
         browser.request("/session", 401)
@@ -150,6 +164,16 @@ def exercise(temp):
         browser.request("/login", 413, {**fields, "password": "x" * 9000})
         browser.request("/login", 400, {"username": "fixture-admin", "password": PASSWORD})
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 302, fields)
+        source_html = browser.request("/manage/sources", 200)
+        assert 'href="' + report_path + '"' in source_html, "Report must be a real routed download link"
+        assert "Conversion blocked" in source_html
+        source_path.write_text("changed after startup")
+        report = json.loads(browser.request(report_path, 200))
+        assert report["sourceSha256"] == source_digest and report["schemaVersion"] == 1
+        assert report["review"]["canConvert"] is False and report["review"]["tableDeclarations"] == 1
+        assert {"gap.counters", "source.includes"} <= {s["code"] for s in report["review"]["signals"]}
+        assert "text" not in report and "candidate" not in report
+        browser.request("/manage/sources/review?digest=..%2F..%2Fetc%2Fpasswd", 404)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -173,14 +197,12 @@ def exercise(temp):
     assert not list((temp / "profile").rglob("key-*.xml")), "Unexpected profile key persistence"
 
     auditor_accounts = temp / "auditor-accounts"
-    ctrl_state = temp / "controller-state"
     auditor_accounts.mkdir(mode=0o700)
-    ctrl_state.mkdir(mode=0o700)
     subprocess.run(["dotnet", ADMIN_TOOL, "account", "init", auditor_accounts], check=True)
     subprocess.run(["dotnet", ADMIN_TOOL, "account", "provision", auditor_accounts, "fixture-auditor", "--role", "auditor", "--password-stdin"],
                    input=PASSWORD.encode() + b"\n", check=True)
-    subprocess.run(["dotnet", ADMIN_TOOL, "controller", "init", ctrl_state], check=True)
     auditor_settings = {
+        "NativeSources__Directory": str(sources),
         "LocalSessions__AccountDirectory": str(auditor_accounts),
         "ControllerState__Enabled": "true",
         "ControllerState__Directory": str(ctrl_state),
@@ -220,8 +242,11 @@ def exercise(temp):
             }),
             "__RequestVerificationToken": auditor_browser.token("/manage/policies"),
         })
+        auditor_browser.request("/manage/sources", 403)
+        auditor_browser.request(report_path, 403)
         assert "Append-only audit log" in auditor_browser.request("/manage/audit", 200)
 
+    print("PASS: routed source-bound migration downloads, immutable startup snapshots, and anonymous/auditor denial")
     print("PASS: HTTPS, cookie attributes, CSRF, durable sessions, revocation, lockout, RBAC auditor boundaries and request rate limits")
 
 

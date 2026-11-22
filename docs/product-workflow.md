@@ -11,7 +11,9 @@ expert representation, not a prerequisite for supported policy authoring.
 2. Completed: dedicated auxiliary packet/recovery acceptance and a working
    mapped-UID runner. Additional real-server combinations remain part of migration
    gap assessment; synthetic conformance is not production equivalence.
-3. Convert private source configurations explicitly, preserving all semantics;
+3. In progress: source-bound lexical reviews now expose migration topics and
+   downloadable reports without executing sources or claiming conversion. Convert
+   private source configurations explicitly, preserving all semantics;
    keep an auditable migration report and mark unsupported items clearly.
 4. Complete structured authoring for every supported construct, with plain-language
    intent, contextual help, precise validation, complete review, and confirmed apply.
