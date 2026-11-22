@@ -1,22 +1,43 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-accent="emerald" data-default-theme="system">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>nergal — Native nftables Firewall Manager</title>
   <meta name="description" content="Self-hosted .NET 10 firewall controller and privileged Linux nftables agent with atomic multi-table apply and autonomous timed rollback." />
+  <script src="assets/theme.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css" />
+  <link rel="stylesheet" href="assets/application.css" />
   <link rel="stylesheet" href="assets/nergal-theme.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to documentation</a>
+  <header class="topbar docs-topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#/" aria-label="nergal documentation home">
+        <span class="brand-mark" aria-hidden="true">N</span><span>nergal</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a class="nav-link" href="#/">Overview</a>
+        <a class="nav-link" href="#/policy-reference">Policy reference</a>
+        <a class="nav-link" href="#/deployment-and-packaging">Deployment</a>
+        <a class="nav-link" href="https://git.lantea.one/lantea-one/nergal">Repository</a>
+      </nav>
+      <div class="topbar-meta">
+        <span class="badge badge-primary">Documentation</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle>Theme</button>
+      </div>
+    </div>
+  </header>
+  <script src="assets/portal.js"></script>
   <div id="app">Loading nergal documentation…</div>
   <script>
     window.$docsify = {
-      name: 'nergal',
-      repo: 'https://git.lantea.one/lantea-one/nergal',
+      name: 'Documentation',
+      repo: '',
       homepage: 'index.md',
       loadSidebar: true,
-      loadNavbar: true,
+      loadNavbar: false,
       subMaxLevel: 3,
       auto2top: true,
       search: {
@@ -38,9 +59,8 @@
       plugins: [
         function (hook) {
           hook.doneEach(function () {
-            if (window.mermaid) {
-              window.mermaid.run({ querySelector: '.mermaid' });
-            }
+            window.nergalDocs.updateNavigation();
+            window.nergalDocs.renderDiagrams();
           });
         }
       ]
@@ -51,7 +71,8 @@
   <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2/dist/docsify-copy-code.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    window.nergalDocs.renderDiagrams();
   </script>
 </body>
 </html>

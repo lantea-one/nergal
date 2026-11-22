@@ -335,3 +335,14 @@ apply/rollback. The host mapping restriction remains; the container fallback
 resolves test execution without weakening the fixtures or modifying host identity
 configuration. Extended bridge/early inet packet and watchdog acceptance remains
 separate work. See [runner details](../tools/integration/README.md).
+
+### Documentation appearance
+
+The Pages portal imports byte-identical copies of the application's stylesheet
+and early theme initialization. `python3 scripts/verify-pages.py` rejects styling
+asset drift as well as broken links and missing screenshots. Run
+`python3 scripts/pages_assets.py` after changing the application theme source.
+`node --test scripts/pages-theme.test.mjs` checks preference precedence, system
+theme selection and storage-denial fallback. Browser checks cover both themes,
+reload persistence, search, navigation, diagrams, code/tables, skip navigation and
+the mobile menu/content width. See [Pages styling maintenance](pages-styling.md).

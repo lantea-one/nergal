@@ -3,6 +3,7 @@
 import re
 import sys
 from pathlib import Path
+from pages_assets import verify_shared_assets
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGES = ROOT / "pages"
@@ -14,6 +15,9 @@ REQUIRED_FILES = [
     "_sidebar.md",
     "_navbar.md",
     "assets/nergal-theme.css",
+    "assets/application.css",
+    "assets/theme.js",
+    "assets/portal.js",
     "architecture.md",
     "policy-reference.md",
     "agent-and-protocol.md",
@@ -29,6 +33,9 @@ REQUIRED_FILES = [
     "assets/screenshots/editor-light.jpg",
     "assets/screenshots/editor-dark.jpg",
     "assets/screenshots/editor-mobile.jpg",
+    "assets/screenshots/pages-light.jpg",
+    "assets/screenshots/pages-dark.jpg",
+    "assets/screenshots/pages-mobile.jpg",
 ]
 
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -40,7 +47,7 @@ FORBIDDEN_PATTERNS = [
 
 
 def main() -> int:
-    errors: list[str] = []
+    errors: list[str] = verify_shared_assets()
 
     if not PAGES.is_dir():
         print("ERROR: pages/ directory missing", file=sys.stderr)

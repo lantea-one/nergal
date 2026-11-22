@@ -21,6 +21,7 @@ jobs:
         run: |
           npm ci --prefix tools/web-assets --ignore-scripts
           npm run verify --prefix tools/web-assets
+          node --test scripts/pages-theme.test.mjs
       - name: Restore locked dependencies
         run: dotnet restore Nergal.sln --locked-mode
       - name: Build without warnings

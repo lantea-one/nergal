@@ -107,3 +107,17 @@ The editor does not permit raw native firewall transactions.
 ![Policy JSON code editor in dark mode](assets/screenshots/editor-dark.jpg)
 
 ![Policy JSON editor on a narrow mobile viewport](assets/screenshots/editor-mobile.jpg)
+
+## Matching documentation appearance
+
+The documentation portal shares the application's actual stylesheet and theme
+initialization. Its masthead, typography, colors, controls, article surfaces and
+light/dark appearance follow the same design. Search, tables, code blocks and
+Mermaid diagrams also adapt to the selected theme. Mobile navigation keeps article
+content within the viewport. Theme choices persist separately for each origin.
+
+![Documentation portal in light mode](assets/screenshots/pages-light.jpg)
+
+![Documentation portal in dark mode](assets/screenshots/pages-dark.jpg)
+
+![Documentation portal on mobile](assets/screenshots/pages-mobile.jpg)
