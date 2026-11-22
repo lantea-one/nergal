@@ -49,6 +49,17 @@ and maintain policies through the UI without importing an existing ruleset.
 
 - Guided tasks explain source, destination, service, interfaces, identity restrictions,
   ordering, and expected effects without requiring nftables syntax knowledge.
+- Every individual rule has an inline enabled/disabled checkbox with a clear state
+  label and keyboard access. Disabling preserves the rule, its settings and order;
+  enabled state is versioned, visible in review/diffs, and preserved by supported
+  import/export. Disabled rules do not enforce traffic policy. Changing an active
+  rule's state follows revision review and confirmed apply rather than an immediate
+  browser-to-kernel toggle. Define intent/native observation handling explicitly.
+- Forms provide concise contextual hints for fields and choices: what each value
+  means, required versus optional input, units, defaults and effect. Use synthetic
+  examples and plain language, with progressive expert detail and actionable inline
+  validation. Associate hints/errors with their controls for assistive technologies;
+  guidance must be accessible by keyboard and not depend solely on hover tooltips.
 - Expert controls expose the same full typed contract without a lossy alternate model.
 - Editing JSON/code uses a real locally served code editor with highlighting,
   indentation, line numbers, keyboard support, and syntax diagnostics. Server-side

@@ -176,3 +176,10 @@ the selected managed revision with its resolved objects and explicit scope; orig
 source download is a separate operation. Round-trip and isolated packet acceptance
 must precede equivalence claims. These workflows remain planned; the current source
 catalog and lexical review do not perform full conversion or export.
+
+Planned authoring improvements also include an inline enabled/disabled checkbox
+on each rule, preserving its settings and order across revisions. Review/diffs must
+show state changes, and active-policy changes follow confirmed apply. Forms will
+provide contextual field hints, units/defaults, synthetic examples and actionable
+validation associated with controls for keyboard and assistive-technology access.
+These are planned requirements, not a claim that the current forms implement them.

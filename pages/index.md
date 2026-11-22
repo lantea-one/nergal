@@ -17,7 +17,8 @@ Planned UI workflows include a reusable sets/IP lists library and `nftables.conf
 import/export. Shared object changes require visible reference/impact review and
 immutable saved revisions. File import must report unsupported semantics explicitly;
 current source inspection is not full conversion. Generated export identifies the
-selected managed revision and scope. See [migration and authoring status](router-migration-and-sandbox.md).
+selected managed revision and scope. Per-rule inline enable/disable controls and
+contextual accessible form hints are also planned authoring requirements. See [migration and authoring status](router-migration-and-sandbox.md).
 
 ## Core Design Principles
 
