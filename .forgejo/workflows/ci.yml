@@ -30,3 +30,5 @@ jobs:
         run: python3 tests/integration/local-sessions/check.py
       - name: Verify optional OIDC with a disposable HTTPS issuer
         run: python3 -B tests/integration/oidc/check.py
+      - name: Verify Forgejo Pages documentation portal
+        run: python3 -B scripts/verify-pages.py
