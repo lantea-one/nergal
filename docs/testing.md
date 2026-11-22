@@ -315,3 +315,23 @@ longer references the deprecated `xunit` v2 metapackage.
 Renovate closes its dependency dashboard automatically when no pending dependency
 work remains, and can recreate/reopen it for later work. Dependency updates still
 require review; automerge remains disabled.
+
+### Container fallback for mapped-identity conformance
+
+When host `newuidmap` cannot obtain its required capabilities, run
+`bash tools/integration/check-mapped-identities.sh` after building Release with the
+pinned SDK. The existing separate-UID fixtures run unchanged inside a disposable
+container and nested fresh user/network namespaces. Synthetic account/subordinate
+ID setup exists only in the image. Public test builds and SDK files are read-only
+mounts; credentials, private exports, host buses and the Docker socket are absent.
+The container has no external network or published ports. Only its nested-namespace
+test tooling receives `SYS_ADMIN` and a container-local relaxed seccomp profile.
+This is not a production controller deployment configuration.
+
+Verified on November 22, 2026: all isolation and local-status/client/control/HTTPS
+apply checks pass through this runner, including real separate-UID denial, pinned
+mTLS, dual-stack packets, autonomous rollback, confirmation and basic multi-table
+apply/rollback. The host mapping restriction remains; the container fallback
+resolves test execution without weakening the fixtures or modifying host identity
+configuration. Extended bridge/early inet packet and watchdog acceptance remains
+separate work. See [runner details](../tools/integration/README.md).
