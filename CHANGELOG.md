@@ -1,0 +1,21 @@
+# Changelog
+
+## [2026.11.21] - 2026-11-21
+
+### Core & Policy Model
+- Added framework-independent immutable domain POCOs (`FilterPolicy`, `NatPolicy`, `BridgePolicy`, `FirewallPolicyBundle`, `BackendCapabilities`, `BackendCompatibilityEvaluator`, `ResourceOwnership`, `ApplyPlan`, and `AgentControlProtocol`) in `Nergal.Core` with deterministic bounds checking and structured diagnostics.
+- Established [ADR 0001](docs/decisions/0001-native-nftables.md) selecting native `nftables` as the primary backend.
+
+### Native `nftables` Compiler & Agent Execution
+- Implemented deterministic `NftFilterCompiler` (Schema 1 & Schema 2 stateful forwarding, output chains, ingress/egress interface matchers, IPv6 Neighbor Discovery, per-source rate-limiting meters, `ct status dnat`), `NftNatCompiler` (`inet nergal_nat` DNAT/SNAT), `NftBridgeCompiler` (`bridge nergal_bridge`), and coordinated atomic `NftPolicyBundleCompiler` transactions.
+- Implemented `Nergal.LocalState` (`ApplyJournal`, `ResourceExecutionLock`, monotonic revision and boot-clock persistence in owner-only `0700`/`0600` SQLite WAL storage) and `Nergal.Linux` metadata/namespace guards.
+- Built `nergal-agent` (`enroll`, `reconcile`, `status-serve`, `control-serve`, `tls-serve`, `prepare`, `watch`, `apply`, `confirm`) enforcing explicit `inet nergal_filter` table ownership, independent watchdog rollback, and zero mutation of foreign tables.
+- Implemented mutual-authentication transports in `Nergal.LocalTransport` (`SO_PEERCRED` peer-UID sockets) and `Nergal.RemoteTransport` (pinned TLS 1.3 mTLS with `AllowTlsResume = false`, leaf EKU, and SHA-256 thumbprint validation).
+
+### Web Controller, RBAC & Operations
+- Built `Nergal.ControllerState` (mode-checked `0700`/`0600` SQLite WAL store for registered hosts, monotonic policy revisions, and trigger-protected append-only `audit_log`), `Nergal.Identity` (`LocalAdministratorAccounts`, certificate-protected persistent Data Protection session keys), and `Nergal.Admin` (`account init`, `account provision [--role]`, `controller init`, `--version`).
+- Built `Nergal.Web` MVC & Blazor controller UI featuring local HTTPS authentication, optional OIDC with disjoint `AdministratorGroups`/`AuditorGroups` RBAC, `/manage` fleet dashboard, `/manage/policies` bundle editor with capability checks and unified nftables diff preview, `/manage/apply` two-phase confirmed apply and rollback workflow, and `/manage/audit` immutable history.
+- Added hardened `deploy/systemd/nergal-agent.service` and `deploy/systemd/nergal-web.service` templates and [docs/deployment.md](docs/deployment.md).
+
+### Verification
+- Verified across deterministic xUnit unit suites (`Nergal.Core.Tests`, `Nergal.LocalState.Tests`, `Nergal.Web.Tests`) and unprivileged disposable user/network namespace kernel integration suites enforcing real dual-stack packet filtering, NAT/bridge compilation, cross-UID isolation, watchdog crash recovery, OIDC/HTTPS sessions, and end-to-end unprivileged Kestrel -> `nergal-agent` packet rollback.

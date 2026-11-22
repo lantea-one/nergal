@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -27,12 +28,29 @@ internal static class AgentCommands
           nergal-agent apply ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY OPERATION_UUID WATCHDOG_UUID
           nergal-agent confirm ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY OPERATION_UUID WATCHDOG_UUID
           nergal-agent reconcile ABSOLUTE_PRIVATE_JOURNAL_DIRECTORY
+          nergal-agent --version
         """;
 
     internal static async Task<int> RunAsync(string[] args, TextWriter? output = null, TextWriter? error = null)
     {
         output ??= Console.Out;
         error ??= Console.Error;
+        if (args is ["--help"])
+        {
+            output.WriteLine(Usage);
+            return 0;
+        }
+
+        if (args is ["--version"])
+        {
+            var version = typeof(AgentCommands).Assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                ?? typeof(AgentCommands).Assembly.GetName().Version?.ToString()
+                ?? "2026.11.21";
+            output.WriteLine(version);
+            return 0;
+        }
+
         if (!OperatingSystem.IsLinux())
         {
             error.WriteLine("platform.unsupported");

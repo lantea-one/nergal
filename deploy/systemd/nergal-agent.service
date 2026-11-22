@@ -1,0 +1,45 @@
+[Unit]
+Description=nergal host firewall agent control listener
+Documentation=https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/deployment.md
+After=network-online.target nftables.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nergal-agent
+Group=nergal-agent
+SupplementaryGroups=nergal-ctl
+WorkingDirectory=/var/lib/nergal/agent
+# Replace SOCKET_GROUP_GID and WEB_UID (or switch subcommand to tls-serve) before enabling.
+ExecStart=/usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll control-serve /var/lib/nergal/agent /run/nergal/control.sock WEB_UID SOCKET_GROUP_GID
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=15s
+
+# Only CAP_NET_ADMIN is retained so agent journal ownership checks run under a dedicated non-root UID.
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=yes
+
+# Filesystem, kernel, and namespace isolation.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6
+ReadOnlyPaths=/opt/nergal/agent /etc/nergal/agent
+ReadWritePaths=/var/lib/nergal/agent /run/nergal
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
