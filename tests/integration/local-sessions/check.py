@@ -87,7 +87,7 @@ class Browser:
 @contextlib.contextmanager
 def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
     env = {k: v for k, v in os.environ.items()
-           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "controllerstate__", "oidc__", "logging__"))}
+           if not k.lower().startswith(("aspnetcore_", "kestrel__", "localsessions__", "agentstatus__", "controllerstate__", "oidc__", "logging__", "nativesources__"))}
     env.update({
         "HOME": str(temp / "profile"),
         "XDG_DATA_HOME": str(temp / "profile"),
@@ -236,9 +236,14 @@ def exercise(temp):
         browser.request("/agent/status", 404)
         browser.cookies[ADMIN] = "invalid-ticket"
         browser.request("/session", 401)
-    with host(temp, tls, controller_settings) as browser:
+    # A normal installation needs no operator source directory after ingestion.
+    database_only_settings = {k: v for k, v in controller_settings.items() if k != "NativeSources__Directory"}
+    with host(temp, tls, database_only_settings) as browser:
         browser.cookies[ADMIN] = session
         assert browser.request(download_path, 200).encode() == source.encode()
+        database_only_html = browser.request("/manage/sources?sourceId=" + source_id, 200)
+        assert "Operator-staged sources" not in database_only_html
+        assert "synthetic" in database_only_html and "immutable database content" in database_only_html
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
         browser.cookies[ADMIN] = session

@@ -402,7 +402,8 @@ upgrade tests preserve hosts, settings, revisions/audit and reject unknown versi
 source-table collisions or forged legacy protections without partial changes.
 
 The local-session HTTPS fixture exercises staged import and multipart upload,
-original attachment downloads, database persistence across restart, source escaping,
+original attachment downloads, database persistence across restart without an
+operator staging directory, source escaping,
 CSRF, invalid UTF-8, maximum valid file size, request/file size rejection and
 anonymous/Auditor boundaries. The admin fixture checks explicit idempotent schema
 upgrade and unknown-version denial. These checks add no native firewall operation;
