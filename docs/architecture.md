@@ -190,7 +190,7 @@ never a request-supplied path. Directory snapshots are optional staging inputs. 
 conversion. Exact sources and exported reports remain private.
 
 Native source ingestion now persists immutable exact UTF-8 snapshots and attributed
-audit entries transactionally in controller schema 2. The optional operator file
+audit entries transactionally (introduced in controller schema 2, retained in schema 3). The optional operator file
 catalog is staging only. Web uploads never execute source text, and original-file
 downloads use the verified database snapshot. Existing controllers require explicit
 offline `controller upgrade`; no additional SQL adapter is introduced. See
