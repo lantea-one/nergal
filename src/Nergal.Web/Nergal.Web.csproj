@@ -5,6 +5,7 @@
     <InternalsVisibleTo Include="Nergal.Web.Tests" />
     <ProjectReference Include="../Nergal.ControllerState/Nergal.ControllerState.csproj" />
     <ProjectReference Include="../Nergal.LocalTransport/Nergal.LocalTransport.csproj" />
+    <ProjectReference Include="../Nergal.RemoteTransport/Nergal.RemoteTransport.csproj" />
     <ProjectReference Include="../Nergal.Nftables/Nergal.Nftables.csproj" />
     <ProjectReference Include="../Nergal.Identity/Nergal.Identity.csproj" />
     <ProjectReference Include="..\Nergal.Core\Nergal.Core.csproj" />

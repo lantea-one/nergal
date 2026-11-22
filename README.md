@@ -79,8 +79,10 @@ Bind this development build to loopback; it is not a secured administration endp
   certificate-encrypted persistent session keys and revocable local sessions.
 - `Nergal.Web`: MVC controllers/views and Blazor components providing fleet dashboards,
   typed policy bundle authoring with `BackendCompatibilityEvaluator` checks, deterministic
-  nftables candidate diff previews (`Nergal.Nftables`), and audit/revision viewers when
-  explicitly enabled on HTTPS. It has no Docker socket, SSH, or shell execution.
+  nftables candidate diff previews (`Nergal.Nftables`), audit/revision viewers, and
+  two-phase confirmed apply (`ApplyWorkflowService` over `UnixControlClient` and
+  `TlsControlClient`) when explicitly enabled on HTTPS. It has no Docker socket, SSH,
+  `CAP_NET_ADMIN`, or shell execution.
 - `tests/Nergal.Core.Tests`: deterministic unit tests for semantic safety,
   invalid inputs and defensive snapshots.
 - `tests/integration/nftables`: opt-in real kernel and dual-stack packet checks

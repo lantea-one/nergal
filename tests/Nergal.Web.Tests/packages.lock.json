@@ -474,6 +474,12 @@
           "Nergal.Core": "[1.0.0, )"
         }
       },
+      "nergal.remotetransport": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.Core": "[1.0.0, )"
+        }
+      },
       "nergal.web": {
         "type": "Project",
         "dependencies": {
@@ -482,7 +488,8 @@
           "Nergal.Core": "[1.0.0, )",
           "Nergal.Identity": "[1.0.0, )",
           "Nergal.LocalTransport": "[1.0.0, )",
-          "Nergal.Nftables": "[1.0.0, )"
+          "Nergal.Nftables": "[1.0.0, )",
+          "Nergal.RemoteTransport": "[1.0.0, )"
         }
       }
     }

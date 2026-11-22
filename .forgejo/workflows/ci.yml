@@ -3,8 +3,6 @@ on:
   push:
     branches: [main, 'codex/**', 'renovate/**']
   workflow_dispatch:
-permissions:
-  contents: read
 jobs:
   verify:
     runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}

@@ -101,10 +101,9 @@ public static class UnixControlClient
                     throw new LocalTransportException("reply.trailing");
                 }
             }
-            catch (Exception ex) when ((ex is IOException or SocketException) &&
-                                       decoded.Reply!.Outcome is AgentControlOutcome.Denied or AgentControlOutcome.InvalidRequest or AgentControlOutcome.Busy)
+            catch (Exception ex) when (ex is IOException or SocketException)
             {
-                // Server intentionally closes without draining unread request bytes on immediate rejection.
+                // Server may reset/close the stream immediately after sending a complete reply frame.
             }
 
             return decoded.Reply!;
