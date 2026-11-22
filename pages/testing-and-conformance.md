@@ -21,3 +21,10 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, preview-only apply limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+## Unit framework maintenance
+
+Unit tests use `xunit.v3` executable .NET 10 assemblies while retaining the VSTest
+and Coverlet workflow. `scripts/test-unit.sh` requires one nonempty coverage report
+from each of the three test projects. The framework migration retains all denied
+operation and safety regressions; it is independent of native packet conformance.

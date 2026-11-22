@@ -299,3 +299,19 @@ auxiliary recreation denial. It deliberately uses the same namespace UID for the
 client and agent. It does **not** verify the separate-UID authorization boundary
 or replace `tests/integration/local-status/check.sh`, which requires working
 subordinate-UID mapping helpers.
+
+### Test framework maintenance
+
+All three unit projects use the stable `xunit.v3.mtp-off` package (4.0.3) as executable
+.NET 10 test assemblies. VSTest, its existing Visual Studio adapter and Coverlet
+collection remain in use so `dotnet test` and `scripts/test-unit.sh` retain the same
+entry points and required three usable coverage artifacts. Async tests pass the
+runner cancellation token where supported; denied-operation cases are retained.
+The CLI argument theory uses explicit string-array rows for the v3 data contract.
+The explicit `mtp-off` variant follows the upstream VSTest template and avoids
+implicitly selecting the Microsoft Testing Platform runner. The repository no
+longer references the deprecated `xunit` v2 metapackage.
+
+Renovate closes its dependency dashboard automatically when no pending dependency
+work remains, and can recreate/reopen it for later work. Dependency updates still
+require review; automerge remains disabled.

@@ -329,7 +329,7 @@ public sealed class ConfirmedApplyWorkflowTests
                 AgentTransportKind.Tls,
                 "127.0.0.1:1",
                 pinnedServerThumbprint: SampleDigest);
-            var missingCertReply = await emptyDispatcher.SendAsync(tlsHost, new AgentControlRequest(AgentControlCommand.Status));
+            var missingCertReply = await emptyDispatcher.SendAsync(tlsHost, new AgentControlRequest(AgentControlCommand.Status), TestContext.Current.CancellationToken);
             Assert.Equal(AgentControlOutcome.Unavailable, missingCertReply.Outcome);
             Assert.Equal("tls.clientCertMissing", missingCertReply.ErrorCode);
 
@@ -339,7 +339,7 @@ public sealed class ConfirmedApplyWorkflowTests
             Assert.True(loaded.HasClientCertificate);
 
             var dispatcher = new DefaultAgentControlDispatcher(loaded);
-            var tlsUnreachable = await dispatcher.SendAsync(tlsHost, new AgentControlRequest(AgentControlCommand.Status));
+            var tlsUnreachable = await dispatcher.SendAsync(tlsHost, new AgentControlRequest(AgentControlCommand.Status), TestContext.Current.CancellationToken);
             Assert.Equal(AgentControlOutcome.Unavailable, tlsUnreachable.Outcome);
             Assert.Equal("transport.tlsUnavailable", tlsUnreachable.ErrorCode);
 
@@ -349,7 +349,7 @@ public sealed class ConfirmedApplyWorkflowTests
                 AgentTransportKind.Unix,
                 Path.Combine(dir, "missing.sock"),
                 expectedServerUserId: 0);
-            var unixUnreachable = await dispatcher.SendAsync(unixHost, new AgentControlRequest(AgentControlCommand.Status));
+            var unixUnreachable = await dispatcher.SendAsync(unixHost, new AgentControlRequest(AgentControlCommand.Status), TestContext.Current.CancellationToken);
             Assert.Equal(AgentControlOutcome.Unavailable, unixUnreachable.Outcome);
             Assert.Equal("transport.localUnavailable", unixUnreachable.ErrorCode);
         }
@@ -379,7 +379,7 @@ public sealed class ConfirmedApplyWorkflowTests
             var revision = store.SavePolicyRevision(report.CanonicalJson!, report.CandidateDigest!, actor, NergalRoles.Administrator, "Synthetic preview");
             var dispatcher = new RecordingDispatcher((_, _) => throw new InvalidOperationException("Must not contact agent"));
             var workflow = new ApplyWorkflowService(store, dispatcher);
-            var result = await workflow.StartApplyAsync(host.Id, revision.Revision, 30, actor, NergalRoles.Administrator);
+            var result = await workflow.StartApplyAsync(host.Id, revision.Revision, 30, actor, NergalRoles.Administrator, TestContext.Current.CancellationToken);
             Assert.Equal("policy.previewOnlyScope", result.Reply!.ErrorCode);
             Assert.Empty(dispatcher.Sent);
             Assert.Contains(store.ListAuditEntries(), e => e.Action == "apply.start" && e.Outcome == "rejected" && e.DetailCode == "policy.previewOnlyScope");

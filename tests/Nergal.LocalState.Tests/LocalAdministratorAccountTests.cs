@@ -292,7 +292,7 @@ public sealed class LocalAdministratorAccountTests
         {
             var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
             scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext = http;
-            Assert.True(await scope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>().SignInAsync(Name, Password));
+            Assert.True(await scope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>().SignInAsync(Name, Password, TestContext.Current.CancellationToken));
             cookie = Assert.Single(http.Response.Headers.SetCookie)!.Split(';')[0];
         }
 

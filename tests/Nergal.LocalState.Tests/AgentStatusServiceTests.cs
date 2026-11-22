@@ -25,18 +25,18 @@ public sealed class AgentStatusServiceTests
     {
         using var fixture = new Fixture();
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.Zero));
+            ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.Zero, TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromMinutes(6)));
+            ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromMinutes(6), TestContext.Current.CancellationToken));
 
-        using (var held = await ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromSeconds(1)))
+        using (var held = await ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken))
         {
             var error = await Assert.ThrowsAsync<JournalException>(() =>
-                ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromMilliseconds(40)));
+                ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromMilliseconds(40), TestContext.Current.CancellationToken));
             Assert.Equal("resource.lockTimeout", error.Code);
         }
 
-        using var reacquired = await ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromSeconds(1));
+        using var reacquired = await ResourceExecutionLock.AcquireAsync(fixture.Path, TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(Path.Combine(fixture.Path, "resource.lock")));
     }
 
@@ -69,27 +69,28 @@ public sealed class AgentStatusServiceTests
     }
 
     /// <summary>CLI parsing rejects unknown commands, relative paths, and malformed numeric identities.</summary>
-    public static TheoryData<string[]> InvalidCliArguments =>
-    [
-        [],
-        ["unknown"],
-        ["enroll", "relative/path"],
-        ["reconcile", "relative/path"],
-        ["status-serve", "/tmp/journal", "relative/sock", "1000"],
-        ["status-serve", "relative/journal", "/tmp/status.sock", "1000"],
-        ["status-serve", "/tmp/journal", "/tmp/status.sock", "-1"],
-        ["status-serve", "/tmp/journal", "/tmp/status.sock", "1000", "not-a-gid"],
-        ["status-serve", "/tmp/journal", "/tmp/status.sock", "1000", "2000", "extra"],
-        ["prepare", "/tmp/journal", "not-a-guid", "10", "drop"],
-        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000000", "10", "drop"],
-        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "0", "drop"],
-        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "3601", "drop"],
-        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "10", "reject"],
-        ["prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "10", "drop", "icmp:accept"],
-        ["watch", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000000"],
-        ["apply", "relative/journal", "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002"],
-        ["confirm", "/tmp/journal", "00000000-0000-0000-0000-000000000001"],
-    ];
+    public static TheoryData<string[]> InvalidCliArguments => new()
+    {
+        Array.Empty<string>(),
+        new string[] { "unknown" },
+        new string[] { "enroll", "relative/path" },
+        new string[] { "reconcile", "relative/path" },
+        new string[] { "status-serve", "/tmp/journal", "relative/sock", "1000" },
+        new string[] { "status-serve", "relative/journal", "/tmp/status.sock", "1000" },
+        new string[] { "status-serve", "/tmp/journal", "/tmp/status.sock", "-1" },
+        new string[] { "status-serve", "/tmp/journal", "/tmp/status.sock", "1000", "not-a-gid" },
+        new string[] { "status-serve", "/tmp/journal", "/tmp/status.sock", "1000", "2000", "extra" },
+        new string[] { "prepare", "/tmp/journal", "not-a-guid", "10", "drop" },
+        new string[] { "prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000000", "10", "drop" },
+        new string[] { "prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "0", "drop" },
+        new string[] { "prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "3601", "drop" },
+        new string[] { "prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "10", "reject" },
+        new string[] { "prepare", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "10", "drop", "icmp:accept" },
+        new string[] { "watch", "/tmp/journal", "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000000" },
+        new string[] { "apply", "relative/journal", "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002" },
+        new string[] { "confirm", "/tmp/journal", "00000000-0000-0000-0000-000000000001" },
+    };
+
 
     /// <summary>CLI parsing rejects unknown commands, relative paths, and malformed numeric identities.</summary>
     [Theory]
