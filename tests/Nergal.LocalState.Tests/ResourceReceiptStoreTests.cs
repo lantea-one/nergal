@@ -418,12 +418,7 @@ public sealed class ResourceReceiptStoreTests
     [Fact]
     public void CompleteBundle_RejectsMissingBaselineAndChangedAuxiliaryCandidate()
     {
-        var assembly = typeof(ResourceReceiptStoreTests).Assembly;
-        using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(n => n.EndsWith("bundle-echo.json", StringComparison.Ordinal)))!;
-        using var reader = new StreamReader(stream);
-        var json = reader.ReadToEnd().Replace(new NftTableIdentity(
-            Guid.Parse("00000000-0000-0000-0000-000000000010"), Guid.Parse("00000000-0000-0000-0000-000000000020")).Comment,
-            new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal);
+        var json = CompleteBundleJson();
         NftTableObservation Parse(string text) => NftTableObservation.ParseBundleReplacementEcho(text, new(Owner, Resource), true, true, true).Observation!;
         var baseline = Parse(json);
         var artifact = NftPolicyBundleCompiler.Compile(baseline.Bundle, baseline.Identity).Candidate!;
@@ -448,6 +443,76 @@ public sealed class ResourceReceiptStoreTests
         Reject("resource.receiptMismatch", () => fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, baseline, 42));
         Assert.Equal(1UL, fixture.Store.ReadEnrollment().Ownership.Revision);
         Assert.True(fixture.Store.ConfirmBound(plan.OperationId, plan, Watchdog, candidate, 42).Accepted);
+    }
+
+    /// <summary>Rollback authorizes recorded native receipts, never semantic lookalikes or unacknowledged replacements.</summary>
+    [Fact]
+    public void RollbackSource_RequiresDurableReceiptAndTrustedContext()
+    {
+        using var fixture = new Fixture(resourceIntent: true);
+        var baseline = Observe();
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+        var plan = fixture.Plan();
+        fixture.Store.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog);
+        var candidate = Observe(12, FilterVerdict.Drop);
+        fixture.Store.Advance(plan.OperationId, ApplyEvent.ApplyFailed, plan, Watchdog);
+        Assert.True(fixture.Store.VerifyBoundRollbackSource(plan.OperationId, baseline, 42));
+        Reject("resource.receiptMismatch", () => fixture.Store.VerifyBoundRollbackSource(plan.OperationId, candidate, 42));
+        Reject("resource.receiptMismatch", () => fixture.Store.VerifyBoundRollbackSource(plan.OperationId, Observe(15), 42));
+        Reject("resource.receiptMismatch", () => fixture.Store.VerifyBoundRollbackSource(plan.OperationId, baseline, 43));
+    }
+
+    /// <summary>A recreated candidate with an identical policy and marker cannot authorize rollback after an acknowledged apply.</summary>
+    [Fact]
+    public void RollbackSource_RejectsRecreatedAcknowledgedCandidate()
+    {
+        using var fixture = new Fixture(resourceIntent: true);
+        var baseline = Observe();
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+        var plan = fixture.Plan();
+        fixture.Store.StartBound(plan, Artifact(FilterVerdict.Drop), Artifact(FilterVerdict.Accept), baseline, 42);
+        fixture.Store.Advance(plan.OperationId, ApplyEvent.RollbackArmed, plan, Watchdog);
+        var candidate = Observe(12, FilterVerdict.Drop);
+        fixture.Store.RecordCandidateAppliedBound(plan.OperationId, plan, Watchdog, Receipt(candidate), candidate, 42);
+        fixture.Store.Advance(plan.OperationId, ApplyEvent.VerificationFailed, plan, Watchdog);
+        Assert.False(fixture.Store.VerifyBoundRollbackSource(plan.OperationId, candidate, 42));
+        Reject("resource.receiptMismatch", () => fixture.Store.VerifyBoundRollbackSource(plan.OperationId, Observe(15, FilterVerdict.Drop), 42));
+        fixture.Clock.BootId = Other;
+        Reject("resource.receiptMismatch", () => fixture.Store.VerifyBoundRollbackSource(plan.OperationId, candidate, 42));
+    }
+
+    /// <summary>New-boot reconciliation requires complete auxiliary intent and preserves the old receipt after rejected reconstruction.</summary>
+    [Fact]
+    public void CompleteBundle_NewBootRejectsAuxiliaryOnlyMismatch()
+    {
+        var json = CompleteBundleJson();
+        NftTableObservation Parse(string text) => NftTableObservation.ParseBundleReplacementEcho(text, new(Owner, Resource), true, true, true).Observation!;
+        var baseline = Parse(json);
+        var artifact = NftPolicyBundleCompiler.Compile(baseline.Bundle, baseline.Identity).Candidate!;
+        using var fixture = new Fixture(resourceIntent: true, artifact: artifact);
+        fixture.Store.BindExpectedResource(Ownership, Receipt(baseline), baseline, 42);
+        fixture.Clock.BootId = Other;
+        var changed = System.Text.Json.Nodes.JsonNode.Parse(json)!;
+        var rule = changed["nftables"]!.AsArray().Select(i => i?["add"]?["rule"]).First(i => (string?)i?["table"] == "nergal_aux")!;
+        rule["expr"]!.AsArray()[^1] = new System.Text.Json.Nodes.JsonObject { ["accept"] = null };
+        var drift = Parse(changed.ToJsonString());
+        Reject("resource.baselineMismatch", () => fixture.Store.ReconcileBoot(Ownership,
+            new(Other, 43, drift.Identity, drift.TableHandle, drift.StateDigest), drift, 43));
+        Assert.Equal(Receipt(baseline), fixture.Store.ReadExpectedResource());
+        var recreated = new NftTableReceipt(Other, 43, baseline.Identity, baseline.TableHandle, baseline.StateDigest);
+        Assert.Equal(recreated, fixture.Store.ReconcileBoot(Ownership, recreated, baseline, 43));
+        Assert.True(fixture.Store.VerifyExpectedResource(baseline, 43).IsMatch);
+    }
+
+    private static string CompleteBundleJson()
+    {
+        var assembly = typeof(ResourceReceiptStoreTests).Assembly;
+        using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(n => n.EndsWith("bundle-echo.json", StringComparison.Ordinal)))!;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Replace(new NftTableIdentity(
+            Guid.Parse("00000000-0000-0000-0000-000000000010"), Guid.Parse("00000000-0000-0000-0000-000000000020")).Comment,
+            new NftTableIdentity(Owner, Resource).Comment, StringComparison.Ordinal);
     }
 
     private static NftTableObservation Observe(ulong handle = 7, FilterVerdict verdict = FilterVerdict.Accept, Guid? resource = null)

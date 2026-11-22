@@ -95,7 +95,7 @@
         @if (Bundle.Filter.ForwardTcpMssClamp is { } mss)
         { <p>Forward TCP SYN MSS clamp: @mss bytes.</p> }
         @if (Bundle.RequiresExtendedApplySupport)
-        { <p class="alert alert-warning">Extended bridge/auxiliary scope is preview-only; agent apply is denied.</p> }
+        { <p class="alert alert-info">Auxiliary/extended bridge scope requires complete bundle receipts. Confirmed apply and local rollback cover all owned tables; unexpected drift requires recovery.</p> }
         @if (Bundle.Nat is { } nat)
         {
             <h3>NAT (<code>inet nergal_nat</code>)</h3>

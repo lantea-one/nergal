@@ -11,7 +11,7 @@ public sealed class FirewallPolicyBundle
     /// <param name="filter">Required host/forwarding filter policy targeting <c>inet nergal_filter</c>.</param>
     /// <param name="nat">Optional dual-stack NAT policy targeting <c>inet nergal_nat</c>.</param>
     /// <param name="bridge">Optional L2 bridge filtering policy targeting <c>bridge nergal_bridge</c>.</param>
-    /// <param name="auxiliaryFilter">Optional independent early inet filter table, preview-only.</param>
+    /// <param name="auxiliaryFilter">Optional independent early inet filter table.</param>
     /// <exception cref="ArgumentNullException"><paramref name="filter"/> is null.</exception>
     public FirewallPolicyBundle(
         int schemaVersion,
@@ -40,10 +40,10 @@ public sealed class FirewallPolicyBundle
     /// <summary>Gets the optional L2 bridge filtering policy.</summary>
     public BridgePolicy? Bridge { get; }
 
-    /// <summary>Gets an optional independent early inet filter table (compiler preview only).</summary>
+    /// <summary>Gets an optional independent early inet filter table.</summary>
     public AuxiliaryFilterPolicy? AuxiliaryFilter { get; }
 
-    /// <summary>Gets whether this bundle requires agent observation/rollback support not implemented yet.</summary>
+    /// <summary>Gets whether this bundle requires complete auxiliary/extended bridge observation and rollback support.</summary>
     public bool RequiresExtendedApplySupport => AuxiliaryFilter is not null || Bridge?.HasExtendedRules == true;
 
     /// <summary>Aggregates all semantic backend requirements across every configured table in the bundle.</summary>

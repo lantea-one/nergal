@@ -17,6 +17,6 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 ## Unreleased router and settings work
 
 See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
-current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.

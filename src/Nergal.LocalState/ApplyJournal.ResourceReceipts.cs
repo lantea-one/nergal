@@ -480,23 +480,47 @@ public sealed partial class ApplyJournal
         Scalar(connection, transaction, "SELECT count(*) FROM bound_operations WHERE operation=$id", ("$id", Id(operationId))) is long count && count == 1;
 
     private static (ulong Handle, CandidateDigest Digest) ReadBoundCandidate(SqliteConnection connection, SqliteTransaction transaction, Guid operationId)
+        => TryReadBoundCandidate(connection, transaction, operationId) ?? throw new JournalException("journal.corrupt");
+
+    private static (ulong Handle, CandidateDigest Digest)? TryReadBoundCandidate(SqliteConnection connection, SqliteTransaction transaction, Guid operationId)
     {
         using var command = Command(connection, transaction,
             "SELECT candidate_handle,candidate_digest FROM bound_operations WHERE operation=$id", ("$id", Id(operationId)));
         using var row = command.ExecuteReader();
-        if (!row.Read() || row.IsDBNull(0) || row.IsDBNull(1))
-        {
-            throw new JournalException("journal.corrupt");
-        }
-
-        try
-        {
-            return (ParseRevision(row.GetString(0)), new CandidateDigest(row.GetString(1)));
-        }
+        if (!row.Read()) { throw new JournalException("journal.corrupt"); }
+        if (row.IsDBNull(0) && row.IsDBNull(1)) { return null; }
+        if (row.IsDBNull(0) || row.IsDBNull(1)) { throw new JournalException("journal.corrupt"); }
+        try { return (ParseRevision(row.GetString(0)), new CandidateDigest(row.GetString(1))); }
         catch (Exception error) when (error is ArgumentException or FormatException or OverflowException or InvalidCastException)
+        { throw new JournalException("journal.corrupt"); }
+    }
+
+    /// <summary>Verifies complete native provenance before a bound rollback, without adopting observed handles.</summary>
+    /// <returns>True when the protected baseline is still present; false when the recorded candidate is present.</returns>
+    /// <remarks>The caller holds the resource execution lock. An unacknowledged replacement is ambiguous and requires recovery.</remarks>
+    /// <exception cref="ArgumentNullException">The observation is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The current namespace is zero.</exception>
+    /// <exception cref="JournalException">The operation is not actively awaiting rollback, or neither protected receipt matches.</exception>
+    public bool VerifyBoundRollbackSource(Guid operationId, NftTableObservation actual, ulong currentNamespace)
+    {
+        ArgumentNullException.ThrowIfNull(actual);
+        if (currentNamespace == 0) { throw new ArgumentOutOfRangeException(nameof(currentNamespace)); }
+        return Inspect((connection, transaction) =>
         {
-            throw new JournalException("journal.corrupt");
-        }
+            var enrollment = Enrollment(connection, transaction);
+            if (enrollment.Active != operationId || !IsBoundOperation(connection, transaction, operationId))
+            { throw new JournalException("operation.notActive"); }
+            var entry = Load(connection, transaction, operationId);
+            if (entry.Session.Phase != ApplyPhase.RollbackRequired) { throw new JournalException("phase.invalid"); }
+            var receipt = LoadReceipt(connection, transaction, enrollment.Value, enrollment.Boot, enrollment.ResourceBound)
+                ?? throw new JournalException("resource.unbound");
+            var now = Now();
+            if (NftReceiptVerifier.Verify(receipt, actual, now.BootId, currentNamespace).IsMatch) { return true; }
+            if (TryReadBoundCandidate(connection, transaction, operationId) is { } candidate &&
+                NftReceiptVerifier.Verify(new(enrollment.Boot, receipt.NetworkNamespace, receipt.Identity, candidate.Handle, candidate.Digest),
+                    actual, now.BootId, currentNamespace).IsMatch) { return false; }
+            throw new JournalException("resource.receiptMismatch");
+        });
     }
 
     /// <summary>Loads the protected expected receipt and classifies a complete locally collected observation without repair or adoption.</summary>

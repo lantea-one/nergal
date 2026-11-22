@@ -8,6 +8,19 @@ var routerIdentity = new NftTableIdentity(
     Guid.Parse("00000000-0000-0000-0000-000000000010"),
     Guid.Parse("00000000-0000-0000-0000-000000000020"));
 
+if (mode is "auxiliary-acceptance-json" or "auxiliary-open-json" or "auxiliary-acceptance-native")
+{
+    var bundle = RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json");
+    if (mode.EndsWith("-json", StringComparison.Ordinal)) { Console.Write(PolicyBundleJsonCodec.EncodeBundle(bundle)); }
+    else
+    {
+        var result = NftPolicyBundleCompiler.Compile(bundle, routerIdentity);
+        if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); }
+        Console.Write(result.Candidate);
+    }
+    return 0;
+}
+
 if (mode == "router-complete-bundle")
 {
     var compiled = NftPolicyBundleCompiler.Compile(CompleteBundle(), routerIdentity);

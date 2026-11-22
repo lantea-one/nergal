@@ -1,6 +1,6 @@
 # 0036. Complete bundle observations for auxiliary apply and rollback
 
-- Status: proposed implementation; apply remains gated until conformance passes
+- Status: accepted; complete native, packet, agent and mapped-identity conformance implemented
 - Date: 2026-11-22
 
 ## Problem
@@ -51,3 +51,45 @@ binaries cannot validate new composite fingerprints and must not run concurrentl
 
 All privileged conformance uses disposable namespaces and synthetic policy data.
 No production configuration is applied during development.
+
+## Rollback provenance and ambiguous crash windows
+
+Before replacement, both explicit rollback and the independent watchdog must
+compare the complete live observation with either the protected baseline receipt
+or the operation's durably recorded candidate receipt. Matching compiled text or
+copied ownership comments cannot authorize a replacement. The apply path repeats
+its baseline check after arming the watchdog and reacquiring the execution lock.
+
+Kernel replacement and SQLite acknowledgement cannot form one atomic transaction.
+If a process dies after replacement but before durable native evidence is saved,
+or after restoration but before its receipt is committed, a later observer cannot
+prove the recreated objects' provenance. Preserve that state and enter
+`RecoveryRequired` rather than adopting handles or overwriting unexpected state.
+Ordinary recorded candidates still receive autonomous timeout rollback, including
+controller loss and watchdog restart. These distinct cases require explicit tests;
+restart safety does not imply automatic repair of every ambiguous crash window.
+
+## Acceptance results
+
+`check-auxiliary-apply.sh` verifies real IPv4/IPv6 bridge MAC+IP restrictions,
+source/destination MAC negation with permitted control connections, bridge-name
+exclusion, jump/return, and priority ordering against later foreign hook counters.
+Its `--agent` cases verify confirmation, explicit and independent timeout rollback,
+controller loss, watchdog restart, auxiliary removal/restoration, and preservation
+of drifted/recreated/missing/unknown or foreign state. The mapped-identity HTTPS
+fixture applies filter/NAT/extended bridge/early inet together through the
+unprivileged web controller with pinned mTLS. Unit tests cover complete new-boot
+intent and rejection of rollback without durable native evidence.
+
+This acceptance covers the typed supported slice and disposable synthetic topology.
+It does not establish lossless import of arbitrary native configurations or an
+atomic kernel/SQLite acknowledgement. Those limits remain explicit above.
+
+The runtime repeats its complete native receipt comparison immediately before
+replacement validation. Its execution lock coordinates cooperating agent writers;
+administrators must not run competing privileged writers against owned resources
+during an operation. Native table deletion uses names: the tested nft userspace
+crashes when handle-only deletion and rule-bearing recreation use JSON echo.
+A separate observer cannot close the final observation-to-transaction race against
+an unrelated privileged writer. Such concurrent modification is unsupported;
+receipt checks detect subsequent drift but cannot provide kernel compare-and-swap.

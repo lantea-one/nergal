@@ -371,43 +371,7 @@ internal static class AgentCommands
                 {
                     var ns = AgentStatusProvider.ReadNetworkNamespace();
                     now = clock.Read();
-                    var expected = journal.ReadExpectedResource() ?? throw new IOException("resource.unbound");
-                    var live = await ObserveLiveAsync();
-                    if (live.Identity != expected.Identity)
-                    {
-                        throw new IOException("Observed table identity disagrees.");
-                    }
-
-                    var liveAux = await NativeNft.TryInspectAuxiliaryTablesAsync(expected.Identity)
-                        ?? throw new IOException("Auxiliary table observation unavailable.");
-                    if ((liveAux.NatExists && !liveAux.NatOwned) || (liveAux.BridgeExists && !liveAux.BridgeOwned) || (liveAux.AuxiliaryExists && !liveAux.AuxiliaryOwned))
-                    {
-                        throw new IOException("Unowned auxiliary table collision.");
-                    }
-
-                    var liveCandidate = NftPolicyBundleCompiler.Compile(live.Bundle, live.Identity).Candidate;
-                    NftTableReceipt restoredReceipt;
-                    NftTableObservation restoredListing;
-                    if (liveCandidate == entry.Rollback &&
-                        AuxiliaryTablesMatchArtifact(liveAux, entry.Rollback))
-                    {
-                        if (now.BootId != expected.BootId || ns != expected.NetworkNamespace)
-                        {
-                            throw new IOException("Observed context disagrees.");
-                        }
-
-                        restoredReceipt = new NftTableReceipt(now.BootId, ns, live.Identity, live.TableHandle, live.StateDigest);
-                        restoredListing = live;
-                    }
-                    else if (liveCandidate == entry.Candidate &&
-                             AuxiliaryTablesMatchArtifact(liveAux, entry.Candidate))
-                    {
-                        (restoredReceipt, restoredListing) = await ReplaceAndVerifyAsync(entry.Rollback, now.BootId, ns, expected.Identity);
-                    }
-                    else
-                    {
-                        throw new IOException("Unexpected owned table state during rollback.");
-                    }
+                    var (restoredReceipt, restoredListing) = await RestoreBoundBaselineAsync(journal, entry, now.BootId, ns);
 
                     var restored = journal.RecordRollbackSucceededBound(
                         command.OperationId, entry.Session.Plan, command.WatchdogId, restoredReceipt, restoredListing, ns);
@@ -467,7 +431,7 @@ internal static class AgentCommands
                 return 1;
             }
 
-            var (candidateReceipt, candidateListing) = await ReplaceAndVerifyAsync(entry.Candidate, now.BootId, ns, expected.Identity);
+            var (candidateReceipt, candidateListing) = await ReplaceAndVerifyAsync(entry.Candidate, now.BootId, ns, expected.Identity, live);
             var applied = journal.RecordCandidateAppliedBound(
                 command.OperationId, entry.Session.Plan, command.WatchdogId, candidateReceipt, candidateListing, ns);
             if (!applied.Accepted)
@@ -614,9 +578,27 @@ internal static class AgentCommands
         return prefix.ToString();
     }
 
-    internal static async Task<(NftTableReceipt EchoReceipt, NftTableObservation Listing)> ReplaceAndVerifyAsync(
-        string artifact, Guid boot, ulong ns, NftTableIdentity expectedIdentity)
+    // Only durably recorded native state can authorize replacement, including on watchdog restart.
+    internal static async Task<(NftTableReceipt EchoReceipt, NftTableObservation Listing)> RestoreBoundBaselineAsync(
+        ApplyJournal journal, JournalEntry entry, Guid boot, ulong ns)
     {
+        var live = await ObserveLiveAsync();
+        var baselinePresent = journal.VerifyBoundRollbackSource(entry.Session.Plan.OperationId, live, ns);
+        var presence = await NativeNft.TryInspectAuxiliaryTablesAsync(live.Identity)
+            ?? throw new IOException("Complete auxiliary observation unavailable.");
+        if (!AuxiliaryTablesMatchArtifact(presence, baselinePresent ? entry.Rollback : entry.Candidate))
+        { throw new IOException("Unexpected auxiliary scope during rollback."); }
+        if (baselinePresent) { return (new(boot, ns, live.Identity, live.TableHandle, live.StateDigest), live); }
+        return await ReplaceAndVerifyAsync(entry.Rollback, boot, ns, live.Identity, live);
+    }
+
+    internal static async Task<(NftTableReceipt EchoReceipt, NftTableObservation Listing)> ReplaceAndVerifyAsync(
+        string artifact, Guid boot, ulong ns, NftTableIdentity expectedIdentity, NftTableObservation verifiedSource)
+    {
+        var fresh = await ObserveLiveAsync();
+        var sourceReceipt = new NftTableReceipt(boot, ns, expectedIdentity, verifiedSource.TableHandle, verifiedSource.StateDigest);
+        if (!NftReceiptVerifier.Verify(sourceReceipt, fresh, boot, ns).IsMatch)
+        { throw new IOException("Replacement source changed."); }
         var beforeAux = await NativeNft.TryInspectAuxiliaryTablesAsync(expectedIdentity)
             ?? throw new IOException("Auxiliary table observation unavailable.");
         var batch = BuildDeletePrefix(beforeAux) + artifact;

@@ -12,13 +12,20 @@ native configurations can be imported losslessly.
 | Destination-keyed meters | `rateLimit.keyKind: destinationAddress` | IPv4 and IPv6 packet tests share state across sources and separate destinations |
 | Negated interface and IP matchers | Explicit `negate*` booleans | Compiler/codec validation, native reconstruction; dangling negation is rejected |
 | Postrouting masquerade and return, ingress/protocol/port restrictions | `snatRules[].action` plus optional matchers | Real dual-stack translated source and unmodified return-exemption source |
-| Independent early inet filtering and extended bridge jump/return | `auxiliaryFilter` and extended `bridge`, including priority -5 | Compiler preview and native syntax only; agent apply is denied |
+| Independent early inet filtering and extended bridge jump/return | `auxiliaryFilter` and extended `bridge`, including priority -5 | Real dual-stack bridge/early inet packets, complete receipts, confirmed apply and local rollback |
 
-The first six rows have compiler and observation support. This does not establish
-web-driven watchdog rollback for every new combination. The last row is explicitly
-**preview-only**: the controller, agent handler, and atomic replacement compiler
-reject it with `policy.previewOnlyScope`. Complete independent auxiliary-table
-ownership, drift observation, packet conformance, and timed rollback remain required.
+All rows have typed compiler and complete native observation support. Auxiliary
+acceptance verifies dual-stack MAC+IP pinning and negation, bridge master matching,
+local jump/return control flow, priority -5 before a later -4 hook, and early inet
+restrictions without bypassing the primary filter. Real agent checks cover
+confirmation, explicit/timeout rollback, controller loss, watchdog restart and
+auxiliary removal/restoration. Separate-UID HTTPS/mTLS checks exercise all four
+table types. This is bounded synthetic conformance, not arbitrary source import
+or production deployment proof.
+
+Rollback requires the protected baseline or recorded candidate native fingerprint.
+Drift, copied-marker recreation, missing/unknown native state and ambiguous
+unacknowledged replacement require manual recovery and are never silently adopted.
 
 ## Authoring
 

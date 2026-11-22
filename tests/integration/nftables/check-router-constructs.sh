@@ -13,7 +13,7 @@ unshare --user --map-root-user --net python3 tests/integration/nftables/router_c
     "$fixture/router-constructs.nft" "$fixture/router-nat.nft" "$fixture" \
     "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
 "${runner[@]}" verify-constructs "$fixture/filter-echo.json" "$fixture/filter-list.json" "$fixture/nat-echo.json" "$fixture/nat-list.json"
-# Extended bridge/auxiliary are syntax previews; live dispatch stays explicitly denied.
+# Dedicated packet/agent acceptance runs through enrollment/check-auxiliary-apply.sh.
 unshare --user --map-root-user --net nft --check -f "$fixture/router-bridge.nft"
 unshare --user --map-root-user --net nft --check -f "$fixture/router-auxiliary.nft"
-printf 'PASS: native echo/list reconstruction and preview-only bridge/auxiliary syntax\n'
+printf 'PASS: native echo/list reconstruction and bridge/auxiliary syntax\n'
