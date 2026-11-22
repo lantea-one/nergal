@@ -10,7 +10,8 @@ public sealed record ObjectLibraryPageModel(
     bool CanMutate,
     string? Query = null,
     ObjectLibraryInput? Input = null,
-    string? Error = null);
+    string? Error = null,
+    IReadOnlyList<PolicyObjectUsage>? Usage = null);
 
 /// <summary>Untrusted bounded form values retained verbatim on validation failure.</summary>
 public sealed record ObjectLibraryInput(Guid? Id, int ExpectedVersion, string Name, string Kind, string Description, string Entries);

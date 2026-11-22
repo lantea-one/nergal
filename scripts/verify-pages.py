@@ -39,6 +39,7 @@ REQUIRED_FILES = [
     "assets/screenshots/auxiliary-readiness.jpg",
     "native-source-library.md",
     "reusable-object-library.md",
+    "assets/screenshots/policy-objects-dark.jpg",
     "assets/screenshots/object-library-dark.jpg",
     "assets/screenshots/object-library-light.jpg",
     "assets/screenshots/object-library-mobile.jpg",

@@ -203,6 +203,7 @@ the server timezone or mutating stored data; see [time display](time-display.md)
 The [typed object library](reusable-object-library.md) stores stable identities and
 immutable IPv4/IPv6/port-list versions under controller schema 3 (ADR 0039). Library
 edits require Administrator authorization, CSRF and exact expected-version checks,
-with transactional audit. Auditors can inspect history. These records have no
-native execution or policy-reference authority yet; saved policies cannot change
-as a side effect of editing a library object.
+with transactional audit. Auditors can inspect history. Pinned references under ADR 0040 embed immutable object versions in saved inet
+filter rules. Compilation projects those snapshots onto existing matchers; no
+latest-version lookup occurs during apply and native named sets remain unsupported.
+Saved policies cannot change as a side effect of editing a library object.

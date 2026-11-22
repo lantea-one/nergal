@@ -55,3 +55,14 @@ display, transactional audit and stale-edit protection. Controller schema 3 has 
 explicit offline upgrade preserving schema-1/2 state. Policy references, native
 named sets and impact review remain a separate milestone; library saves do not
 change policies or firewalls.
+
+## Unreleased pinned policy references
+
+Primary inet filter source/destination/port matchers can pin immutable library
+versions through the UI. Canonical policy JSON preserves identity, contents and
+digest; database saves reject forged/missing references. Library detail exposes
+saved revision references without claiming active host use. Edits/reordering retain
+references and library updates cannot change saved policy bytes. Static references
+compile to existing matchers; native named sets remain unsupported. Disposable
+IPv4/IPv6 packet and separate-UID HTTPS/Unix/mTLS watchdog conformance covers the
+resolved reference path. See [Sets & IP lists](reusable-object-library.md).

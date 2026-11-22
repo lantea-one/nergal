@@ -38,6 +38,9 @@ public static class NftFilterCompiler
     {
         ArgumentNullException.ThrowIfNull(policy);
         var errors = new List<PolicyDiagnostic>();
+        var objectErrors = new List<PolicyObjectDiagnostic>();
+        policy = FilterObjectResolver.Resolve(policy, objectErrors);
+        errors.AddRange(objectErrors.Select(d => new PolicyDiagnostic(d.Code, d.Path)));
         if (policy.SchemaVersion is not (1 or 2))
         {
             errors.Add(new("schema.unsupported", "schemaVersion"));

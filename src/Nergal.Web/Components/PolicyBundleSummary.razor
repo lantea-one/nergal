@@ -31,7 +31,7 @@
         else
         {
             <div class="table-wrap">
-                <table>
+                <table class="policy-rules-table">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -63,12 +63,12 @@
                                         <span>(<code>@rule.IcmpType</code>)</span>
                                     }
                                 </td>
-                                <td><code>@(rule.NegateSource ? "!= " : "")@FormatPrefixes(rule.Source, rule.SourcePrefixes)</code>
+                                <td><code>@(rule.NegateSource ? "!= " : "")@(ObjectLabel(rule.SourceObject) ?? FormatPrefixes(rule.Source, rule.SourcePrefixes))</code>
                                     @if (rule.SourceMac is not null || rule.SourceMacs is not null)
                                     { <span class="rule-desc">MAC @(rule.NegateSourceMac ? "!= " : "")@(rule.SourceMac?.Value ?? string.Join(", ", rule.SourceMacs!.Select(m => m.Value)))</span> }
                                 </td>
-                                <td><code>@(rule.NegateDestination ? "!= " : "")@FormatPrefixes(rule.Destination, rule.DestinationPrefixes)</code></td>
-                                <td><code>@FormatPorts(rule.DestinationPort, rule.DestinationPorts)</code></td>
+                                <td><code>@(rule.NegateDestination ? "!= " : "")@(ObjectLabel(rule.DestinationObject) ?? FormatPrefixes(rule.Destination, rule.DestinationPrefixes))</code></td>
+                                <td><code>@(ObjectLabel(rule.DestinationPortObject) ?? FormatPorts(rule.DestinationPort, rule.DestinationPorts))</code></td>
                                 <td><code>@FormatInterfaces(rule.InputInterface is null ? null : (rule.NegateInputInterface ? "!= " : "") + rule.InputInterface, rule.OutputInterface is null ? null : (rule.NegateOutputInterface ? "!= " : "") + rule.OutputInterface)</code></td>
                                 <td>
                                     <code>@FormatStates(rule.ConnectionStates)</code>
@@ -111,6 +111,7 @@
 }
 
 @code {
+    private static string? ObjectLabel(PolicyObjectReference? reference) => reference is null ? null : reference.Content.Name + " v" + reference.Version + " [" + string.Join(", ", reference.Content.Entries) + "]";
     /// <summary>Gets or sets the decoded policy bundle to render.</summary>
     [Parameter]
     public FirewallPolicyBundle? Bundle { get; set; }

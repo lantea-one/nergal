@@ -67,7 +67,7 @@ class Browser:
             self.last_headers = {k.lower(): v for k, v in response.getheaders()}
             self.location = response.getheader("Location")
             if expected == 302:
-                assert self.location in ("/login", "/session") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId="))
+                assert self.location in ("/login", "/session") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision="))
             assert PASSWORD not in body
             return body
         finally:
@@ -156,6 +156,7 @@ def exercise(temp):
     controller_settings = {"ControllerState__Enabled": "true", "ControllerState__Directory": str(ctrl_state),
                            "NativeSources__Directory": str(sources)}
     with host(temp, tls, controller_settings) as browser:
+        browser.request("/manage/policies/objects", 401, {"bundleJson": "{}"})
         browser.request("/manage/objects", 401)
         browser.request("/manage/objects/save", 401, {"name": "denied"})
         browser.request("/manage/sources", 401)
@@ -234,6 +235,8 @@ def exercise(temp):
             assert db.execute("SELECT count(*) FROM audit_log WHERE action='source.import'").fetchone() == (2,)
         from objects import check_objects
         object_path = check_objects(browser, ctrl_state)
+        from policy_objects import check_policy_objects
+        check_policy_objects(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -250,7 +253,7 @@ def exercise(temp):
         assert "synthetic" in database_only_html and "immutable database content" in database_only_html
         assert 'data-local-time datetime="' in database_only_html and 'Stored UTC:' in database_only_html
         assert "Imported (local time)" in database_only_html and "browser time zone" in database_only_html
-        assert "Updated synthetic list" in browser.request(object_path, 200)
+        assert "New library version" in browser.request(object_path, 200)
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
         browser.cookies[ADMIN] = session
@@ -314,6 +317,7 @@ def exercise(temp):
         assert "Auditor access is read-only" in auditor_browser.request("/manage/objects", 200)
         assert 'action="/manage/objects/save"' not in auditor_browser.request(object_path, 200)
         auditor_browser.request("/manage/objects/save", 403, {"name": "denied", "__RequestVerificationToken": auditor_browser.token("/session")})
+        auditor_browser.request("/manage/policies/objects", 403, {"bundleJson": "{}", "__RequestVerificationToken": auditor_browser.token("/session")})
         auditor_browser.request("/manage/sources", 403)
         auditor_browser.request(report_path, 403)
         auditor_browser.request(download_path, 403)

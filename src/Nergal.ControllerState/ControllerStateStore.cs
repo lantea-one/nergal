@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using Microsoft.Data.Sqlite;
 using Nergal.Core.Controller;
 using Nergal.Core.Identity;
+using Nergal.Core.Policy;
 using Nergal.Linux;
 
 namespace Nergal.ControllerState;
@@ -265,6 +266,8 @@ public sealed partial class ControllerStateStore
 
         return Write((conn, tx) =>
         {
+            var decoded = PolicyBundleJsonCodec.DecodeBundle(policyJson);
+            if (decoded.Value is { } bundle && ValidatePolicyObjects(conn, tx, bundle).Count != 0) { throw new ControllerStateException("object.referenceInvalid"); }
             var maxRaw = ScalarString(conn, tx, "SELECT COALESCE(MAX(revision), 0) FROM policy_revisions");
             var nextRev = ulong.Parse(maxRaw, CultureInfo.InvariantCulture) + 1;
             var now = _timeProvider.GetUtcNow().ToUniversalTime();

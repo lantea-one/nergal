@@ -13,7 +13,7 @@
 <main class="container">
     <div class="page-header"><div><h1>Sets &amp; IP lists</h1><p class="page-subtitle">Keep typed lists in one place, with a permanent history of every saved version.</p></div>
         <a class="btn btn-secondary" href="@Url.Action("Objects")">New list</a></div>
-    <p class="alert alert-info">Library management is available. Connecting these lists to policy rules is the next step; saving a list does not change a policy or a firewall.</p>
+    <p class="alert alert-info">Policies can pin a list version for source, destination or destination-port matching. Saving a new list version does not change existing policy revisions or firewalls. Update the reference in a policy draft, review, save and use confirmed apply.</p>
     @if (Model.Error is not null) { <p class="alert alert-danger" role="alert" id="object-error">@Model.Error</p> }
     <section class="card" aria-labelledby="library-heading">
         <h2 id="library-heading">Library</h2>
@@ -33,6 +33,11 @@
     {
         <section class="card mt-2" aria-labelledby="history-heading"><h2 id="history-heading">@selected.Content.Name · version @selected.Version</h2>
             <p>@selected.Content.Description</p>
+            <h3>Saved revision references (@(Model.Usage?.Count ?? 0))</h3>
+            <p class="hint">These are saved policy references, not a claim of active host usage. Every revision retains its selected version. Saving a list edit does not update any reference.</p>
+            @if (Model.Usage is not { Count: > 0 }) { <p class="muted">No saved revisions reference this list.</p> }
+            else { <ul>@foreach (var use in Model.Usage) { <li><a href="@Url.Action("Policies", new { revision = use.Revision })">Policy revision @use.Revision</a> · list version @use.ObjectVersion · <code>@use.Path</code></li> }</ul> }
+
             <ul>@foreach (var entry in selected.Content.Entries) { <li><code>@entry</code></li> }</ul>
             <details class="disclosure mt-2"><summary>Technical identifiers</summary><p class="muted">Object <code>@selected.Id</code>. Content SHA-256 <code>@selected.Digest</code>.</p></details>
             <details class="disclosure"><summary>Version history (@Model.History.Count)</summary>
@@ -55,7 +60,7 @@
                     <div class="field"><label for="object-kind">Entry type</label>
                         @if (input.Id.HasValue) { <input type="hidden" name="kind" value="@input.Kind" /><input type="text" id="object-kind" value="@input.Kind" readonly aria-describedby="object-kind-hint" /> }
                         else { <select id="object-kind" name="kind" aria-describedby="object-kind-hint"><option value="ipv4" selected="@(input.Kind == "ipv4")">IPv4 addresses / CIDRs</option><option value="ipv6" selected="@(input.Kind == "ipv6")">IPv6 addresses / CIDRs</option><option value="port" selected="@(input.Kind == "port")">Transport ports</option></select> }
-                        <span class="hint" id="object-kind-hint">Choose one type per list. Separate IPv4 and IPv6. Port lists contain numbers; a future policy rule chooses TCP or UDP.</span></div>
+                        <span class="hint" id="object-kind-hint">Choose one type per list. Separate IPv4 and IPv6. Port lists contain numbers; the policy rule chooses TCP or UDP.</span></div>
                     <div class="field"><label for="object-description">Description (optional)</label><textarea id="object-description" name="description" maxlength="500" rows="3" aria-describedby="object-description-hint">@input.Description</textarea>
                         <span class="hint" id="object-description-hint">Up to 500 characters explaining the purpose and who maintains this list.</span></div>
                     <div class="field"><label for="object-entries">Entries</label><textarea id="object-entries" name="entries" maxlength="8192" rows="7" required aria-describedby="object-entries-hint">@input.Entries</textarea>

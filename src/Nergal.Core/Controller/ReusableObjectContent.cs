@@ -1,6 +1,9 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Nergal.Core.Policy;
 
 namespace Nergal.Core.Controller;
@@ -48,6 +51,10 @@ public sealed class ReusableObjectContent
     public string Description { get; }
     /// <summary>Gets a defensive canonical snapshot of the distinct entries.</summary>
     public IReadOnlyList<string> Entries { get; }
+
+    /// <summary>Gets the digest of canonical name, type, description and entries, binding a pinned policy snapshot.</summary>
+    public string Digest => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
+        JsonSerializer.Serialize(new[] { Name, Kind.ToString(), Description, JsonSerializer.Serialize(Entries) }))));
 
     private static string Normalize(string value, ReusableObjectKind kind)
     {

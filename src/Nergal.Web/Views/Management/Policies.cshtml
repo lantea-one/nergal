@@ -167,7 +167,7 @@
             else
             {
                 <div class="table-wrap">
-                    <table>
+                    <table class="policy-rules-table">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -192,9 +192,9 @@
                             {
                                 var r = bundle.Filter.Rules[idx];
                                 if (r is null) { continue; }
-                                var srcText = r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } sp ? "{ " + string.Join(", ", sp.Select(p => p.Value)) + " }" : "any");
-                                var dstText = r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } dp ? "{ " + string.Join(", ", dp.Select(p => p.Value)) + " }" : "any");
-                                var portText = r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } ps ? "{ " + string.Join(", ", ps) + " }" : "any");
+                                var srcText = r.SourceObject is { } sr ? sr.Content.Name + " v" + sr.Version + " [" + string.Join(", ", sr.Content.Entries) + "]" : r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } sp ? "{ " + string.Join(", ", sp.Select(p => p.Value)) + " }" : "any");
+                                var dstText = r.DestinationObject is { } dr ? dr.Content.Name + " v" + dr.Version + " [" + string.Join(", ", dr.Content.Entries) + "]" : r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } dp ? "{ " + string.Join(", ", dp.Select(p => p.Value)) + " }" : "any");
+                                var portText = r.DestinationPortObject is { } pr ? pr.Content.Name + " v" + pr.Version + " [" + string.Join(", ", pr.Content.Entries) + "]" : r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } ps ? "{ " + string.Join(", ", ps) + " }" : "any");
                                 var editSources = r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } esp ? string.Join(", ", esp.Select(p => p.Value)) : "");
                                 var editDests = r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } edp ? string.Join(", ", edp.Select(p => p.Value)) : "");
                                 var editPorts = r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } eps ? string.Join(", ", eps) : "");
@@ -322,15 +322,15 @@
                                                                 </div>
                                                                 <div class="field span-2">
                                                                     <label>Source CIDR(s)</label>
-                                                                    <input type="text" name="sources" value="@editSources" />
+                                                                    <input type="text" name="sources" value="@editSources" readonly="@(r.SourceObject is not null)" aria-label="Source literals; pinned lists are managed separately" />
                                                                 </div>
                                                                 <div class="field span-2">
                                                                     <label>Destination CIDR(s)</label>
-                                                                    <input type="text" name="destinations" value="@editDests" />
+                                                                    <input type="text" name="destinations" value="@editDests" readonly="@(r.DestinationObject is not null)" aria-label="Destination literals; pinned lists are managed separately" />
                                                                 </div>
                                                                 <div class="field">
                                                                     <label>Dest port(s)</label>
-                                                                    <input type="text" name="destinationPorts" value="@editPorts" />
+                                                                    <input type="text" name="destinationPorts" value="@editPorts" readonly="@(r.DestinationPortObject is not null)" aria-label="Port literals; pinned lists are managed separately" />
                                                                 </div>
                                                                 <div class="field">
                                                                     <label>ICMP type</label>
@@ -402,6 +402,8 @@
                 </div>
             }
         </section>
+
+        @await Html.PartialAsync("_PolicyObjects", Model)
 
         @if (Model.CanMutate)
         {

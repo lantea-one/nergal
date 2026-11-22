@@ -91,3 +91,8 @@ contents or credentials visible. The Pages gallery also includes policy and mobi
 The sandbox's ASP.NET runtime stays on .NET 10, matching the application target
 and pinned SDK. Renovate may propose servicing updates within 10.x; a runtime-only
 major upgrade is not a supported substitute for an intentional target migration.
+
+Manual and watched stack refreshes share a local build lock. Sandbox builds use
+two MSBuild workers and disable node reuse, keeping refresh processes independent
+from other builds. A failed refresh reports failure; check current HTTPS health
+and the build log before assuming the running stack contains the latest edits.

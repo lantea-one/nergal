@@ -5,7 +5,7 @@ import sqlite3
 def check_objects(browser, controller_directory):
     fields = {"expectedVersion": "0", "name": "trusted_clients", "kind": "ipv4",
               "description": "Synthetic <script>alert(1)</script>", "entries": "192.0.2.10\r\n198.51.100.0/24"}
-    assert "Connecting these lists to policy rules" in browser.request("/manage/objects", 200)
+    assert "Policies can pin a list version" in browser.request("/manage/objects", 200)
     browser.request("/manage/objects/save", 400, fields)
 
     def save(values, status=302):

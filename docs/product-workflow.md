@@ -100,7 +100,7 @@ This direction is not yet fully implemented. Native source uploads now persist
 immutable database snapshots with transactional audit and exact original downloads
 under ADR 0038. Operator-configured files are optional staging inputs. Some runtime
 configuration still comes from protected deployment files. Typed reusable lists now
-have immutable database history; policy-reference integration, semantic mapping
+have immutable database history and pinned primary inet filter references; semantic mapping
 records and other planned state remain future work.
 Deployment/bootstrap trust remains a separate boundary.
 
@@ -148,8 +148,9 @@ or comments must not be claimed as losslessly preserved unless verified. Raw cod
 editing, where offered, uses the actual code editor and authoritative server validation.
 
 The [typed list library](reusable-object-library.md) now supports create/edit/search
-and immutable history. Policy references, impact visibility, native named sets and
-generated export remain planned capabilities.
+and immutable history. Pinned primary inet filter references and saved revision impact visibility are
+implemented. Native named sets, NAT/bridge references and generated export remain
+planned capabilities.
 
 ## Code editor delivery
 

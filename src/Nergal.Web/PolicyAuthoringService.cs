@@ -101,6 +101,11 @@ internal static class PolicyAuthoringService
             return new PolicyEvaluationReport(false, null, null, null, null, null, null, parseErrors);
         }
 
+        if (OperatingSystem.IsLinux() && store is not null)
+        {
+            var referenceErrors = store.ValidatePolicyObjects(bundle!);
+            if (referenceErrors.Count != 0) { return new(false, bundle, null, null, null, null, null, referenceErrors.Select(d => new PolicyDiagnostic(d.Code, d.Path)).ToArray()); }
+        }
         var compiled = NftPolicyBundleCompiler.Compile(bundle!);
         if (!compiled.IsSuccess || compiled.Candidate is null || compiled.Digest is null)
         {
@@ -234,6 +239,9 @@ internal static class PolicyAuthoringService
         var previous = bundle.Filter.Rules[ruleIndex]!;
         nextRules[ruleIndex] = rule with
         {
+            SourceObject = previous.SourceObject,
+            DestinationObject = previous.DestinationObject,
+            DestinationPortObject = previous.DestinationPortObject,
             NegateInputInterface = previous.NegateInputInterface,
             NegateOutputInterface = previous.NegateOutputInterface,
             NegateSource = previous.NegateSource,

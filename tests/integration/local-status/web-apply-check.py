@@ -367,6 +367,34 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
                 ],
             },
         })
+        # Pin controller-created versions through the real UI before the existing packet/rollback cases.
+        class DraftParser(HTMLParser):
+            value = None
+            def handle_starttag(self, tag, attrs):
+                fields = dict(attrs)
+                if tag == 'input' and fields.get('name') == 'bundleJson':
+                    self.value = fields['value']
+
+        def pin_probe(bundle, name, kind, address, index):
+            _, location = admin.request('/manage/objects/save', 302, form={
+                'expectedVersion': '0', 'name': name, 'kind': kind, 'description': '', 'entries': address,
+                '__RequestVerificationToken': admin.token('/manage/objects'),
+            }, expected_location_contains='/manage/objects?objectId=')
+            object_id = location.split('objectId=')[1]
+            body, _ = admin.request('/manage/policies/objects', 200, form={
+                'bundleJson': bundle, 'ruleIndex': str(index), 'slot': 'source',
+                'selection': object_id + '/1', 'operation': 'attach',
+                '__RequestVerificationToken': admin.token('/manage/policies'),
+            })
+            parser = DraftParser(); parser.feed(body)
+            require(parser.value is not None, 'Pinned draft did not retain JSON')
+            reference = json.loads(parser.value)['filter']['rules'][index]['sourceObject']
+            require(reference['id'] == object_id and reference['version'] == 1, 'Pinned object identity lost')
+            return parser.value
+
+        rev1_json = pin_probe(rev1_json, 'probe4', 'ipv4', '127.0.0.1', 0)
+        rev2_json = pin_probe(rev2_json, 'probe6', 'ipv6', '::1', 1)
+
         rev3_bundle_json = json.dumps({
             'schemaVersion': 1,
             'filter': {

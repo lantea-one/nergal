@@ -1,8 +1,8 @@
 # Typed sets and IP lists library
 
 Open **Sets & IP lists** (`/manage/objects`) to create and maintain typed lists.
-Library management is implemented; policy rule references and native named-set
-compilation are not yet implemented. Saving a list changes database history only.
+Library management and pinned primary filter-rule references are implemented;
+native named-set compilation is not implemented. Saving a list changes database history only.
 It does not create a policy revision, apply a firewall or change saved policies.
 
 ## Everyday workflow
@@ -22,7 +22,7 @@ It does not create a policy revision, apply a firewall or change saved policies.
 IPv4/IPv6 lists cannot mix address families. Hostnames, scoped/mapped addresses,
 address/port ranges, duplicate canonical entries, dynamic flags and timeouts are
 rejected. Transport ports are individual integers from 1 to 65535; TCP versus UDP
-belongs to a future policy rule reference, not the list. Descriptions are plain text
+belongs to the referencing policy rule, not the list. Descriptions are plain text
 up to 500 characters. Blank lines and surrounding entry whitespace in forms are
 ignored; unsupported tokens are never passed through to nftables.
 
@@ -50,10 +50,49 @@ unknown versions, colliding tables and forged protections are rejected. The web
 process does not migrate. See [source-library upgrade procedure](native-source-library.md#existing-controller-databases).
 Additional SQL backends and their migrations remain deferred.
 
-Library objects currently have no policy references; the UI does not claim usage
-counts or native set support. Future integration must pin object identity/version
-and resolved content into immutable policy revisions, show affected references,
-reject incompatible/dangling references and require review/confirmed apply. A list
-edit must never silently change a saved policy. Native named-set observation and
-packet/rollback conformance are required before that capability is announced.
+Pinned references retain identity/version and resolved contents in saved policy
+JSON. Library detail shows saved revision references without inferring live host
+usage. A list edit never silently changes a saved policy. Native named-set
+observation and packet/rollback conformance remain a separate capability.
 See [ADR 0039](decisions/0039-versioned-typed-object-library.md).
+
+## Pinned filter-rule references
+
+Policies can now attach the current displayed list version to a primary inet
+filter rule's source address, destination address or destination ports. Open
+**Policies → Reusable list references**, select a rule, matcher and version, then
+choose **Attach selected version to draft**. This explicitly replaces that
+matcher's literals or previous reference. Check the rule summary and native diff,
+save a policy revision, then use the existing confirmed-apply workflow.
+
+Canonical policy JSON retains the object's identity, version, name, type, contents
+and content digest. Preview/save verifies the snapshot against immutable database
+history. Compiling or applying a saved revision never looks up "latest". An older
+pinned version remains valid after a library edit; reselect the newer version
+explicitly in a draft to change policy. Normal rule editing and reordering retain
+references. Literal fields for pinned matchers are read-only in the rule form.
+**Remove reference from draft** clears that matcher and its negation, which may
+broaden the rule; inspect the change before saving/applying. It does not retain a
+hidden copy of the old values.
+
+The library detail page shows every matching saved valid policy revision and
+matcher path, including older list versions. This is reference/impact visibility,
+not an assertion of active use on a host. A list edit does not update those
+revisions automatically. Reference-only metadata changes are visible in the
+reference summary even when native text is unchanged.
+
+This is controller reuse, not native named nftables sets. Compilation projects the
+embedded snapshot onto the existing scalar/anonymous-set matcher contract. No
+identity/version is discarded from saved intent. Singletons become scalar matches;
+multiple addresses must satisfy the existing disjoint/non-adjacent prefix bounds.
+Overlapping or adjacent entries may be stored in the library but are rejected when
+attached to a rule if native observation cannot round-trip them. Family/protocol
+mismatches, conflicting literals, unknown flags and missing/forged references fail
+explicitly. NAT and bridge references, native named sets/maps, dynamic lists and
+semantic native import remain unsupported. Auxiliary inet references are represented
+by the shared codec, but the structured selector currently edits primary filter
+rules only. Use updated controller and agent builds; older codecs reject the new
+fields rather than silently accepting weaker policy.
+
+No database schema change is needed beyond schema 3. See
+[ADR 0040](decisions/0040-pinned-controller-policy-references.md).

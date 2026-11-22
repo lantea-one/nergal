@@ -19,14 +19,29 @@ you can compare with the current version. There is no forced overwrite or deleti
 Times remain UTC in storage and appear in your browser's timezone with its name
 in the footer.
 
-## Current support boundary
+## Pinned policy references
 
-Library management is implemented. **Policy references and native named-set
-compilation are not yet implemented.** Saving a list does not create a policy
-revision or alter a firewall. The application does not invent usage counts.
-Future policy integration must pin immutable object versions/content into saved
-revisions, expose impact and require review plus confirmed apply. Editing a shared
-list must never silently change a saved policy.
+In **Policies → Reusable list references**, choose a primary inet filter rule,
+source/destination/port matcher and the displayed list version. **Attach selected
+version to draft** explicitly replaces that matcher's literals or prior reference.
+Inspect the rule summary/native diff, save a revision, then use confirmed apply.
+**Remove reference from draft** clears the matcher and its negation, which can
+broaden the rule; it leaves no hidden literal copy.
+
+Policy JSON retains identity, version, contents and digest. Saved revisions never
+fetch the latest list contents. Library edits create new versions without changing
+existing policies or firewalls. The detail page shows saved revision references,
+including older versions; these are not active-host usage counts. Ordinary rule
+editing and reordering preserve references. Metadata-only changes remain visible
+in the reference summary even if native text is unchanged.
+
+Compilation projects each immutable snapshot onto the existing scalar/anonymous-set
+matcher contract. **Native named sets, NAT/bridge references, maps, dynamic flags,
+timeouts and native named-object import remain unsupported.** Family/protocol and
+literal conflicts, missing/forged snapshots and unsupported overlap/adjacency fail
+explicitly. Single-element lists use scalar matching. The UI selector edits primary
+filter rules; the shared codec also retains auxiliary inet references. Updated
+controller and agent builds are required; older codecs reject unknown fields.
 
 The library retains at most 128 lists and 64 versions per list. Descriptions are
 plain text up to 500 characters. Database protection definitions and content digests
@@ -41,11 +56,14 @@ Additional SQL backends remain deferred.
 ## Appearance
 
 These captures use a separate synthetic-only controller database. They demonstrate
-library management, hints and local times; they do not establish native named-set
-packet or rollback behavior.
+library management, pinned references, hints and local times. Independent disposable
+namespace tests verify dual-stack matching and agent rollback for static resolved
+references; these screenshots do not establish native named-set support.
 
 ![Sets and IP lists in dark mode](assets/screenshots/object-library-dark.jpg)
 
 ![Sets and IP lists in light mode](assets/screenshots/object-library-light.jpg)
 
 ![Sets and IP lists on mobile](assets/screenshots/object-library-mobile.jpg)
+
+![Pinned list selection and policy review](assets/screenshots/policy-objects-dark.jpg)
