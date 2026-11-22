@@ -158,7 +158,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Validates, checks capabilities, compiles, and diffs a policy draft without mutating state.</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Reader), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult PreviewPolicy(string? bundleJson, string? summary, ulong? compareToRevision)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role))
@@ -186,7 +186,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Validates, compiles, and persists a new monotonic policy revision (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult SavePolicy(string? bundleJson, string? summary, ulong? compareToRevision)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role) ||
@@ -226,7 +226,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Appends a validated filter rule to the draft policy bundle via the structured visual rule builder (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult AddFilterRule(
         string? bundleJson,
         string? summary,
@@ -275,7 +275,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Updates filter schema version and per-chain default verdicts in the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult UpdateFilterDefaults(
         string? bundleJson,
         string? summary,
@@ -304,7 +304,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Appends a prerouting DNAT rule to the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult AddDnatRule(
         string? bundleJson,
         string? summary,
@@ -338,7 +338,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Removes a prerouting DNAT rule by index from the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult RemoveDnatRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -360,7 +360,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Appends an explicit postrouting SNAT rule to the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult AddSnatRule(
         string? bundleJson,
         string? summary,
@@ -391,7 +391,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Removes an explicit postrouting SNAT rule by index from the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult RemoveSnatRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -413,7 +413,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Clears the optional NAT table section from the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult ClearNat(string? bundleJson, string? summary, ulong? compareToRevision)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -435,7 +435,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Enables or updates the L2 bridge default verdict in the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult UpdateBridgeDefaults(string? bundleJson, string? summary, ulong? compareToRevision, string? defaultVerdict)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -457,7 +457,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Appends an L2 bridge forward rule to the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult AddBridgeRule(
         string? bundleJson,
         string? summary,
@@ -487,7 +487,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Removes an L2 bridge forward rule by index from the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult RemoveBridgeRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -509,7 +509,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Clears the optional L2 bridge table section from the draft bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult ClearBridge(string? bundleJson, string? summary, ulong? compareToRevision)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -553,7 +553,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Removes a filter rule by index from the draft policy bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult RemoveFilterRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
@@ -578,7 +578,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Moves a filter rule up or down in the draft policy bundle (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(65536)]
+    [RequestSizeLimit(524288)]
     public IActionResult MoveFilterRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex, int direction)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||

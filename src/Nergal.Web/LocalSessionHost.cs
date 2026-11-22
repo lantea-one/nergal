@@ -75,9 +75,13 @@ internal static class LocalSessionHost
             if (!context.Request.IsHttps || context.Features.Get<ITlsConnectionFeature>() is null)
             { context.Response.StatusCode = StatusCodes.Status400BadRequest; return; }
             context.Response.Headers.CacheControl = "no-store";
-            if (context.Request.ContentLength > 8192) { context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge; return; }
+            var maxBytes = context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
+                           context.Request.Path.StartsWithSegments("/controller/policies", StringComparison.OrdinalIgnoreCase)
+                ? 524_288L
+                : 8192L;
+            if (context.Request.ContentLength > maxBytes) { context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge; return; }
             if (context.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
-            { limit.MaxRequestBodySize = 8192; }
+            { limit.MaxRequestBodySize = maxBytes; }
             await next();
         });
         app.UseRouting();
