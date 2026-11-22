@@ -407,13 +407,12 @@ public sealed class ControllerStateStore
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
             cmd.CommandText = "SELECT settings_json FROM system_settings WHERE singleton = 1";
-            var raw = cmd.ExecuteScalar() as string;
-            if (string.IsNullOrWhiteSpace(raw))
-            {
-                return SystemSettingsSnapshot.Default;
-            }
+            var value = cmd.ExecuteScalar();
+            if (value is null) { return SystemSettingsSnapshot.Default; }
+            if (value is not string raw || string.IsNullOrWhiteSpace(raw)) { throw new ControllerStateException("settings.corrupt"); }
 
-            return SystemSettingsCodec.Deserialize(raw) ?? throw new ControllerStateException("settings.corrupt");
+            try { return SystemSettingsCodec.Deserialize(raw); }
+            catch (System.Text.Json.JsonException) { throw new ControllerStateException("settings.corrupt"); }
         });
     }
 

@@ -192,8 +192,8 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -231,7 +231,18 @@ internal static class PolicyAuthoringService
         }
 
         var nextRules = bundle.Filter.Rules.ToList();
-        nextRules[ruleIndex] = rule;
+        var previous = bundle.Filter.Rules[ruleIndex]!;
+        nextRules[ruleIndex] = rule with
+        {
+            NegateInputInterface = previous.NegateInputInterface,
+            NegateOutputInterface = previous.NegateOutputInterface,
+            NegateSource = previous.NegateSource,
+            NegateDestination = previous.NegateDestination,
+            SourceMac = previous.SourceMac,
+            SourceMacs = previous.SourceMacs,
+            NegateSourceMac = previous.NegateSourceMac,
+            RateLimit = rule.RateLimit is null ? null : rule.RateLimit with { KeyKind = previous.RateLimit?.KeyKind ?? RateLimitKeyKind.SourceAddress },
+        };
         var nextSchema = bundle.Filter.SchemaVersion;
         if (nextSchema < 2 && RequiresSchema2(rule))
         {
@@ -243,8 +254,8 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -282,8 +293,8 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -317,8 +328,8 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -530,8 +541,8 @@ internal static class PolicyAuthoringService
             return false;
         }
 
-        var nextFilter = new FilterPolicy(schemaVersion, inV, fwdV, outV, bundle.Filter.Rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+        var nextFilter = new FilterPolicy(schemaVersion, inV, fwdV, outV, bundle.Filter.Rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -605,7 +616,7 @@ internal static class PolicyAuthoringService
         var existingSnat = bundle.Nat?.SnatRules.ToList() ?? [];
         existingDnat.Add(dnat);
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, existingDnat, existingSnat);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -683,9 +694,10 @@ internal static class PolicyAuthoringService
             description);
 
         var dnats = bundle.Nat.DnatRules.ToList();
-        dnats[ruleIndex] = dnat;
+        var previous = bundle.Nat.DnatRules[ruleIndex]!;
+        dnats[ruleIndex] = dnat with { NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -720,7 +732,7 @@ internal static class PolicyAuthoringService
         dnats.RemoveAt(ruleIndex);
         var snats = bundle.Nat.SnatRules.ToList();
         var nextNat = dnats.Count == 0 && snats.Count == 0 ? null : new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, snats);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -778,7 +790,7 @@ internal static class PolicyAuthoringService
         var existingSnat = bundle.Nat?.SnatRules.ToList() ?? [];
         existingSnat.Add(snat);
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, existingDnat, existingSnat);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -847,9 +859,21 @@ internal static class PolicyAuthoringService
             description);
 
         var snats = bundle.Nat.SnatRules.ToList();
-        snats[ruleIndex] = snat;
+        var previous = bundle.Nat.SnatRules[ruleIndex]!;
+        snats[ruleIndex] = snat with
+        {
+            Action = previous.Action,
+            InputInterface = previous.InputInterface,
+            Protocol = previous.Protocol,
+            DestinationPort = previous.DestinationPort,
+            DestinationPorts = previous.DestinationPorts,
+            NegateSource = previous.NegateSource,
+            NegateDestination = previous.NegateDestination,
+            NegateInputInterface = previous.NegateInputInterface,
+            NegateOutputInterface = previous.NegateOutputInterface
+        };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, bundle.Nat.DnatRules.ToList(), snats);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -884,7 +908,7 @@ internal static class PolicyAuthoringService
         var snats = bundle.Nat.SnatRules.ToList();
         snats.RemoveAt(ruleIndex);
         var nextNat = dnats.Count == 0 && snats.Count == 0 ? null : new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, snats);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -901,7 +925,7 @@ internal static class PolicyAuthoringService
             return false;
         }
 
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, null, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, null, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -926,8 +950,8 @@ internal static class PolicyAuthoringService
         }
 
         var rules = bundle.Bridge?.Rules.ToList() ?? [];
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, verdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, verdict, rules, bundle.Bridge?.Priority ?? -200, bundle.Bridge?.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -987,8 +1011,8 @@ internal static class PolicyAuthoringService
         var rules = bundle.Bridge?.Rules.ToList() ?? [];
         rules.Add(rule);
         var defaultVerdict = bundle.Bridge?.DefaultVerdict ?? FilterVerdict.Accept;
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, defaultVerdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, defaultVerdict, rules, bundle.Bridge?.Priority ?? -200, bundle.Bridge?.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -1053,9 +1077,17 @@ internal static class PolicyAuthoringService
             string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim(),
             description);
         var rules = bundle.Bridge.Rules.ToList();
-        rules[ruleIndex] = rule;
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var previous = bundle.Bridge.Rules[ruleIndex]!;
+        rules[ruleIndex] = previous with
+        {
+            EtherType = rule.EtherType,
+            Verdict = rule.Verdict,
+            InputInterface = rule.InputInterface,
+            OutputInterface = rule.OutputInterface,
+            Description = rule.Description
+        };
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules, bundle.Bridge.Priority, bundle.Bridge.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -1088,8 +1120,8 @@ internal static class PolicyAuthoringService
 
         var rules = bundle.Bridge.Rules.ToList();
         rules.RemoveAt(ruleIndex);
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules, bundle.Bridge.Priority, bundle.Bridge.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -1106,7 +1138,7 @@ internal static class PolicyAuthoringService
             return false;
         }
 
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, null);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, null, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;

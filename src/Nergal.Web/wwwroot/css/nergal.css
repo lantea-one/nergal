@@ -1,16 +1,16 @@
 /* nergal — Self-hosted firewall controller UI design system (zero external CDNs) */
 :root {
-  --bg: #f4f6f9;
+  --bg: #f6f8f7;
   --surface: #ffffff;
-  --surface-subtle: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --text: #0f172a;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-soft: #eff6ff;
+  --surface-subtle: #eef2f0;
+  --border: #d8e0dc;
+  --border-strong: #b8c6bf;
+  --text: #18201c;
+  --text-muted: #57615c;
+  --text-subtle: #57615c;
+  --primary: #0f4d36;
+  --primary-hover: #126247;
+  --primary-soft: #ecfdf5;
   --success: #059669;
   --success-hover: #047857;
   --success-soft: #ecfdf5;
@@ -19,29 +19,29 @@
   --danger: #dc2626;
   --danger-hover: #b91c1c;
   --danger-soft: #fef2f2;
-  --code-bg: #f1f5f9;
-  --code-text: #0f172a;
+  --code-bg: #eef2f0;
+  --code-text: #18201c;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Noto Sans", "DejaVu Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b1120;
-    --surface: #111827;
-    --surface-subtle: #1e293b;
-    --border: #1f2937;
-    --border-strong: #334155;
-    --text: #f1f5f9;
-    --text-muted: #94a3b8;
-    --text-subtle: #64748b;
-    --primary: #3b82f6;
-    --primary-hover: #60a5fa;
+    --bg: #1c1f25;
+    --surface: #14171a;
+    --surface-subtle: #1a1d1f;
+    --border: #3b444a;
+    --border-strong: #5c6961;
+    --text: #eef2f0;
+    --text-muted: #b2bdb7;
+    --text-subtle: #57615c;
+    --primary: #6ee7b7;
+    --primary-hover: #a7f3d0;
     --primary-soft: rgba(59, 130, 246, 0.16);
     --success: #10b981;
     --success-hover: #34d399;
@@ -51,24 +51,24 @@
     --danger: #ef4444;
     --danger-hover: #f87171;
     --danger-soft: rgba(239, 68, 68, 0.16);
-    --code-bg: #0f172a;
-    --code-text: #e2e8f0;
+    --code-bg: #18201c;
+    --code-text: #d8e0dc;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.35);
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0b1120;
-  --surface: #111827;
-  --surface-subtle: #1e293b;
-  --border: #1f2937;
-  --border-strong: #334155;
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
-  --primary: #3b82f6;
-  --primary-hover: #60a5fa;
+  --bg: #1c1f25;
+  --surface: #14171a;
+  --surface-subtle: #1a1d1f;
+  --border: #3b444a;
+  --border-strong: #5c6961;
+  --text: #eef2f0;
+  --text-muted: #b2bdb7;
+  --text-subtle: #57615c;
+  --primary: #6ee7b7;
+  --primary-hover: #a7f3d0;
   --primary-soft: rgba(59, 130, 246, 0.16);
   --success: #10b981;
   --success-hover: #34d399;
@@ -78,8 +78,8 @@
   --danger: #ef4444;
   --danger-hover: #f87171;
   --danger-soft: rgba(239, 68, 68, 0.16);
-  --code-bg: #0f172a;
-  --code-text: #e2e8f0;
+  --code-bg: #18201c;
+  --code-text: #d8e0dc;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
@@ -105,8 +105,8 @@
   --primary-soft: rgba(225, 29, 72, 0.14);
 }
 :root[data-accent="slate"] {
-  --primary: #475569;
-  --primary-hover: #334155;
+  --primary: #57615c;
+  --primary-hover: #5c6961;
   --primary-soft: rgba(71, 85, 105, 0.16);
 }
 
@@ -186,7 +186,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -742,4 +742,44 @@ details.disclosure summary {
   cursor: pointer;
   font-weight: 600;
   color: var(--text);
+}
+
+/* Lantea.One reference: green masthead, emerald rule, charcoal dark surfaces.
+   Tokens are local so the administration console makes no CDN requests. */
+.topbar { background: #041510; border-bottom: 2px solid #10b981; color: #ecfdf5; }
+.topbar .brand, .topbar .nav-link { color: #ecfdf5; }
+.topbar .nav-link:hover, .topbar .nav-link.active { background: #0f4d36; color: #fff; }
+.brand-mark { background: #0f4d36; border: 1px solid #167756; }
+:root[data-accent="emerald"] { --primary: #0f4d36; --primary-hover: #126247; --primary-soft: #10b9811a; --link: #0f4d36; }
+:root[data-theme="dark"] { color-scheme: dark; --text-subtle: #b2bdb7; --link: #6ee7b7; }
+:root[data-theme="light"] { color-scheme: light; --link: #0f4d36; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --text-subtle: #b2bdb7; --link: #6ee7b7; }
+}
+a { color: var(--link, var(--primary)); }
+.btn, button[type="submit"], button.btn { background: var(--button-primary, var(--primary)); }
+.btn:hover, button[type="submit"]:hover { background: var(--button-primary-hover, var(--primary-hover)); }
+:focus-visible { outline: 2px solid #10b981; outline-offset: 3px; }
+.field label, label.field-label, .hint, .rule-desc, .status-tile-meta, .badge, th { font-size: .875rem; }
+@media (max-width: 640px) {
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .topbar-inner { gap: .6rem; }
+  .nav-links { order: 3; width: 100%; }
+  .container { padding-inline: .8rem; }
+  .inline-edit-popover { min-width: 0; width: min(28rem, 75vw); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+
+:root[data-accent="blue"] { --primary: #2563eb; --primary-hover: #1d4ed8; }
+
+:root[data-accent="emerald"] { --button-primary: #0f4d36; --button-primary-hover: #126247; }
+:root[data-theme="dark"][data-accent="emerald"] { --primary: #6ee7b7; --primary-hover: #a7f3d0; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-accent="emerald"] { --primary: #6ee7b7; --primary-hover: #a7f3d0; }
+}
+
+.topbar .badge { color: #a7f3d0; background: #0f4d36; border: 1px solid #167756; }
+@media (max-width: 640px) {
+  .nav-links { flex-wrap: nowrap; overflow-x: auto; }
+  .nav-link { flex: 0 0 auto; }
 }

@@ -108,6 +108,11 @@ public sealed class ApplyWorkflowService
                 new AgentControlReply(AgentControlOutcome.Rejected, errorCode: "policy.invalid"));
         }
 
+        if (bundle.RequiresExtendedApplySupport)
+        {
+            _ = _store.AppendAudit(actorId, actorRole, "apply.start", host.Name, revision, "rejected", "policy.previewOnlyScope");
+            return new ApplyWorkflowResult(true, true, host, policyRevision, new AgentControlReply(AgentControlOutcome.Rejected, errorCode: "policy.previewOnlyScope"));
+        }
         var operationId = Guid.NewGuid();
         var watchdogId = Guid.NewGuid();
         var request = new AgentControlRequest(

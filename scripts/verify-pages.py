@@ -21,6 +21,11 @@ REQUIRED_FILES = [
     "deployment-and-packaging.md",
     "testing-and-conformance.md",
     "release-notes.md",
+    "router-migration-and-sandbox.md",
+    "assets/screenshots/settings-dark.jpg",
+    "assets/screenshots/settings-light.jpg",
+    "assets/screenshots/policies-light.jpg",
+    "assets/screenshots/policies-mobile.jpg",
 ]
 
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")

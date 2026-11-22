@@ -81,6 +81,7 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-apply-confirm", "manage/apply/confirm", new { controller = "Management", action = "ConfirmApply" });
         app.MapControllerRoute("manage-apply-rollback", "manage/apply/rollback", new { controller = "Management", action = "RollbackApply" });
         app.MapControllerRoute("manage-audit", "manage/audit", new { controller = "Management", action = "Audit" });
+        app.MapControllerRoute("manage-sources", "manage/sources", new { controller = "Management", action = "Sources" });
         app.MapControllerRoute("manage-settings", "manage/settings", new { controller = "Management", action = "Settings" });
         app.MapControllerRoute("manage-settings-save", "manage/settings/save", new { controller = "Management", action = "SaveSettings" });
     }

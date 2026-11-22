@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Rebuild the unprivileged UI sandbox, preserving its private disposable state.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+export NERGAL_DEV_UID=$(id -u) NERGAL_DEV_GID=$(id -g)
+dotnet restore Nergal.sln --locked-mode
+dotnet build Nergal.sln -c Release --no-restore
+dotnet publish src/Nergal.Web -c Release --no-build --no-restore -o artifacts/dev-stack/web
+dotnet publish src/Nergal.Admin -c Release --no-build --no-restore -o artifacts/dev-stack/admin
+python3 tools/dev-stack/provision.py "$@"
+export BUILDX_CONFIG="$PWD/artifacts/dev-stack/buildx"
+mkdir -p "$BUILDX_CONFIG"
+if find artifacts/dev-stack/sources -name '*.conf' -print -quit | read -r _; then
+    docker build -f tools/dev-stack/Validator.Dockerfile -t nergal-source-validator:local tools/dev-stack
+fi
+docker compose -p nergal-dev -f tools/dev-stack/compose.yaml -f artifacts/dev-stack/sources.compose.yaml up -d --no-build --force-recreate
+curl --fail --silent --show-error --cacert artifacts/dev-stack/private/tls.crt --retry 15 --retry-all-errors --retry-delay 1 https://127.0.0.1:5443/healthz
+printf '\nLocal sandbox: https://127.0.0.1:5443/manage\nCredentials: artifacts/dev-stack/private/access.txt\n'

@@ -173,6 +173,8 @@ internal sealed class AgentControlHandler
                 return new AgentControlReply(AgentControlOutcome.Rejected, revision: enrollment.Ownership.Revision, errorCode: "policy.invalid");
             }
 
+            if (bundle.RequiresExtendedApplySupport)
+            { return new AgentControlReply(AgentControlOutcome.Rejected, revision: enrollment.Ownership.Revision, errorCode: "policy.previewOnlyScope"); }
             var compiled = NftPolicyBundleCompiler.Compile(bundle, expected.Identity);
             if (!compiled.IsSuccess || compiled.Candidate is null)
             {

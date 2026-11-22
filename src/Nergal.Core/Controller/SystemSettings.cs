@@ -6,7 +6,7 @@ namespace Nergal.Core.Controller;
 public sealed record BrandingSettings(
     string ApplicationName = "nergal",
     string InstanceSubtitle = "Self-hosted Linux nftables firewall controller",
-    string AccentColor = "blue",
+    string AccentColor = "emerald",
     string DefaultTheme = "system",
     string? LoginBanner = null);
 
@@ -91,7 +91,9 @@ public static class SystemSettingsCodec
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
+        PropertyNameCaseInsensitive = false,
+        UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow,
+        RespectNullableAnnotations = true,
         WriteIndented = false,
     };
 
@@ -100,6 +102,25 @@ public static class SystemSettingsCodec
     {
         ArgumentNullException.ThrowIfNull(settings);
         var errors = new List<string>();
+        if (settings.Branding is null || settings.LocalAuth is null || settings.Oidc is null || settings.Ldap is null ||
+            settings.Database is null || settings.FirewallDefaults is null) { return ["settings.sectionRequired"]; }
+        var strings = new (string? Value, int Limit)[]
+        {
+            (settings.Branding.ApplicationName, 64), (settings.Branding.InstanceSubtitle, 160),
+            (settings.Oidc.AuthorityUrl, 2048), (settings.Oidc.ClientId, 128), (settings.Oidc.Scopes, 512),
+            (settings.Oidc.RedirectUri, 2048), (settings.Oidc.GroupsClaim, 128),
+            (settings.Oidc.AdministratorGroups, 1024), (settings.Oidc.AuditorGroups, 1024),
+            (settings.Ldap.ServerUri, 2048), (settings.Ldap.BaseDn, 256), (settings.Ldap.BindDn, 256),
+            (settings.Ldap.UserSearchFilter, 512), (settings.Ldap.GroupMembershipAttribute, 128),
+            (settings.Ldap.AdministratorGroupDn, 256), (settings.Ldap.AuditorGroupDn, 256),
+            (settings.Database.Host, 253), (settings.Database.DatabaseName, 128), (settings.Database.Username, 128),
+        };
+        if (strings.Any(s => s.Value is not null && (s.Value.Length > s.Limit || s.Value.Any(char.IsControl))))
+        { errors.Add("settings.textBounds"); }
+        if (settings.Branding.ApplicationName is null || settings.Branding.InstanceSubtitle is null || settings.Oidc.Scopes is null ||
+            settings.Oidc.GroupsClaim is null || settings.Ldap.UserSearchFilter is null || settings.Ldap.GroupMembershipAttribute is null)
+        { return ["settings.fieldRequired"]; }
+
 
         if (string.IsNullOrWhiteSpace(settings.Branding.ApplicationName) ||
             settings.Branding.ApplicationName.Length > 64 ||
@@ -236,6 +257,7 @@ public static class SystemSettingsCodec
     public static string Serialize(SystemSettingsSnapshot settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        if (Validate(settings).Count > 0) { throw new ArgumentException("settings.invalid", nameof(settings)); }
         return JsonSerializer.Serialize(settings, SerializerOptions);
     }
 
@@ -247,15 +269,19 @@ public static class SystemSettingsCodec
             return SystemSettingsSnapshot.Default;
         }
 
+        if (json.Length > 32_768) { throw new JsonException("settings.bounds"); }
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.ValueKind != JsonValueKind.Object || HasDuplicateSettingsProperties(document.RootElement))
+        { throw new JsonException("settings.invalid"); }
         var parsed = JsonSerializer.Deserialize<SystemSettingsSnapshot>(json, SerializerOptions);
-        return parsed is null
-            ? SystemSettingsSnapshot.Default
-            : new SystemSettingsSnapshot(
-                parsed.Branding ?? new BrandingSettings(),
-                parsed.LocalAuth ?? new LocalAuthSettings(),
-                parsed.Oidc ?? new OidcAuthSettings(),
-                parsed.Ldap ?? new LdapAuthSettings(),
-                parsed.Database ?? new DatabaseBackendSettings(),
-                parsed.FirewallDefaults ?? new FirewallDefaultsSettings());
+        if (parsed is null || Validate(parsed).Count > 0) { throw new JsonException("settings.invalid"); }
+        return parsed;
+    }
+
+    private static bool HasDuplicateSettingsProperties(JsonElement el)
+    {
+        if (el.ValueKind != JsonValueKind.Object) { return false; }
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        return el.EnumerateObject().Any(p => !seen.Add(p.Name) || HasDuplicateSettingsProperties(p.Value));
     }
 }

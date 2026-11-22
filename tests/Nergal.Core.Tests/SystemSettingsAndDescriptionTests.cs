@@ -72,7 +72,7 @@ public sealed class SystemSettingsAndDescriptionTests
         Assert.Contains("firewall.defaultFilterSchemaVersion", errors);
         Assert.Contains("firewall.defaultVerdict", errors);
 
-        Assert.Throws<System.Text.Json.JsonException>(() => SystemSettingsCodec.Deserialize("{not valid json"));
+        Assert.ThrowsAny<System.Text.Json.JsonException>(() => SystemSettingsCodec.Deserialize("{not valid json"));
     }
 
     /// <summary>Optional rule descriptions round-trip across Filter, DNAT, SNAT, and Bridge rules and reject control characters.</summary>

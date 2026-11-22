@@ -6,4 +6,5 @@
   <ItemGroup>
     <ProjectReference Include="../../../src/Nergal.Nftables/Nergal.Nftables.csproj" />
   </ItemGroup>
+  <ItemGroup><Compile Include="../../Shared/RouterPolicySamples.cs" Link="RouterPolicySamples.cs" /></ItemGroup>
 </Project>

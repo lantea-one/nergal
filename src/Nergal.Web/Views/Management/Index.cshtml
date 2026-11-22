@@ -52,7 +52,7 @@
             </div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">Active Policy Revision</div>
+            <div class="kpi-label">Latest Saved Policy Revision</div>
             @if (Model.LatestRevision is { } latest)
             {
                 <div class="kpi-value">Rev @latest.Revision</div>
@@ -74,15 +74,16 @@
         <div class="kpi-card">
             <div class="kpi-label">Audit Trail</div>
             <div class="kpi-value">@Model.RecentAudit.Count recent</div>
-            <div class="kpi-meta"><a href="@Url.Content("~/manage/audit")">Inspect full append-only log →</a></div>
+            <div class="kpi-meta"><a href="@Url.Content("~/manage/audit")">Inspect full append-only log</a></div>
         </div>
     </div>
 
     <section class="card">
         <div class="card-header">
-            <h2>System posture &amp; runtime configuration</h2>
+            <h2>Saved configuration preferences</h2>
             <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/settings")">Configure system</a>
         </div>
+        <p class="muted">These preferences describe saved intent. Runtime authentication and SQLite storage use protected host configuration; the latest saved policy may differ from each agent’s confirmed revision.</p>
         <div class="status-grid">
             <div class="status-tile">
                 <div class="status-tile-title">Firewall Backend</div>
@@ -90,12 +91,12 @@
                 <div class="status-tile-meta">Schema v@(Model.Settings.FirewallDefaults.DefaultFilterSchemaVersion) · Watchdog default @(Model.Settings.FirewallDefaults.DefaultConfirmationTimeoutSeconds)s</div>
             </div>
             <div class="status-tile">
-                <div class="status-tile-title">Authentication Providers</div>
+                <div class="status-tile-title">Requested authentication providers</div>
                 <div class="status-tile-value">@(authMethods.Count > 0 ? string.Join(" + ", authMethods) : "None")</div>
-                <div class="status-tile-meta">Session timeout @(Model.Settings.LocalAuth.SessionIdleTimeoutMinutes)m · Lockout after @(Model.Settings.LocalAuth.LockoutMaxFailedAttempts) tries</div>
+                <div class="status-tile-meta">Saved session timeout @(Model.Settings.LocalAuth.SessionIdleTimeoutMinutes)m · Lockout after @(Model.Settings.LocalAuth.LockoutMaxFailedAttempts) tries</div>
             </div>
             <div class="status-tile">
-                <div class="status-tile-title">Controller Database</div>
+                <div class="status-tile-title">Requested controller database</div>
                 <div class="status-tile-value">@Model.Settings.Database.Provider.ToUpperInvariant()</div>
                 <div class="status-tile-meta">@(Model.Settings.Database.Provider == "sqlite" ? "Protected local WAL store (0600)" : $"{Model.Settings.Database.Host ?? "unconfigured"}:{Model.Settings.Database.Port ?? 0}/{Model.Settings.Database.DatabaseName ?? "-"}")</div>
             </div>
@@ -109,7 +110,7 @@
                 else
                 {
                     <div class="status-tile-value">Not yet authored</div>
-                    <div class="status-tile-meta"><a href="@Url.Content("~/manage/policies")">Create initial policy →</a></div>
+                    <div class="status-tile-meta"><a href="@Url.Content("~/manage/policies")">Create initial policy</a></div>
                 }
             </div>
         </div>

@@ -13,3 +13,10 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 ## `2026.11.21` (First Code-Complete Release)
 
 - Completed Milestones A–D (Phases 1–14): native `nftables` dual-stack filter/NAT/bridge compilers, exclusive ownership & boot/namespace receipts, autonomous timed watchdog rollback, `SO_PEERCRED` Unix and pinned TLS 1.3 mTLS control protocols, local sessions + optional OIDC + RBAC, MVC/Blazor management UI, and end-to-end confirmed apply over HTTPS.
+
+## Unreleased router and settings work
+
+See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
+current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+private source inspection, container isolation, verification limits, and screenshots.
+This local development work is not a published release.

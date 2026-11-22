@@ -359,6 +359,34 @@ public sealed class ConfirmedApplyWorkflowTests
         }
     }
 
+    /// <summary>Preview-only tables must be rejected before any privileged dispatch and recorded in the audit.</summary>
+    [Fact]
+    public async Task Workflow_DeniesExtendedScopeWithoutCallingAgent()
+    {
+        if (!OperatingSystem.IsLinux()) { return; }
+        var dir = CreateOwnerOnlyTempDirectory();
+        try
+        {
+            var store = ControllerStateStore.Initialize(new(dir));
+            var actor = ControllerActorIdentity.FromLocalAccount(Guid.NewGuid());
+            var host = new ManagedHostRecord(Guid.NewGuid(), "synthetic", AgentTransportKind.Unix, "/run/nergal/synthetic.sock", expectedServerUserId: 0);
+            store.RegisterHost(host, actor, NergalRoles.Administrator);
+            var bundle = new Nergal.Core.Policy.FirewallPolicyBundle(1,
+                new(1, Nergal.Core.Policy.FilterVerdict.Drop, []), auxiliaryFilter: new(-5,
+                    new(2, Nergal.Core.Policy.FilterVerdict.Accept, Nergal.Core.Policy.FilterVerdict.Accept, Nergal.Core.Policy.FilterVerdict.Accept, [])));
+            var report = PolicyAuthoringService.EvaluateDraft(Nergal.Core.Policy.PolicyBundleJsonCodec.EncodeBundle(bundle));
+            Assert.True(report.IsValid);
+            var revision = store.SavePolicyRevision(report.CanonicalJson!, report.CandidateDigest!, actor, NergalRoles.Administrator, "Synthetic preview");
+            var dispatcher = new RecordingDispatcher((_, _) => throw new InvalidOperationException("Must not contact agent"));
+            var workflow = new ApplyWorkflowService(store, dispatcher);
+            var result = await workflow.StartApplyAsync(host.Id, revision.Revision, 30, actor, NergalRoles.Administrator);
+            Assert.Equal("policy.previewOnlyScope", result.Reply!.ErrorCode);
+            Assert.Empty(dispatcher.Sent);
+            Assert.Contains(store.ListAuditEntries(), e => e.Action == "apply.start" && e.Outcome == "rejected" && e.DetailCode == "policy.previewOnlyScope");
+        }
+        finally { TryDelete(dir); }
+    }
+
     private sealed class RecordingDispatcher(Func<ManagedHostRecord, AgentControlRequest, AgentControlReply> handler) : IAgentControlDispatcher
     {
         public List<(ManagedHostRecord Host, AgentControlRequest Request)> Sent { get; } = [];

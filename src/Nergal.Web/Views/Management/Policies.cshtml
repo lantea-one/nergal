@@ -46,6 +46,21 @@
         </div>
     }
 
+    <details class="disclosure mb-0 mt-2">
+        <summary>Router constructs and apply readiness</summary>
+        <p>Use the JSON editor for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation,
+            destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return.
+            The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits.</p>
+        <p>Independent priority tables and extended bridge jump/return chains can be previewed and saved.
+            Applying them is blocked with <code>policy.previewOnlyScope</code> until their complete ownership and rollback verification is available.</p>
+        @if (bundle?.Filter.RpFilter is { } rp)
+        { <p><strong>Raw rpfilter:</strong> @rp.Rules.Count ordered rules.</p> }
+        @if (bundle?.Filter.ForwardTcpMssClamp is { } mss)
+        { <p><strong>Forward TCP SYN MSS:</strong> @mss bytes.</p> }
+        @if (bundle?.RequiresExtendedApplySupport == true)
+        { <p class="alert alert-warning">This draft includes preview-only tables or bridge constructs. Agent apply is denied.</p> }
+    </details>
+
     <!-- Top Save / Preview Bar -->
     <section class="card">
         <form method="post" action="@Url.Content("~/manage/policies/preview")">
@@ -97,7 +112,7 @@
             <section class="card">
                 <div class="card-header">
                     <h2>Filter chain defaults (<code>inet nergal_filter</code>)</h2>
-                    <span class="badge badge-primary">Schema v@bundle.Filter.SchemaVersion</span>
+                    <span class="badge badge-primary">Schema v@(bundle.Filter.SchemaVersion)</span>
                 </div>
                 <form method="post" action="@Url.Content("~/manage/policies/filter/defaults")">
                     @Html.AntiForgeryToken()
@@ -192,9 +207,9 @@
                                 var ifaceText = (r.InputInterface, r.OutputInterface) switch
                                 {
                                     (null, null) => "any",
-                                    (string i, null) => $"in:{i}",
-                                    (null, string o) => $"out:{o}",
-                                    (string i, string o) => $"in:{i} out:{o}",
+                                    (string i, null) => $"in:{(r.NegateInputInterface ? "!= " : "")}{i}",
+                                    (null, string o) => $"out:{(r.NegateOutputInterface ? "!= " : "")}{o}",
+                                    (string i, string o) => $"in:{(r.NegateInputInterface ? "!= " : "")}{i} out:{(r.NegateOutputInterface ? "!= " : "")}{o}",
                                 };
                                 <tr>
                                     <td>@(idx + 1)</td>
@@ -204,14 +219,20 @@
                                         <code>@r.Protocol.ToString().ToLowerInvariant()</code>
                                         @if (!string.IsNullOrEmpty(r.IcmpType)) { <span>(<code>@r.IcmpType</code>)</span> }
                                     </td>
-                                    <td><code>@srcText</code></td>
-                                    <td><code>@dstText</code></td>
+                                    <td>
+                                        <code>@(r.NegateSource ? "!= " : "")@srcText</code>
+                                        @if (r.SourceMac is not null || r.SourceMacs is not null)
+                                        {
+                                            <span class="rule-desc">MAC @(r.NegateSourceMac ? "!= " : "")@(r.SourceMac?.Value ?? string.Join(", ", r.SourceMacs!.Select(m => m.Value)))</span>
+                                        }
+                                    </td>
+                                    <td><code>@(r.NegateDestination ? "!= " : "")@dstText</code></td>
                                     <td><code>@portText</code></td>
                                     <td><code>@ifaceText</code></td>
                                     <td>
                                         @if (r.ConnectionStates != ConnectionStateFlags.None) { <code>@r.ConnectionStates</code> }
                                         @if (r.MatchOriginalDestinationDnat) { <span class="badge badge-warning">ct dnat</span> }
-                                        @if (r.RateLimit is { } rl) { <span class="badge badge-neutral">@rl.PacketsPerWindow/@rl.WindowUnit.ToString().ToLowerInvariant()</span> }
+                                        @if (r.RateLimit is { } rl) { <span class="badge badge-neutral">@rl.PacketsPerWindow/@rl.WindowUnit.ToString().ToLowerInvariant() · @(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "per destination" : "per source")</span> }
                                         @if (r.ConnectionStates == ConnectionStateFlags.None && !r.MatchOriginalDestinationDnat && r.RateLimit is null) { <span class="muted">stateless</span> }
                                     </td>
                                     <td>
@@ -706,7 +727,7 @@
 
         <section class="card">
             <div class="card-header">
-                <h2>Postrouting explicit SNAT rules (<code>inet nergal_nat</code>)</h2>
+                <h2>Postrouting NAT rules (<code>inet nergal_nat</code>)</h2>
             </div>
             @if (bundle?.Nat is null || bundle.Nat.SnatRules.Count == 0)
             {
@@ -721,7 +742,7 @@
                                 <th>#</th>
                                 <th>Family</th>
                                 <th>Source CIDR</th>
-                                <th>Translated Source IP</th>
+                                <th>Action / translated source</th>
                                 <th>Destination CIDR</th>
                                 <th>Output Iface</th>
                                 <th>Description</th>
@@ -736,8 +757,8 @@
                                 <tr>
                                     <td>@(i + 1)</td>
                                     <td><code>@s.Family.ToString().ToLowerInvariant()</code></td>
-                                    <td><code>@s.Source.Value</code></td>
-                                    <td><code>@s.TranslatedAddress</code></td>
+                                    <td><code>@(s.NegateSource ? "!= " : "")@(s.Source?.Value ?? "any")</code></td>
+                                    <td><code>@(s.Action == NatPostroutingAction.Snat ? s.TranslatedAddress : s.Action.ToString().ToLowerInvariant())</code></td>
                                     <td><code>@(s.Destination?.Value ?? "any")</code></td>
                                     <td><code>@(s.OutputInterface ?? "any")</code></td>
                                     <td>@(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)</td>
@@ -764,7 +785,7 @@
                                                                 </div>
                                                                 <div class="field">
                                                                     <label>Source CIDR</label>
-                                                                    <input type="text" name="source" value="@s.Source.Value" required />
+                                                                    <input type="text" name="source" value="@s.Source?.Value" required />
                                                                 </div>
                                                                 <div class="field">
                                                                     <label>Translated IP</label>

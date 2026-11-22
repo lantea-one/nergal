@@ -1,11 +1,51 @@
 using Nergal.Core.Policy;
 using Nergal.Nftables;
+using Nergal.Testing;
 
 // Only synthetic documentation addresses; this program emits text or verifies snapshots without host mutations.
 var mode = args.Length > 0 ? args[0] : "schema1";
 var routerIdentity = new NftTableIdentity(
     Guid.Parse("00000000-0000-0000-0000-000000000010"),
     Guid.Parse("00000000-0000-0000-0000-000000000020"));
+
+if (mode is "router-packets" or "router-packet-nat" or "router-bridge" or "router-auxiliary")
+{
+    var result = mode switch
+    {
+        "router-packets" => NftFilterCompiler.Compile(RouterPolicySamples.PacketFilter(), routerIdentity),
+        "router-packet-nat" => NftNatCompiler.Compile(RouterPolicySamples.PacketNat(), routerIdentity),
+        "router-bridge" => NftBridgeCompiler.Compile(RouterPolicySamples.Bridge(), routerIdentity),
+        _ => NftPolicyBundleCompiler.Compile(new(1, new(1, FilterVerdict.Accept, []), auxiliaryFilter: new(-5,
+            new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop,
+                Destination: new("192.0.2.1/32"), DestinationPorts: [8080, 8443], InputInterface: "lo", NegateInputInterface: true)]))), routerIdentity),
+    };
+    if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); }
+    Console.Write(result.Candidate); return 0;
+}
+if (mode is "router-constructs" or "router-nat")
+{
+    var result = mode == "router-constructs" ? NftFilterCompiler.Compile(RouterPolicySamples.Filter(), routerIdentity)
+        : NftNatCompiler.Compile(RouterPolicySamples.Nat(), routerIdentity);
+    if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); }
+    Console.Write(result.Candidate);
+    return 0;
+}
+if (mode == "verify-constructs" && args.Length == 5)
+{
+    var echo = NftTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
+    var listed = NftTableObservation.Parse(File.ReadAllText(args[2]));
+    if (!echo.IsSuccess || !listed.IsSuccess) { throw new InvalidOperationException("Extended filter observation: " + echo.ErrorCode + "/" + listed.ErrorCode); }
+    if (echo.Observation!.StateDigest != listed.Observation!.StateDigest ||
+        NftFilterCompiler.Compile(listed.Observation.Policy, routerIdentity).Candidate != NftFilterCompiler.Compile(RouterPolicySamples.Filter(), routerIdentity).Candidate)
+    { throw new InvalidOperationException("Extended filter round-trip diverged."); }
+    var natEcho = NftNatTableObservation.ParseReplacementEcho(File.ReadAllText(args[3]));
+    var natList = NftNatTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!natEcho.IsSuccess || !natList.IsSuccess) { throw new InvalidOperationException("Extended NAT observation: " + natEcho.ErrorCode + "/" + natList.ErrorCode); }
+    if (natEcho.Observation!.StateDigest != natList.Observation!.StateDigest ||
+        NftNatCompiler.Compile(natList.Observation.Policy, routerIdentity).Candidate != NftNatCompiler.Compile(RouterPolicySamples.Nat(), routerIdentity).Candidate)
+    { throw new InvalidOperationException("Extended NAT round-trip diverged."); }
+    return 0;
+}
 
 if (mode == "schema1")
 {

@@ -13,6 +13,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title · @appName</title>
+    <script src="@Url.Content("~/js/theme.js")"></script>
     <link rel="stylesheet" href="@Url.Content("~/css/nergal.css")" />
 </head>
 <body>
@@ -31,6 +32,10 @@
                     <a class="nav-link @(activeNav == "apply" ? "active" : "")" href="@Url.Content("~/manage/apply")">Confirmed Apply</a>
                     <a class="nav-link @(activeNav == "audit" ? "active" : "")" href="@Url.Content("~/manage/audit")">Audit</a>
                     <a class="nav-link @(activeNav == "settings" ? "active" : "")" href="@Url.Content("~/manage/settings")">Settings</a>
+                    @if (ViewData["ShowNativeSources"] as bool? == true)
+                    {
+                        <a class="nav-link @(activeNav == "sources" ? "active" : "")" href="@Url.Content("~/manage/sources")">Native sources</a>
+                    }
                     <a class="nav-link @(activeNav == "session" ? "active" : "")" href="@Url.Content("~/session")">Session</a>
                 </nav>
             }
@@ -38,7 +43,7 @@
             <div class="topbar-meta">
                 @if (!string.IsNullOrEmpty(actorRole))
                 {
-                    <span class="badge @(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "badge-primary" : "badge-neutral")">@actorRole</span>
+                    <span class="badge @(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "badge-primary" : "badge-neutral")">@(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "Administrator" : "Auditor")</span>
                 }
                 <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle>Theme</button>
             </div>

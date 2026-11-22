@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — router authoring and settings review
+
+- Add typed raw rpfilter/source-port rules, forward MSS clamping, source-MAC
+  pinning/negation, ICMPx rejection, destination meters, negated matchers, and
+  postrouting masquerade/return with extended matchers.
+- Preserve extended semantics through canonical JSON, filter/NAT observation, and
+  structured draft edits; test real dual-stack packet outcomes in disposable namespaces.
+- Add priority-table and extended bridge jump/return compiler previews with explicit
+  agent-apply denial pending complete ownership/rollback conformance.
+- Review settings corruption handling and distinguish saved intent from runtime
+  services. Refresh management light/dark appearance using Lantea.One's palette.
+- Add private administrator-only source inspection and a loopback containerized
+  development stack with separate check-only native source workers.
+- Refresh documentation and the repository Pages site with local test screenshots.
+
+
 ## [2026.11.21.1] - 2026-11-21
 
 ### Multi-Table Confirmed Apply & Rollback

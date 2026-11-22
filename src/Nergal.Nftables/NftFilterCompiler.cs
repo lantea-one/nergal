@@ -45,7 +45,7 @@ public static class NftFilterCompiler
 
         if (policy.SchemaVersion == 1)
         {
-            if (!Enum.IsDefined(policy.DefaultVerdict))
+            if (policy.DefaultVerdict is not (FilterVerdict.Accept or FilterVerdict.Drop))
             {
                 errors.Add(new("verdict.unknown", "defaultVerdict"));
             }
@@ -62,21 +62,23 @@ public static class NftFilterCompiler
         }
         else
         {
-            if (!Enum.IsDefined(policy.InputDefaultVerdict))
+            if (policy.InputDefaultVerdict is not (FilterVerdict.Accept or FilterVerdict.Drop))
             {
                 errors.Add(new("verdict.unknown", "inputDefaultVerdict"));
             }
 
-            if (!Enum.IsDefined(policy.ForwardDefaultVerdict))
+            if (policy.ForwardDefaultVerdict is not (FilterVerdict.Accept or FilterVerdict.Drop))
             {
                 errors.Add(new("verdict.unknown", "forwardDefaultVerdict"));
             }
 
-            if (!Enum.IsDefined(policy.OutputDefaultVerdict))
+            if (policy.OutputDefaultVerdict is not (FilterVerdict.Accept or FilterVerdict.Drop))
             {
                 errors.Add(new("verdict.unknown", "outputDefaultVerdict"));
             }
         }
+
+        RouterFilterValidation.Validate(policy, errors);
 
         for (var index = 0; index < policy.Rules.Count; index++)
         {
@@ -303,6 +305,12 @@ public static class NftFilterCompiler
         text.Append("add chain inet " + TableName + " output { type filter hook output priority 0; policy ")
             .Append(Verdict(policy.OutputDefaultVerdict)).Append("; }\n");
 
+        if (policy.RpFilter is { } rp)
+        {
+            text.Append("add chain inet " + TableName + " rpfilter { type filter hook prerouting priority raw; policy ")
+                .Append(Verdict(rp.DefaultVerdict)).Append("; }\n");
+        }
+
         var orderedRules = new List<(FilterRule Rule, string? SetName)>(policy.Rules.Count);
         var setIndex = 0;
         foreach (var chain in ChainOrder)
@@ -329,9 +337,21 @@ public static class NftFilterCompiler
             }
         }
 
-        foreach (var (rule, setName) in orderedRules)
+        foreach (var chain in ChainOrder)
         {
-            AppendRule(text, rule, setName);
+            if (chain == FilterChainKind.Forward && policy.ForwardTcpMssClamp is { } mss)
+            {
+                text.Append("add rule inet " + TableName + " forward tcp flags syn tcp option maxseg size set ")
+                    .Append(mss.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            }
+            foreach (var (rule, setName) in orderedRules.Where(entry => entry.Rule.Chain == chain))
+            {
+                AppendRule(text, rule, setName);
+            }
+        }
+        if (policy.RpFilter is { } raw)
+        {
+            foreach (var rule in raw.Rules) { RouterFilterValidation.AppendRpFilterRule(text, rule!); }
         }
 
         return new(text.ToString(), []);
@@ -347,32 +367,39 @@ public static class NftFilterCompiler
 
         if (rule.InputInterface is not null)
         {
-            text.Append("iifname \"").Append(rule.InputInterface).Append("\" ");
+            text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
         }
 
         if (rule.OutputInterface is not null)
         {
-            text.Append("oifname \"").Append(rule.OutputInterface).Append("\" ");
+            text.Append("oifname ").Append(rule.NegateOutputInterface ? "!= " : "").Append("\"").Append(rule.OutputInterface).Append("\" ");
+        }
+
+        if (rule.SourceMac is not null || rule.SourceMacs is not null)
+        {
+            text.Append("ether saddr ").Append(rule.NegateSourceMac ? "!= " : "");
+            text.Append(rule.SourceMac?.Value ?? ("{ " + string.Join(", ", rule.SourceMacs!.Select(m => m.Value).Order(StringComparer.Ordinal)) + " }"));
+            text.Append(' ');
         }
 
         if (rule.Source is not null)
         {
-            text.Append(family).Append(" saddr ").Append(rule.Source.Value).Append(' ');
+            text.Append(family).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' ');
         }
         else if (rule.SourcePrefixes is { Count: > 0 })
         {
-            text.Append(family).Append(" saddr { ")
+            text.Append(family).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append("{ ")
                 .Append(string.Join(", ", rule.SourcePrefixes.Select(p => p.Value).Order(StringComparer.Ordinal)))
                 .Append(" } ");
         }
 
         if (rule.Destination is not null)
         {
-            text.Append(family).Append(" daddr ").Append(rule.Destination.Value).Append(' ');
+            text.Append(family).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.Destination.Value).Append(' ');
         }
         else if (rule.DestinationPrefixes is { Count: > 0 })
         {
-            text.Append(family).Append(" daddr { ")
+            text.Append(family).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append("{ ")
                 .Append(string.Join(", ", rule.DestinationPrefixes.Select(p => p.Value).Order(StringComparer.Ordinal)))
                 .Append(" } ");
         }
@@ -424,7 +451,7 @@ public static class NftFilterCompiler
                 _ => throw new InvalidOperationException("Unvalidated rate-limit unit."),
             };
             text.Append("add @").Append(rateLimitSetName)
-                .Append(" { ").Append(family).Append(" saddr timeout ")
+                .Append(" { ").Append(family).Append(rateLimit.KeyKind == RateLimitKeyKind.DestinationAddress ? " daddr timeout " : " saddr timeout ")
                 .Append(rateLimit.EntryTimeoutSeconds.ToString(CultureInfo.InvariantCulture)).Append("s limit rate ")
                 .Append(rateLimit.PacketsPerWindow.ToString(CultureInfo.InvariantCulture)).Append('/').Append(unit)
                 .Append(" burst ").Append(rateLimit.Burst.ToString(CultureInfo.InvariantCulture)).Append(" packets } ");
@@ -472,6 +499,7 @@ public static class NftFilterCompiler
     {
         FilterVerdict.Accept => "accept",
         FilterVerdict.Drop => "drop",
+        FilterVerdict.Reject => "reject with icmpx type admin-prohibited",
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
 

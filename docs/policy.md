@@ -18,7 +18,7 @@ performs host operations. The web host does not reference the compiler.
   matching (`MatchOriginalDestinationDnat`).
 - **Dual-stack NAT (`NatPolicy` / `NftNatCompiler`, [ADR 0026](decisions/0026-dual-stack-nat-and-original-tuple-matching.md))**:
   prerouting destination NAT (`DnatRule`) and explicit postrouting source NAT
-  (`SnatRule`, without implicit masquerade) targeting `inet nergal_nat`.
+  (`SnatRule`, explicit SNAT by default; optional explicit masquerade/return actions in the router extension) targeting `inet nergal_nat`.
 - **Bridge filtering & multi-table bundles (`BridgePolicy` / `FirewallPolicyBundle`, [ADR 0027](decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md))**:
   L2 forward filtering in `bridge nergal_bridge` (`hook forward priority -200`) across
   `arp`, `ip`, and `ip6` Ethernet types, coordinated atomically with `inet nergal_filter`
@@ -119,3 +119,10 @@ elsewhere in Core do not imply these features exist in this compiler.
 The [decision record](decisions/0002-filter-compiler.md) explains why create-only
 provisioning is the current boundary. Native validation, authorized execution,
 independent rollback, confirmed apply and recovery remain future agent work.
+
+## Router extensions
+
+See [router constructs](router-constructs.md) for optional schema-2 raw prerouting,
+MSS, MAC, destination-meter, negation, and postrouting action fields, JSON examples,
+and observation versions. Independent early inet and extended bridge jump/return
+contracts are compiler previews and are denied at agent apply.

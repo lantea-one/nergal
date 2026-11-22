@@ -46,3 +46,10 @@ sequenceDiagram
 1. **Foreign table preservation**: nergal never executes `flush ruleset` and never deletes or modifies tables lacking its own `nergal:v1:<owner>:<resource>` ownership comment.
 2. **No shell interpolation**: Native `nft` invocations pass fixed argv arrays via `ProcessStartInfo.ArgumentList` and feed compiled artifacts over stdin.
 3. **Fail-closed collision handling**: If an unowned `inet nergal_filter`, `inet nergal_nat`, or `bridge nergal_bridge` table exists, enrollment and apply refuse to proceed.
+
+## Unreleased router and settings work
+
+See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
+current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+private source inspection, container isolation, verification limits, and screenshots.
+This local development work is not a published release.

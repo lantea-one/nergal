@@ -30,3 +30,10 @@ flowchart LR
 | [Deployment & Packaging](deployment-and-packaging.md) | Systemd units, sysusers/tmpfiles, `.deb`/`.tar.gz` packages, and offline setup. |
 | [Testing & Conformance](testing-and-conformance.md) | Deterministic unit tests and disposable user/net namespace packet verification. |
 | [Release Notes](release-notes.md) | CalVer releases and changelog highlights. |
+
+## Unreleased router and settings work
+
+See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
+current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+private source inspection, container isolation, verification limits, and screenshots.
+This local development work is not a published release.

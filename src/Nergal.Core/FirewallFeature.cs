@@ -20,4 +20,12 @@ public enum FirewallFeature
     AtomicMultiTableCommit,
     /// <summary>Leave rules owned by unrelated components unchanged.</summary>
     ForeignTablePreservation,
+    /// <summary>Maintain independent rate-limit state for each destination.</summary>
+    PerDestinationRateLimiting,
+    /// <summary>Raw reverse-path filtering, explicit MAC pinning, negation, rejection, and MSS modification.</summary>
+    RouterFiltering,
+    /// <summary>Interface-derived source translation and ordered NAT return exemptions.</summary>
+    MasqueradeAndNatExemptions,
+    /// <summary>Independent early filter tables and extended bridge jump/return control flow.</summary>
+    AuxiliaryFiltering,
 }

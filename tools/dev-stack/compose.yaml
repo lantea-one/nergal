@@ -1,0 +1,34 @@
+# Local UI sandbox. No agent, host network, Docker socket, or kernel privileges.
+services:
+  web:
+    image: mcr.microsoft.com/dotnet/aspnet:10.0.15
+    user: "${NERGAL_DEV_UID:?}:${NERGAL_DEV_GID:?}"
+    working_dir: /app
+    command: ["dotnet", "Nergal.Web.dll"]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports: ["127.0.0.1:5443:5443"]
+    environment:
+      ASPNETCORE_URLS: https://0.0.0.0:5443
+      Kestrel__Certificates__Default__Path: /state/tls.crt
+      Kestrel__Certificates__Default__KeyPath: /state/tls.key
+      LocalSessions__Enabled: "true"
+      LocalSessions__AccountDirectory: /state/accounts
+      LocalSessions__KeyDirectory: /state/keys
+      LocalSessions__CertificateFile: /state/wrapping.pfx
+      ControllerState__Enabled: "true"
+      ControllerState__Directory: /state/controller
+      NativeSources__Directory: /sources
+      Logging__LogLevel__Default: Warning
+    volumes:
+      - ../../artifacts/dev-stack/web:/app:ro
+      - ../../artifacts/dev-stack/private:/state
+      - ../../artifacts/dev-stack/sources:/sources:ro
+      - ../../artifacts/dev-stack/reports:/reports:ro
+    tmpfs: ["/tmp:mode=1777,size=64m"]
+    networks: [sandbox]
+networks:
+  sandbox:
+    driver: bridge

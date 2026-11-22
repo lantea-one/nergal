@@ -17,7 +17,7 @@
     <div class="page-header">
         <div>
             <h1>System settings</h1>
-            <p class="page-subtitle">Configure branding, authentication providers (Local, OIDC/OAuth 2.0, LDAP/AD), database backend, and firewall defaults.</p>
+            <p class="page-subtitle">Manage appearance and saved configuration intent. Runtime authentication, storage, and apply safety remain controlled by protected host configuration.</p>
         </div>
         <div class="btn-group">
             <a class="btn btn-secondary" href="@Url.Content("~/manage")">Back to Dashboard</a>
@@ -52,6 +52,12 @@
             Signed in as <code>@Model.ActorRole</code> (read-only). Only Administrators can save system settings.
         </div>
     }
+
+    <div class="alert alert-info" role="status">
+        Appearance changes apply to management pages. Authentication, database, and firewall fields below are saved preferences;
+        they do not reconfigure the running services. LDAP, PostgreSQL, and MariaDB adapters are not implemented.
+        Keep local access and protected host configuration available when planning changes.
+    </div>
 
     <div class="tabs" role="tablist" aria-label="System settings sections">
         <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab-target="branding">Branding &amp; Theme</button>
@@ -97,7 +103,7 @@
                     </select>
                 </div>
                 <div class="field span-2">
-                    <label for="s-banner">Login / security notice banner (optional)</label>
+                    <label for="s-banner">Saved login notice (not displayed yet)</label>
                     <input id="s-banner" type="text" name="loginBanner" value="@s.Branding.LoginBanner" maxlength="256" placeholder="Authorized firewall administrators only. All changes are audited." disabled="@disabledAttr" />
                 </div>
             </div>
@@ -286,7 +292,7 @@
                 <div class="field">
                     <label for="s-fw-timeout">Default confirmation watchdog timeout (seconds)</label>
                     <input id="s-fw-timeout" type="number" name="defaultConfirmationTimeoutSeconds" value="@s.FirewallDefaults.DefaultConfirmationTimeoutSeconds" min="10" max="3600" disabled="@disabledAttr" />
-                    <span class="hint">Agents automatically roll back unconfirmed applies when this timer expires.</span>
+                    <span class="hint">Saved preference; the actual confirmation timeout is selected when starting an apply.</span>
                 </div>
                 <div class="field">
                     <label for="s-fw-schema">Default filter schema version</label>

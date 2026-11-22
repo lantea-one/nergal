@@ -4,14 +4,6 @@
 
   // 1. Theme toggle persisted in localStorage, falling back to admin-configured default theme.
   const root = document.documentElement;
-  const savedTheme = localStorage.getItem("nergal-theme");
-  const defaultTheme = root.getAttribute("data-default-theme");
-  if (savedTheme === "dark" || savedTheme === "light") {
-    root.setAttribute("data-theme", savedTheme);
-  } else if (defaultTheme === "dark" || defaultTheme === "light") {
-    root.setAttribute("data-theme", defaultTheme);
-  }
-
   document.addEventListener("click", function (e) {
     const toggle = e.target.closest("[data-theme-toggle]");
     if (!toggle) return;
@@ -20,7 +12,7 @@
       (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
     const next = isDark ? "light" : "dark";
     root.setAttribute("data-theme", next);
-    localStorage.setItem("nergal-theme", next);
+    try { localStorage.setItem("nergal-theme", next); } catch { /* Storage can be disabled. */ }
     toggle.textContent = next === "dark" ? "Light mode" : "Dark mode";
   });
 

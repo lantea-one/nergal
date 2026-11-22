@@ -157,9 +157,10 @@ public sealed class NftNatTests
 
         var masquerade = SampleListing(identity.Comment);
         masquerade["nftables"]![7]!["rule"]!["expr"]![2] = JsonNode.Parse("""{"masquerade":null}""")!;
-        var rejected = NftNatTableObservation.Parse(masquerade.ToJsonString());
-        Assert.False(rejected.IsSuccess);
-        Assert.Equal("observation.rule", rejected.ErrorCode);
+        var changedAction = NftNatTableObservation.Parse(masquerade.ToJsonString());
+        Assert.True(changedAction.IsSuccess);
+        Assert.NotEqual(parsedList.Observation.StateDigest, changedAction.Observation!.StateDigest);
+        Assert.Equal(NatPostroutingAction.Masquerade, changedAction.Observation.Policy.SnatRules[1]!.Action);
     }
 
     private static JsonNode SampleListing(string comment) => JsonNode.Parse("""
