@@ -31,3 +31,10 @@ Release builds produce reproducible Linux `x64` artifacts via `scripts/package-r
 - `nergal_<version>_linux-x64.tar.gz`: Self-contained layout installing binaries under `/opt/nergal/{agent,web,admin}`, CLI wrappers in `/usr/local/sbin/`, and systemd/sysusers/tmpfiles definitions.
 - `nergal_<version>_amd64.deb`: Debian/Ubuntu package built with `dpkg-deb --root-owner-group` installing `/opt/nergal/`, `/usr/local/sbin/` wrappers, and `systemd`/`sysusers.d`/`tmpfiles.d` units.
 - `SHA256SUMS`: Cryptographic checksums for all release archives.
+
+## Unreleased router and settings work
+
+See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
+current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+private source inspection, container isolation, verification limits, and screenshots.
+This local development work is not a published release.

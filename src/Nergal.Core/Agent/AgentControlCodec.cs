@@ -41,7 +41,7 @@ public static class AgentControlCodec
         }
 
         if (request.Bundle is { } bundle &&
-            (bundle.Nat is not null || bundle.Bridge is not null || bundle.SchemaVersion != FirewallPolicyBundle.CurrentSchemaVersion))
+            (bundle.Nat is not null || bundle.Bridge is not null || bundle.AuxiliaryFilter is not null || bundle.SchemaVersion != FirewallPolicyBundle.CurrentSchemaVersion))
         {
             writer.WritePropertyName("bundle");
             PolicyBundleJsonCodec.WriteBundle(writer, bundle);

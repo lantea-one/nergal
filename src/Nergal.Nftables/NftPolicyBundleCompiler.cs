@@ -57,6 +57,26 @@ public static class NftPolicyBundleCompiler
             errors.Add(new("schema.unsupported", "schemaVersion"));
         }
 
+        if (isAtomicReplacement && bundle.RequiresExtendedApplySupport)
+        { return new(null, [new("policy.previewOnlyScope", "bundle")]); }
+        CompilationResult? auxiliaryResult = null;
+        if (bundle.AuxiliaryFilter is { } auxiliary)
+        {
+            if (auxiliary.Priority is < -300 or > 300 || auxiliary.Filter is null || auxiliary.Filter.SchemaVersion != 2 ||
+                auxiliary.Filter.RpFilter is not null || auxiliary.Filter.ForwardTcpMssClamp is not null)
+            { errors.Add(new("auxiliary.invalid", "auxiliaryFilter")); }
+            else
+            {
+                var result = identity is null ? NftFilterCompiler.Compile(auxiliary.Filter) : NftFilterCompiler.Compile(auxiliary.Filter, identity);
+                errors.AddRange(result.Diagnostics.Select(d => new PolicyDiagnostic(d.Code, "auxiliaryFilter." + d.Path)));
+                if (result.Candidate is { } candidate)
+                {
+                    // Replacement is confined to compiler-owned identifier and priority tokens.
+                    auxiliaryResult = new(candidate.Replace("inet nergal_filter", "inet nergal_aux", StringComparison.Ordinal)
+                        .Replace("priority 0;", "priority " + auxiliary.Priority.ToString(System.Globalization.CultureInfo.InvariantCulture) + ";", StringComparison.Ordinal), []);
+                }
+            }
+        }
         var filterResult = identity is null
             ? NftFilterCompiler.Compile(bundle.Filter)
             : NftFilterCompiler.Compile(bundle.Filter, identity);
@@ -124,6 +144,7 @@ public static class NftPolicyBundleCompiler
             text.Append(bridgeResult.Candidate);
         }
 
+        if (auxiliaryResult is not null) { text.Append(auxiliaryResult.Candidate); }
         return new(text.ToString(), []);
     }
 

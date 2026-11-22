@@ -1,0 +1,85 @@
+# Router migration and local testing
+
+This page describes unreleased local development. It does not claim that a native
+server configuration has been converted losslessly or deployed.
+
+## Support and verification
+
+| Construct | Development status |
+| --- | --- |
+| Raw prerouting rpfilter, FIB lookup, UDP source ports | Typed JSON, compiler, observation; real IPv4 spoof/bypass checks |
+| TCP SYN MSS clamp | Typed JSON, compiler, observation; captured forwarded IPv4 SYN MSS 1360 |
+| MAC matching/negation and ICMPx reject | Typed JSON, compiler, observation; real MAC+IP mismatch denial |
+| Destination-keyed rate meters | Native reconstruction and dual-stack packet state-isolation checks |
+| Negated interface/IP matchers | Explicit validated booleans, retained through compilation/observation |
+| Postrouting masquerade/return and extended matchers | Real dual-stack translation and exemption source-address checks |
+| Priority -5 auxiliary inet and bridge jump/return | Compiler previews with native syntax validation; apply explicitly denied |
+
+New router fields currently use **Advanced JSON & Revisions**. Simple structured
+forms retain advanced settings and matchers; they do not yet offer controls for
+every new field. The complete native candidate is available for inspection.
+
+Extended bridge and independent `inet nergal_aux` tables fail closed with
+`policy.previewOnlyScope` at dispatch. Complete auxiliary ownership, drift
+observation, bridge packet behavior, and timed rollback are the next milestone.
+No unsupported matcher is silently dropped to create a weaker policy.
+
+## Settings and appearance
+
+The management UI follows the Lantea.One green masthead, emerald accents, charcoal
+dark surfaces, and light paper palette. The theme toggle persists per browser;
+management branding can select a default. Settings writes require Administrator
+access, CSRF, validation, and an append-only audit entry.
+
+Authentication, database, and firewall fields are **saved configuration intent**.
+Saving them does not hot-reconfigure services. LDAP, PostgreSQL, and MariaDB
+adapters are not implemented. Runtime sessions and SQLite use protected host
+configuration. The newest saved revision is not necessarily a host's active policy.
+
+The following screenshots were captured from the isolated local test controller
+on November 22, 2026, with synthetic/default data. They contain no production
+exports, topology, or credentials.
+
+### Dark theme
+
+![System settings in dark mode](assets/screenshots/settings-dark.jpg)
+
+### Light theme
+
+![System settings in light mode](assets/screenshots/settings-light.jpg)
+
+### Policy builder
+
+![Policy builder with synthetic starter data](assets/screenshots/policies-light.jpg)
+
+### Mobile layout
+
+![Policy builder at a 390-pixel viewport](assets/screenshots/policies-mobile.jpg)
+
+## Private local stack
+
+`tools/dev-stack/up.sh` builds the pinned .NET Release app and runs a loopback-only
+HTTPS controller at `https://127.0.0.1:5443/manage`. Optional repeated `--source`
+arguments copy private native inputs into ignored local storage. The generated
+account credentials are in `artifacts/dev-stack/private/access.txt`, never in the
+public documentation. The operator handles the local certificate warning.
+
+The web container has no firewall capabilities or production agent connection.
+Each source has a separate container with no network access, a read-only source,
+and native check-only validation. A successful check establishes syntax in that
+container, not imported-policy equivalence or server packet correctness.
+Administrators can inspect exact escaped snapshots at **Native sources**; Auditors
+are denied. Sources are not applied.
+
+`tools/dev-stack/watch.py` supervises application/source refreshes while the local
+process runs. It preserves private accounts, keys, and saved UI data and reports
+its outcome in `artifacts/dev-stack/watch-status.txt`. It is not a boot service.
+
+## Checks and limits
+
+Release builds, unit coverage, the web smoke test, the native nftables fixture,
+router packet fixture, HTTPS session/settings fixtures, and the existing watchdog
+fixture provide separate evidence. A mapped-UID local-status fixture requires
+working `newuidmap` capabilities and must be reported unverified when unavailable.
+Passing unit tests and source syntax checks do not prove production deployment or
+complete new-feature rollback. No production firewall is touched by this workflow.

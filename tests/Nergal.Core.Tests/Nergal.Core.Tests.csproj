@@ -25,4 +25,6 @@
     <ProjectReference Include="../../src/Nergal.RemoteTransport/Nergal.RemoteTransport.csproj" />
   </ItemGroup>
 
+  <ItemGroup><Compile Include="../Shared/RouterPolicySamples.cs" Link="RouterPolicySamples.cs" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="../Shared/NativeRouter/*.json" /></ItemGroup>
 </Project>

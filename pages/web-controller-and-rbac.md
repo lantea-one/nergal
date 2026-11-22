@@ -24,3 +24,10 @@
 ## Append-Only Audit Trail
 
 Every host registration/deletion, policy revision save, and apply start/confirm/rollback is recorded in `controller.db` (`audit_log`) with actor identity, role, timestamp, target, outcome, and detail code, viewable at `/manage/audit` and `GET /controller/audit`.
+
+## Unreleased router and settings work
+
+See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
+current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+private source inspection, container isolation, verification limits, and screenshots.
+This local development work is not a published release.

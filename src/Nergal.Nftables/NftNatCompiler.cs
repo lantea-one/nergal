@@ -4,7 +4,7 @@ using Nergal.Core.Policy;
 
 namespace Nergal.Nftables;
 
-/// <summary>Compiles dual-stack DNAT and explicit SNAT policies without executing commands or observing host state.</summary>
+/// <summary>Compiles dual-stack DNAT and ordered postrouting translation/exemption policies without executing commands or observing host state.</summary>
 public static class NftNatCompiler
 {
     /// <summary>The reserved inet NAT table name. Preexisting tables are never adopted or overwritten.</summary>
@@ -34,6 +34,8 @@ public static class NftNatCompiler
         {
             errors.Add(new("schema.unsupported", "schemaVersion"));
         }
+
+        RouterNatValidation.Validate(policy, errors);
 
         var normalizedDnat = new List<(DnatRule Rule, string NormalizedAddr)>(policy.DnatRules.Count);
         for (var index = 0; index < policy.DnatRules.Count; index++)
@@ -131,11 +133,11 @@ public static class NftNatCompiler
                 errors.Add(new("family.unknown", path + ".family"));
             }
 
-            if (rule.Source is null)
+            if (rule.Source is null && rule.Action == NatPostroutingAction.Snat)
             {
                 errors.Add(new("nat.sourceRequired", path + ".source"));
             }
-            else if (rule.Source.Family != rule.Family)
+            else if (rule.Source is not null && rule.Source.Family != rule.Family)
             {
                 errors.Add(new("network.familyMismatch", path + ".source"));
             }
@@ -151,7 +153,8 @@ public static class NftNatCompiler
             }
 
             string? normalizedTarget = null;
-            if (!FilterPolicyValidation.TryParseSingleIpAddress(rule.TranslatedAddress, out _, out var targetFamily, out normalizedTarget))
+            if (rule.Action != NatPostroutingAction.Snat) { normalizedTarget = ""; }
+            else if (!FilterPolicyValidation.TryParseSingleIpAddress(rule.TranslatedAddress, out _, out var targetFamily, out normalizedTarget))
             {
                 errors.Add(new("nat.translatedAddressInvalid", path + ".translatedAddress"));
             }
@@ -189,15 +192,15 @@ public static class NftNatCompiler
 
             if (rule.InputInterface is not null)
             {
-                text.Append("iifname \"").Append(rule.InputInterface).Append("\" ");
+                text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
             }
 
             if (rule.Source is not null)
             {
-                text.Append(familyToken).Append(" saddr ").Append(rule.Source.Value).Append(' ');
+                text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' ');
             }
 
-            text.Append(familyToken).Append(" daddr ").Append(rule.OriginalDestination!.Value).Append(' ');
+            text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.OriginalDestination!.Value).Append(' ');
 
             if (rule.Protocol != FilterProtocol.Any)
             {
@@ -235,19 +238,32 @@ public static class NftNatCompiler
             text.Append("add rule inet " + TableName + " postrouting meta nfproto ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
 
+            if (rule.InputInterface is not null)
+            { text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append('"').Append(rule.InputInterface).Append("\" "); }
             if (rule.OutputInterface is not null)
             {
-                text.Append("oifname \"").Append(rule.OutputInterface).Append("\" ");
+                text.Append("oifname ").Append(rule.NegateOutputInterface ? "!= " : "").Append("\"").Append(rule.OutputInterface).Append("\" ");
             }
 
-            text.Append(familyToken).Append(" saddr ").Append(rule.Source!.Value).Append(' ');
+            if (rule.Source is not null)
+            { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' '); }
 
             if (rule.Destination is not null)
             {
-                text.Append(familyToken).Append(" daddr ").Append(rule.Destination.Value).Append(' ');
+                text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.Destination.Value).Append(' ');
             }
 
-            text.Append("snat ").Append(familyToken).Append(" to ").Append(addr).Append('\n');
+            if (rule.Protocol != FilterProtocol.Any)
+            {
+                var proto = rule.Protocol == FilterProtocol.Tcp ? "tcp" : "udp";
+                text.Append("meta l4proto ").Append(proto).Append(' ');
+                if (rule.DestinationPort is { } port) { text.Append(proto).Append(" dport ").Append(port.ToString(CultureInfo.InvariantCulture)).Append(' '); }
+                if (rule.DestinationPorts is { } ports)
+                { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order().Select(p => p.ToString(CultureInfo.InvariantCulture)))).Append(" } "); }
+            }
+            if (rule.Action == NatPostroutingAction.Snat) { text.Append("snat ").Append(familyToken).Append(" to ").Append(addr); }
+            else { text.Append(rule.Action == NatPostroutingAction.Masquerade ? "masquerade" : "return"); }
+            text.Append('\n');
         }
 
         return new(text.ToString(), []);

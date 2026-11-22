@@ -243,3 +243,26 @@ otherwise it uses `ubuntu-latest`. Action revisions are pinned. CI has no
 production deployment step or host firewall access. Automatic fork-PR execution
 is intentionally not configured in the initial workflow; contributor code can
 be reviewed and tested through the normal trusted-branch process.
+
+## Router constructs and settings regression checks
+
+After a Release build, run `bash tests/integration/nftables/check-router-constructs.sh`.
+This guarded disposable three-namespace fixture verifies dual-stack masquerade and
+return exemptions, MAC+IP mismatch denial, MSS 1360 in a captured forwarded IPv4 SYN,
+destination-keyed meters, IPv4 reverse-path denial and UDP source-port bypass.
+Fixed synthetic neighbor entries isolate firewall behavior from NDP timing; the
+existing router fixture independently tests live IPv6 Neighbor Discovery.
+Filter/NAT native echo and terse listings must reconstruct byte-identical candidates
+and equal fingerprints. Bridge/auxiliary extensions receive native syntax checks
+only; their packet and rollback behavior remains unverified and agent apply denied.
+
+Run `python3 -B tests/integration/local-sessions/check-settings.py` for HTTPS settings
+save/validation, CSRF denial, exactly one successful audit record, and Auditor denial
+of mutations and private native source inspection. This uses disposable synthetic
+accounts and sources and never executes a firewall command. Unit regressions cover
+nested snapshot isolation, unknown/corrupt input, preserved advanced matchers during
+visual editing, missing/cyclic jump targets, and preview-only dispatch denial.
+
+The screenshots in `pages/assets/screenshots/` capture the local test controller
+with synthetic/default UI data. They demonstrate appearance and readable UI state,
+not packet enforcement or production deployment.

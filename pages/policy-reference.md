@@ -22,7 +22,7 @@ Policies are authored as versioned `FirewallPolicyBundle` JSON documents contain
 
 ## NAT (`inet nergal_nat`) & Bridge (`bridge nergal_bridge`)
 
-- **NAT (`schemaVersion: 1`)**: Dual-stack prerouting `dnatRules` and explicit postrouting `snatRules` (explicit `translatedAddress`, never implicit masquerade).
+- **NAT (`schemaVersion: 1`)**: Dual-stack prerouting `dnatRules` and ordered postrouting `snatRules`. Explicit SNAT remains the default; current router extensions add explicit `action: masquerade` and `action: return` choices.
 - **Bridge (`schemaVersion: 1`)**: L2 forwarding chain (`defaultVerdict` + ordered `rules` matching `etherType`: `any`, `ipv4`, `ipv6`, `arp`, and optional `inputInterface`/`outputInterface`).
 
 ## Canonical Multi-Table Bundle Example
@@ -86,3 +86,10 @@ Policies are authored as versioned `FirewallPolicyBundle` JSON documents contain
   }
 }
 ```
+
+## Unreleased router and settings work
+
+See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
+current support matrix, preview-only apply limits, saved-settings/runtime distinction,
+private source inspection, container isolation, verification limits, and screenshots.
+This local development work is not a published release.

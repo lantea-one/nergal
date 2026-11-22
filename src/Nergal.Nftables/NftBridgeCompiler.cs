@@ -29,13 +29,14 @@ public static class NftBridgeCompiler
     private static CompilationResult CompileCore(BridgePolicy policy, NftTableIdentity? identity)
     {
         ArgumentNullException.ThrowIfNull(policy);
+        if (policy.HasExtendedRules) { return RouterBridgeCompiler.Compile(policy, identity); }
         var errors = new List<PolicyDiagnostic>();
         if (policy.SchemaVersion != BridgePolicy.CurrentSchemaVersion)
         {
             errors.Add(new("schema.unsupported", "schemaVersion"));
         }
 
-        if (!Enum.IsDefined(policy.DefaultVerdict))
+        if (policy.DefaultVerdict is not (FilterVerdict.Accept or FilterVerdict.Drop))
         {
             errors.Add(new("verdict.unknown", "defaultVerdict"));
         }
@@ -55,7 +56,7 @@ public static class NftBridgeCompiler
                 errors.Add(new("etherType.unknown", path + ".etherType"));
             }
 
-            if (!Enum.IsDefined(rule.Verdict))
+            if (rule.Verdict is not (FilterVerdict.Accept or FilterVerdict.Drop))
             {
                 errors.Add(new("verdict.unknown", path + ".verdict"));
             }

@@ -25,12 +25,27 @@ agent workflow across verified privilege boundaries:
   monotonic policy revisions, append-only audit log (`Nergal.ControllerState`), MVC/Blazor
   policy bundle authoring with diff previews, and two-phase confirmed apply (`ApplyWorkflowService`).
 
-Two-phase agent dispatch (`prepare-apply`/`confirm`/`rollback`) targets each host's
-owned `inet nergal_filter` table; bundles including `nat` or `bridge` compile in
-controller previews and fail closed at agent dispatch (`policy.unsupportedScope`).
+Two-phase agent dispatch (`prepare-apply`/`confirm`/`rollback`) supports owned
+`inet nergal_filter`, `inet nergal_nat`, and basic `bridge nergal_bridge` bundles
+with coordinated atomic replacement and rollback (ADR 0032). Extended bridge and
+independent early inet tables remain preview-only (`policy.previewOnlyScope`).
 `firewalld` is excluded ([ADR 0001](docs/decisions/0001-native-nftables.md)).
 See [deployment guide](docs/deployment.md) and [CHANGELOG.md](CHANGELOG.md) for
 installation and hardening details before live deployment.
+
+## Current development work
+
+The local development branch adds [typed router constructs and explicit support limits](docs/router-constructs.md),
+a Lantea.One-inspired light/dark management UI, validated audited settings intent,
+and administrator-only private source inspection. Independent early inet tables and
+extended bridge jump/return are compiler previews; live dispatch is explicitly denied
+until their complete ownership/rollback path is implemented. New router fields are
+currently authored through **Advanced JSON & Revisions**; simple forms retain them.
+
+For a persistent, isolated local controller and check-only source containers, see
+[the local sandbox guide](docs/local-sandbox.md). Private exports and credentials
+stay under ignored `artifacts/dev-stack/`; the public tests and screenshots use
+synthetic data. This work has not been published as a release.
 
 ## Run locally
 
@@ -126,8 +141,8 @@ Native OIDC, configurable disjoint Administrator/Auditor group RBAC, per-user
 append-only audit attribution, protected kernel-resource ownership verification,
 native `nft --check` validation, atomic single-table (`inet nergal_filter`)
 apply, and independent local timed rollback are implemented and verified in
-disposable namespaces for release `2026.11.21`. Multi-table remote agent apply
-(`inet nergal_nat` and `bridge nergal_bridge`) and any future secondary backends
+disposable namespaces for release `2026.11.21`. Basic multi-table agent apply is implemented under ADR 0032. Extended bridge and
+independent early inet table apply, together with any future secondary backends,
 remain future work; every backend must reject unsupported semantics explicitly
 rather than silently weakening policy (`firewalld` is excluded per ADR 0001).
 

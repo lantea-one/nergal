@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Nodes;
 using System.Text;
 using System.Text.Json;
 using Nergal.Core.Deployment;
@@ -43,8 +44,11 @@ public sealed class NftNatTableObservation
         PostroutingChainHandle = postroutingChainHandle;
         Policy = policy;
 
+        var extended = dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
+            snatRules.Any(e => e.Rule.Action != NatPostroutingAction.Snat || e.Rule.NegateSource || e.Rule.NegateDestination ||
+                e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any);
         var projection = new StringBuilder(string.Join('\n',
-            "nergal-nat-observation-v1",
+            extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
             identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture),
             string.Join(' ', preroutingChainHandle.ToString(CultureInfo.InvariantCulture), "inet", NftNatCompiler.TableName, "prerouting", "nat", "prerouting", "-100", "accept"),
@@ -70,11 +74,17 @@ public sealed class NftNatTableObservation
                 .Append(handle.ToString(CultureInfo.InvariantCulture)).Append(" snat ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4 " : "ipv6 ")
                 .Append(rule.OutputInterface ?? "-").Append(' ')
-                .Append(rule.Source.Value).Append(' ')
+                .Append(rule.Source?.Value ?? "-").Append(' ')
                 .Append(rule.Destination?.Value ?? "-").Append(' ')
                 .Append(rule.TranslatedAddress);
         }
 
+        if (extended)
+        {
+            // Canonical typed semantics include every extended matcher/action.
+            projection.Append('\n').Append(PolicyBundleJsonCodec.EncodeBundle(new(1,
+                new FilterPolicy(1, FilterVerdict.Drop, []), policy), indented: false));
+        }
         StateDigest = CandidateDigest.FromText(projection.ToString());
     }
 
@@ -273,6 +283,7 @@ public sealed class NftNatTableObservation
             var policy = new NatPolicy(NatPolicy.CurrentSchemaVersion,
                 dnatRules.Select(entry => entry.Rule),
                 snatRules.Select(entry => entry.Rule));
+            if (!NftNatCompiler.Compile(policy).IsSuccess) { return Deny("observation.rule"); }
             return new(new(identity, tableHandle, preHandle, postHandle, policy, dnatRules, snatRules), null);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
@@ -345,6 +356,9 @@ public sealed class NftNatTableObservation
         int? originalPort = null;
         var hasL4Proto = false;
         var stage = -1;
+        var ni = false;
+        var ns = false;
+        var nd = false;
 
         for (var index = 0; index < count - 1; index++)
         {
@@ -352,11 +366,12 @@ public sealed class NftNatTableObservation
             var match = expressions[index].GetProperty("match");
             if (!NftJsonHelpers.Properties(match, "op", "left", "right") ||
                 match.GetProperty("op").ValueKind != JsonValueKind.String ||
-                match.GetProperty("op").GetString() != "==")
+                match.GetProperty("op").GetString() is not ("==" or "!="))
             {
                 return null;
             }
 
+            var negate = match.GetProperty("op").GetString() == "!=";
             var left = match.GetProperty("left");
             var right = match.GetProperty("right");
             if (NftJsonHelpers.Properties(left, "meta") && NftJsonHelpers.Properties(left.GetProperty("meta"), "key"))
@@ -370,13 +385,14 @@ public sealed class NftNatTableObservation
                     var iface = right.GetString();
                     if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
                     inputInterface = iface;
+                    ni = negate;
                     stage = 0;
                     continue;
                 }
 
                 if (keyName == "l4proto")
                 {
-                    if (stage >= 3 || right.ValueKind != JsonValueKind.String) { return null; }
+                    if (negate || stage >= 3 || right.ValueKind != JsonValueKind.String) { return null; }
                     FilterProtocol? l4 = right.GetString() switch
                     {
                         "tcp" => FilterProtocol.Tcp,
@@ -405,14 +421,14 @@ public sealed class NftNatTableObservation
                     if (stage >= nextStage || pProto != expectedProto) { return null; }
                     var prefix = NftJsonHelpers.ParseNetworkPrefix(right, targetFamily.Value);
                     if (prefix is null) { return null; }
-                    if (nextStage == 1) { source = prefix; } else { originalDestination = prefix; }
+                    if (nextStage == 1) { source = prefix; ns = negate; } else { originalDestination = prefix; nd = negate; }
                     stage = nextStage;
                     continue;
                 }
 
                 if (pField == "dport")
                 {
-                    if (stage >= 3 || pProto is not ("tcp" or "udp") ||
+                    if (negate || stage >= 3 || pProto is not ("tcp" or "udp") ||
                         right.ValueKind != JsonValueKind.Number || !right.TryGetInt32(out var port) ||
                         port is < 1 or > 65535)
                     {
@@ -440,103 +456,42 @@ public sealed class NftNatTableObservation
             return null;
         }
 
-        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source);
+        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni);
     }
 
     private static SnatRule? ParseSnatRule(JsonElement expressions)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 4)
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 8) { return null; }
+        var terminal = expressions[expressions.GetArrayLength() - 1];
+        var action = NatPostroutingAction.Snat;
+        IpFamily? targetFamily = null;
+        string? normalized = null;
+        if (NftJsonHelpers.Properties(terminal, "snat"))
         {
-            return null;
+            var snat = terminal.GetProperty("snat");
+            if (!NftJsonHelpers.Properties(snat, "family", "addr")) { return null; }
+            targetFamily = snat.GetProperty("family").GetString() switch { "ip" => IpFamily.IPv4, "ip6" => IpFamily.IPv6, _ => null };
+            if (targetFamily is null || snat.GetProperty("addr").ValueKind != JsonValueKind.String ||
+                !FilterPolicyValidation.TryParseSingleIpAddress(snat.GetProperty("addr").GetString(), out _, out var parsedFamily, out normalized) ||
+                parsedFamily != targetFamily) { return null; }
         }
+        else if (NftJsonHelpers.Properties(terminal, "masquerade") && terminal.GetProperty("masquerade").ValueKind == JsonValueKind.Null)
+        { action = NatPostroutingAction.Masquerade; }
+        else if (NftJsonHelpers.Properties(terminal, "return") && terminal.GetProperty("return").ValueKind == JsonValueKind.Null)
+        { action = NatPostroutingAction.Return; }
+        else { return null; }
 
-        var count = expressions.GetArrayLength();
-        var terminal = expressions[count - 1];
-        if (!NftJsonHelpers.Properties(terminal, "snat"))
-        {
-            return null;
-        }
-
-        var snat = terminal.GetProperty("snat");
-        if (!NftJsonHelpers.Properties(snat, "family", "addr"))
-        {
-            return null;
-        }
-
-        IpFamily? targetFamily = snat.GetProperty("family").GetString() switch
-        {
-            "ip" => IpFamily.IPv4,
-            "ip6" => IpFamily.IPv6,
-            _ => null,
-        };
-        if (targetFamily is null || snat.GetProperty("addr").ValueKind != JsonValueKind.String ||
-            !FilterPolicyValidation.TryParseSingleIpAddress(snat.GetProperty("addr").GetString(), out _, out var parsedAddrFamily, out var normalizedAddr) ||
-            parsedAddrFamily != targetFamily.Value)
-        {
-            return null;
-        }
-
-        string? outputInterface = null;
-        NetworkPrefix? source = null;
-        NetworkPrefix? destination = null;
-        var stage = -1;
-
-        for (var index = 0; index < count - 1; index++)
-        {
-            if (!NftJsonHelpers.Properties(expressions[index], "match")) { return null; }
-            var match = expressions[index].GetProperty("match");
-            if (!NftJsonHelpers.Properties(match, "op", "left", "right") ||
-                match.GetProperty("op").ValueKind != JsonValueKind.String ||
-                match.GetProperty("op").GetString() != "==")
-            {
-                return null;
-            }
-
-            var left = match.GetProperty("left");
-            var right = match.GetProperty("right");
-            if (NftJsonHelpers.Properties(left, "meta") && NftJsonHelpers.Properties(left.GetProperty("meta"), "key"))
-            {
-                var key = left.GetProperty("meta").GetProperty("key");
-                if (key.ValueKind != JsonValueKind.String || key.GetString() != "oifname" ||
-                    stage >= 0 || right.ValueKind != JsonValueKind.String)
-                {
-                    return null;
-                }
-
-                var iface = right.GetString();
-                if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
-                outputInterface = iface;
-                stage = 0;
-                continue;
-            }
-
-            if (NftJsonHelpers.Properties(left, "payload") && NftJsonHelpers.Properties(left.GetProperty("payload"), "protocol", "field"))
-            {
-                var payload = left.GetProperty("payload");
-                var pProto = payload.GetProperty("protocol").GetString();
-                var pField = payload.GetProperty("field").GetString();
-                if (pField is "saddr" or "daddr")
-                {
-                    var nextStage = pField == "saddr" ? 1 : 2;
-                    var expectedProto = targetFamily == IpFamily.IPv4 ? "ip" : "ip6";
-                    if (stage >= nextStage || pProto != expectedProto) { return null; }
-                    var prefix = NftJsonHelpers.ParseNetworkPrefix(right, targetFamily.Value);
-                    if (prefix is null) { return null; }
-                    if (nextStage == 1) { source = prefix; } else { destination = prefix; }
-                    stage = nextStage;
-                    continue;
-                }
-            }
-
-            return null;
-        }
-
-        if (source is null)
-        {
-            return null;
-        }
-
-        return new(targetFamily.Value, source, normalizedAddr, destination, outputInterface);
+        var nodes = new JsonArray();
+        foreach (var expression in expressions.EnumerateArray().Take(expressions.GetArrayLength() - 1))
+        { nodes.Add(JsonNode.Parse(expression.GetRawText())); }
+        nodes.Add(JsonNode.Parse("{\"accept\":null}"));
+        using var doc = JsonDocument.Parse(nodes.ToJsonString());
+        var r = NftTableObservation.ParseFilterMatchers(doc.RootElement);
+        if (r is null || (targetFamily.HasValue && targetFamily != r.Family) || r.SourceMac is not null || r.SourceMacs is not null ||
+            r.ConnectionStates != ConnectionStateFlags.None || r.MatchOriginalDestinationDnat || r.RateLimit is not null || r.IcmpType is not null) { return null; }
+        return new(r.Family, r.Source, normalized, r.Destination, r.OutputInterface, Action: action,
+            InputInterface: r.InputInterface, Protocol: r.Protocol, DestinationPort: r.DestinationPort, DestinationPorts: r.DestinationPorts,
+            NegateSource: r.NegateSource, NegateDestination: r.NegateDestination, NegateInputInterface: r.NegateInputInterface, NegateOutputInterface: r.NegateOutputInterface);
     }
 
     private static NftNatObservationResult Deny(string code) => new(null, code);

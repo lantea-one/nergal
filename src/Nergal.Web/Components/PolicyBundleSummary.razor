@@ -63,10 +63,13 @@
                                         <span>(<code>@rule.IcmpType</code>)</span>
                                     }
                                 </td>
-                                <td><code>@FormatPrefixes(rule.Source, rule.SourcePrefixes)</code></td>
-                                <td><code>@FormatPrefixes(rule.Destination, rule.DestinationPrefixes)</code></td>
+                                <td><code>@(rule.NegateSource ? "!= " : "")@FormatPrefixes(rule.Source, rule.SourcePrefixes)</code>
+                                    @if (rule.SourceMac is not null || rule.SourceMacs is not null)
+                                    { <span class="rule-desc">MAC @(rule.NegateSourceMac ? "!= " : "")@(rule.SourceMac?.Value ?? string.Join(", ", rule.SourceMacs!.Select(m => m.Value)))</span> }
+                                </td>
+                                <td><code>@(rule.NegateDestination ? "!= " : "")@FormatPrefixes(rule.Destination, rule.DestinationPrefixes)</code></td>
                                 <td><code>@FormatPorts(rule.DestinationPort, rule.DestinationPorts)</code></td>
-                                <td><code>@FormatInterfaces(rule.InputInterface, rule.OutputInterface)</code></td>
+                                <td><code>@FormatInterfaces(rule.InputInterface is null ? null : (rule.NegateInputInterface ? "!= " : "") + rule.InputInterface, rule.OutputInterface is null ? null : (rule.NegateOutputInterface ? "!= " : "") + rule.OutputInterface)</code></td>
                                 <td>
                                     <code>@FormatStates(rule.ConnectionStates)</code>
                                     @if (rule.MatchOriginalDestinationDnat)
@@ -87,16 +90,22 @@
             </div>
         }
 
+        @if (Bundle.Filter.RpFilter is { } rp)
+        { <p>Raw rpfilter: @rp.Rules.Count rules.</p> }
+        @if (Bundle.Filter.ForwardTcpMssClamp is { } mss)
+        { <p>Forward TCP SYN MSS clamp: @mss bytes.</p> }
+        @if (Bundle.RequiresExtendedApplySupport)
+        { <p class="alert alert-warning">Extended bridge/auxiliary scope is preview-only; agent apply is denied.</p> }
         @if (Bundle.Nat is { } nat)
         {
             <h3>NAT (<code>inet nergal_nat</code>)</h3>
-            <p class="muted">DNAT rules: <strong>@nat.DnatRules.Count</strong> · Explicit SNAT rules: <strong>@nat.SnatRules.Count</strong></p>
+            <p class="muted">DNAT rules: <strong>@nat.DnatRules.Count</strong> · Postrouting rules: <strong>@nat.SnatRules.Count</strong></p>
         }
 
         @if (Bundle.Bridge is { } bridge)
         {
             <h3>Bridge (<code>bridge nergal_bridge</code>)</h3>
-            <p class="muted mb-0">Default verdict: <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · Forward rules: <strong>@bridge.Rules.Count</strong></p>
+            <p class="muted mb-0">Default verdict: <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · Forward rules: <strong>@bridge.Rules.Count</strong> · Priority: <code>@bridge.Priority</code> · Regular chains: <strong>@bridge.SubChains.Count</strong></p>
         }
     </section>
 }
@@ -142,6 +151,6 @@
     {
         if (rl is null) { return "—"; }
         var unit = rl.WindowUnit == RateLimitTimeUnit.Second ? "s" : "m";
-        return $"{rl.PacketsPerWindow}/{unit} (burst {rl.Burst}, {rl.EntryTimeoutSeconds}s)";
+        return $"{rl.PacketsPerWindow}/{unit} per {(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "destination" : "source")} (burst {rl.Burst}, {rl.EntryTimeoutSeconds}s)";
     }
 }

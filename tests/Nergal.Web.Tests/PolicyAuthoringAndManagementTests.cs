@@ -135,7 +135,7 @@ public sealed class PolicyAuthoringAndManagementTests
 
     /// <summary>ManagementController enforces RBAC boundaries, validates before persistence, and logs canonical actor attribution.</summary>
     [Fact]
-    public void Controller_EnforcesRbacPersistsRevisionsAndRendersDiffs()
+    public async Task Controller_EnforcesRbacPersistsRevisionsAndRendersDiffs()
     {
         if (!OperatingSystem.IsLinux())
         {
@@ -153,7 +153,7 @@ public sealed class PolicyAuthoringAndManagementTests
             var auditorController = CreateController(store, auditorActor, NergalRoles.Auditor);
 
             // Both roles can view dashboard and preview diffs.
-            var dashView = Assert.IsType<ViewResult>(auditorController.Index());
+            var dashView = Assert.IsType<ViewResult>(await auditorController.Index());
             var dashModel = Assert.IsType<FleetDashboardViewModel>(dashView.Model);
             Assert.False(dashModel.CanMutate);
 
@@ -163,7 +163,7 @@ public sealed class PolicyAuthoringAndManagementTests
             Assert.False(previewModel.CanMutate);
 
             // Auditor cannot persist hosts or policy revisions even if invoked directly.
-            Assert.IsType<ForbidResult>(auditorController.AddHost("gw1", "tls", "192.0.2.10:8443", null, null, new string('a', 64)));
+            Assert.IsType<ForbidResult>(await auditorController.AddHost("gw1", "tls", "192.0.2.10:8443", null, null, new string('a', 64)));
             Assert.IsType<ForbidResult>(auditorController.SavePolicy(RichBundleJson, "Denied", null));
             Assert.Empty(store.ListHosts());
             Assert.Empty(store.ListPolicyRevisions());
@@ -186,7 +186,7 @@ public sealed class PolicyAuthoringAndManagementTests
             Assert.Equal(1UL, editor.CompareToRevision);
             Assert.Contains("+ create table inet nergal_nat", editor.UnifiedDiff);
 
-            var hostRedirect = Assert.IsType<LocalRedirectResult>(adminController.AddHost("gw1", "tls", "192.0.2.10:8443", null, null, new string('a', 64)));
+            var hostRedirect = Assert.IsType<LocalRedirectResult>(await adminController.AddHost("gw1", "tls", "192.0.2.10:8443", null, null, new string('a', 64)));
             Assert.Equal("~/manage", hostRedirect.Url);
             Assert.Single(store.ListHosts());
 

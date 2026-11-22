@@ -2,13 +2,8 @@
 (function () {
   "use strict";
 
-  // 1. Theme toggle persisted in localStorage.
+  // 1. Theme toggle persisted in localStorage, falling back to admin-configured default theme.
   const root = document.documentElement;
-  const savedTheme = localStorage.getItem("nergal-theme");
-  if (savedTheme === "dark" || savedTheme === "light") {
-    root.setAttribute("data-theme", savedTheme);
-  }
-
   document.addEventListener("click", function (e) {
     const toggle = e.target.closest("[data-theme-toggle]");
     if (!toggle) return;
@@ -17,7 +12,7 @@
       (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
     const next = isDark ? "light" : "dark";
     root.setAttribute("data-theme", next);
-    localStorage.setItem("nergal-theme", next);
+    try { localStorage.setItem("nergal-theme", next); } catch { /* Storage can be disabled. */ }
     toggle.textContent = next === "dark" ? "Light mode" : "Dark mode";
   });
 
@@ -34,9 +29,10 @@
     syncTransport();
   }
 
-  // 3. Policy Editor tabs (remembers active tab in sessionStorage across form posts).
+  // 3. Page tabs (remembers active tab per page path in sessionStorage across form posts).
   const tabButtons = document.querySelectorAll("[data-tab-target]");
   if (tabButtons.length > 0) {
+    const tabStorageKey = "nergal-tab:" + window.location.pathname;
     const activateTab = function (id) {
       tabButtons.forEach(function (btn) {
         const active = btn.getAttribute("data-tab-target") === id;
@@ -46,7 +42,7 @@
       document.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
         panel.classList.toggle("hidden", panel.getAttribute("data-tab-panel") !== id);
       });
-      sessionStorage.setItem("nergal-policy-tab", id);
+      sessionStorage.setItem(tabStorageKey, id);
     };
 
     tabButtons.forEach(function (btn) {
@@ -55,7 +51,7 @@
       });
     });
 
-    const initialTab = sessionStorage.getItem("nergal-policy-tab");
+    const initialTab = sessionStorage.getItem(tabStorageKey);
     if (initialTab && document.querySelector('[data-tab-panel="' + initialTab + '"]')) {
       activateTab(initialTab);
     } else {

@@ -88,7 +88,7 @@ policy when the web console or identity provider is unavailable.
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy
 backend selection; the compiler implements only the subset in ADR 0002, not all
-features represented by capability enums. No privileged agent exists. The default scaffold uses ephemeral Data Protection.
+features represented by capability enums. The default scaffold keeps agent integration disabled and uses ephemeral Data Protection.
 The enabled session host requires explicitly protected, persistent keys.
 
 ## Optional site integration
@@ -151,3 +151,19 @@ table presence and ownership (`nft --terse --json list tables`), fail closed on
 unowned table collisions or auxiliary drift, validate coordinated multi-table
 `--echo --handle --json` receipts, and remove or restore `inet nergal_nat` and
 `bridge nergal_bridge` atomically during rollback while preserving foreign tables.
+
+## Router authoring and private import boundary
+
+[ADR 0034](decisions/0034-router-constructs-rpfilter-mss-mac-negation-masquerade-bridge.md)
+extends typed filter/NAT models with raw prerouting, MSS, MAC pinning, destination
+meters, negation, and masquerade/return. Extended bridge and independent early inet
+tables are preview-only and rejected before agent apply (`policy.previewOnlyScope`).
+See [support and verification limits](router-constructs.md). No arbitrary native
+source is accepted as an agent execution payload.
+
+[ADR 0035](decisions/0035-settings-intent-and-private-source-inspection.md) separates
+persisted settings intent from protected runtime configuration. Management appearance
+uses saved branding; stored auth/database/firewall choices do not hot-reconfigure
+services. Optional administrator-only native source inspection snapshots private
+operator-controlled files and never executes them. The [local sandbox](local-sandbox.md)
+uses separate containers for the unprivileged UI and native check-only workers.

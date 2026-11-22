@@ -1,0 +1,25 @@
+@model IReadOnlyList<Nergal.Web.NativePolicySource>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Native sources";
+    ViewData["ActiveNav"] = "sources";
+    ViewData["ShowManageNav"] = true;
+}
+<main class="container">
+    <div class="page-header">
+        <div><h1>Native source inspection</h1><p class="page-subtitle">Private source snapshots for migration review.</p></div>
+        <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">Policy builder</a>
+    </div>
+    <div class="alert alert-warning" role="status">
+        These are exact read-only imports. They have not been converted into managed policies or applied to any firewall.
+        Review every table, jump, matcher, and action before authoring an equivalent typed bundle. Unsupported constructs must remain explicit.
+    </div>
+    @foreach (var source in Model)
+    {
+        <details class="disclosure mb-0 mt-2">
+            <summary>@source.Name <span class="badge badge-neutral">Imported · not applied</span></summary>
+            <p class="muted">SHA-256 <code>@source.Digest</code></p>
+            <pre><code>@source.Text</code></pre>
+        </details>
+    }
+</main>

@@ -11,7 +11,7 @@ namespace Nergal.Nftables;
 public sealed record AuxiliaryTablePresence(bool NatExists, bool NatOwned, bool BridgeExists, bool BridgeOwned);
 
 /// <summary>Immutable native observation of one tagged table and supported ordered rules; never a claim of authority.</summary>
-public sealed class NftTableObservation
+public sealed partial class NftTableObservation
 {
     private sealed record ObservedRateLimitSet(string Name, ulong Handle, IpFamily Family);
 
@@ -23,7 +23,10 @@ public sealed class NftTableObservation
         ulong outputChainHandle,
         FilterPolicy policy,
         List<(ulong Handle, FilterRule Rule)> rules,
-        List<ObservedRateLimitSet> sets)
+        List<ObservedRateLimitSet> sets,
+        ulong rpHandle = 0,
+        IReadOnlyList<ulong>? rpRuleHandles = null,
+        ulong mssHandle = 0)
     {
         Identity = identity;
         TableHandle = tableHandle;
@@ -67,7 +70,8 @@ public sealed class NftTableObservation
         {
             var hasSets = sets.Count > 0;
             var hasDnatStatus = rules.Any(entry => entry.Rule.MatchOriginalDestinationDnat);
-            var version = hasDnatStatus ? "nergal-observation-v6" : hasSets ? "nergal-observation-v5" : "nergal-observation-v4";
+            var hasRouter = policy.RpFilter is not null || policy.ForwardTcpMssClamp is not null || rules.Any(e => HasRouterMatchers(e.Rule));
+            var version = hasRouter ? "nergal-observation-v7" : hasDnatStatus ? "nergal-observation-v6" : hasSets ? "nergal-observation-v5" : "nergal-observation-v4";
             var projection = new StringBuilder(string.Join('\n',
                 version,
                 identity.Comment,
@@ -107,7 +111,25 @@ public sealed class NftTableObservation
                     projection.Append(RateLimitProjection(rule.RateLimit)).Append(' ');
                 }
 
+                if (hasRouter) { projection.Append(RouterProjection(rule)).Append(' '); }
                 projection.Append(VerdictToken(rule.Verdict));
+            }
+
+            if (hasRouter)
+            {
+                projection.Append("\nrp ").Append(rpHandle.ToString(CultureInfo.InvariantCulture));
+                if (policy.RpFilter is { } rp)
+                {
+                    projection.Append(' ').Append(VerdictToken(rp.DefaultVerdict));
+                    for (var i = 0; i < rp.Rules.Count; i++)
+                    {
+                        var r = rp.Rules[i]!;
+                        projection.Append('\n').Append(rpRuleHandles![i].ToString(CultureInfo.InvariantCulture)).Append(' ');
+                        RouterFilterValidation.AppendRpFilterRule(projection, r);
+                    }
+                }
+                projection.Append("\nmss ").Append(mssHandle.ToString(CultureInfo.InvariantCulture)).Append(' ')
+                    .Append(policy.ForwardTcpMssClamp?.ToString(CultureInfo.InvariantCulture) ?? "-");
             }
 
             StateDigest = CandidateDigest.FromText(projection.ToString());
@@ -523,6 +545,18 @@ public sealed class NftTableObservation
                 ruleStartIndex += 2;
             }
 
+            ulong rpHandle = 0;
+            var rpVerdict = FilterVerdict.Accept;
+            if (isSchema2 && ruleStartIndex < items.Length && IsChainItem(items[ruleStartIndex], mode, out var rawChain))
+            {
+                if (!TryParseRawChain(rawChain, handles, out rpHandle, out rpVerdict)) { return Deny("observation.rpfilter"); }
+                ruleStartIndex++;
+            }
+            var rpRules = new List<RpFilterRule?>();
+            var rpRuleHandles = new List<ulong>();
+            int? mss = null;
+            ulong mssHandle = 0;
+            var sawRpRules = false;
             var sets = new List<ObservedRateLimitSet>();
             if (isSchema2)
             {
@@ -566,6 +600,27 @@ public sealed class NftTableObservation
                 }
 
                 var ruleChainName = rule.GetProperty("chain").GetString();
+                if (isSchema2 && ruleChainName == "rpfilter")
+                {
+                    if (rpHandle == 0 || !rule.GetProperty("handle").TryGetUInt64(out var rawHandle) || rawHandle == 0 || !handles.Add(rawHandle))
+                    { return Deny("observation.rpfilter"); }
+                    var rawRule = ParseRpFilterRule(rule.GetProperty("expr"));
+                    if (rawRule is null) { return Deny("observation.rpfilter"); }
+                    sawRpRules = true;
+                    rpRules.Add(rawRule);
+                    rpRuleHandles.Add(rawHandle);
+                    continue;
+                }
+                if (sawRpRules) { return Deny("observation.scope"); }
+                if (isSchema2 && ruleChainName == "forward" && TryParseMss(rule.GetProperty("expr"), out var parsedMss))
+                {
+                    if (mss is not null || lastChain > FilterChainKind.Forward || rules.Any(e => e.Rule.Chain == FilterChainKind.Forward) ||
+                        !rule.GetProperty("handle").TryGetUInt64(out mssHandle) || mssHandle == 0 || !handles.Add(mssHandle))
+                    { return Deny("observation.mss"); }
+                    mss = parsedMss;
+                    lastChain = FilterChainKind.Forward;
+                    continue;
+                }
                 if (!isSchema2)
                 {
                     if (ruleChainName != "input") { return Deny("observation.scope"); }
@@ -600,9 +655,9 @@ public sealed class NftTableObservation
             }
 
             var policy = isSchema2
-                ? new FilterPolicy(2, inputVerdict, forwardVerdict, outputVerdict, rules.Select(entry => entry.Rule))
+                ? new FilterPolicy(2, inputVerdict, forwardVerdict, outputVerdict, rules.Select(entry => entry.Rule), rpHandle == 0 ? null : new(rpVerdict, rpRules), mss)
                 : new FilterPolicy(1, inputVerdict, rules.Select(entry => entry.Rule));
-            return new(new(identity, tableHandle, inputHandle, forwardHandle, outputHandle, policy, rules, sets), null);
+            return new(new(identity, tableHandle, inputHandle, forwardHandle, outputHandle, policy, rules, sets, rpHandle, rpRuleHandles, mssHandle), null);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
         {
@@ -978,19 +1033,26 @@ public sealed class NftTableObservation
         IReadOnlyList<ObservedRateLimitSet> sets,
         ref int nextSetIndex)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 11)
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 12)
         {
             return null;
         }
 
         var count = expressions.GetArrayLength();
         var terminal = expressions[count - 1];
-        var accept = Properties(terminal, "accept");
-        if ((!accept && !Properties(terminal, "drop")) ||
-            terminal.GetProperty(accept ? "accept" : "drop").ValueKind != JsonValueKind.Null)
-        {
-            return null;
-        }
+        var accept = Properties(terminal, "accept") && terminal.GetProperty("accept").ValueKind == JsonValueKind.Null;
+        var drop = Properties(terminal, "drop") && terminal.GetProperty("drop").ValueKind == JsonValueKind.Null;
+        var reject = Properties(terminal, "reject") && Properties(terminal.GetProperty("reject"), "type", "expr") &&
+            terminal.GetProperty("reject").GetProperty("type").GetString() == "icmpx" &&
+            terminal.GetProperty("reject").GetProperty("expr").GetString() == "admin-prohibited";
+        if (!accept && !drop && !reject) { return null; }
+        var negateInput = false;
+        var negateOutput = false;
+        var negateSource = false;
+        var negateDestination = false;
+        var negateMac = false;
+        MacAddress? sourceMac = null;
+        IReadOnlyList<MacAddress>? sourceMacs = null;
 
         IpFamily? family = null;
         string? inputInterface = null;
@@ -1069,7 +1131,7 @@ public sealed class NftTableObservation
                 return null;
             }
 
-            if (op != "==") { return null; }
+            if (op is not ("==" or "!=")) { return null; }
 
             if (Properties(left, "meta") && Properties(left.GetProperty("meta"), "key"))
             {
@@ -1079,7 +1141,7 @@ public sealed class NftTableObservation
 
                 if (key == "nfproto")
                 {
-                    if (stage >= 0 || right.ValueKind != JsonValueKind.String) { return null; }
+                    if (op != "==" || stage >= 0 || right.ValueKind != JsonValueKind.String) { return null; }
                     var parsedFamily = right.GetString() switch
                     {
                         "ipv4" => IpFamily.IPv4,
@@ -1099,6 +1161,7 @@ public sealed class NftTableObservation
                     var iface = right.GetString();
                     if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
                     inputInterface = iface;
+                    negateInput = op == "!=";
                     stage = 1;
                     continue;
                 }
@@ -1109,13 +1172,14 @@ public sealed class NftTableObservation
                     var iface = right.GetString();
                     if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
                     outputInterface = iface;
+                    negateOutput = op == "!=";
                     stage = 2;
                     continue;
                 }
 
                 if (key == "l4proto")
                 {
-                    if (stage >= 7 || right.ValueKind != JsonValueKind.String) { return null; }
+                    if (op != "==" || stage >= 7 || right.ValueKind != JsonValueKind.String) { return null; }
                     (FilterProtocol Parsed, IpFamily? ImpliedFamily)? l4 = right.GetString() switch
                     {
                         "tcp" => (FilterProtocol.Tcp, null),
@@ -1152,6 +1216,27 @@ public sealed class NftTableObservation
 
                 var payloadProtocol = protocolElement.GetString();
                 var field = fieldElement.GetString();
+                if (payloadProtocol == "ether" && field == "saddr")
+                {
+                    if (stage >= 3 || sourceMac is not null || sourceMacs is not null || chain == FilterChainKind.Output) { return null; }
+                    if (right.ValueKind == JsonValueKind.String)
+                    { if (!MacAddress.TryParse(right.GetString(), out sourceMac)) { return null; } }
+                    else if (Properties(right, "set") && right.GetProperty("set").ValueKind == JsonValueKind.Array)
+                    {
+                        var macs = new List<MacAddress>();
+                        foreach (var entry in right.GetProperty("set").EnumerateArray())
+                        {
+                            if (entry.ValueKind != JsonValueKind.String || !MacAddress.TryParse(entry.GetString(), out var mac)) { return null; }
+                            macs.Add(mac!);
+                        }
+                        if (macs.Count is < 2 or > 64 || macs.Distinct().Count() != macs.Count) { return null; }
+                        sourceMacs = Array.AsReadOnly(macs.OrderBy(m => m.Value, StringComparer.Ordinal).ToArray());
+                    }
+                    else { return null; }
+                    negateMac = op == "!=";
+                    stage = 2;
+                    continue;
+                }
                 if (field is "saddr" or "daddr")
                 {
                     var nextStage = field == "saddr" ? 3 : 4;
@@ -1173,13 +1258,14 @@ public sealed class NftTableObservation
                         if (nextStage == 3) { source = prefix; } else { destination = prefix; }
                     }
 
+                    if (nextStage == 3) { negateSource = op == "!="; } else { negateDestination = op == "!="; }
                     stage = nextStage;
                     continue;
                 }
 
                 if (field == "dport")
                 {
-                    if (stage >= 7 || payloadProtocol is not ("tcp" or "udp"))
+                    if (op != "==" || stage >= 7 || payloadProtocol is not ("tcp" or "udp"))
                     {
                         return null;
                     }
@@ -1208,7 +1294,7 @@ public sealed class NftTableObservation
 
                 if (field == "type" && payloadProtocol is "icmp" or "icmpv6")
                 {
-                    if (stage >= 7 || right.ValueKind != JsonValueKind.String) { return null; }
+                    if (op != "==" || stage >= 7 || right.ValueKind != JsonValueKind.String) { return null; }
                     var exprFamily = payloadProtocol == "icmp" ? IpFamily.IPv4 : IpFamily.IPv6;
                     var exprProtocol = payloadProtocol == "icmp" ? FilterProtocol.Icmp : FilterProtocol.IcmpV6;
                     if (family is { } existing && existing != exprFamily) { return null; }
@@ -1246,9 +1332,11 @@ public sealed class NftTableObservation
             return null;
         }
 
-        return new(resolvedFamily, protocol, accept ? FilterVerdict.Accept : FilterVerdict.Drop,
+        return new(resolvedFamily, protocol, accept ? FilterVerdict.Accept : reject ? FilterVerdict.Reject : FilterVerdict.Drop,
             source, destination, destinationPort, chain, inputInterface, outputInterface, connectionStates, icmpType, rateLimit,
-            matchOriginalDestinationDnat, sourcePrefixes, destinationPrefixes, destinationPorts);
+            matchOriginalDestinationDnat, sourcePrefixes, destinationPrefixes, destinationPorts,
+            NegateInputInterface: negateInput, NegateOutputInterface: negateOutput, NegateSource: negateSource,
+            NegateDestination: negateDestination, SourceMac: sourceMac, SourceMacs: sourceMacs, NegateSourceMac: negateMac);
     }
 
     private static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
@@ -1366,7 +1454,7 @@ public sealed class NftTableObservation
         if (payload.GetProperty("protocol").ValueKind != JsonValueKind.String ||
             payload.GetProperty("protocol").GetString() != expectedPayloadProto ||
             payload.GetProperty("field").ValueKind != JsonValueKind.String ||
-            payload.GetProperty("field").GetString() != "saddr")
+            payload.GetProperty("field").GetString() is not ("saddr" or "daddr"))
         {
             return null;
         }
@@ -1402,7 +1490,7 @@ public sealed class NftTableObservation
             return null;
         }
 
-        return new(rate, unit.Value, burst, timeout);
+        return new(rate, unit.Value, burst, timeout, payload.GetProperty("field").GetString() == "daddr" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress);
     }
 
     private static ConnectionStateFlags ParseConnectionStates(JsonElement right)
@@ -1533,6 +1621,7 @@ public sealed class NftTableObservation
     {
         FilterVerdict.Accept => "accept",
         FilterVerdict.Drop => "drop",
+        FilterVerdict.Reject => "reject",
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
 

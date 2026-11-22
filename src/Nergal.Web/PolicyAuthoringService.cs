@@ -23,7 +23,8 @@ internal sealed record VisualFilterRuleInput(
     int? RateLimitPackets = null,
     string? RateLimitUnit = null,
     int? RateLimitBurst = null,
-    int? RateLimitTimeout = null);
+    int? RateLimitTimeout = null,
+    string? Description = null);
 
 internal sealed record VisualDnatRuleInput(
     string? Family,
@@ -33,20 +34,23 @@ internal sealed record VisualDnatRuleInput(
     int? OriginalPort,
     int? TranslatedPort,
     string? InputInterface,
-    string? Source);
+    string? Source,
+    string? Description = null);
 
 internal sealed record VisualSnatRuleInput(
     string? Family,
     string? Source,
     string? TranslatedAddress,
     string? Destination,
-    string? OutputInterface);
+    string? OutputInterface,
+    string? Description = null);
 
 internal sealed record VisualBridgeRuleInput(
     string? EtherType,
     string? Verdict,
     string? InputInterface,
-    string? OutputInterface);
+    string? OutputInterface,
+    string? Description = null);
 
 internal sealed record PolicyEvaluationReport(
     bool IsValid,
@@ -188,8 +192,70 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
+        var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
+        if (!compiled.IsSuccess)
+        {
+            diagnostics = compiled.Diagnostics;
+            return false;
+        }
+
+        updatedJson = EncodeBundle(nextBundle);
+        diagnostics = [];
+        return true;
+    }
+
+    internal static bool TryUpdateFilterRule(
+        string currentJson,
+        int ruleIndex,
+        VisualFilterRuleInput input,
+        out string? updatedJson,
+        out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        updatedJson = null;
+        if (!TryDecodeBundle(currentJson, out var bundle, out diagnostics) || bundle is null)
+        {
+            return false;
+        }
+
+        if (ruleIndex < 0 || ruleIndex >= bundle.Filter.Rules.Count)
+        {
+            diagnostics = [new("rule.indexOutOfRange", "filter.rules")];
+            return false;
+        }
+
+        if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null)
+        {
+            return false;
+        }
+
+        var nextRules = bundle.Filter.Rules.ToList();
+        var previous = bundle.Filter.Rules[ruleIndex]!;
+        nextRules[ruleIndex] = rule with
+        {
+            NegateInputInterface = previous.NegateInputInterface,
+            NegateOutputInterface = previous.NegateOutputInterface,
+            NegateSource = previous.NegateSource,
+            NegateDestination = previous.NegateDestination,
+            SourceMac = previous.SourceMac,
+            SourceMacs = previous.SourceMacs,
+            NegateSourceMac = previous.NegateSourceMac,
+            RateLimit = rule.RateLimit is null ? null : rule.RateLimit with { KeyKind = previous.RateLimit?.KeyKind ?? RateLimitKeyKind.SourceAddress },
+        };
+        var nextSchema = bundle.Filter.SchemaVersion;
+        if (nextSchema < 2 && RequiresSchema2(rule))
+        {
+            nextSchema = 2;
+        }
+
+        var nextFilter = new FilterPolicy(
+            nextSchema,
+            bundle.Filter.InputDefaultVerdict,
+            bundle.Filter.ForwardDefaultVerdict,
+            bundle.Filter.OutputDefaultVerdict,
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -227,8 +293,8 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -262,8 +328,8 @@ internal static class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -393,6 +459,11 @@ internal static class PolicyAuthoringService
             }
         }
 
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            errors.Add(new("rule.descriptionInvalid", "rule.description"));
+        }
+
         if (errors.Count > 0)
         {
             diagnostics = errors;
@@ -415,8 +486,35 @@ internal static class PolicyAuthoringService
             input.MatchOriginalDestinationDnat,
             sourcePrefixes,
             destinationPrefixes,
-            destinationPorts);
+            destinationPorts,
+            description);
         diagnostics = [];
+        return true;
+    }
+
+    private static bool TryNormalizeDescription(string? raw, out string? normalized)
+    {
+        normalized = null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return true;
+        }
+
+        var trimmed = raw.Trim();
+        if (trimmed.Length > 160)
+        {
+            return false;
+        }
+
+        foreach (var c in trimmed)
+        {
+            if (char.IsControl(c))
+            {
+                return false;
+            }
+        }
+
+        normalized = trimmed;
         return true;
     }
 
@@ -443,8 +541,8 @@ internal static class PolicyAuthoringService
             return false;
         }
 
-        var nextFilter = new FilterPolicy(schemaVersion, inV, fwdV, outV, bundle.Filter.Rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge);
+        var nextFilter = new FilterPolicy(schemaVersion, inV, fwdV, outV, bundle.Filter.Rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -497,6 +595,12 @@ internal static class PolicyAuthoringService
             return false;
         }
 
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            diagnostics = [new("rule.descriptionInvalid", "nat.dnatRules")];
+            return false;
+        }
+
         var dnat = new DnatRule(
             family,
             protocol,
@@ -505,13 +609,95 @@ internal static class PolicyAuthoringService
             input.OriginalPort,
             input.TranslatedPort,
             string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
-            src);
+            src,
+            description);
 
         var existingDnat = bundle.Nat?.DnatRules.ToList() ?? [];
         var existingSnat = bundle.Nat?.SnatRules.ToList() ?? [];
         existingDnat.Add(dnat);
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, existingDnat, existingSnat);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
+        var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
+        if (!compiled.IsSuccess)
+        {
+            diagnostics = compiled.Diagnostics;
+            return false;
+        }
+
+        updatedJson = EncodeBundle(nextBundle);
+        diagnostics = [];
+        return true;
+    }
+
+    internal static bool TryUpdateDnatRule(
+        string currentJson,
+        int ruleIndex,
+        VisualDnatRuleInput input,
+        out string? updatedJson,
+        out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        updatedJson = null;
+        if (!TryDecodeBundle(currentJson, out var bundle, out diagnostics) || bundle is null)
+        {
+            return false;
+        }
+
+        if (bundle.Nat is null || ruleIndex < 0 || ruleIndex >= bundle.Nat.DnatRules.Count)
+        {
+            diagnostics = [new("rule.indexOutOfRange", "nat.dnatRules")];
+            return false;
+        }
+
+        if (!TryParseFamily(input.Family, out var family))
+        {
+            diagnostics = [new("family.unknown", "nat.dnatRules")];
+            return false;
+        }
+
+        if (!TryParseProtocol(input.Protocol, out var protocol))
+        {
+            diagnostics = [new("protocol.unknown", "nat.dnatRules")];
+            return false;
+        }
+
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            diagnostics = [new("rule.descriptionInvalid", "nat.dnatRules")];
+            return false;
+        }
+
+        NetworkPrefix origDst;
+        NetworkPrefix? src = null;
+        try
+        {
+            origDst = new NetworkPrefix((input.OriginalDestination ?? "").Trim());
+            if (!string.IsNullOrWhiteSpace(input.Source))
+            {
+                src = new NetworkPrefix(input.Source.Trim());
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        {
+            diagnostics = [new("network.invalid", "nat.dnatRules")];
+            return false;
+        }
+
+        var dnat = new DnatRule(
+            family,
+            protocol,
+            origDst,
+            (input.TranslatedAddress ?? "").Trim(),
+            input.OriginalPort,
+            input.TranslatedPort,
+            string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
+            src,
+            description);
+
+        var dnats = bundle.Nat.DnatRules.ToList();
+        var previous = bundle.Nat.DnatRules[ruleIndex]!;
+        dnats[ruleIndex] = dnat with { NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface };
+        var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -546,7 +732,7 @@ internal static class PolicyAuthoringService
         dnats.RemoveAt(ruleIndex);
         var snats = bundle.Nat.SnatRules.ToList();
         var nextNat = dnats.Count == 0 && snats.Count == 0 ? null : new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, snats);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -586,18 +772,108 @@ internal static class PolicyAuthoringService
             return false;
         }
 
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            diagnostics = [new("rule.descriptionInvalid", "nat.snatRules")];
+            return false;
+        }
+
         var snat = new SnatRule(
             family,
             src,
             (input.TranslatedAddress ?? "").Trim(),
             dst,
-            string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim());
+            string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim(),
+            description);
 
         var existingDnat = bundle.Nat?.DnatRules.ToList() ?? [];
         var existingSnat = bundle.Nat?.SnatRules.ToList() ?? [];
         existingSnat.Add(snat);
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, existingDnat, existingSnat);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
+        var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
+        if (!compiled.IsSuccess)
+        {
+            diagnostics = compiled.Diagnostics;
+            return false;
+        }
+
+        updatedJson = EncodeBundle(nextBundle);
+        diagnostics = [];
+        return true;
+    }
+
+    internal static bool TryUpdateSnatRule(
+        string currentJson,
+        int ruleIndex,
+        VisualSnatRuleInput input,
+        out string? updatedJson,
+        out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        updatedJson = null;
+        if (!TryDecodeBundle(currentJson, out var bundle, out diagnostics) || bundle is null)
+        {
+            return false;
+        }
+
+        if (bundle.Nat is null || ruleIndex < 0 || ruleIndex >= bundle.Nat.SnatRules.Count)
+        {
+            diagnostics = [new("rule.indexOutOfRange", "nat.snatRules")];
+            return false;
+        }
+
+        if (!TryParseFamily(input.Family, out var family))
+        {
+            diagnostics = [new("family.unknown", "nat.snatRules")];
+            return false;
+        }
+
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            diagnostics = [new("rule.descriptionInvalid", "nat.snatRules")];
+            return false;
+        }
+
+        NetworkPrefix src;
+        NetworkPrefix? dst = null;
+        try
+        {
+            src = new NetworkPrefix((input.Source ?? "").Trim());
+            if (!string.IsNullOrWhiteSpace(input.Destination))
+            {
+                dst = new NetworkPrefix(input.Destination.Trim());
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        {
+            diagnostics = [new("network.invalid", "nat.snatRules")];
+            return false;
+        }
+
+        var snat = new SnatRule(
+            family,
+            src,
+            (input.TranslatedAddress ?? "").Trim(),
+            dst,
+            string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim(),
+            description);
+
+        var snats = bundle.Nat.SnatRules.ToList();
+        var previous = bundle.Nat.SnatRules[ruleIndex]!;
+        snats[ruleIndex] = snat with
+        {
+            Action = previous.Action,
+            InputInterface = previous.InputInterface,
+            Protocol = previous.Protocol,
+            DestinationPort = previous.DestinationPort,
+            DestinationPorts = previous.DestinationPorts,
+            NegateSource = previous.NegateSource,
+            NegateDestination = previous.NegateDestination,
+            NegateInputInterface = previous.NegateInputInterface,
+            NegateOutputInterface = previous.NegateOutputInterface
+        };
+        var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, bundle.Nat.DnatRules.ToList(), snats);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -632,7 +908,7 @@ internal static class PolicyAuthoringService
         var snats = bundle.Nat.SnatRules.ToList();
         snats.RemoveAt(ruleIndex);
         var nextNat = dnats.Count == 0 && snats.Count == 0 ? null : new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, snats);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -649,7 +925,7 @@ internal static class PolicyAuthoringService
             return false;
         }
 
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, null, bundle.Bridge);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, null, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -674,8 +950,8 @@ internal static class PolicyAuthoringService
         }
 
         var rules = bundle.Bridge?.Rules.ToList() ?? [];
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, verdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, verdict, rules, bundle.Bridge?.Priority ?? -200, bundle.Bridge?.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -720,16 +996,98 @@ internal static class PolicyAuthoringService
             return false;
         }
 
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            diagnostics = [new("rule.descriptionInvalid", "bridge.rules")];
+            return false;
+        }
+
         var rule = new BridgeFilterRule(
             etherType,
             verdict,
             string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
-            string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim());
+            string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim(),
+            description);
         var rules = bundle.Bridge?.Rules.ToList() ?? [];
         rules.Add(rule);
         var defaultVerdict = bundle.Bridge?.DefaultVerdict ?? FilterVerdict.Accept;
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, defaultVerdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, defaultVerdict, rules, bundle.Bridge?.Priority ?? -200, bundle.Bridge?.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
+        var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
+        if (!compiled.IsSuccess)
+        {
+            diagnostics = compiled.Diagnostics;
+            return false;
+        }
+
+        updatedJson = EncodeBundle(nextBundle);
+        diagnostics = [];
+        return true;
+    }
+
+    internal static bool TryUpdateBridgeRule(
+        string currentJson,
+        int ruleIndex,
+        VisualBridgeRuleInput input,
+        out string? updatedJson,
+        out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        updatedJson = null;
+        if (!TryDecodeBundle(currentJson, out var bundle, out diagnostics) || bundle is null)
+        {
+            return false;
+        }
+
+        if (bundle.Bridge is null || ruleIndex < 0 || ruleIndex >= bundle.Bridge.Rules.Count)
+        {
+            diagnostics = [new("rule.indexOutOfRange", "bridge.rules")];
+            return false;
+        }
+
+        var etherType = (input.EtherType ?? "any").Trim().ToLowerInvariant() switch
+        {
+            "any" => BridgeEtherType.Any,
+            "ipv4" => BridgeEtherType.IPv4,
+            "ipv6" => BridgeEtherType.IPv6,
+            "arp" => BridgeEtherType.Arp,
+            _ => (BridgeEtherType)(-1),
+        };
+        if (!Enum.IsDefined(etherType))
+        {
+            diagnostics = [new("bridge.etherTypeUnknown", "bridge.rules")];
+            return false;
+        }
+
+        if (!TryParseVerdict(input.Verdict, out var verdict))
+        {
+            diagnostics = [new("verdict.unknown", "bridge.rules")];
+            return false;
+        }
+
+        if (!TryNormalizeDescription(input.Description, out var description))
+        {
+            diagnostics = [new("rule.descriptionInvalid", "bridge.rules")];
+            return false;
+        }
+
+        var rule = new BridgeFilterRule(
+            etherType,
+            verdict,
+            string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
+            string.IsNullOrWhiteSpace(input.OutputInterface) ? null : input.OutputInterface.Trim(),
+            description);
+        var rules = bundle.Bridge.Rules.ToList();
+        var previous = bundle.Bridge.Rules[ruleIndex]!;
+        rules[ruleIndex] = previous with
+        {
+            EtherType = rule.EtherType,
+            Verdict = rule.Verdict,
+            InputInterface = rule.InputInterface,
+            OutputInterface = rule.OutputInterface,
+            Description = rule.Description
+        };
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules, bundle.Bridge.Priority, bundle.Bridge.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
         {
@@ -762,8 +1120,8 @@ internal static class PolicyAuthoringService
 
         var rules = bundle.Bridge.Rules.ToList();
         rules.RemoveAt(ruleIndex);
-        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules);
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge);
+        var nextBridge = new BridgePolicy(BridgePolicy.CurrentSchemaVersion, bundle.Bridge.DefaultVerdict, rules, bundle.Bridge.Priority, bundle.Bridge.SubChains);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, nextBridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;
@@ -780,7 +1138,7 @@ internal static class PolicyAuthoringService
             return false;
         }
 
-        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, null);
+        var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, null, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
         return true;

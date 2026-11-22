@@ -47,6 +47,11 @@ if (controllerStateEnabled)
     if (!OperatingSystem.IsLinux() || !enabled) { throw new InvalidOperationException("Controller state requires local administrator sessions on Linux."); }
     ControllerStateHost.Configure(builder.Services, controllerStateSettings);
 }
+if (builder.Configuration["NativeSources:Directory"] is { Length: > 0 } sourceDirectory)
+{
+    if (!OperatingSystem.IsLinux() || !controllerStateEnabled) { throw new InvalidOperationException("Native source inspection requires an authenticated Linux controller."); }
+    builder.Services.AddSingleton(new NativePolicySourceCatalog(sourceDirectory));
+}
 var app = builder.Build();
 if (enabled && OperatingSystem.IsLinux()) { await LocalSessionHost.EnableAsync(app); }
 app.UseAntiforgery();

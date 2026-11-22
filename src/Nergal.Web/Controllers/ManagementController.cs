@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Nergal.ControllerState;
 using Nergal.Core.Agent;
 using Nergal.Core.Controller;
@@ -10,27 +11,51 @@ using Nergal.Nftables;
 
 namespace Nergal.Web.Controllers;
 
-/// <summary>RBAC-gated fleet dashboard, policy authoring, compatibility/diff preview, confirmed apply, and audit viewer.</summary>
+/// <summary>RBAC-gated fleet dashboard, policy authoring, compatibility/diff preview, confirmed apply, system settings, and audit viewer.</summary>
 [SupportedOSPlatform("linux")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class ManagementController(ControllerStateStore store, ApplyWorkflowService? applyWorkflow = null) : Controller
+public sealed class ManagementController(ControllerStateStore store, ApplyWorkflowService? applyWorkflow = null, NativePolicySourceCatalog? nativeSources = null) : Controller
 {
-    /// <summary>Renders the host fleet dashboard with recent audit entries (read-only for Auditors).</summary>
+    /// <summary>Populates live branding settings for the shared layout before action execution.</summary>
+    public override void OnActionExecuting(ActionExecutingContext context)
+    {
+        try
+        {
+            ViewData["Branding"] = store.ReadSystemSettings().Branding;
+        }
+        catch (ControllerStateException)
+        {
+            ViewData["Branding"] = SystemSettingsSnapshot.Default.Branding;
+        }
+
+        ViewData["ShowNativeSources"] = nativeSources is not null;
+        base.OnActionExecuting(context);
+    }
+
+    /// <summary>Inspects exact private native source snapshots without compiling or executing them.</summary>
+    [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
+    public IActionResult Sources()
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) || role != NergalRoles.Administrator) { return Forbid(); }
+        return nativeSources is null ? NotFound() : View(nativeSources.Sources);
+    }
+
+    /// <summary>Renders the overview and host fleet dashboard with live host health and recent audit entries (read-only for Auditors).</summary>
     [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
         if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role))
         {
             return Forbid();
         }
 
-        return View(BuildDashboardModel(actorId, role, null));
+        return View(await BuildDashboardModelAsync(actorId, role, null, HttpContext.RequestAborted));
     }
 
     /// <summary>Registers a managed host endpoint from the dashboard (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
     [RequestSizeLimit(8192)]
-    public IActionResult AddHost(
+    public async Task<IActionResult> AddHost(
         string? name,
         string? transportKind,
         string? endpoint,
@@ -57,7 +82,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
             if (!uint.TryParse(expectedServerUserId, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedUid))
             {
                 Response.StatusCode = StatusCodes.Status400BadRequest;
-                return View("Index", BuildDashboardModel(actorId, role, "Invalid expected server UID."));
+                return View("Index", await BuildDashboardModelAsync(actorId, role, "Invalid expected server UID.", HttpContext.RequestAborted));
             }
 
             uid = parsedUid;
@@ -69,7 +94,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
             if (!uint.TryParse(socketGroupId, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedGid))
             {
                 Response.StatusCode = StatusCodes.Status400BadRequest;
-                return View("Index", BuildDashboardModel(actorId, role, "Invalid socket group ID."));
+                return View("Index", await BuildDashboardModelAsync(actorId, role, "Invalid socket group ID.", HttpContext.RequestAborted));
             }
 
             gid = parsedGid;
@@ -78,7 +103,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         if (kind is null || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(endpoint))
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Index", BuildDashboardModel(actorId, role, "Missing required host registration fields."));
+            return View("Index", await BuildDashboardModelAsync(actorId, role, "Missing required host registration fields.", HttpContext.RequestAborted));
         }
 
         ManagedHostRecord host;
@@ -90,7 +115,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         catch (ArgumentException)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Index", BuildDashboardModel(actorId, role, "Host specification violated transport constraints."));
+            return View("Index", await BuildDashboardModelAsync(actorId, role, "Host specification violated transport constraints.", HttpContext.RequestAborted));
         }
 
         try
@@ -101,7 +126,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         catch (ControllerStateException ex) when (ex.Code == "host.duplicate")
         {
             Response.StatusCode = StatusCodes.Status409Conflict;
-            return View("Index", BuildDashboardModel(actorId, role, "A host with that name already exists."));
+            return View("Index", await BuildDashboardModelAsync(actorId, role, "A host with that name already exists.", HttpContext.RequestAborted));
         }
     }
 
@@ -246,7 +271,8 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         int? rateLimitPackets = null,
         string? rateLimitUnit = null,
         int? rateLimitBurst = null,
-        int? rateLimitTimeout = null)
+        int? rateLimitTimeout = null,
+        string? description = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -259,7 +285,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         var input = new VisualFilterRuleInput(
             chain, family, protocol, verdict, sources, destinations, destinationPorts,
             icmpType, inputInterface, outputInterface, connectionStates,
-            matchOriginalDestinationDnat, rateLimitPackets, rateLimitUnit, rateLimitBurst, rateLimitTimeout);
+            matchOriginalDestinationDnat, rateLimitPackets, rateLimitUnit, rateLimitBurst, rateLimitTimeout, description);
 
         if (!PolicyAuthoringService.TryAppendFilterRule(raw, input, out var updatedJson, out var diagnostics) || updatedJson is null)
         {
@@ -271,6 +297,54 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
         var report = PolicyAuthoringService.EvaluateDraft(updatedJson, store, compareToRevision);
         return View("Policies", BuildPolicyModel(role, updatedJson, summary, null, compareToRevision, revisions, report));
+    }
+
+    /// <summary>Updates an existing filter rule in place in the draft policy bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(524288)]
+    public IActionResult EditFilterRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        int ruleIndex,
+        string? chain,
+        string? family,
+        string? protocol,
+        string? verdict,
+        string? sources,
+        string? destinations,
+        string? destinationPorts,
+        string? icmpType,
+        string? inputInterface,
+        string? outputInterface,
+        string? connectionStates,
+        bool matchOriginalDestinationDnat = false,
+        int? rateLimitPackets = null,
+        string? rateLimitUnit = null,
+        int? rateLimitBurst = null,
+        int? rateLimitTimeout = null,
+        string? description = null)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        var input = new VisualFilterRuleInput(
+            chain, family, protocol, verdict, sources, destinations, destinationPorts,
+            icmpType, inputInterface, outputInterface, connectionStates,
+            matchOriginalDestinationDnat, rateLimitPackets, rateLimitUnit, rateLimitBurst, rateLimitTimeout, description);
+
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryUpdateFilterRule(raw, ruleIndex, input, out var updated, out var diags),
+            updated,
+            diags);
     }
 
     /// <summary>Updates filter schema version and per-chain default verdicts in the draft bundle (Administrator only).</summary>
@@ -316,7 +390,8 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         int? originalPort,
         int? translatedPort,
         string? inputInterface,
-        string? source)
+        string? source,
+        string? description = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -325,13 +400,49 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         }
 
         var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
-        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source);
+        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source, description);
         return ApplyDraftMutation(
             role,
             raw,
             summary,
             compareToRevision,
             PolicyAuthoringService.TryAppendDnatRule(raw, input, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Updates an existing prerouting DNAT rule in place in the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(524288)]
+    public IActionResult EditDnatRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        int ruleIndex,
+        string? family,
+        string? protocol,
+        string? originalDestination,
+        string? translatedAddress,
+        int? originalPort,
+        int? translatedPort,
+        string? inputInterface,
+        string? source,
+        string? description = null)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source, description);
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryUpdateDnatRule(raw, ruleIndex, input, out var updated, out var diags),
             updated,
             diags);
     }
@@ -369,7 +480,8 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         string? source,
         string? translatedAddress,
         string? destination,
-        string? outputInterface)
+        string? outputInterface,
+        string? description = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -378,13 +490,46 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         }
 
         var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
-        var input = new VisualSnatRuleInput(family, source, translatedAddress, destination, outputInterface);
+        var input = new VisualSnatRuleInput(family, source, translatedAddress, destination, outputInterface, description);
         return ApplyDraftMutation(
             role,
             raw,
             summary,
             compareToRevision,
             PolicyAuthoringService.TryAppendSnatRule(raw, input, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Updates an existing postrouting SNAT rule in place in the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(524288)]
+    public IActionResult EditSnatRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        int ruleIndex,
+        string? family,
+        string? source,
+        string? translatedAddress,
+        string? destination,
+        string? outputInterface,
+        string? description = null)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        var input = new VisualSnatRuleInput(family, source, translatedAddress, destination, outputInterface, description);
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryUpdateSnatRule(raw, ruleIndex, input, out var updated, out var diags),
             updated,
             diags);
     }
@@ -465,7 +610,8 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         string? etherType,
         string? verdict,
         string? inputInterface,
-        string? outputInterface)
+        string? outputInterface,
+        string? description = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -474,13 +620,45 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         }
 
         var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
-        var input = new VisualBridgeRuleInput(etherType, verdict, inputInterface, outputInterface);
+        var input = new VisualBridgeRuleInput(etherType, verdict, inputInterface, outputInterface, description);
         return ApplyDraftMutation(
             role,
             raw,
             summary,
             compareToRevision,
             PolicyAuthoringService.TryAppendBridgeRule(raw, input, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Updates an existing L2 bridge forward rule in place in the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(524288)]
+    public IActionResult EditBridgeRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        int ruleIndex,
+        string? etherType,
+        string? verdict,
+        string? inputInterface,
+        string? outputInterface,
+        string? description = null)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        var input = new VisualBridgeRuleInput(etherType, verdict, inputInterface, outputInterface, description);
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryUpdateBridgeRule(raw, ruleIndex, input, out var updated, out var diags),
             updated,
             diags);
     }
@@ -763,16 +941,239 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         return View(model);
     }
 
-    private FleetDashboardViewModel BuildDashboardModel(string actorId, string role, string? error)
+    /// <summary>Displays system settings covering branding, authentication providers, database backend, and firewall defaults.</summary>
+    [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
+    public IActionResult Settings(string? notice = null)
     {
-        var revisions = store.ListPolicyRevisions(1);
+        if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role))
+        {
+            return Forbid();
+        }
+
+        var settings = store.ReadSystemSettings();
+        var model = new SystemSettingsViewModel
+        {
+            ActorId = actorId,
+            ActorRole = role,
+            CanMutate = role == NergalRoles.Administrator,
+            Settings = settings,
+            StatusMessage = notice == "saved" ? "System settings saved and recorded in the append-only audit log." : null,
+            ValidationErrors = [],
+        };
+        return View(model);
+    }
+
+    /// <summary>Validates and persists system settings with append-only audit logging (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(16384)]
+    public IActionResult SaveSettings(
+        string? applicationName,
+        string? instanceSubtitle,
+        string? accentColor,
+        string? defaultTheme,
+        string? loginBanner,
+        bool localAuthEnabled,
+        int sessionIdleTimeoutMinutes,
+        int lockoutMaxFailedAttempts,
+        int lockoutDurationMinutes,
+        int minimumPasswordLength,
+        bool oidcEnabled,
+        string? oidcAuthorityUrl,
+        string? oidcClientId,
+        string? oidcScopes,
+        string? oidcRedirectUri,
+        string? oidcGroupsClaim,
+        string? oidcAdministratorGroups,
+        string? oidcAuditorGroups,
+        int oidcMaxAuthAgeSeconds,
+        bool ldapEnabled,
+        string? ldapServerUri,
+        bool ldapUseStartTls,
+        string? ldapBaseDn,
+        string? ldapBindDn,
+        string? ldapUserSearchFilter,
+        string? ldapGroupMembershipAttribute,
+        string? ldapAdministratorGroupDn,
+        string? ldapAuditorGroupDn,
+        string? databaseProvider,
+        string? databaseHost,
+        int? databasePort,
+        string? databaseName,
+        string? databaseUsername,
+        string? databaseTlsMode,
+        int defaultConfirmationTimeoutSeconds,
+        int defaultFilterSchemaVersion,
+        string? defaultInputVerdict,
+        string? defaultForwardVerdict,
+        string? defaultOutputVerdict,
+        bool requireChangeSummary)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var candidate = new SystemSettingsSnapshot(
+            new BrandingSettings(
+                (applicationName ?? "").Trim(),
+                (instanceSubtitle ?? "").Trim(),
+                (accentColor ?? "blue").Trim().ToLowerInvariant(),
+                (defaultTheme ?? "system").Trim().ToLowerInvariant(),
+                string.IsNullOrWhiteSpace(loginBanner) ? null : loginBanner.Trim()),
+            new LocalAuthSettings(
+                localAuthEnabled,
+                sessionIdleTimeoutMinutes,
+                lockoutMaxFailedAttempts,
+                lockoutDurationMinutes,
+                minimumPasswordLength),
+            new OidcAuthSettings(
+                oidcEnabled,
+                string.IsNullOrWhiteSpace(oidcAuthorityUrl) ? null : oidcAuthorityUrl.Trim(),
+                string.IsNullOrWhiteSpace(oidcClientId) ? null : oidcClientId.Trim(),
+                string.IsNullOrWhiteSpace(oidcScopes) ? "openid profile email groups" : oidcScopes.Trim(),
+                string.IsNullOrWhiteSpace(oidcRedirectUri) ? null : oidcRedirectUri.Trim(),
+                string.IsNullOrWhiteSpace(oidcGroupsClaim) ? "groups" : oidcGroupsClaim.Trim(),
+                string.IsNullOrWhiteSpace(oidcAdministratorGroups) ? null : oidcAdministratorGroups.Trim(),
+                string.IsNullOrWhiteSpace(oidcAuditorGroups) ? null : oidcAuditorGroups.Trim(),
+                oidcMaxAuthAgeSeconds == 0 ? 3600 : oidcMaxAuthAgeSeconds),
+            new LdapAuthSettings(
+                ldapEnabled,
+                string.IsNullOrWhiteSpace(ldapServerUri) ? null : ldapServerUri.Trim(),
+                ldapUseStartTls,
+                string.IsNullOrWhiteSpace(ldapBaseDn) ? null : ldapBaseDn.Trim(),
+                string.IsNullOrWhiteSpace(ldapBindDn) ? null : ldapBindDn.Trim(),
+                string.IsNullOrWhiteSpace(ldapUserSearchFilter) ? "(uid={0})" : ldapUserSearchFilter.Trim(),
+                string.IsNullOrWhiteSpace(ldapGroupMembershipAttribute) ? "memberOf" : ldapGroupMembershipAttribute.Trim(),
+                string.IsNullOrWhiteSpace(ldapAdministratorGroupDn) ? null : ldapAdministratorGroupDn.Trim(),
+                string.IsNullOrWhiteSpace(ldapAuditorGroupDn) ? null : ldapAuditorGroupDn.Trim()),
+            new DatabaseBackendSettings(
+                (databaseProvider ?? "sqlite").Trim().ToLowerInvariant(),
+                string.IsNullOrWhiteSpace(databaseHost) ? null : databaseHost.Trim(),
+                databasePort,
+                string.IsNullOrWhiteSpace(databaseName) ? null : databaseName.Trim(),
+                string.IsNullOrWhiteSpace(databaseUsername) ? null : databaseUsername.Trim(),
+                string.IsNullOrWhiteSpace(databaseTlsMode) ? "require" : databaseTlsMode.Trim().ToLowerInvariant()),
+            new FirewallDefaultsSettings(
+                defaultConfirmationTimeoutSeconds,
+                defaultFilterSchemaVersion,
+                (defaultInputVerdict ?? "drop").Trim().ToLowerInvariant(),
+                (defaultForwardVerdict ?? "drop").Trim().ToLowerInvariant(),
+                (defaultOutputVerdict ?? "accept").Trim().ToLowerInvariant(),
+                requireChangeSummary));
+
+        var errors = SystemSettingsCodec.Validate(candidate);
+        if (errors.Count > 0)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            ViewData["Branding"] = store.ReadSystemSettings().Branding;
+            return View("Settings", new SystemSettingsViewModel
+            {
+                ActorId = actorId,
+                ActorRole = role,
+                CanMutate = true,
+                Settings = candidate,
+                ErrorMessage = "One or more settings failed validation. Review the highlighted codes below.",
+                ValidationErrors = errors,
+            });
+        }
+
+        store.SaveSystemSettings(candidate, actorId, role);
+        return LocalRedirect("~/manage/settings?notice=saved");
+    }
+
+    private async Task<FleetDashboardViewModel> BuildDashboardModelAsync(
+        string actorId,
+        string role,
+        string? error,
+        CancellationToken cancellationToken)
+    {
+        var allRevisions = store.ListPolicyRevisions();
+        var latest = allRevisions.FirstOrDefault();
+        Core.Policy.FirewallPolicyBundle? latestBundle = null;
+        if (latest is not null && PolicyAuthoringService.TryDecodeBundle(latest.PolicyJson, out var decoded, out _))
+        {
+            latestBundle = decoded;
+        }
+
+        var hosts = store.ListHosts();
+        var healthList = new List<HostHealthSummary>(hosts.Count);
+        foreach (var host in hosts)
+        {
+            if (applyWorkflow is null)
+            {
+                healthList.Add(new HostHealthSummary
+                {
+                    Host = host,
+                    Reachable = false,
+                    StateLabel = "unqueried",
+                    ReportedRevision = host.LastKnownRevision > 0 ? host.LastKnownRevision : null,
+                });
+                continue;
+            }
+
+            try
+            {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(2));
+                var status = await applyWorkflow.QueryHostStatusAsync(host.Id, cts.Token);
+                var reply = status.Reply;
+                if (reply is null || reply.Outcome is AgentControlOutcome.Unavailable or AgentControlOutcome.Rejected or AgentControlOutcome.Denied)
+                {
+                    healthList.Add(new HostHealthSummary
+                    {
+                        Host = status.Host ?? host,
+                        Reachable = false,
+                        StateLabel = "unavailable",
+                        ReportedRevision = host.LastKnownRevision > 0 ? host.LastKnownRevision : null,
+                        ErrorCode = reply?.ErrorCode ?? "unreachable",
+                    });
+                }
+                else
+                {
+                    var stateLabel = reply.OperationId.HasValue || reply.Outcome == AgentControlOutcome.AppliedPendingConfirmation
+                        ? "pending"
+                        : reply.Outcome switch
+                        {
+                            AgentControlOutcome.Matched or AgentControlOutcome.Confirmed => "matched",
+                            AgentControlOutcome.Drift => "drift",
+                            AgentControlOutcome.Unbound => "missing",
+                            _ => "online",
+                        };
+
+                    healthList.Add(new HostHealthSummary
+                    {
+                        Host = status.Host ?? host,
+                        Reachable = true,
+                        StateLabel = stateLabel,
+                        ReportedRevision = reply.Revision,
+                    });
+                }
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                healthList.Add(new HostHealthSummary
+                {
+                    Host = host,
+                    Reachable = false,
+                    StateLabel = "unavailable",
+                    ReportedRevision = host.LastKnownRevision > 0 ? host.LastKnownRevision : null,
+                    ErrorCode = "timeout",
+                });
+            }
+        }
+
         return new FleetDashboardViewModel
         {
             ActorId = actorId,
             ActorRole = role,
             CanMutate = role == NergalRoles.Administrator,
-            Hosts = store.ListHosts(),
-            LatestRevision = revisions.FirstOrDefault(),
+            Hosts = hosts,
+            HostHealth = healthList,
+            LatestRevision = latest,
+            LatestBundle = latestBundle,
+            TotalRevisions = allRevisions.Count,
+            Settings = store.ReadSystemSettings(),
             RecentAudit = store.ListAuditEntries(20),
             ErrorMessage = error,
         };

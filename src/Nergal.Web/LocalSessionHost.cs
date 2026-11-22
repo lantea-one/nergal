@@ -78,7 +78,9 @@ internal static class LocalSessionHost
             var maxBytes = context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
                            context.Request.Path.StartsWithSegments("/controller/policies", StringComparison.OrdinalIgnoreCase)
                 ? 524_288L
-                : 8192L;
+                : context.Request.Path.StartsWithSegments("/manage/settings", StringComparison.OrdinalIgnoreCase)
+                    ? 16_384L
+                    : 8192L;
             if (context.Request.ContentLength > maxBytes) { context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge; return; }
             if (context.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
             { limit.MaxRequestBodySize = maxBytes; }
