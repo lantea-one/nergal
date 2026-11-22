@@ -183,3 +183,18 @@ show state changes, and active-policy changes follow confirmed apply. Forms will
 provide contextual field hints, units/defaults, synthetic examples and actionable
 validation associated with controls for keyboard and assistive-technology access.
 These are planned requirements, not a claim that the current forms implement them.
+
+## Planned persistence direction
+
+The database will be the rolling source of truth for application-managed policies,
+reusable objects, settings/profiles, imported source snapshots and reports, and
+revision/audit history. Generated configurations and exports derive from selected
+database revisions. Desired and observed/applied firewall state remain distinct,
+with protected agent receipts and independent rollback decisions preserved.
+
+The current source catalog still loads operator-controlled files, so complete
+database-backed source management remains unfinished. Migrations for additional
+supported SQL backends are deferred until the logical schema stabilizes; each
+engine will require versioned upgrade and failure/recovery tests. Saved backend
+settings are not evidence of an implemented adapter. Bootstrap trust and protected
+key material retain explicit security boundaries.

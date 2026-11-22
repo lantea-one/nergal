@@ -58,6 +58,13 @@ and contextual accessible form hints. Rule state changes follow revision review
 and confirmed apply. Preserve named-object references and immutable revision contents; report unsupported
 import semantics explicitly. Source inspection alone is not full import/conversion.
 
+Use the database as the rolling source of truth for application-managed state,
+including reusable objects, imported content, settings and revision/audit history.
+Generated files are derived artifacts. Keep desired and observed/applied state
+distinct, and preserve independently protected agent receipts/rollback decisions.
+Defer migrations for additional SQL backends until the logical schema stabilizes;
+then implement and verify versioned migrations on each supported engine.
+
 Develop independently from public specifications. No FWCloud code or assets may
 be copied. Do not advertise formal clean-room assurance without supporting evidence.
 Production deployment, account/group changes, merges and firewall applies are
