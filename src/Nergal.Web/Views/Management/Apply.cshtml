@@ -237,7 +237,7 @@
                     <thead>
                         <tr>
                             <th>Seq</th>
-                            <th>Timestamp (UTC)</th>
+                            <th>Timestamp (local time)</th>
                             <th>Actor</th>
                             <th>Action</th>
                             <th>Target</th>
@@ -254,7 +254,7 @@
                                     : "badge-warning";
                             <tr>
                                 <td>#@entry.Sequence</td>
-                                <td class="mono">@entry.TimestampUtc.ToString("u")</td>
+                                <td class="mono">@await Html.PartialAsync("_LocalTime", entry.TimestampUtc)</td>
                                 <td><code>@entry.ActorId</code></td>
                                 <td><code>@entry.Action</code></td>
                                 <td><code>@entry.Target</code></td>

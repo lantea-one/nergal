@@ -408,3 +408,13 @@ CSRF, invalid UTF-8, maximum valid file size, request/file size rejection and
 anonymous/Auditor boundaries. The admin fixture checks explicit idempotent schema
 upgrade and unknown-version denial. These checks add no native firewall operation;
 conversion equivalence and generated export remain unverified/unimplemented.
+
+### Local timestamp presentation
+
+`node --test scripts/local-time.test.mjs` uses real Intl timezone data for date
+boundaries, both DST transitions, half-hour/southern offsets and unchanged UTC
+attributes. It checks invalid or offset-less input, unavailable Intl, interactive
+component updates and system-timezone changes. Controller SQLite tests verify UTC
+persistence even with offset-bearing input/clocks. HTTPS checks assert UTC instant
+markup and local-display labels; browser QA verifies rendered values and the named
+viewer timezone. Server-local time is never the display default.

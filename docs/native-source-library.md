@@ -8,7 +8,8 @@ and an attributed audit entry atomically; it never executes nft, resolves includ
 creates a managed policy or changes a firewall.
 
 Each import has an independent identity, even when names or contents repeat. The
-metadata list shows import time and size. Select **Review** for one source's exact
+metadata list shows import time in the viewer's local timezone and size. Timestamps
+remain stored in UTC, with the original instant available in the tooltip. Select **Review** for one source's exact
 content, digest and non-exhaustive lexical migration review. **Download original**
 returns its exact UTF-8 bytes, including BOM and line endings, as an attachment
 named `nftables.conf`. Reports select a stored source by identity, not a server path

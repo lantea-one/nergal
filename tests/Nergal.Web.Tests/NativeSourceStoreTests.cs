@@ -168,6 +168,32 @@ public sealed class NativeSourceStoreTests
         });
     }
 
+    /// <summary>Offset-bearing input and clocks normalize every controller timestamp to UTC before persistence.</summary>
+    [Fact]
+    public void ControllerTimestamps_AreStoredAsUtcInstants()
+    {
+        WithStore((_, path) =>
+        {
+            var input = new DateTimeOffset(2026, 11, 23, 2, 34, 5, TimeSpan.FromMinutes(330));
+            var store = ControllerStateStore.Open(new(path), new OffsetClock(input));
+            store.RegisterHost(new(Guid.NewGuid(), "synthetic", AgentTransportKind.Unix, "/run/nergal/control.sock", expectedServerUserId: 1001, createdAtUtc: input), Actor, NergalRoles.Administrator);
+            store.SavePolicyRevision("{}", new string('a', 64), Actor, NergalRoles.Administrator);
+            store.SaveSystemSettings(SystemSettingsSnapshot.Default, Actor, NergalRoles.Administrator);
+            store.ImportNativeSource(new("synthetic", "accept"), Actor, NergalRoles.Administrator);
+            using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT created_at_utc FROM hosts UNION ALL SELECT created_at_utc FROM policy_revisions UNION ALL SELECT updated_at_utc FROM system_settings UNION ALL SELECT imported_at_utc FROM native_sources UNION ALL SELECT timestamp_utc FROM audit_log";
+            using var reader = cmd.ExecuteReader(); var timestamps = new List<DateTimeOffset>();
+            while (reader.Read()) { timestamps.Add(DateTimeOffset.Parse(reader.GetString(0), System.Globalization.CultureInfo.InvariantCulture)); }
+            Assert.NotEmpty(timestamps);
+            Assert.All(timestamps, timestamp => { Assert.Equal(TimeSpan.Zero, timestamp.Offset); Assert.Equal(input.ToUniversalTime(), timestamp); });
+        });
+    }
+
+    private sealed class OffsetClock(DateTimeOffset instant) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => instant;
+    }
+
     private static void WithStore(Action<ControllerStateStore, string> action)
     {
         if (!OperatingSystem.IsLinux()) { return; }

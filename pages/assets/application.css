@@ -809,3 +809,5 @@ input[type="file"]::file-selector-button {
   font: inherit;
   cursor: pointer;
 }
+
+.time-zone-note { max-width: 1280px; margin: 0 auto; padding: 0 1.25rem 1.25rem; font-size: .875rem; }

@@ -244,6 +244,8 @@ def exercise(temp):
         database_only_html = browser.request("/manage/sources?sourceId=" + source_id, 200)
         assert "Operator-staged sources" not in database_only_html
         assert "synthetic" in database_only_html and "immutable database content" in database_only_html
+        assert 'data-local-time datetime="' in database_only_html and 'Stored UTC:' in database_only_html
+        assert "Imported (local time)" in database_only_html and "browser time zone" in database_only_html
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
         browser.cookies[ADMIN] = session
