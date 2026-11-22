@@ -44,7 +44,10 @@ workflows and tooling. Keep this file tracked and ship it with the repository.
 ## Product direction
 
 The repository is currently an early foundation, not a working firewall manager.
-Build a generic self-hosted application with optional multi-host and OIDC support.
+Build a fully functioning, general-purpose FOSS application with optional multi-host
+and OIDC support. The initial private deployment is an acceptance target, not the
+product's scope: implement reusable contracts and test independent synthetic
+network layouts. Keep all site-specific defaults and assumptions out of the core.
 Use MVC, Blazor and framework-independent POCOs; keep browser, policy, compiler
 and privileged-agent boundaries explicit. Do not require AD, Forgejo, WireGuard
 or any particular network topology for a basic installation.

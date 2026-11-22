@@ -3,6 +3,12 @@
 Self-hosted Linux firewall management, built with .NET 10, ASP.NET Core MVC,
 Blazor, and reusable C# POCOs. Native nftables is the first backend.
 
+Nergal is a general-purpose FOSS firewall manager in development. The initial
+private deployment supplies migration and acceptance cases; the product is designed
+for independent single-host and multi-host installations with different network
+layouts. Site-specific infrastructure is optional configuration, not a core
+requirement. See [product scope and workflow](docs/product-workflow.md).
+
 **Release `2026.11.21`** implements the complete single-table controller and host
 agent workflow across verified privilege boundaries:
 

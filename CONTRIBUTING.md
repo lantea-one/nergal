@@ -10,6 +10,13 @@ Add deterministic unit tests alongside every meaningful behavior change. Use
 clear scenario names and arrange/act/assert structure. Test denied behavior,
 unknown values and mutation boundaries. Do not add tests solely to inflate coverage.
 
+Design for independent installations. Private deployment requirements can motivate
+features, but implementations must use reusable contracts and synthetic public
+examples rather than hardcoded hosts, ports, identity groups or topology. Cover
+relevant independent host/gateway/dual-stack/bridge scenarios, document unsupported
+semantics, and keep basic installation independent of optional site integrations.
+See [product scope](docs/product-workflow.md).
+
 Before proposing a change:
 
 ```sh

@@ -4,6 +4,12 @@ The first milestone is an independently implemented, nftables-first management
 application, not a new packet-filtering engine. The kernel continues to enforce
 policy when the web console or identity provider is unavailable.
 
+The product target is a general-purpose FOSS firewall manager for independent
+single-host and optional multi-host installations. The initial private deployment
+is one acceptance environment. Its topology and integrations must not define core
+contracts, defaults, required infrastructure or the limits of public conformance.
+See [product scope](product-workflow.md).
+
 ## Boundaries
 
 1. MVC owns HTTP controllers and conventional views. Blazor provides reusable
