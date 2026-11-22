@@ -70,6 +70,28 @@ internal static class NativeNft
         }
     }
 
+    internal static async Task<AuxiliaryTablePresence?> TryInspectAuxiliaryTablesAsync(
+        NftTableIdentity expectedIdentity,
+        CancellationToken cancellation = default)
+    {
+        try
+        {
+            var listed = await Run(["--terse", "--json", "list", "tables"], "", cancellation);
+            return NftTableObservation.TryInspectAuxiliaryTables(listed, expectedIdentity, out var presence, out _)
+                ? presence
+                : null;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or
+            OperationCanceledException or DecoderFallbackException)
+        {
+            return null;
+        }
+    }
+
     private static async Task<string> ReadOutput(Stream stream, CancellationToken token)
     {
         var data = new byte[65537];

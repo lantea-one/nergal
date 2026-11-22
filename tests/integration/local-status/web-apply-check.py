@@ -367,9 +367,17 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
                 ],
             },
         })
-        rev3_nat_json = json.dumps({
+        rev3_bundle_json = json.dumps({
             'schemaVersion': 1,
-            'filter': {'schemaVersion': 1, 'inputDefaultVerdict': 'accept', 'rules': []},
+            'filter': {
+                'schemaVersion': 2,
+                'inputDefaultVerdict': 'accept',
+                'forwardDefaultVerdict': 'drop',
+                'outputDefaultVerdict': 'accept',
+                'rules': [
+                    {'family': 'ipv4', 'protocol': 'udp', 'verdict': 'accept', 'chain': 'input', 'connectionStates': []},
+                ],
+            },
             'nat': {
                 'schemaVersion': 1,
                 'dnatRules': [],
@@ -377,9 +385,16 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
                     {'family': 'ipv4', 'source': '192.0.2.0/24', 'translatedAddress': '198.51.100.2', 'outputInterface': 'wan0'},
                 ],
             },
+            'bridge': {
+                'schemaVersion': 1,
+                'defaultVerdict': 'accept',
+                'rules': [
+                    {'verdict': 'drop', 'inputInterface': 'br0', 'etherType': 'ipv4'},
+                ],
+            },
         })
 
-        for idx, (bundle, note) in enumerate([(rev1_json, 'drop-v4-udp'), (rev2_json, 'drop-v6-udp'), (rev3_nat_json, 'nat-scope-test')], start=1):
+        for idx, (bundle, note) in enumerate([(rev1_json, 'drop-v4-udp'), (rev2_json, 'drop-v6-udp'), (rev3_bundle_json, 'multitable-filter-nat-bridge')], start=1):
             csrf = admin.token('/manage/policies')
             admin.request('/manage/policies/save', 302, form={
                 'bundleJson': bundle,
@@ -390,13 +405,10 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         # Missing CSRF rejected with 400.
         admin.request('/controller/apply/start', 400, json_body={'hostId': unix_id, 'revision': 1, 'confirmationTimeoutSeconds': 10})
 
-        # Unsupported multi-table NAT bundle rejected fail-closed before touching kernel packets.
-        rejected_body, _ = admin.request('/controller/apply/start', 400, json_body={
-            'hostId': unix_id, 'revision': 3, 'confirmationTimeoutSeconds': 10,
-        }, headers={'RequestVerificationToken': admin_csrf})
-        rejected = json.loads(rejected_body)
-        require(rejected['outcome'] == 'rejected' and rejected['errorCode'] == 'policy.unsupportedScope',
-                f'Unexpected NAT scope reply: {rejected}')
+        def table_exists(family, name):
+            res = subprocess.run(['nft', '--stateless', 'list', 'table', family, name],
+                                 capture_output=True, text=True)
+            return res.returncode == 0, res.stdout
 
         # Part 1: MVC start (2s timeout) -> real packet drop -> NO confirm -> autonomous watchdog rollback.
         mvc_csrf = admin.token(f'/manage/apply?hostId={unix_id}')
@@ -481,6 +493,42 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         require(udp_loopback(socket.AF_INET, '127.0.0.1') and not udp_loopback(socket.AF_INET6, '::1'),
                 'TLS confirm did not persist IPv6 UDP drop')
 
+        # Part 3b: Multi-table (filter + nat + bridge) over TLS: watchdog rollback removes aux tables, then confirm persists all 3 tables.
+        mt_start1 = json.loads(admin.request('/controller/apply/start', 200, json_body={
+            'hostId': tls_id, 'revision': 3, 'confirmationTimeoutSeconds': 2,
+        }, headers={'RequestVerificationToken': admin_csrf})[0])
+        require(mt_start1['outcome'] == 'appliedPendingConfirmation', f'Multi-table start1 failed: {mt_start1}')
+        nat_ok, nat_out = table_exists('inet', 'nergal_nat')
+        br_ok, br_out = table_exists('bridge', 'nergal_bridge')
+        require(nat_ok and 'nergal:v1:' in nat_out and '198.51.100.2' in nat_out, f'nergal_nat missing during pending apply: {nat_out}')
+        require(br_ok and 'nergal:v1:' in br_out and 'br0' in br_out, f'nergal_bridge missing during pending apply: {br_out}')
+
+        mt_restored = wait_until(
+            lambda: (lambda r: r if r.get('outcome') == 'matched' else None)(
+                json.loads(admin.request(f'/controller/apply/status?hostId={tls_id}', 200)[0])),
+            timeout=10.0,
+            message='Watchdog did not roll back unconfirmed multi-table apply')
+        require(mt_restored['revision'] == '3', f'Unexpected post-multitable-rollback status: {mt_restored}')
+        require(not table_exists('inet', 'nergal_nat')[0] and not table_exists('bridge', 'nergal_bridge')[0],
+                'Autonomous watchdog rollback did not delete auxiliary NAT/bridge tables')
+
+        mt_start2 = json.loads(admin.request('/controller/apply/start', 200, json_body={
+            'hostId': tls_id, 'revision': 3, 'confirmationTimeoutSeconds': 15,
+        }, headers={'RequestVerificationToken': admin_csrf})[0])
+        require(mt_start2['outcome'] == 'appliedPendingConfirmation', f'Multi-table start2 failed: {mt_start2}')
+        mt_conf = json.loads(admin.request('/controller/apply/confirm', 200, json_body={
+            'hostId': tls_id,
+            'operationId': mt_start2['operationId'],
+            'watchdogId': mt_start2['watchdogId'],
+            'targetRevision': 3,
+        }, headers={'RequestVerificationToken': admin_csrf})[0])
+        require(mt_conf['outcome'] == 'confirmed' and mt_conf['revision'] == '4' and mt_conf['lastKnownRevision'] == '4',
+                f'Multi-table confirm failed: {mt_conf}')
+        require(table_exists('inet', 'nergal_nat')[0] and table_exists('bridge', 'nergal_bridge')[0],
+                'Confirmed multi-table apply did not persist auxiliary NAT and bridge tables')
+        require(udp_loopback(socket.AF_INET, '127.0.0.1') and udp_loopback(socket.AF_INET6, '::1'),
+                'Confirmed multi-table apply did not update filter table enforcement')
+
         web_proc.terminate()
         web_proc.wait(timeout=10)
         web_log.close()
@@ -496,7 +544,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         require('Start confirmed apply' not in auditor_html, 'Auditor rendered apply start controls')
         require('matched' in auditor_html, 'Auditor did not see live matched status')
         aud_status = json.loads(auditor.request(f'/controller/apply/status?hostId={tls_id}', 200)[0])
-        require(aud_status['outcome'] == 'matched' and aud_status['revision'] == '3', f'Unexpected auditor status: {aud_status}')
+        require(aud_status['outcome'] == 'matched' and aud_status['revision'] == '4', f'Unexpected auditor status: {aud_status}')
 
         aud_csrf = auditor.token('/session')
         auditor.request('/manage/apply/start', 403, form={
@@ -510,10 +558,9 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
                 'hostId': unix_id, 'revision': 1, 'operationId': unix_id, 'watchdogId': unix_id,
             }, headers={'RequestVerificationToken': aud_csrf})
 
-        # Verify controller audit trail recorded start, rejected scope, rollback, and confirm actions cleanly.
+        # Verify controller audit trail recorded start, rollback, and confirm actions cleanly.
         entries = json.loads(auditor.request('/controller/audit', 200)[0])['entries']
         actions = [(e['action'], e['target'], e['outcome'], e['detailCode']) for e in entries]
-        require(('apply.start', 'unix-agent', 'rejected', 'policy.unsupportedScope') in actions, 'Missing scope rejection audit')
         require(('apply.confirm', 'unix-agent', 'confirmed', None) in actions, 'Missing unix confirm audit')
         require(('apply.rollback', 'tls-agent', 'rolled_back', None) in actions, 'Missing tls rollback audit')
         require(('apply.confirm', 'tls-agent', 'confirmed', None) in actions, 'Missing tls confirm audit')

@@ -228,10 +228,11 @@ across both JSON and MVC audit views.
 stages `Nergal.Web` under unprivileged mapped UID `1` (`CapEff == 0`) against
 root-owned `nergal-agent control-serve` and `nergal-agent tls-serve` processes in
 fresh user/network namespaces, verifying `Auditor` mutation denial (`403`),
-fail-closed NAT scope rejection (`policy.unsupportedScope`), MVC `/manage/apply/start`
-real UDP loopback packet enforcement + autonomous watchdog rollback after missed
-confirmation, MVC confirmation revision promotion, and TLS 1.3 pinned mTLS explicit
-rollback and confirmation against kernel packets while preserving foreign tables.
+MVC `/manage/apply/start` real UDP loopback packet enforcement + autonomous
+watchdog rollback after missed confirmation, MVC confirmation revision promotion,
+TLS 1.3 pinned mTLS explicit rollback and confirmation, and multi-table
+(`inet nergal_filter` + `inet nergal_nat` + `bridge nergal_bridge`) watchdog
+rollback and confirmed persistence while preserving foreign tables.
 
 ## Continuous integration
 

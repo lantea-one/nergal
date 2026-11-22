@@ -67,6 +67,20 @@ internal sealed class AgentControlHandler
             }
 
             var status = journal.ReadResourceStatus(actual, ns);
+            if (status.Outcome == AgentStatusOutcome.Matched && expected is not null)
+            {
+                var aux = await NativeNft.TryInspectAuxiliaryTablesAsync(expected.Identity, cancellationToken).ConfigureAwait(false);
+                if (aux is null)
+                {
+                    return new AgentControlReply(AgentControlOutcome.Unavailable, revision: status.Revision, errorCode: "observation.unavailable");
+                }
+
+                if (!AgentCommands.AuxiliaryTablesMatchArtifact(aux, enrollment.Artifact))
+                {
+                    return new AgentControlReply(AgentControlOutcome.Drift, revision: status.Revision, errorCode: "resource.drift");
+                }
+            }
+
             return status.Outcome switch
             {
                 AgentStatusOutcome.Matched => new AgentControlReply(AgentControlOutcome.Matched, revision: status.Revision),
@@ -142,7 +156,24 @@ internal sealed class AgentControlHandler
                 return new AgentControlReply(AgentControlOutcome.Drift, revision: enrollment.Ownership.Revision, errorCode: "resource.drift");
             }
 
-            var compiled = NftFilterCompiler.Compile(request.Policy!, expected.Identity);
+            var beforeAux = await NativeNft.TryInspectAuxiliaryTablesAsync(expected.Identity, cancellationToken).ConfigureAwait(false);
+            if (beforeAux is null)
+            {
+                return new AgentControlReply(AgentControlOutcome.Unavailable, revision: enrollment.Ownership.Revision, errorCode: "observation.unavailable");
+            }
+
+            if (!AgentCommands.AuxiliaryTablesMatchArtifact(beforeAux, enrollment.Artifact))
+            {
+                return new AgentControlReply(AgentControlOutcome.Drift, revision: enrollment.Ownership.Revision, errorCode: "resource.drift");
+            }
+
+            var bundle = request.ResolveBundle();
+            if (bundle is null)
+            {
+                return new AgentControlReply(AgentControlOutcome.Rejected, revision: enrollment.Ownership.Revision, errorCode: "policy.invalid");
+            }
+
+            var compiled = NftPolicyBundleCompiler.Compile(bundle, expected.Identity);
             if (!compiled.IsSuccess || compiled.Candidate is null)
             {
                 var diagnostic = SafeErrorCode(compiled.Diagnostics.FirstOrDefault()?.Code, "policy.invalid");
@@ -155,7 +186,7 @@ internal sealed class AgentControlHandler
                 return new AgentControlReply(AgentControlOutcome.Rejected, revision: enrollment.Ownership.Revision, errorCode: "candidate.unchanged");
             }
 
-            var checkBatch = "delete table inet " + NftFilterCompiler.TableName + "\n" + candidateArtifact;
+            var checkBatch = AgentCommands.BuildDeletePrefix(beforeAux) + candidateArtifact;
             try
             {
                 await NativeNft.Run(["--check", "--file", "-"], checkBatch, cancellationToken).ConfigureAwait(false);
@@ -307,6 +338,41 @@ internal sealed class AgentControlHandler
                     watchdogId: watchdogId,
                     activePhase: active.Session.Phase,
                     errorCode: "observation.unavailable");
+            }
+
+            var expected = journal.ReadExpectedResource();
+            if (expected is null)
+            {
+                return new AgentControlReply(
+                    AgentControlOutcome.Unbound,
+                    revision: enrollment.Ownership.Revision,
+                    operationId: operationId,
+                    watchdogId: watchdogId,
+                    activePhase: active.Session.Phase,
+                    errorCode: "resource.unbound");
+            }
+
+            var aux = await NativeNft.TryInspectAuxiliaryTablesAsync(expected.Identity, cancellationToken).ConfigureAwait(false);
+            if (aux is null)
+            {
+                return new AgentControlReply(
+                    AgentControlOutcome.Unavailable,
+                    revision: enrollment.Ownership.Revision,
+                    operationId: operationId,
+                    watchdogId: watchdogId,
+                    activePhase: active.Session.Phase,
+                    errorCode: "observation.unavailable");
+            }
+
+            if (!AgentCommands.AuxiliaryTablesMatchArtifact(aux, active.Candidate))
+            {
+                return new AgentControlReply(
+                    AgentControlOutcome.Rejected,
+                    revision: enrollment.Ownership.Revision,
+                    operationId: operationId,
+                    watchdogId: watchdogId,
+                    activePhase: active.Session.Phase,
+                    errorCode: "resource.drift");
             }
 
             var confirmed = journal.ConfirmBound(operationId, active.Session.Plan, watchdogId, actual, ns);

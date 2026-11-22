@@ -9,6 +9,7 @@ using Nergal.Core.Agent;
 using Nergal.Core.Deployment;
 using Nergal.Core.Policy;
 using Nergal.LocalTransport;
+using Nergal.Nftables;
 using Nergal.RemoteTransport;
 
 namespace Nergal.Core.Tests;
@@ -345,6 +346,110 @@ public sealed class AgentControlProtocolTests
 
         await cts.CancelAsync();
         await serverTask;
+    }
+
+    /// <summary>Multi-table bundles round-trip through the agent control codec and auxiliary table helpers fail closed on unowned collisions.</summary>
+    [Fact]
+    public void MultiTableBundle_RoundTripsInControlCodecAndValidatesAuxiliaryEcho()
+    {
+        var filter = new FilterPolicy(
+            2,
+            FilterVerdict.Accept,
+            FilterVerdict.Drop,
+            FilterVerdict.Accept,
+            [
+                new FilterRule(
+                    IpFamily.IPv4,
+                    FilterProtocol.Tcp,
+                    FilterVerdict.Accept,
+                    DestinationPort: 443,
+                    Chain: FilterChainKind.Input),
+            ]);
+        var nat = new NatPolicy(
+            1,
+            [],
+            [
+                new SnatRule(
+                    IpFamily.IPv4,
+                    new NetworkPrefix("198.51.100.0/24"),
+                    "203.0.113.2",
+                    OutputInterface: "wan0"),
+            ]);
+        var bridge = new BridgePolicy(1, FilterVerdict.Accept, [
+            new BridgeFilterRule(
+                BridgeEtherType.IPv4,
+                FilterVerdict.Drop,
+                InputInterface: "br0"),
+        ]);
+        var bundle = new FirewallPolicyBundle(1, filter, nat, bridge);
+
+        var opId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var wdId = Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var request = new AgentControlRequest(AgentControlCommand.PrepareApply, opId, wdId, 15, bundle: bundle);
+        var encoded = AgentControlCodec.EncodeRequest(request);
+        var decoded = AgentControlCodec.DecodeRequest(encoded);
+
+        Assert.NotNull(decoded.Request);
+        var resolved = decoded.Request!.ResolveBundle();
+        Assert.NotNull(resolved);
+        Assert.NotNull(resolved!.Nat);
+        Assert.NotNull(resolved.Bridge);
+        Assert.Equal(filter.InputDefaultVerdict, resolved.Filter.InputDefaultVerdict);
+        Assert.Single(resolved.Filter.Rules);
+        Assert.Single(resolved.Nat!.SnatRules);
+        Assert.Single(resolved.Bridge!.Rules);
+
+        var identity = new NftTableIdentity(
+            Guid.Parse("12345678-1234-1234-1234-1234567890ab"),
+            Guid.Parse("abcdefab-cdef-abcd-efab-cdefabcdefab"));
+        var compiled = NftPolicyBundleCompiler.Compile(bundle, identity);
+        Assert.True(compiled.IsSuccess);
+        Assert.True(NftPolicyBundleCompiler.ArtifactContainsNat(compiled.Candidate!));
+        Assert.True(NftPolicyBundleCompiler.ArtifactContainsBridge(compiled.Candidate!));
+        var primary = NftPolicyBundleCompiler.ExtractPrimaryFilterArtifact(compiled.Candidate!);
+        Assert.Equal(NftFilterCompiler.Compile(filter, identity).Candidate, primary);
+
+        var listOwned = $$$"""
+            {"nftables":[
+              {"metainfo":{"version":"1.0","release_name":"test","json_schema_version":1}},
+              {"table":{"family":"inet","name":"nergal_filter","handle":1,"comment":"{{{identity.Comment}}}"}},
+              {"table":{"family":"inet","name":"nergal_nat","handle":2,"comment":"{{{identity.Comment}}}"}},
+              {"table":{"family":"bridge","name":"nergal_bridge","handle":3,"comment":"{{{identity.Comment}}}"}},
+              {"table":{"family":"inet","name":"foreign_fixture","handle":4}}
+            ]}
+            """;
+        Assert.True(NftTableObservation.TryInspectAuxiliaryTables(listOwned, identity, out var ownedPresence, out var ownedErr));
+        Assert.Null(ownedErr);
+        Assert.True(NftPolicyBundleCompiler.AuxiliaryTablesMatchArtifact(ownedPresence!, compiled.Candidate!));
+
+        var listUnowned = """
+            {"nftables":[
+              {"metainfo":{"version":"1.0","release_name":"test","json_schema_version":1}},
+              {"table":{"family":"inet","name":"nergal_nat","handle":2,"comment":"nergal-owner=00000000-0000-0000-0000-000000000001;resource=00000000-0000-0000-0000-000000000002"}}
+            ]}
+            """;
+        Assert.True(NftTableObservation.TryInspectAuxiliaryTables(listUnowned, identity, out var unownedPresence, out _));
+        Assert.True(unownedPresence!.NatExists);
+        Assert.False(unownedPresence.NatOwned);
+        Assert.False(NftPolicyBundleCompiler.AuxiliaryTablesMatchArtifact(unownedPresence, compiled.Candidate!));
+
+        var validEcho = """
+            {"nftables":[
+              {"create":{"table":{"family":"inet","name":"nergal_filter","handle":10,"comment":"__COMMENT__"}}},
+              {"add":{"chain":{"family":"inet","table":"nergal_filter","name":"input","handle":1,"type":"filter","hook":"input","prio":0,"policy":"accept"}}},
+              {"create":{"table":{"family":"inet","name":"nergal_nat","handle":11,"comment":"__COMMENT__"}}},
+              {"add":{"chain":{"family":"inet","table":"nergal_nat","name":"postrouting","handle":2,"type":"nat","hook":"postrouting","prio":100}}},
+              {"create":{"table":{"family":"bridge","name":"nergal_bridge","handle":12,"comment":"__COMMENT__"}}},
+              {"add":{"chain":{"family":"bridge","table":"nergal_bridge","name":"forward","handle":3,"type":"filter","hook":"forward","prio":0,"policy":"accept"}}}
+            ]}
+            """.Replace("__COMMENT__", identity.Comment, StringComparison.Ordinal);
+        var parsedEcho = NftTableObservation.ParseBundleReplacementEcho(validEcho, identity, expectNat: true, expectBridge: true);
+        Assert.True(parsedEcho.IsSuccess);
+        Assert.Equal(10UL, parsedEcho.Observation!.TableHandle);
+
+        var missingNatEcho = NftTableObservation.ParseBundleReplacementEcho(validEcho, identity, expectNat: false, expectBridge: true);
+        Assert.False(missingNatEcho.IsSuccess);
+        Assert.Equal("observation.scope", missingNatEcho.ErrorCode);
     }
 
     private static X509Certificate2 CreateLeafCert(string subject, string ekuOid, DateTimeOffset notBefore, DateTimeOffset notAfter)

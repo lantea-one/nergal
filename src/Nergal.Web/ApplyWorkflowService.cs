@@ -108,15 +108,6 @@ public sealed class ApplyWorkflowService
                 new AgentControlReply(AgentControlOutcome.Rejected, errorCode: "policy.invalid"));
         }
 
-        // Phase 10 control protocol carries FilterPolicy for the host's owned inet nergal_filter table.
-        // Multi-table NAT/bridge bundles fail closed rather than silently dropping policy sections.
-        if (bundle.Nat is not null || bundle.Bridge is not null)
-        {
-            _ = _store.AppendAudit(actorId, actorRole, "apply.start", host.Name, revision, "rejected", "policy.unsupportedScope");
-            return new ApplyWorkflowResult(true, true, host, policyRevision,
-                new AgentControlReply(AgentControlOutcome.Rejected, errorCode: "policy.unsupportedScope"));
-        }
-
         var operationId = Guid.NewGuid();
         var watchdogId = Guid.NewGuid();
         var request = new AgentControlRequest(
@@ -124,7 +115,7 @@ public sealed class ApplyWorkflowService
             operationId,
             watchdogId,
             confirmationTimeoutSeconds,
-            bundle.Filter);
+            bundle: bundle);
 
         var reply = await _dispatcher.SendAsync(host, request, cancellationToken).ConfigureAwait(false);
         _ = _store.AppendAudit(actorId, actorRole, "apply.start", host.Name, revision, ToAuditOutcome(reply.Outcome), reply.ErrorCode);

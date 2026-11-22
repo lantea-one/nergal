@@ -126,4 +126,57 @@ public static class NftPolicyBundleCompiler
 
         return new(text.ToString(), []);
     }
+
+    /// <summary>Returns whether a compiled bundle artifact declares the owned <c>inet nergal_nat</c> table.</summary>
+    public static bool ArtifactContainsNat(string artifact)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+        return artifact.Contains("create table inet " + NftNatCompiler.TableName + " ", StringComparison.Ordinal);
+    }
+
+    /// <summary>Returns whether a compiled bundle artifact declares the owned <c>bridge nergal_bridge</c> table.</summary>
+    public static bool ArtifactContainsBridge(string artifact)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+        return artifact.Contains("create table bridge " + NftBridgeCompiler.TableName + " ", StringComparison.Ordinal);
+    }
+
+    /// <summary>Extracts the primary <c>inet nergal_filter</c> portion from a single-table or multi-table bundle artifact.</summary>
+    public static string ExtractPrimaryFilterArtifact(string artifact)
+    {
+        ArgumentNullException.ThrowIfNull(artifact);
+        var natMarker = "\ncreate table inet " + NftNatCompiler.TableName + " ";
+        var bridgeMarker = "\ncreate table bridge " + NftBridgeCompiler.TableName + " ";
+        var natIdx = artifact.IndexOf(natMarker, StringComparison.Ordinal);
+        var bridgeIdx = artifact.IndexOf(bridgeMarker, StringComparison.Ordinal);
+        var cut = -1;
+        if (natIdx >= 0 && bridgeIdx >= 0)
+        {
+            cut = Math.Min(natIdx, bridgeIdx) + 1;
+        }
+        else if (natIdx >= 0)
+        {
+            cut = natIdx + 1;
+        }
+        else if (bridgeIdx >= 0)
+        {
+            cut = bridgeIdx + 1;
+        }
+
+        return cut >= 0 ? artifact[..cut] : artifact;
+    }
+
+    /// <summary>Returns whether observed auxiliary table presence and ownership agree with a compiled bundle artifact.</summary>
+    public static bool AuxiliaryTablesMatchArtifact(AuxiliaryTablePresence presence, string artifact)
+    {
+        ArgumentNullException.ThrowIfNull(presence);
+        ArgumentNullException.ThrowIfNull(artifact);
+        if ((presence.NatExists && !presence.NatOwned) || (presence.BridgeExists && !presence.BridgeOwned))
+        {
+            return false;
+        }
+
+        return presence.NatExists == ArtifactContainsNat(artifact) &&
+               presence.BridgeExists == ArtifactContainsBridge(artifact);
+    }
 }
