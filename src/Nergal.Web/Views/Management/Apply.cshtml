@@ -1,93 +1,134 @@
-@{ Layout = null; }
 @model Nergal.Web.ConfirmedApplyViewModel
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Confirmed apply · nergal</title>
-</head>
-<body>
-<main>
-    <h1>Two-phase confirmed apply</h1>
-    <p>Signed in as <code>@Model.ActorId</code> (role: <code>@Model.ActorRole</code>).</p>
-    <nav>
-        <a href="@Url.Content("~/manage")">Fleet dashboard</a> ·
-        <a href="@Url.Content("~/manage/policies")">Policy editor &amp; diff</a> ·
-        <a href="@Url.Content("~/manage/audit")">Audit &amp; revision history</a> ·
-        <a href="@Url.Content("~/session")">Session</a>
-    </nav>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Confirmed apply";
+    ViewData["ActiveNav"] = "apply";
+    ViewData["ActorRole"] = Model.ActorRole;
+    ViewData["ShowManageNav"] = true;
+}
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>Two-phase confirmed apply</h1>
+            <p class="page-subtitle">Dispatch compiled multi-table bundles with an autonomous local watchdog rollback window.</p>
+        </div>
+        <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">Edit Policy Bundles</a>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.StatusMessage))
     {
-        <p role="status">@Model.StatusMessage</p>
+        <div class="alert alert-success" role="status">@Model.StatusMessage</div>
     }
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p role="alert">@Model.ErrorMessage</p>
+        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
     }
 
     @if (Model.Hosts.Count == 0)
     {
-        <section>
+        <section class="card">
             <h2>Target host</h2>
-            <p>No managed hosts registered yet. Register a host from the fleet dashboard before dispatching an apply.</p>
+            <p class="muted">No managed hosts registered yet. Register a host from the <a href="@Url.Content("~/manage")">fleet dashboard</a> before dispatching an apply.</p>
         </section>
     }
     else
     {
-        <section>
-            <h2>Target host selection</h2>
-            <form method="get" action="@Url.Content("~/manage/apply")">
-                <label>Host
-                    <select name="hostId">
+        <section class="card">
+            <div class="card-header">
+                <h2>1. Target host selection</h2>
+            </div>
+            <form method="get" action="@Url.Content("~/manage/apply")" class="form-grid">
+                <div class="field span-2">
+                    <label for="apply-host-select">Enrolled host</label>
+                    <select id="apply-host-select" name="hostId">
                         @foreach (var host in Model.Hosts)
                         {
                             <option value="@host.Id.ToString("D")" selected="@(Model.SelectedHost?.Id == host.Id)">@host.Name (@host.TransportKind — rev @host.LastKnownRevision)</option>
                         }
                     </select>
-                </label>
-                <button type="submit">Refresh live status</button>
+                </div>
+                <div class="field">
+                    <button type="submit" class="btn btn-secondary">Refresh live status</button>
+                </div>
             </form>
         </section>
 
         @if (Model.SelectedHost is { } selectedHost)
         {
-            <section>
-                <h2>Live agent status for <code>@selectedHost.Name</code></h2>
-                <p>Transport: <code>@selectedHost.TransportKind</code> at <code>@selectedHost.Endpoint</code> · Controller recorded revision: <code>@selectedHost.LastKnownRevision</code></p>
+            var outcomeStr = Model.LiveReply is { } lr ? Nergal.Web.ControllerStateHost.FormatOutcome(lr.Outcome) : "unknown";
+            var outcomeBadge = outcomeStr is "matched" or "confirmed"
+                ? "badge-success"
+                : outcomeStr is "appliedPendingConfirmation" or "busy"
+                    ? "badge-warning"
+                    : "badge-danger";
+
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>2. Live agent status — <code>@selectedHost.Name</code></h2>
+                        <p class="muted mb-0" style="font-size: 0.86rem;">
+                            Transport <code>@selectedHost.TransportKind</code> at <code>@selectedHost.Endpoint</code> · Controller revision <code>@selectedHost.LastKnownRevision</code>
+                        </p>
+                    </div>
+                    <span class="badge @outcomeBadge">@outcomeStr</span>
+                </div>
+
                 @if (Model.LiveReply is { } reply)
                 {
-                    <dl>
-                        <dt>Outcome</dt><dd><code>@Nergal.Web.ControllerStateHost.FormatOutcome(reply.Outcome)</code></dd>
+                    <dl class="meta-grid">
+                        <div class="meta-item">
+                            <dt>Outcome</dt>
+                            <dd><code>@outcomeStr</code></dd>
+                        </div>
                         @if (reply.Revision is { } agentRev)
                         {
-                            <dt>Agent baseline revision</dt><dd><code>@agentRev</code></dd>
+                            <div class="meta-item">
+                                <dt>Agent baseline revision</dt>
+                                <dd><code>@agentRev</code></dd>
+                            </div>
                         }
                         @if (reply.ActivePhase is { } phase)
                         {
-                            <dt>Active phase</dt><dd><code>@Nergal.Web.ControllerStateHost.FormatPhase(phase)</code></dd>
+                            <div class="meta-item">
+                                <dt>Active phase</dt>
+                                <dd><code>@Nergal.Web.ControllerStateHost.FormatPhase(phase)</code></dd>
+                            </div>
                         }
                         @if (reply.RemainingSeconds is { } rem)
                         {
-                            <dt>Watchdog countdown</dt><dd><code>@rem s remaining</code></dd>
+                            <div class="meta-item">
+                                <dt>Watchdog countdown</dt>
+                                <dd><code data-countdown-seconds="@rem">@rem s remaining</code></dd>
+                            </div>
                         }
                         @if (reply.OperationId is { } opId)
                         {
-                            <dt>Operation ID</dt><dd><code>@opId.ToString("D")</code></dd>
+                            <div class="meta-item">
+                                <dt>Operation ID</dt>
+                                <dd><code>@opId.ToString("D")</code></dd>
+                            </div>
                         }
                         @if (reply.WatchdogId is { } wdId)
                         {
-                            <dt>Watchdog ID</dt><dd><code>@wdId.ToString("D")</code></dd>
+                            <div class="meta-item">
+                                <dt>Watchdog ID</dt>
+                                <dd><code>@wdId.ToString("D")</code></dd>
+                            </div>
                         }
                         @if (!string.IsNullOrEmpty(reply.CandidateDigest))
                         {
-                            <dt>Candidate SHA-256</dt><dd><code>@reply.CandidateDigest</code></dd>
+                            <div class="meta-item">
+                                <dt>Candidate SHA-256</dt>
+                                <dd><code>@reply.CandidateDigest</code></dd>
+                            </div>
                         }
                         @if (!string.IsNullOrEmpty(reply.ErrorCode))
                         {
-                            <dt>Detail</dt><dd><code>@reply.ErrorCode</code></dd>
+                            <div class="meta-item">
+                                <dt>Detail</dt>
+                                <dd><code>@reply.ErrorCode</code></dd>
+                            </div>
                         }
                     </dl>
                 }
@@ -99,81 +140,130 @@
                      Model.LiveReply?.WatchdogId is { } pendingWd &&
                      Model.LiveReply.ActivePhase == Nergal.Core.Deployment.ApplyPhase.AwaitingConfirmation)
                 {
-                    <section>
-                        <h2>Pending confirmation window</h2>
-                        <form method="post" action="@Url.Content("~/manage/apply/confirm")">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
-                            <input type="hidden" name="operationId" value="@pendingOp.ToString("D")" />
-                            <input type="hidden" name="watchdogId" value="@pendingWd.ToString("D")" />
-                            @if (Model.SelectedRevision is { } selRev)
-                            {
-                                <input type="hidden" name="targetRevision" value="@selRev" />
-                            }
-                            <button type="submit">Confirm active apply</button>
-                        </form>
-                        <form method="post" action="@Url.Content("~/manage/apply/rollback")">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
-                            <input type="hidden" name="operationId" value="@pendingOp.ToString("D")" />
-                            <input type="hidden" name="watchdogId" value="@pendingWd.ToString("D")" />
-                            @if (Model.SelectedRevision is { } rbRev)
-                            {
-                                <input type="hidden" name="targetRevision" value="@rbRev" />
-                            }
-                            <button type="submit">Immediate rollback</button>
-                        </form>
+                    <section class="card" style="border-color: var(--warning);">
+                        <div class="card-header">
+                            <h2>3. Pending confirmation window</h2>
+                            <span class="badge badge-warning">Watchdog armed</span>
+                        </div>
+                        <p class="muted">
+                            The candidate ruleset is active on <code>@selectedHost.Name</code>. Confirm now to make it permanent, or roll back immediately. If connectivity is lost, the local watchdog will automatically restore the previous baseline.
+                        </p>
+                        <div class="countdown-bar" aria-hidden="true">
+                            <div class="countdown-fill" data-countdown-fill style="width: 100%;"></div>
+                        </div>
+                        <div class="btn-group">
+                            <form class="inline-form" method="post" action="@Url.Content("~/manage/apply/confirm")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
+                                <input type="hidden" name="operationId" value="@pendingOp.ToString("D")" />
+                                <input type="hidden" name="watchdogId" value="@pendingWd.ToString("D")" />
+                                @if (Model.SelectedRevision is { } selRev)
+                                {
+                                    <input type="hidden" name="targetRevision" value="@selRev" />
+                                }
+                                <button type="submit" class="btn btn-success">Confirm active apply</button>
+                            </form>
+                            <form class="inline-form" method="post" action="@Url.Content("~/manage/apply/rollback")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
+                                <input type="hidden" name="operationId" value="@pendingOp.ToString("D")" />
+                                <input type="hidden" name="watchdogId" value="@pendingWd.ToString("D")" />
+                                @if (Model.SelectedRevision is { } rbRev)
+                                {
+                                    <input type="hidden" name="targetRevision" value="@rbRev" />
+                                }
+                                <button type="submit" class="btn btn-danger">Immediate rollback</button>
+                            </form>
+                        </div>
                     </section>
                 }
                 else if (Model.Revisions.Count > 0)
                 {
-                    <section>
-                        <h2>Start confirmed apply</h2>
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>3. Start confirmed apply</h2>
+                            <span class="badge badge-primary">Two-phase safe apply</span>
+                        </div>
                         <form method="post" action="@Url.Content("~/manage/apply/start")">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
-                            <label>Policy revision
-                                <select name="revision">
-                                    @foreach (var rev in Model.Revisions)
-                                    {
-                                        <option value="@rev.Revision" selected="@(Model.SelectedRevision == rev.Revision)">Revision @rev.Revision (@rev.CandidateDigest[..8])</option>
-                                    }
-                                </select>
-                            </label>
-                            <label>Confirmation timeout (seconds, 1–3600)
-                                <input type="number" name="confirmationTimeoutSeconds" min="1" max="3600" value="30" required />
-                            </label>
-                            <button type="submit">Start confirmed apply</button>
+                            <div class="form-grid">
+                                <div class="field span-2">
+                                    <label for="apply-revision">Policy revision</label>
+                                    <select id="apply-revision" name="revision">
+                                        @foreach (var rev in Model.Revisions)
+                                        {
+                                            <option value="@rev.Revision" selected="@(Model.SelectedRevision == rev.Revision)">
+                                                Revision @rev.Revision (@rev.CandidateDigest[..8])@(string.IsNullOrWhiteSpace(rev.Summary) ? "" : " — " + rev.Summary)
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="apply-timeout">Confirmation timeout (1–3600s)</label>
+                                    <input id="apply-timeout" type="number" name="confirmationTimeoutSeconds" min="1" max="3600" value="30" required />
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="submit">Start confirmed apply</button>
+                            </div>
                         </form>
                     </section>
                 }
                 else
                 {
-                    <section>
-                        <h2>Start confirmed apply</h2>
-                        <p>No saved policy revisions exist yet. Create and save a policy revision in the editor before applying.</p>
+                    <section class="card">
+                        <h2>3. Start confirmed apply</h2>
+                        <p class="muted mb-0">No saved policy revisions exist yet. Create and save a policy revision in the <a href="@Url.Content("~/manage/policies")">policy editor</a> before applying.</p>
                     </section>
                 }
             }
         }
     }
 
-    <section>
-        <h2>Recent audit activity</h2>
+    <section class="card">
+        <div class="card-header">
+            <h2>Recent apply &amp; controller audit activity</h2>
+            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/audit")">View full log</a>
+        </div>
         @if (Model.RecentAudit.Count == 0)
         {
-            <p>No audit records yet.</p>
+            <p class="muted mb-0">No audit records yet.</p>
         }
         else
         {
-            <ul>
-                @foreach (var entry in Model.RecentAudit)
-                {
-                    <li>#@entry.Sequence [@entry.TimestampUtc.ToString("u")] <code>@entry.ActorId</code>: @entry.Action on <code>@entry.Target</code> -> @entry.Outcome</li>
-                }
-            </ul>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Seq</th>
+                            <th>Timestamp (UTC)</th>
+                            <th>Actor</th>
+                            <th>Action</th>
+                            <th>Target</th>
+                            <th>Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Model.RecentAudit)
+                        {
+                            var badge = entry.Outcome is "confirmed" or "saved" or "registered"
+                                ? "badge-success"
+                                : entry.Outcome is "rejected" or "failed"
+                                    ? "badge-danger"
+                                    : "badge-warning";
+                            <tr>
+                                <td>#@entry.Sequence</td>
+                                <td class="mono">@entry.TimestampUtc.ToString("u")</td>
+                                <td><code>@entry.ActorId</code></td>
+                                <td><code>@entry.Action</code></td>
+                                <td><code>@entry.Target</code></td>
+                                <td><span class="badge @badge">@entry.Outcome</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
     </section>
 </main>
-</body>
-</html>

@@ -62,6 +62,16 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-policies-rule-add", "manage/policies/rules/add", new { controller = "Management", action = "AddFilterRule" });
         app.MapControllerRoute("manage-policies-rule-remove", "manage/policies/rules/remove", new { controller = "Management", action = "RemoveFilterRule" });
         app.MapControllerRoute("manage-policies-rule-move", "manage/policies/rules/move", new { controller = "Management", action = "MoveFilterRule" });
+        app.MapControllerRoute("manage-policies-filter-defaults", "manage/policies/filter/defaults", new { controller = "Management", action = "UpdateFilterDefaults" });
+        app.MapControllerRoute("manage-policies-nat-dnat-add", "manage/policies/nat/dnat/add", new { controller = "Management", action = "AddDnatRule" });
+        app.MapControllerRoute("manage-policies-nat-dnat-remove", "manage/policies/nat/dnat/remove", new { controller = "Management", action = "RemoveDnatRule" });
+        app.MapControllerRoute("manage-policies-nat-snat-add", "manage/policies/nat/snat/add", new { controller = "Management", action = "AddSnatRule" });
+        app.MapControllerRoute("manage-policies-nat-snat-remove", "manage/policies/nat/snat/remove", new { controller = "Management", action = "RemoveSnatRule" });
+        app.MapControllerRoute("manage-policies-nat-clear", "manage/policies/nat/clear", new { controller = "Management", action = "ClearNat" });
+        app.MapControllerRoute("manage-policies-bridge-defaults", "manage/policies/bridge/defaults", new { controller = "Management", action = "UpdateBridgeDefaults" });
+        app.MapControllerRoute("manage-policies-bridge-add", "manage/policies/bridge/rules/add", new { controller = "Management", action = "AddBridgeRule" });
+        app.MapControllerRoute("manage-policies-bridge-remove", "manage/policies/bridge/rules/remove", new { controller = "Management", action = "RemoveBridgeRule" });
+        app.MapControllerRoute("manage-policies-bridge-clear", "manage/policies/bridge/clear", new { controller = "Management", action = "ClearBridge" });
         app.MapControllerRoute("manage-apply", "manage/apply", new { controller = "Management", action = "Apply" });
         app.MapControllerRoute("manage-apply-start", "manage/apply/start", new { controller = "Management", action = "StartApply" });
         app.MapControllerRoute("manage-apply-confirm", "manage/apply/confirm", new { controller = "Management", action = "ConfirmApply" });

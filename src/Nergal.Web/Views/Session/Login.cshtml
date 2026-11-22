@@ -1,24 +1,38 @@
 @model bool?
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Administrator login · nergal</title></head>
-<body>
-<main>
-    <h1>Administrator login</h1>
-    @if (Model == false) { <p role="alert">Sign-in failed.</p> }
-    <form method="post" action="@Url.Content("~/login")">
-        @Html.AntiForgeryToken()
-        <p><label>Username <input name="username" autocomplete="username" maxlength="64" required></label></p>
-        <p><label>Password <input name="password" type="password" autocomplete="current-password" maxlength="256" required></label></p>
-        <button type="submit">Sign in</button>
-    </form>
-    @if (Url.RouteUrl("federated-login", new { controller = "Session", action = "Federated" }) is string federatedUrl)
-    {
-        <form method="post" action="@federatedUrl">
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Administrator login";
+}
+<main class="container-narrow">
+    <div class="card" style="padding: 1.75rem;">
+        <h1 style="margin: 0 0 0.25rem; font-size: 1.5rem;">Administrator login</h1>
+        <p class="muted" style="margin: 0 0 1.25rem;">Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies.</p>
+
+        @if (Model == false)
+        {
+            <div class="alert alert-danger" role="alert">Sign-in failed. Verify your credentials and try again.</div>
+        }
+
+        <form method="post" action="@Url.Content("~/login")">
             @Html.AntiForgeryToken()
-            <button type="submit">Sign in with identity provider</button>
+            <div class="field" style="margin-bottom: 0.9rem;">
+                <label for="login-username">Username</label>
+                <input id="login-username" name="username" type="text" autocomplete="username" maxlength="64" required autofocus />
+            </div>
+            <div class="field" style="margin-bottom: 1.2rem;">
+                <label for="login-password">Password</label>
+                <input id="login-password" name="password" type="password" autocomplete="current-password" maxlength="256" required />
+            </div>
+            <button type="submit" style="width: 100%;">Sign in</button>
         </form>
-    }
+
+        @if (Url.RouteUrl("federated-login", new { controller = "Session", action = "Federated" }) is string federatedUrl)
+        {
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.25rem 0;" />
+            <form method="post" action="@federatedUrl">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">Sign in with identity provider</button>
+            </form>
+        }
+    </div>
 </main>
-</body>
-</html>

@@ -1,209 +1,838 @@
-@{ Layout = null; }
 @model Nergal.Web.PolicyEditorViewModel
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Policy editor &amp; diff · nergal</title>
-</head>
-<body>
-<main>
-    <h1>Policy bundle editor &amp; candidate diff</h1>
-    <p>Role: <code>@Model.ActorRole</code>.</p>
-    <nav>
-        <a href="@Url.Content("~/manage")">Fleet dashboard</a> ·
-        <a href="@Url.Content("~/manage/apply")">Confirmed apply</a> ·
-        <a href="@Url.Content("~/manage/audit")">Audit history</a> ·
-        <a href="@Url.Content("~/session")">Session</a>
-    </nav>
-
-    @if (Model.Bundle is not null)
-    {
-        <component type="typeof(Nergal.Web.Components.PolicyBundleSummary)" render-mode="Static" param-Bundle="Model.Bundle" />
-    }
-
-    @if (Model.CanMutate)
-    {
-        <section>
-            <h2>Visual filter rule builder</h2>
-            <form method="post" action="@Url.Content("~/manage/policies/rules/add")">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                <input type="hidden" name="summary" value="@Model.Summary" />
-                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                <label>Chain
-                    <select name="chain">
-                        <option value="input">input</option>
-                        <option value="forward">forward</option>
-                        <option value="output">output</option>
-                    </select>
-                </label>
-                <label>Family
-                    <select name="family">
-                        <option value="ipv4">ipv4</option>
-                        <option value="ipv6">ipv6</option>
-                    </select>
-                </label>
-                <label>Protocol
-                    <select name="protocol">
-                        <option value="tcp">tcp</option>
-                        <option value="udp">udp</option>
-                        <option value="icmp">icmp</option>
-                        <option value="icmpv6">icmpv6</option>
-                        <option value="any">any</option>
-                    </select>
-                </label>
-                <label>Verdict
-                    <select name="verdict">
-                        <option value="accept">accept</option>
-                        <option value="drop">drop</option>
-                    </select>
-                </label>
-                <label>Source CIDR(s) <input type="text" name="sources" placeholder="192.0.2.0/24, 198.51.100.0/24" /></label>
-                <label>Destination CIDR(s) <input type="text" name="destinations" placeholder="203.0.113.0/24" /></label>
-                <label>Destination port(s) <input type="text" name="destinationPorts" placeholder="80, 443" /></label>
-                <label>ICMP/ICMPv6 type <input type="text" name="icmpType" placeholder="echo-request" /></label>
-                <label>Input iface <input type="text" name="inputInterface" placeholder="eth0" maxlength="15" /></label>
-                <label>Output iface <input type="text" name="outputInterface" placeholder="wan0" maxlength="15" /></label>
-                <label>States <input type="text" name="connectionStates" placeholder="new, established, related" /></label>
-                <button type="submit">Add filter rule to draft</button>
-            </form>
-
-            @if (Model.Bundle is { Filter.Rules.Count: > 0 } editableBundle)
+@using Nergal.Core.Policy
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Policy builder & diff";
+    ViewData["ActiveNav"] = "policies";
+    ViewData["ActorRole"] = Model.ActorRole;
+    ViewData["ShowManageNav"] = true;
+    var bundle = Model.Bundle;
+    var filterCount = bundle?.Filter.Rules.Count ?? 0;
+    var natCount = (bundle?.Nat?.DnatRules.Count ?? 0) + (bundle?.Nat?.SnatRules.Count ?? 0);
+    var bridgeCount = bundle?.Bridge?.Rules.Count ?? 0;
+}
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>Policy bundle builder &amp; candidate diff</h1>
+            <p class="page-subtitle">
+                Build dual-stack Filter, NAT, and L2 Bridge policies visually, preview native <code>nftables</code> diffs, and save immutable revisions.
+            </p>
+        </div>
+        <div class="btn-group">
+            @if (Model.Compatibility is { } compat)
             {
-                <h3>Reorder or remove filter rules</h3>
-                <ul>
-                    @for (var idx = 0; idx < editableBundle.Filter.Rules.Count; idx++)
-                    {
-                        var r = editableBundle.Filter.Rules[idx];
-                        if (r is null) { continue; }
-                        <li>
-                            Rule #@(idx + 1): <code>@r.Chain</code> <code>@r.Family</code> <code>@r.Protocol</code> <strong>@r.Verdict</strong>
-                            @if (idx > 0)
-                            {
-                                <form method="post" action="@Url.Content("~/manage/policies/rules/move")" style="display:inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                                    <input type="hidden" name="summary" value="@Model.Summary" />
-                                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                                    <input type="hidden" name="ruleIndex" value="@idx" />
-                                    <input type="hidden" name="direction" value="-1" />
-                                    <button type="submit">Move up</button>
-                                </form>
-                            }
-                            @if (idx + 1 < editableBundle.Filter.Rules.Count)
-                            {
-                                <form method="post" action="@Url.Content("~/manage/policies/rules/move")" style="display:inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                                    <input type="hidden" name="summary" value="@Model.Summary" />
-                                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                                    <input type="hidden" name="ruleIndex" value="@idx" />
-                                    <input type="hidden" name="direction" value="1" />
-                                    <button type="submit">Move down</button>
-                                </form>
-                            }
-                            <form method="post" action="@Url.Content("~/manage/policies/rules/remove")" style="display:inline">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                                <input type="hidden" name="summary" value="@Model.Summary" />
-                                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                                <input type="hidden" name="ruleIndex" value="@idx" />
-                                <button type="submit">Remove</button>
-                            </form>
-                        </li>
-                    }
-                </ul>
+                <span class="badge @(compat.IsCompatible ? "badge-success" : "badge-danger")">
+                    @compat.BackendId: @(compat.IsCompatible ? "compatible" : "incompatible")
+                </span>
             }
-        </section>
-    }
-
-    <section>
-        <h2>Bundle draft (JSON)</h2>
-        <form method="post" action="@Url.Content("~/manage/policies/preview")">
-            @Html.AntiForgeryToken()
-            <label>Compare against revision
-                <select name="compareToRevision">
-                    <option value="">(empty baseline)</option>
-                    @foreach (var rev in Model.Revisions)
-                    {
-                        <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">Revision @rev.Revision (@rev.CandidateDigest[..8])</option>
-                    }
-                </select>
-            </label>
-            <label>Summary <input type="text" name="summary" value="@Model.Summary" maxlength="256" /></label>
-            <div>
-                <textarea name="bundleJson" rows="16" cols="90">@Model.BundleJson</textarea>
-            </div>
-            <button type="submit">Preview compatibility &amp; nftables diff</button>
-            @if (Model.CanMutate)
+            @if (!string.IsNullOrEmpty(Model.CandidateDigest))
             {
-                <button type="submit" formaction="@Url.Content("~/manage/policies/save")">Save policy revision</button>
+                <span class="badge badge-neutral mono">SHA-256 @Model.CandidateDigest[..12]</span>
             }
-        </form>
-    </section>
+        </div>
+    </div>
 
     @if (Model.Diagnostics.Count > 0)
     {
-        <section role="alert">
-            <h2>Validation diagnostics</h2>
-            <ul>
+        <div class="alert alert-danger" role="alert">
+            <strong>Validation diagnostics (@Model.Diagnostics.Count)</strong>
+            <ul style="margin: 0.4rem 0 0; padding-left: 1.25rem;">
                 @foreach (var d in Model.Diagnostics)
                 {
                     <li><code>@d.Code</code> at <code>@d.Path</code></li>
                 }
             </ul>
-        </section>
+        </div>
     }
 
-    @if (Model.Compatibility is { } compat)
-    {
-        <section>
-            <h2>Backend compatibility (@compat.BackendId)</h2>
-            <p>Compatible: @(compat.IsCompatible ? "yes" : "no").</p>
-        </section>
-    }
-
-    @if (!string.IsNullOrEmpty(Model.CandidateText))
-    {
-        <section>
-            <h2>Compiled candidate (SHA-256: <code>@Model.CandidateDigest</code>)</h2>
-            <pre>@Model.CandidateText</pre>
-        </section>
-    }
-
-    @if (!string.IsNullOrEmpty(Model.UnifiedDiff))
-    {
-        <section>
-            <h2>Candidate diff preview</h2>
-            <pre>@Model.UnifiedDiff</pre>
-        </section>
-    }
-
-    <section>
-        <h2>Saved policy revisions</h2>
-        @if (Model.Revisions.Count == 0)
-        {
-            <p>No policy revisions persisted.</p>
-        }
-        else
-        {
-            <ul>
-                @foreach (var rev in Model.Revisions)
-                {
-                    <li>
-                        <a href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Revision @rev.Revision</a>
-                        — <code>@rev.CandidateDigest</code> by <code>@rev.CreatedByActor</code> (@rev.CreatedAtUtc.ToString("u"))
-                        @if (!string.IsNullOrWhiteSpace(rev.Summary))
+    <!-- Top Save / Preview Bar -->
+    <section class="card">
+        <form method="post" action="@Url.Content("~/manage/policies/preview")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="top-summary">Revision summary / change note</label>
+                    <input id="top-summary" type="text" name="summary" value="@Model.Summary" placeholder="e.g. Allow HTTPS + ICMPv4 diagnostics on WAN" maxlength="256" />
+                </div>
+                <div class="field">
+                    <label for="top-compare">Compare diff against</label>
+                    <select id="top-compare" name="compareToRevision">
+                        <option value="">(empty baseline)</option>
+                        @foreach (var rev in Model.Revisions)
                         {
-                            <span>— @rev.Summary</span>
+                            <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">
+                                Rev @rev.Revision (@rev.CandidateDigest[..8])
+                            </option>
                         }
-                    </li>
-                }
-            </ul>
-        }
+                    </select>
+                </div>
+                <div class="field">
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-secondary">Preview diff</button>
+                        @if (Model.CanMutate)
+                        {
+                            <button type="submit" class="btn btn-success" formaction="@Url.Content("~/manage/policies/save")">Save policy revision</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </form>
     </section>
+
+    <!-- Section Tabs -->
+    <div class="tabs" role="tablist" aria-label="Policy bundle sections">
+        <button type="button" class="tab-btn active" role="tab" data-tab-target="tab-filter">Filter (@filterCount)</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-nat">NAT (@natCount)</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-bridge">Bridge (@bridgeCount)</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-preview">Candidate &amp; Diff</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-json">Advanced JSON &amp; Revisions</button>
+    </div>
+
+    <!-- TAB 1: FILTER -->
+    <div class="tab-panel" data-tab-panel="tab-filter">
+        @if (Model.CanMutate && bundle is not null)
+        {
+            <section class="card">
+                <div class="card-header">
+                    <h2>Filter chain defaults (<code>inet nergal_filter</code>)</h2>
+                    <span class="badge badge-primary">Schema v@bundle.Filter.SchemaVersion</span>
+                </div>
+                <form method="post" action="@Url.Content("~/manage/policies/filter/defaults")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="f-schema">Schema version</label>
+                            <select id="f-schema" name="schemaVersion">
+                                <option value="2" selected="@(bundle.Filter.SchemaVersion == 2)">Schema 2 (Multi-chain, stateful, sets)</option>
+                                <option value="1" selected="@(bundle.Filter.SchemaVersion == 1)">Schema 1 (Input-only stateless)</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="f-in-def">Input default</label>
+                            <select id="f-in-def" name="inputDefaultVerdict">
+                                <option value="drop" selected="@(bundle.Filter.InputDefaultVerdict == FilterVerdict.Drop)">drop</option>
+                                <option value="accept" selected="@(bundle.Filter.InputDefaultVerdict == FilterVerdict.Accept)">accept</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="f-fwd-def">Forward default</label>
+                            <select id="f-fwd-def" name="forwardDefaultVerdict">
+                                <option value="drop" selected="@(bundle.Filter.ForwardDefaultVerdict == FilterVerdict.Drop)">drop</option>
+                                <option value="accept" selected="@(bundle.Filter.ForwardDefaultVerdict == FilterVerdict.Accept)">accept</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="f-out-def">Output default</label>
+                            <select id="f-out-def" name="outputDefaultVerdict">
+                                <option value="accept" selected="@(bundle.Filter.OutputDefaultVerdict == FilterVerdict.Accept)">accept</option>
+                                <option value="drop" selected="@(bundle.Filter.OutputDefaultVerdict == FilterVerdict.Drop)">drop</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <button type="submit" class="btn btn-secondary">Update defaults</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+        }
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Filter rules (@filterCount)</h2>
+            </div>
+            @if (bundle is null || bundle.Filter.Rules.Count == 0)
+            {
+                <p class="muted mb-0">No filter rules yet. Add a rule using the form below.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Chain</th>
+                                <th>Family</th>
+                                <th>Protocol</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Ports</th>
+                                <th>Interfaces</th>
+                                <th>States / Rate</th>
+                                <th>Verdict</th>
+                                @if (Model.CanMutate)
+                                {
+                                    <th>Order / Remove</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var idx = 0; idx < bundle.Filter.Rules.Count; idx++)
+                            {
+                                var r = bundle.Filter.Rules[idx];
+                                if (r is null) { continue; }
+                                var srcText = r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } sp ? "{ " + string.Join(", ", sp.Select(p => p.Value)) + " }" : "any");
+                                var dstText = r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } dp ? "{ " + string.Join(", ", dp.Select(p => p.Value)) + " }" : "any");
+                                var portText = r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } ps ? "{ " + string.Join(", ", ps) + " }" : "any");
+                                var ifaceText = (r.InputInterface, r.OutputInterface) switch
+                                {
+                                    (null, null) => "any",
+                                    (string i, null) => $"in:{i}",
+                                    (null, string o) => $"out:{o}",
+                                    (string i, string o) => $"in:{i} out:{o}",
+                                };
+                                <tr>
+                                    <td>@(idx + 1)</td>
+                                    <td><code>@r.Chain.ToString().ToLowerInvariant()</code></td>
+                                    <td><code>@r.Family.ToString().ToLowerInvariant()</code></td>
+                                    <td>
+                                        <code>@r.Protocol.ToString().ToLowerInvariant()</code>
+                                        @if (!string.IsNullOrEmpty(r.IcmpType)) { <span>(<code>@r.IcmpType</code>)</span> }
+                                    </td>
+                                    <td><code>@srcText</code></td>
+                                    <td><code>@dstText</code></td>
+                                    <td><code>@portText</code></td>
+                                    <td><code>@ifaceText</code></td>
+                                    <td>
+                                        @if (r.ConnectionStates != ConnectionStateFlags.None) { <code>@r.ConnectionStates</code> }
+                                        @if (r.MatchOriginalDestinationDnat) { <span class="badge badge-warning">ct dnat</span> }
+                                        @if (r.RateLimit is { } rl) { <span class="badge badge-neutral">@rl.PacketsPerWindow/@rl.WindowUnit.ToString().ToLowerInvariant()</span> }
+                                        @if (r.ConnectionStates == ConnectionStateFlags.None && !r.MatchOriginalDestinationDnat && r.RateLimit is null) { <span class="muted">stateless</span> }
+                                    </td>
+                                    <td>
+                                        <span class="badge @(r.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
+                                            @r.Verdict.ToString().ToLowerInvariant()
+                                        </span>
+                                    </td>
+                                    @if (Model.CanMutate)
+                                    {
+                                        <td>
+                                            <div class="btn-group">
+                                                @if (idx > 0)
+                                                {
+                                                    <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/rules/move")">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                                        <input type="hidden" name="summary" value="@Model.Summary" />
+                                                        <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                                        <input type="hidden" name="ruleIndex" value="@idx" />
+                                                        <input type="hidden" name="direction" value="-1" />
+                                                        <button type="submit" class="btn btn-secondary btn-sm" title="Move up">↑</button>
+                                                    </form>
+                                                }
+                                                @if (idx + 1 < bundle.Filter.Rules.Count)
+                                                {
+                                                    <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/rules/move")">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                                        <input type="hidden" name="summary" value="@Model.Summary" />
+                                                        <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                                        <input type="hidden" name="ruleIndex" value="@idx" />
+                                                        <input type="hidden" name="direction" value="1" />
+                                                        <button type="submit" class="btn btn-secondary btn-sm" title="Move down">↓</button>
+                                                    </form>
+                                                }
+                                                <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/rules/remove")">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                                    <input type="hidden" name="summary" value="@Model.Summary" />
+                                                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                                    <input type="hidden" name="ruleIndex" value="@idx" />
+                                                    <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        @if (Model.CanMutate)
+        {
+            <section class="card">
+                <div class="card-header">
+                    <h2>Add filter rule</h2>
+                    <span class="badge badge-neutral">Supports inline CIDR/port sets &amp; rate limiting</span>
+                </div>
+                <form method="post" action="@Url.Content("~/manage/policies/rules/add")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="r-chain">Chain</label>
+                            <select id="r-chain" name="chain">
+                                <option value="input">input</option>
+                                <option value="forward">forward</option>
+                                <option value="output">output</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="r-family">IP Family</label>
+                            <select id="r-family" name="family">
+                                <option value="ipv4">ipv4</option>
+                                <option value="ipv6">ipv6</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="r-protocol">Protocol</label>
+                            <select id="r-protocol" name="protocol" data-filter-protocol>
+                                <option value="tcp">tcp</option>
+                                <option value="udp">udp</option>
+                                <option value="icmp">icmp (IPv4)</option>
+                                <option value="icmpv6">icmpv6 (IPv6)</option>
+                                <option value="any">any</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="r-verdict">Verdict</label>
+                            <select id="r-verdict" name="verdict">
+                                <option value="accept">accept</option>
+                                <option value="drop">drop</option>
+                            </select>
+                        </div>
+
+                        <div class="field span-2">
+                            <label for="r-sources">Source CIDR(s)</label>
+                            <input id="r-sources" type="text" name="sources" placeholder="192.0.2.0/24 or 192.0.2.0/24, 198.51.100.0/24" />
+                            <span class="hint">Leave blank for any; comma-separate 2+ disjoint CIDRs for an inline set.</span>
+                        </div>
+                        <div class="field span-2">
+                            <label for="r-dests">Destination CIDR(s)</label>
+                            <input id="r-dests" type="text" name="destinations" placeholder="203.0.113.0/24 or 2001:db8:1::/48, 2001:db8:3::/48" />
+                        </div>
+
+                        <div class="field" data-proto-group="transport">
+                            <label for="r-ports">Destination port(s)</label>
+                            <input id="r-ports" type="text" name="destinationPorts" placeholder="443 or 80, 443" />
+                            <span class="hint">1 port or comma-separated set (1–65535).</span>
+                        </div>
+                        <div class="field" data-proto-group="icmp">
+                            <label for="r-icmp">ICMP / ICMPv6 type</label>
+                            <select id="r-icmp" name="icmpType">
+                                <option value="">(any ICMP type)</option>
+                                <option value="echo-request">echo-request (IPv4 &amp; IPv6)</option>
+                                <option value="echo-reply">echo-reply (IPv4 &amp; IPv6)</option>
+                                <option value="destination-unreachable">destination-unreachable (IPv4 &amp; IPv6)</option>
+                                <option value="time-exceeded">time-exceeded (IPv4 &amp; IPv6)</option>
+                                <option value="parameter-problem">parameter-problem (IPv4 &amp; IPv6)</option>
+                                <option value="packet-too-big">packet-too-big (IPv6)</option>
+                                <option value="nd-router-solicit">nd-router-solicit (IPv6 ND)</option>
+                                <option value="nd-router-advert">nd-router-advert (IPv6 ND)</option>
+                                <option value="nd-neighbor-solicit">nd-neighbor-solicit (IPv6 ND)</option>
+                                <option value="nd-neighbor-advert">nd-neighbor-advert (IPv6 ND)</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="r-iif">Input interface (<code>iifname</code>)</label>
+                            <input id="r-iif" type="text" name="inputInterface" placeholder="eth0" maxlength="15" />
+                        </div>
+                        <div class="field">
+                            <label for="r-oif">Output interface (<code>oifname</code>)</label>
+                            <input id="r-oif" type="text" name="outputInterface" placeholder="wan0" maxlength="15" />
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="field-label">Connection tracking states (<code>ct state</code>)</label>
+                        <input type="hidden" name="connectionStates" value="" data-ct-state-value />
+                        <div class="checkbox-group mt-1">
+                            <label class="checkbox-row"><input type="checkbox" value="new" data-ct-state-cb /> new</label>
+                            <label class="checkbox-row"><input type="checkbox" value="established" data-ct-state-cb /> established</label>
+                            <label class="checkbox-row"><input type="checkbox" value="related" data-ct-state-cb /> related</label>
+                            <label class="checkbox-row"><input type="checkbox" value="invalid" data-ct-state-cb /> invalid</label>
+                            <label class="checkbox-row" style="margin-left: 1rem;">
+                                <input type="checkbox" name="matchOriginalDestinationDnat" value="true" /> Match DNAT (<code>ct status dnat</code>)
+                            </label>
+                        </div>
+                    </div>
+
+                    <details class="disclosure mt-2">
+                        <summary>Optional: Per-source token-bucket rate limit (dynamic nftables set)</summary>
+                        <div class="form-grid mt-2">
+                            <div class="field">
+                                <label for="rl-packets">Packets per window</label>
+                                <input id="rl-packets" type="number" name="rateLimitPackets" min="1" max="1000000" placeholder="e.g. 20" />
+                            </div>
+                            <div class="field">
+                                <label for="rl-unit">Window unit</label>
+                                <select id="rl-unit" name="rateLimitUnit">
+                                    <option value="second">per second</option>
+                                    <option value="minute">per minute</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="rl-burst">Burst (packets)</label>
+                                <input id="rl-burst" type="number" name="rateLimitBurst" min="1" max="10000" placeholder="e.g. 10" />
+                            </div>
+                            <div class="field">
+                                <label for="rl-timeout">Entry timeout (seconds)</label>
+                                <input id="rl-timeout" type="number" name="rateLimitTimeout" min="1" max="86400" value="60" />
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="mt-2">
+                        <button type="submit">Add filter rule to draft</button>
+                    </div>
+                </form>
+            </section>
+        }
+    </div>
+
+    <!-- TAB 2: NAT -->
+    <div class="tab-panel" data-tab-panel="tab-nat">
+        <section class="card">
+            <div class="card-header">
+                <h2>Prerouting DNAT rules (<code>inet nergal_nat</code>)</h2>
+                @if (Model.CanMutate && bundle?.Nat is not null)
+                {
+                    <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/clear")">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                        <input type="hidden" name="summary" value="@Model.Summary" />
+                        <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                        <button type="submit" class="btn btn-danger btn-sm">Clear entire NAT section</button>
+                    </form>
+                }
+            </div>
+            @if (bundle?.Nat is null || bundle.Nat.DnatRules.Count == 0)
+            {
+                <p class="muted mb-0">No prerouting DNAT rules defined.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Family</th>
+                                <th>Protocol</th>
+                                <th>Original Dest</th>
+                                <th>Translated Addr</th>
+                                <th>Ports</th>
+                                <th>Iface / Source</th>
+                                @if (Model.CanMutate) { <th>Action</th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < bundle.Nat.DnatRules.Count; i++)
+                            {
+                                var d = bundle.Nat.DnatRules[i];
+                                if (d is null) { continue; }
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td><code>@d.Family.ToString().ToLowerInvariant()</code></td>
+                                    <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
+                                    <td><code>@d.OriginalDestination.Value</code></td>
+                                    <td><code>@d.TranslatedAddress</code></td>
+                                    <td><code>@(d.OriginalPort?.ToString() ?? "any") → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
+                                    <td><code>@(d.InputInterface ?? "any")</code> · <code>@(d.Source?.Value ?? "any")</code></td>
+                                    @if (Model.CanMutate)
+                                    {
+                                        <td>
+                                            <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/remove")">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                                <input type="hidden" name="summary" value="@Model.Summary" />
+                                                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                                <input type="hidden" name="ruleIndex" value="@i" />
+                                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                            </form>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (Model.CanMutate)
+            {
+                <h3 class="mt-2">Add DNAT rule</h3>
+                <form method="post" action="@Url.Content("~/manage/policies/nat/dnat/add")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Family</label>
+                            <select name="family"><option value="ipv4">ipv4</option><option value="ipv6">ipv6</option></select>
+                        </div>
+                        <div class="field">
+                            <label>Protocol</label>
+                            <select name="protocol"><option value="tcp">tcp</option><option value="udp">udp</option><option value="any">any</option></select>
+                        </div>
+                        <div class="field">
+                            <label>Original destination CIDR</label>
+                            <input type="text" name="originalDestination" placeholder="192.0.2.1/32" required />
+                        </div>
+                        <div class="field">
+                            <label>Translated IP address</label>
+                            <input type="text" name="translatedAddress" placeholder="198.51.100.2" required />
+                        </div>
+                        <div class="field">
+                            <label>Original port (optional)</label>
+                            <input type="number" name="originalPort" min="1" max="65535" placeholder="443" />
+                        </div>
+                        <div class="field">
+                            <label>Translated port (optional)</label>
+                            <input type="number" name="translatedPort" min="1" max="65535" placeholder="8443" />
+                        </div>
+                        <div class="field">
+                            <label>Input interface (optional)</label>
+                            <input type="text" name="inputInterface" placeholder="wan0" maxlength="15" />
+                        </div>
+                        <div class="field">
+                            <label>Source CIDR (optional)</label>
+                            <input type="text" name="source" placeholder="203.0.113.0/24" />
+                        </div>
+                    </div>
+                    <div class="mt-2"><button type="submit">Add DNAT rule</button></div>
+                </form>
+            }
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Postrouting explicit SNAT rules (<code>inet nergal_nat</code>)</h2>
+            </div>
+            @if (bundle?.Nat is null || bundle.Nat.SnatRules.Count == 0)
+            {
+                <p class="muted mb-0">No postrouting SNAT rules defined.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Family</th>
+                                <th>Source CIDR</th>
+                                <th>Translated Source IP</th>
+                                <th>Destination CIDR</th>
+                                <th>Output Iface</th>
+                                @if (Model.CanMutate) { <th>Action</th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < bundle.Nat.SnatRules.Count; i++)
+                            {
+                                var s = bundle.Nat.SnatRules[i];
+                                if (s is null) { continue; }
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td><code>@s.Family.ToString().ToLowerInvariant()</code></td>
+                                    <td><code>@s.Source.Value</code></td>
+                                    <td><code>@s.TranslatedAddress</code></td>
+                                    <td><code>@(s.Destination?.Value ?? "any")</code></td>
+                                    <td><code>@(s.OutputInterface ?? "any")</code></td>
+                                    @if (Model.CanMutate)
+                                    {
+                                        <td>
+                                            <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/snat/remove")">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                                <input type="hidden" name="summary" value="@Model.Summary" />
+                                                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                                <input type="hidden" name="ruleIndex" value="@i" />
+                                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                            </form>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (Model.CanMutate)
+            {
+                <h3 class="mt-2">Add explicit SNAT rule</h3>
+                <form method="post" action="@Url.Content("~/manage/policies/nat/snat/add")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Family</label>
+                            <select name="family"><option value="ipv4">ipv4</option><option value="ipv6">ipv6</option></select>
+                        </div>
+                        <div class="field">
+                            <label>Source CIDR</label>
+                            <input type="text" name="source" placeholder="192.0.2.0/24" required />
+                        </div>
+                        <div class="field">
+                            <label>Translated IP address</label>
+                            <input type="text" name="translatedAddress" placeholder="198.51.100.1" required />
+                        </div>
+                        <div class="field">
+                            <label>Destination CIDR (optional)</label>
+                            <input type="text" name="destination" placeholder="203.0.113.0/24" />
+                        </div>
+                        <div class="field">
+                            <label>Output interface (optional)</label>
+                            <input type="text" name="outputInterface" placeholder="wan0" maxlength="15" />
+                        </div>
+                    </div>
+                    <div class="mt-2"><button type="submit">Add SNAT rule</button></div>
+                </form>
+            }
+        </section>
+    </div>
+
+    <!-- TAB 3: BRIDGE -->
+    <div class="tab-panel" data-tab-panel="tab-bridge">
+        <section class="card">
+            <div class="card-header">
+                <h2>L2 Bridge forwarding policy (<code>bridge nergal_bridge</code>)</h2>
+                @if (Model.CanMutate && bundle?.Bridge is not null)
+                {
+                    <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/bridge/clear")">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                        <input type="hidden" name="summary" value="@Model.Summary" />
+                        <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                        <button type="submit" class="btn btn-danger btn-sm">Remove Bridge table</button>
+                    </form>
+                }
+            </div>
+
+            @if (Model.CanMutate)
+            {
+                <form method="post" action="@Url.Content("~/manage/policies/bridge/defaults")" class="form-grid" style="margin-bottom: 1rem;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                    <div class="field">
+                        <label>Bridge forward default verdict</label>
+                        <select name="defaultVerdict">
+                            <option value="accept" selected="@(bundle?.Bridge?.DefaultVerdict == FilterVerdict.Accept)">accept</option>
+                            <option value="drop" selected="@(bundle?.Bridge?.DefaultVerdict == FilterVerdict.Drop)">drop</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <button type="submit" class="btn btn-secondary">@(bundle?.Bridge is null ? "Enable bridge table" : "Update bridge default")</button>
+                    </div>
+                </form>
+            }
+
+            @if (bundle?.Bridge is null || bundle.Bridge.Rules.Count == 0)
+            {
+                <p class="muted mb-0">No L2 bridge rules defined.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>EtherType</th>
+                                <th>Input Port</th>
+                                <th>Output Port</th>
+                                <th>Verdict</th>
+                                @if (Model.CanMutate) { <th>Action</th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < bundle.Bridge.Rules.Count; i++)
+                            {
+                                var br = bundle.Bridge.Rules[i];
+                                if (br is null) { continue; }
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td><code>@br.EtherType.ToString().ToLowerInvariant()</code></td>
+                                    <td><code>@(br.InputInterface ?? "any")</code></td>
+                                    <td><code>@(br.OutputInterface ?? "any")</code></td>
+                                    <td>
+                                        <span class="badge @(br.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
+                                            @br.Verdict.ToString().ToLowerInvariant()
+                                        </span>
+                                    </td>
+                                    @if (Model.CanMutate)
+                                    {
+                                        <td>
+                                            <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/bridge/rules/remove")">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                                <input type="hidden" name="summary" value="@Model.Summary" />
+                                                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                                <input type="hidden" name="ruleIndex" value="@i" />
+                                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                            </form>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (Model.CanMutate)
+            {
+                <h3 class="mt-2">Add L2 bridge rule</h3>
+                <form method="post" action="@Url.Content("~/manage/policies/bridge/rules/add")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>EtherType</label>
+                            <select name="etherType">
+                                <option value="any">any</option>
+                                <option value="ipv4">ipv4</option>
+                                <option value="ipv6">ipv6</option>
+                                <option value="arp">arp</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Verdict</label>
+                            <select name="verdict">
+                                <option value="accept">accept</option>
+                                <option value="drop">drop</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Input bridge port (optional)</label>
+                            <input type="text" name="inputInterface" placeholder="br0" maxlength="15" />
+                        </div>
+                        <div class="field">
+                            <label>Output bridge port (optional)</label>
+                            <input type="text" name="outputInterface" placeholder="veth1" maxlength="15" />
+                        </div>
+                    </div>
+                    <div class="mt-2"><button type="submit">Add bridge rule</button></div>
+                </form>
+            }
+        </section>
+    </div>
+
+    <!-- TAB 4: CANDIDATE & DIFF -->
+    <div class="tab-panel" data-tab-panel="tab-preview">
+        @if (bundle is not null)
+        {
+            <component type="typeof(Nergal.Web.Components.PolicyBundleSummary)" render-mode="Static" param-Bundle="bundle" />
+        }
+
+        @if (!string.IsNullOrEmpty(Model.CandidateText))
+        {
+            <section class="card">
+                <div class="card-header">
+                    <h2>Compiled nftables candidate</h2>
+                    <span class="badge badge-neutral mono">SHA-256 @Model.CandidateDigest</span>
+                </div>
+                <pre>@Model.CandidateText</pre>
+            </section>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.UnifiedDiff))
+        {
+            <section class="card">
+                <div class="card-header">
+                    <h2>Unified diff preview</h2>
+                </div>
+                <pre class="diff-view">@Model.UnifiedDiff</pre>
+            </section>
+        }
+    </div>
+
+    <!-- TAB 5: ADVANCED JSON & SAVED REVISIONS -->
+    <div class="tab-panel" data-tab-panel="tab-json">
+        <section class="card">
+            <div class="card-header">
+                <h2>Advanced JSON bundle editor</h2>
+                <span class="badge badge-neutral">Canonical FirewallPolicyBundle</span>
+            </div>
+            <form method="post" action="@Url.Content("~/manage/policies/preview")">
+                @Html.AntiForgeryToken()
+                <div class="form-grid" style="margin-bottom: 0.9rem;">
+                    <div class="field">
+                        <label>Compare against revision</label>
+                        <select name="compareToRevision">
+                            <option value="">(empty baseline)</option>
+                            @foreach (var rev in Model.Revisions)
+                            {
+                                <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">Revision @rev.Revision (@rev.CandidateDigest[..8])</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field span-2">
+                        <label>Summary</label>
+                        <input type="text" name="summary" value="@Model.Summary" maxlength="256" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="raw-bundle-json">Bundle JSON</label>
+                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson">@Model.BundleJson</textarea>
+                </div>
+                <div class="btn-group mt-2">
+                    <button type="submit" class="btn btn-secondary">Preview compatibility &amp; nftables diff</button>
+                    @if (Model.CanMutate)
+                    {
+                        <button type="submit" class="btn btn-success" formaction="@Url.Content("~/manage/policies/save")">Save policy revision</button>
+                    }
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Saved policy revisions (@Model.Revisions.Count)</h2>
+            </div>
+            @if (Model.Revisions.Count == 0)
+            {
+                <p class="muted mb-0">No policy revisions persisted yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Revision</th>
+                                <th>Candidate SHA-256</th>
+                                <th>Created by</th>
+                                <th>UTC Timestamp</th>
+                                <th>Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var rev in Model.Revisions)
+                            {
+                                <tr>
+                                    <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Load Rev @rev.Revision</a></td>
+                                    <td><code>@rev.CandidateDigest</code></td>
+                                    <td><code>@rev.CreatedByActor</code></td>
+                                    <td class="mono">@rev.CreatedAtUtc.ToString("u")</td>
+                                    <td>@(rev.Summary ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
 </main>
-</body>
-</html>
