@@ -18,7 +18,9 @@ import/export. Shared object changes require visible reference/impact review and
 immutable saved revisions. File import must report unsupported semantics explicitly;
 current source inspection is not full conversion. Generated export identifies the
 selected managed revision and scope. Per-rule inline enable/disable controls and
-contextual accessible form hints are also planned authoring requirements. See [migration and authoring status](router-migration-and-sandbox.md).
+contextual accessible form hints are also planned authoring requirements. The database
+is intended to be the rolling source of truth for application-managed state and
+history; additional SQL backend migrations follow logical schema stabilization. See [migration and authoring status](router-migration-and-sandbox.md).
 
 ## Core Design Principles
 

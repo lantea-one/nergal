@@ -75,6 +75,38 @@ and maintain policies through the UI without importing an existing ruleset.
 
 This is an active implementation plan, not a claim that all listed workflows exist.
 
+## Database source of truth and later SQL migrations
+
+The database is the rolling, authoritative store for application-managed state:
+policies, reusable sets/IP lists, host configuration, settings, profiles, imported
+source snapshots, semantic mapping reports, revisions and audit history. UI edits
+must persist validated changes transactionally. Exports and generated configuration
+are derived artifacts of an explicitly selected database revision; local files,
+browser state and build artifacts must not become competing canonical stores.
+Preserve immutable revisions and enough change history to review and recover state.
+
+Keep desired, dispatched, confirmed and observed state distinct. A database edit
+must not imply that a policy is active in the kernel. Store observations with their
+provenance and collection time. Privileged agents retain their independently
+protected local journal, ownership receipts and rollback decisions; the controller
+database cannot grant host ownership or replace live verification. Credentials and
+key material retain explicit encryption and bootstrap trust boundaries rather than
+being moved into ordinary configuration rows.
+
+This direction is not yet fully implemented. The current private native source
+catalog uses operator-configured file snapshots, and some runtime configuration
+still comes from protected deployment files. Moving application-managed content
+into durable database records is required before claiming a complete database-backed
+workflow; deployment/bootstrap trust remains a separate boundary.
+
+Stabilize the logical schema before implementing migrations for additional SQL
+backends. Each supported backend needs explicit schema versions, ordered upgrade
+migrations, compatibility checks and tested failure/recovery behavior, including
+existing data, constraints, audit integrity and revision history. Document backup
+and recovery requirements and test on the actual database engine. Avoid announcing
+an adapter as supported merely because it appears in saved settings. Keep backend
+persistence details outside framework-independent domain contracts.
+
 ## Reusable sets and IP lists
 
 Provide a dedicated UI library for creating, naming, describing, editing, searching
