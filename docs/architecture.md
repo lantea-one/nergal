@@ -17,7 +17,8 @@ policy when the web console or identity provider is unavailable.
    [ADR 0025](decisions/0025-native-per-source-rate-limiting.md),
    `NftNatCompiler` / [ADR 0026](decisions/0026-dual-stack-nat-and-original-tuple-matching.md),
    and `NftBridgeCompiler` + `NftPolicyBundleCompiler` / [ADR 0027](decisions/0027-bridge-filtering-and-atomic-multitable-transactions.md)).
-   It performs no host operations and the web host does not reference it.
+   It performs no host operations; `Nergal.Web` references it strictly in-memory for
+   candidate compilation and diff previewing ([ADR 0030](decisions/0030-web-policy-authoring-and-audit-views.md)).
    Kernel JSON is an observation/command interface, not a lossless replacement
    for source metadata, comments and named definitions.
 4. `Nergal.Agent` provides offline local operator enrollment
@@ -78,6 +79,11 @@ policy when the web console or identity provider is unavailable.
    read-only `NergalReader`) across both local and OIDC sessions with explicit
    `local:<uuid>` and `oidc:<issuer>:<subject>` actor attribution
    ([ADR 0029](decisions/0029-controller-persistence-rbac-and-audit.md)).
+10. When `ControllerState:Enabled` and `LocalSessions:Enabled` are active, `Nergal.Web`
+   provides the RBAC-gated fleet dashboard, typed policy bundle editor with
+   `BackendCompatibilityEvaluator` checks, deterministic nftables candidate line diff
+   preview, and audit/revision history viewer (`/manage`, `/manage/policies`,
+   `/manage/audit`, [ADR 0030](decisions/0030-web-policy-authoring-and-audit-views.md)).
 
 Do not treat a capability declaration as evidence that a driver is implemented,
 connected, authorized or healthy. The capability contracts prevent lossy

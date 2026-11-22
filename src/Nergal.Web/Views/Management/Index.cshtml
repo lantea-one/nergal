@@ -1,0 +1,125 @@
+@{ Layout = null; }
+@model Nergal.Web.FleetDashboardViewModel
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fleet dashboard · nergal</title>
+</head>
+<body>
+<main>
+    <h1>Controller fleet dashboard</h1>
+    <p>Signed in as <code>@Model.ActorId</code> (role: <code>@Model.ActorRole</code>).</p>
+    <nav>
+        <a href="@Url.Content("~/manage/policies")">Policy editor &amp; diff</a> ·
+        <a href="@Url.Content("~/manage/audit")">Audit &amp; revision history</a> ·
+        <a href="@Url.Content("~/session")">Session</a>
+    </nav>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p role="alert">@Model.ErrorMessage</p>
+    }
+
+    <section>
+        <h2>Latest policy revision</h2>
+        @if (Model.LatestRevision is { } latest)
+        {
+            <p>Revision @latest.Revision (digest <code>@latest.CandidateDigest</code>) created by <code>@latest.CreatedByActor</code> at @latest.CreatedAtUtc.ToString("u").</p>
+        }
+        else
+        {
+            <p>No policy revisions saved yet.</p>
+        }
+    </section>
+
+    <section>
+        <h2>Managed hosts (@Model.Hosts.Count)</h2>
+        @if (Model.Hosts.Count == 0)
+        {
+            <p>No managed hosts registered.</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Transport</th>
+                        <th>Endpoint</th>
+                        <th>Pin / UID</th>
+                        <th>Last revision</th>
+                        @if (Model.CanMutate)
+                        {
+                            <th>Actions</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var host in Model.Hosts)
+                    {
+                        <tr>
+                            <td>@host.Name</td>
+                            <td>@host.TransportKind</td>
+                            <td><code>@host.Endpoint</code></td>
+                            <td><code>@(host.PinnedServerThumbprint ?? ($"uid={host.ExpectedServerUserId?.ToString() ?? "-"}" + (host.SocketGroupId.HasValue ? $" gid={host.SocketGroupId}" : "")))</code></td>
+                            <td>@host.LastKnownRevision</td>
+                            @if (Model.CanMutate)
+                            {
+                                <td>
+                                    <form method="post" action="@Url.Content("~/manage/hosts/delete")">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@host.Id.ToString("D")" />
+                                        <button type="submit">Remove</button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    @if (Model.CanMutate)
+    {
+        <section>
+            <h2>Register agent host</h2>
+            <form method="post" action="@Url.Content("~/manage/hosts/add")">
+                @Html.AntiForgeryToken()
+                <label>Name <input type="text" name="name" required maxlength="128" /></label>
+                <label>Transport
+                    <select name="transportKind">
+                        <option value="tls">tls</option>
+                        <option value="unix">unix</option>
+                    </select>
+                </label>
+                <label>Endpoint <input type="text" name="endpoint" required maxlength="512" /></label>
+                <label>Expected Server UID (unix) <input type="text" name="expectedServerUserId" /></label>
+                <label>Socket Group ID (unix) <input type="text" name="socketGroupId" /></label>
+                <label>Pinned Server SHA-256 Thumbprint (tls) <input type="text" name="pinnedServerThumbprint" maxlength="64" /></label>
+                <button type="submit">Register host</button>
+            </form>
+        </section>
+    }
+
+    <section>
+        <h2>Recent audit activity</h2>
+        @if (Model.RecentAudit.Count == 0)
+        {
+            <p>No audit records yet.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var entry in Model.RecentAudit)
+                {
+                    <li>#@entry.Sequence [@entry.TimestampUtc.ToString("u")] <code>@entry.ActorId</code> (@entry.ActorRole): @entry.Action on <code>@entry.Target</code> -> @entry.Outcome</li>
+                }
+            </ul>
+        }
+    </section>
+</main>
+</body>
+</html>

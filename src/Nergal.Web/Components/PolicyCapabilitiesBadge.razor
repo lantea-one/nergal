@@ -1,0 +1,21 @@
+@using Nergal.Core
+<aside class="compatibility-summary">
+    @if (Report is not null)
+    {
+        <p>Backend <code>@Report.BackendId</code>: @(Report.IsCompatible ? "compatible" : "incompatible")</p>
+        @if (!Report.IsCompatible)
+        {
+            <ul>
+                @foreach (var missing in Report.UnsupportedFeatures)
+                {
+                    <li>Missing capability: <code>@missing</code></li>
+                }
+            </ul>
+        }
+    }
+</aside>
+@code {
+    /// <summary>Evaluated backend capability report to summarize.</summary>
+    [Microsoft.AspNetCore.Components.Parameter]
+    public BackendCompatibilityReport? Report { get; set; }
+}

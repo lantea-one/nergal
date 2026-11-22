@@ -9,6 +9,10 @@
     {
         <p><a href="@statusUrl">View agent status</a></p>
     }
+    @if (Url.RouteUrl("manage-dashboard") is string manageUrl)
+    {
+        <p><a href="@manageUrl">Manage fleet, policies &amp; audit</a></p>
+    }
     <form method="post" action="@Url.Content("~/logout")">
         @Html.AntiForgeryToken()
         <button type="submit">@(User.Identity?.AuthenticationType == Nergal.Web.FederatedLogin.Session ? "Sign out of this session" : "Sign out of all local sessions")</button>

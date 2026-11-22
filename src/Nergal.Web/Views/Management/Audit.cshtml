@@ -1,0 +1,97 @@
+@{ Layout = null; }
+@model Nergal.Web.AuditHistoryViewModel
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audit &amp; revision history · nergal</title>
+</head>
+<body>
+<main>
+    <h1>Controller audit &amp; revision history</h1>
+    <p>Signed in as <code>@Model.ActorId</code> (role: <code>@Model.ActorRole</code>).</p>
+    <nav>
+        <a href="@Url.Content("~/manage")">Fleet dashboard</a> ·
+        <a href="@Url.Content("~/manage/policies")">Policy editor &amp; diff</a> ·
+        <a href="@Url.Content("~/session")">Session</a>
+    </nav>
+
+    <section>
+        <h2>Append-only audit log (@Model.Entries.Count)</h2>
+        @if (Model.Entries.Count == 0)
+        {
+            <p>No audit events recorded.</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Seq</th>
+                        <th>UTC Timestamp</th>
+                        <th>Actor</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                        <th>Target</th>
+                        <th>Revision</th>
+                        <th>Outcome</th>
+                        <th>Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.Entries)
+                    {
+                        <tr>
+                            <td>@entry.Sequence</td>
+                            <td>@entry.TimestampUtc.ToString("u")</td>
+                            <td><code>@entry.ActorId</code></td>
+                            <td><code>@entry.ActorRole</code></td>
+                            <td><code>@entry.Action</code></td>
+                            <td><code>@entry.Target</code></td>
+                            <td>@(entry.Revision?.ToString() ?? "-")</td>
+                            <td>@entry.Outcome</td>
+                            <td><code>@(entry.DetailCode ?? "-")</code></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section>
+        <h2>Policy revisions (@Model.Revisions.Count)</h2>
+        @if (Model.Revisions.Count == 0)
+        {
+            <p>No saved policy revisions.</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Revision</th>
+                        <th>Candidate SHA-256</th>
+                        <th>Created by</th>
+                        <th>Created UTC</th>
+                        <th>Summary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rev in Model.Revisions)
+                    {
+                        <tr>
+                            <td><a href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">@rev.Revision</a></td>
+                            <td><code>@rev.CandidateDigest</code></td>
+                            <td><code>@rev.CreatedByActor</code></td>
+                            <td>@rev.CreatedAtUtc.ToString("u")</td>
+                            <td>@(rev.Summary ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+</main>
+</body>
+</html>
