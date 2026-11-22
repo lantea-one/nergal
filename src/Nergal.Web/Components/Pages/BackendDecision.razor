@@ -1,10 +1,44 @@
-@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @page "/backend-decision"
-<PageTitle>Backend decision — nergal</PageTitle>
-<main>
-    <h1>Native nftables first</h1>
-    <p>nergal will preserve explicit source NAT, original-connection matching, per-source meters, bridge policy, and atomic scoped updates.</p>
-    <p>Firewalld is not an implemented backend. A future adapter must pass the same conformance tests before accepting a policy.</p>
-    <p>This web foundation is read-only. A separate library compiles a small input-filter policy slice; it is not connected to this page. Local administrator sessions can be enabled separately.</p>
-    <a href="/">Back to nergal</a>
+@using Nergal.Core
+
+<PageTitle>Backend decision · nergal</PageTitle>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">
+            <span class="brand-mark" aria-hidden="true">N</span>
+            <span>nergal</span>
+        </a>
+        <div class="topbar-meta">
+            <a class="nav-link" href="/">Home</a>
+            <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle>Theme</button>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>Native nftables first</h1>
+            <p class="page-subtitle">Architectural rationale for targeting native Linux <code>nftables</code> without partial translation adapters.</p>
+        </div>
+        <span class="badge badge-primary">ADR 0001</span>
+    </div>
+
+    <div class="card">
+        <h2>Backend design &amp; guarantees</h2>
+        <p class="muted">
+            nergal compiles typed policy bundles directly into owned <code>inet nergal_filter</code>,
+            <code>inet nergal_nat</code>, and <code>bridge nergal_bridge</code> tables with atomic candidate validation
+            and independent local watchdog rollback. Foreign tables are never flushed or modified.
+        </p>
+        <div class="btn-group mt-2">
+            <span class="badge badge-success">Dual-stack inet filtering</span>
+            <span class="badge badge-success">Explicit DNAT / SNAT</span>
+            <span class="badge badge-success">L2 Bridge filtering</span>
+            <span class="badge badge-success">Inline CIDR &amp; port sets</span>
+            <span class="badge badge-success">Per-source dynamic rate limits</span>
+            <span class="badge badge-success">Foreign table preservation</span>
+        </div>
+    </div>
 </main>

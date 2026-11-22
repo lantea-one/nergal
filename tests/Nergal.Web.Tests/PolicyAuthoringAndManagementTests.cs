@@ -306,6 +306,99 @@ public sealed class PolicyAuthoringAndManagementTests
         }
     }
 
+    /// <summary>Structured visual forms edit Filter defaults, rate limits, ct status dnat, NAT DNAT/SNAT, and L2 Bridge rules while denying Auditors.</summary>
+    [Fact]
+    public void VisualBuilder_SupportsFilterDefaultsRateLimitNatBridgeAndDeniesAuditors()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var dir = CreateOwnerOnlyTempDirectory();
+        try
+        {
+            var store = ControllerStateStore.Initialize(new ControllerStateOptions(dir));
+            var adminActor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+            var auditorActor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+
+            var admin = CreateController(store, adminActor, NergalRoles.Administrator);
+            var auditor = CreateController(store, auditorActor, NergalRoles.Auditor);
+            var seed = PolicyAuthoringService.DefaultStarterBundleJson;
+
+            // Auditor denied on every structured builder endpoint.
+            Assert.IsType<ForbidResult>(auditor.UpdateFilterDefaults(seed, null, null, 2, "drop", "drop", "accept"));
+            Assert.IsType<ForbidResult>(auditor.AddDnatRule(seed, null, null, "ipv4", "tcp", "192.0.2.1/32", "198.51.100.2", 443, 8443, "wan0", null));
+            Assert.IsType<ForbidResult>(auditor.RemoveDnatRule(seed, null, null, 0));
+            Assert.IsType<ForbidResult>(auditor.AddSnatRule(seed, null, null, "ipv4", "192.0.2.0/24", "198.51.100.1", null, "wan0"));
+            Assert.IsType<ForbidResult>(auditor.RemoveSnatRule(seed, null, null, 0));
+            Assert.IsType<ForbidResult>(auditor.ClearNat(seed, null, null));
+            Assert.IsType<ForbidResult>(auditor.UpdateBridgeDefaults(seed, null, null, "drop"));
+            Assert.IsType<ForbidResult>(auditor.AddBridgeRule(seed, null, null, "ipv4", "accept", "br0", null));
+            Assert.IsType<ForbidResult>(auditor.RemoveBridgeRule(seed, null, null, 0));
+            Assert.IsType<ForbidResult>(auditor.ClearBridge(seed, null, null));
+
+            // 1. Update filter defaults.
+            var m1 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.UpdateFilterDefaults(seed, "full-ui", null, 2, "drop", "drop", "drop")).Model);
+            Assert.Empty(m1.Diagnostics);
+            Assert.Equal(FilterVerdict.Drop, m1.Bundle!.Filter.OutputDefaultVerdict);
+
+            // 2. Add filter rule with ct status dnat + per-source rate limit.
+            var m2 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.AddFilterRule(m1.BundleJson, "full-ui", null, "forward", "ipv4", "tcp", "accept",
+                    null, "198.51.100.2/32", "8443", null, "wan0", "lan0", "new, established",
+                    matchOriginalDestinationDnat: true, rateLimitPackets: 25, rateLimitUnit: "second", rateLimitBurst: 10, rateLimitTimeout: 120)).Model);
+            Assert.Empty(m2.Diagnostics);
+            Assert.Contains("ct status dnat", m2.CandidateText, StringComparison.Ordinal);
+            Assert.Contains("limit rate 25/second burst 10 packets", m2.CandidateText, StringComparison.Ordinal);
+
+            // 3. Add DNAT & SNAT rules, then remove DNAT, then clear NAT.
+            var m3 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.AddDnatRule(m2.BundleJson, "full-ui", null, "ipv4", "tcp", "192.0.2.1/32", "198.51.100.2", 443, 8443, "wan0", null)).Model);
+            Assert.Empty(m3.Diagnostics);
+            Assert.Single(m3.Bundle!.Nat!.DnatRules);
+
+            var m4 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.AddSnatRule(m3.BundleJson, "full-ui", null, "ipv4", "198.51.100.0/24", "192.0.2.1", null, "wan0")).Model);
+            Assert.Empty(m4.Diagnostics);
+            Assert.Single(m4.Bundle!.Nat!.SnatRules);
+            Assert.Contains("create table inet nergal_nat", m4.CandidateText, StringComparison.Ordinal);
+
+            var m5 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.RemoveDnatRule(m4.BundleJson, "full-ui", null, 0)).Model);
+            Assert.Empty(m5.Bundle!.Nat!.DnatRules);
+            Assert.Single(m5.Bundle.Nat.SnatRules);
+
+            var m6 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.ClearNat(m5.BundleJson, "full-ui", null)).Model);
+            Assert.Null(m6.Bundle!.Nat);
+
+            // 4. Enable bridge, add bridge rule, remove bridge rule, clear bridge.
+            var m7 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.UpdateBridgeDefaults(m6.BundleJson, "full-ui", null, "drop")).Model);
+            Assert.NotNull(m7.Bundle!.Bridge);
+            Assert.Equal(FilterVerdict.Drop, m7.Bundle.Bridge!.DefaultVerdict);
+
+            var m8 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.AddBridgeRule(m7.BundleJson, "full-ui", null, "arp", "accept", "br0", null)).Model);
+            Assert.Single(m8.Bundle!.Bridge!.Rules);
+            Assert.Contains("create table bridge nergal_bridge", m8.CandidateText, StringComparison.Ordinal);
+
+            var m9 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.RemoveBridgeRule(m8.BundleJson, "full-ui", null, 0)).Model);
+            Assert.Empty(m9.Bundle!.Bridge!.Rules);
+
+            var m10 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
+                admin.ClearBridge(m9.BundleJson, "full-ui", null)).Model);
+            Assert.Null(m10.Bundle!.Bridge);
+        }
+        finally
+        {
+            TryDelete(dir);
+        }
+    }
+
     private static ManagementController CreateController(ControllerStateStore store, string actorId, string role)
     {
         var principal = new ClaimsPrincipal(new ClaimsIdentity(

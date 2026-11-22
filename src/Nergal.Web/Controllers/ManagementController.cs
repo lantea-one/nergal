@@ -158,7 +158,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Validates, checks capabilities, compiles, and diffs a policy draft without mutating state.</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Reader), ValidateAntiForgeryToken]
-    [RequestSizeLimit(8192)]
+    [RequestSizeLimit(65536)]
     public IActionResult PreviewPolicy(string? bundleJson, string? summary, ulong? compareToRevision)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role))
@@ -186,7 +186,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
 
     /// <summary>Validates, compiles, and persists a new monotonic policy revision (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
-    [RequestSizeLimit(8192)]
+    [RequestSizeLimit(65536)]
     public IActionResult SavePolicy(string? bundleJson, string? summary, ulong? compareToRevision)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role) ||
@@ -241,7 +241,12 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         string? icmpType,
         string? inputInterface,
         string? outputInterface,
-        string? connectionStates)
+        string? connectionStates,
+        bool matchOriginalDestinationDnat = false,
+        int? rateLimitPackets = null,
+        string? rateLimitUnit = null,
+        int? rateLimitBurst = null,
+        int? rateLimitTimeout = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -253,9 +258,288 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         var revisions = store.ListPolicyRevisions();
         var input = new VisualFilterRuleInput(
             chain, family, protocol, verdict, sources, destinations, destinationPorts,
-            icmpType, inputInterface, outputInterface, connectionStates);
+            icmpType, inputInterface, outputInterface, connectionStates,
+            matchOriginalDestinationDnat, rateLimitPackets, rateLimitUnit, rateLimitBurst, rateLimitTimeout);
 
         if (!PolicyAuthoringService.TryAppendFilterRule(raw, input, out var updatedJson, out var diagnostics) || updatedJson is null)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            var existing = PolicyAuthoringService.EvaluateDraft(raw, store, compareToRevision);
+            var failed = existing with { IsValid = false, Diagnostics = diagnostics };
+            return View("Policies", BuildPolicyModel(role, raw, summary, null, compareToRevision, revisions, failed));
+        }
+
+        var report = PolicyAuthoringService.EvaluateDraft(updatedJson, store, compareToRevision);
+        return View("Policies", BuildPolicyModel(role, updatedJson, summary, null, compareToRevision, revisions, report));
+    }
+
+    /// <summary>Updates filter schema version and per-chain default verdicts in the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult UpdateFilterDefaults(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        int schemaVersion,
+        string? inputDefaultVerdict,
+        string? forwardDefaultVerdict,
+        string? outputDefaultVerdict)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryUpdateFilterDefaults(raw, schemaVersion, inputDefaultVerdict, forwardDefaultVerdict, outputDefaultVerdict, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Appends a prerouting DNAT rule to the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult AddDnatRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        string? family,
+        string? protocol,
+        string? originalDestination,
+        string? translatedAddress,
+        int? originalPort,
+        int? translatedPort,
+        string? inputInterface,
+        string? source)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
+        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source);
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryAppendDnatRule(raw, input, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Removes a prerouting DNAT rule by index from the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult RemoveDnatRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryRemoveDnatRule(raw, ruleIndex, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Appends an explicit postrouting SNAT rule to the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult AddSnatRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        string? family,
+        string? source,
+        string? translatedAddress,
+        string? destination,
+        string? outputInterface)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
+        var input = new VisualSnatRuleInput(family, source, translatedAddress, destination, outputInterface);
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryAppendSnatRule(raw, input, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Removes an explicit postrouting SNAT rule by index from the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult RemoveSnatRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryRemoveSnatRule(raw, ruleIndex, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Clears the optional NAT table section from the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult ClearNat(string? bundleJson, string? summary, ulong? compareToRevision)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryClearNat(raw, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Enables or updates the L2 bridge default verdict in the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult UpdateBridgeDefaults(string? bundleJson, string? summary, ulong? compareToRevision, string? defaultVerdict)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryUpdateBridgeDefaults(raw, defaultVerdict, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Appends an L2 bridge forward rule to the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult AddBridgeRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        string? etherType,
+        string? verdict,
+        string? inputInterface,
+        string? outputInterface)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
+        var input = new VisualBridgeRuleInput(etherType, verdict, inputInterface, outputInterface);
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryAppendBridgeRule(raw, input, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Removes an L2 bridge forward rule by index from the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult RemoveBridgeRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryRemoveBridgeRule(raw, ruleIndex, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    /// <summary>Clears the optional L2 bridge table section from the draft bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult ClearBridge(string? bundleJson, string? summary, ulong? compareToRevision)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        return ApplyDraftMutation(
+            role,
+            raw,
+            summary,
+            compareToRevision,
+            PolicyAuthoringService.TryClearBridge(raw, out var updated, out var diags),
+            updated,
+            diags);
+    }
+
+    private IActionResult ApplyDraftMutation(
+        string role,
+        string raw,
+        string? summary,
+        ulong? compareToRevision,
+        bool succeeded,
+        string? updatedJson,
+        IReadOnlyList<Nergal.Nftables.PolicyDiagnostic> diagnostics)
+    {
+        var revisions = store.ListPolicyRevisions();
+        if (!succeeded || updatedJson is null)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
             var existing = PolicyAuthoringService.EvaluateDraft(raw, store, compareToRevision);

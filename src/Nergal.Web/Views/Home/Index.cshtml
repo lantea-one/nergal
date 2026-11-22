@@ -1,17 +1,45 @@
-@{ Layout = null; }
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>nergal</title></head>
-<body>
-  <main>
-    <h1>nergal</h1>
-    <p>Self-hosted Linux firewall management. Early development foundation.</p>
-    <p>The first backend uses native nftables. Local administrators can read agent status when a connection is configured.</p>
-    @if (Url.RouteUrl("local-login", new { controller = "Session", action = "Login" }) is string loginUrl)
-    {
-        <p><a href="@loginUrl">Administrator login</a></p>
-    }
-    <p><a href="/backend-decision">Read the backend decision</a></p>
-  </main>
-</body>
-</html>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Home";
+}
+<main class="container">
+    <div class="card" style="padding: 2rem;">
+        <div class="page-header" style="margin-bottom: 1rem;">
+            <div>
+                <h1>nergal</h1>
+                <p class="page-subtitle">Self-hosted Linux firewall controller with native <code>nftables</code> compilation, explicit table ownership, and autonomous timed rollback.</p>
+            </div>
+            <span class="badge badge-primary">Native nftables</span>
+        </div>
+
+        <div class="kpi-grid mt-2">
+            <div class="kpi-card">
+                <div class="kpi-label">Firewall Backend</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">inet + bridge</div>
+                <div class="kpi-meta"><code>nergal_filter</code>, <code>nergal_nat</code>, <code>nergal_bridge</code></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Apply Safety</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">Two-Phase Watchdog</div>
+                <div class="kpi-meta">Atomic validation + automatic local rollback</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Trust Boundary</div>
+                <div class="kpi-value" style="font-size: 1.25rem;">Zero-Priv Web UI</div>
+                <div class="kpi-meta">Unix <code>SO_PEERCRED</code> &amp; pinned TLS 1.3 mTLS</div>
+            </div>
+        </div>
+
+        <div class="btn-group mt-2">
+            @if (Url.RouteUrl("local-login", new { controller = "Session", action = "Login" }) is string loginUrl)
+            {
+                <a class="btn" href="@loginUrl">Administrator login</a>
+            }
+            @if (Url.RouteUrl("manage-dashboard") is string manageUrl)
+            {
+                <a class="btn btn-secondary" href="@manageUrl">Open Fleet Dashboard</a>
+            }
+            <a class="btn btn-secondary" href="/backend-decision">Read the backend decision</a>
+        </div>
+    </div>
+</main>

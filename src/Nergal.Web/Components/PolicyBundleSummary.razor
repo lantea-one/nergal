@@ -2,74 +2,101 @@
 
 @if (Bundle is not null)
 {
-    <section aria-label="Structured policy bundle summary">
-        <h2>Visual policy summary</h2>
-        <p>
-            Filter schema <code>v@Bundle.Filter.SchemaVersion</code>
-            — defaults: input <code>@Bundle.Filter.InputDefaultVerdict.ToString().ToLowerInvariant()</code>,
-            forward <code>@Bundle.Filter.ForwardDefaultVerdict.ToString().ToLowerInvariant()</code>,
-            output <code>@Bundle.Filter.OutputDefaultVerdict.ToString().ToLowerInvariant()</code>.
+    <section class="card" aria-label="Structured policy bundle summary">
+        <div class="card-header">
+            <h2>Bundle summary</h2>
+            <div class="btn-group">
+                <span class="badge badge-primary">Filter v@Bundle.Filter.SchemaVersion (@Bundle.Filter.Rules.Count rules)</span>
+                @if (Bundle.Nat is { } natBadge)
+                {
+                    <span class="badge badge-warning">NAT (@(natBadge.DnatRules.Count + natBadge.SnatRules.Count) rules)</span>
+                }
+                @if (Bundle.Bridge is { } brBadge)
+                {
+                    <span class="badge badge-neutral">Bridge (@brBadge.Rules.Count rules)</span>
+                }
+            </div>
+        </div>
+
+        <p class="muted" style="margin-top: 0;">
+            Filter defaults — Input: <code>@Bundle.Filter.InputDefaultVerdict.ToString().ToLowerInvariant()</code> ·
+            Forward: <code>@Bundle.Filter.ForwardDefaultVerdict.ToString().ToLowerInvariant()</code> ·
+            Output: <code>@Bundle.Filter.OutputDefaultVerdict.ToString().ToLowerInvariant()</code>
         </p>
 
         @if (Bundle.Filter.Rules.Count == 0)
         {
-            <p>No filter rules defined.</p>
+            <p class="muted">No filter rules defined.</p>
         }
         else
         {
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Chain</th>
-                        <th>Family</th>
-                        <th>Protocol / ICMP</th>
-                        <th>Source</th>
-                        <th>Destination</th>
-                        <th>Ports</th>
-                        <th>Interfaces</th>
-                        <th>States</th>
-                        <th>Verdict</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (var i = 0; i < Bundle.Filter.Rules.Count; i++)
-                    {
-                        var rule = Bundle.Filter.Rules[i];
-                        if (rule is null) { continue; }
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td>@(i + 1)</td>
-                            <td><code>@rule.Chain.ToString().ToLowerInvariant()</code></td>
-                            <td><code>@rule.Family.ToString().ToLowerInvariant()</code></td>
-                            <td>
-                                <code>@rule.Protocol.ToString().ToLowerInvariant()</code>
-                                @if (!string.IsNullOrEmpty(rule.IcmpType))
-                                {
-                                    <span>(<code>@rule.IcmpType</code>)</span>
-                                }
-                            </td>
-                            <td><code>@FormatPrefixes(rule.Source, rule.SourcePrefixes)</code></td>
-                            <td><code>@FormatPrefixes(rule.Destination, rule.DestinationPrefixes)</code></td>
-                            <td><code>@FormatPorts(rule.DestinationPort, rule.DestinationPorts)</code></td>
-                            <td><code>@FormatInterfaces(rule.InputInterface, rule.OutputInterface)</code></td>
-                            <td><code>@FormatStates(rule.ConnectionStates)</code></td>
-                            <td><strong>@rule.Verdict.ToString().ToLowerInvariant()</strong></td>
+                            <th>#</th>
+                            <th>Chain</th>
+                            <th>Family</th>
+                            <th>Protocol / ICMP</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Ports</th>
+                            <th>Interfaces</th>
+                            <th>States / Match</th>
+                            <th>Rate Limit</th>
+                            <th>Verdict</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Bundle.Filter.Rules.Count; i++)
+                        {
+                            var rule = Bundle.Filter.Rules[i];
+                            if (rule is null) { continue; }
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td><code>@rule.Chain.ToString().ToLowerInvariant()</code></td>
+                                <td><code>@rule.Family.ToString().ToLowerInvariant()</code></td>
+                                <td>
+                                    <code>@rule.Protocol.ToString().ToLowerInvariant()</code>
+                                    @if (!string.IsNullOrEmpty(rule.IcmpType))
+                                    {
+                                        <span>(<code>@rule.IcmpType</code>)</span>
+                                    }
+                                </td>
+                                <td><code>@FormatPrefixes(rule.Source, rule.SourcePrefixes)</code></td>
+                                <td><code>@FormatPrefixes(rule.Destination, rule.DestinationPrefixes)</code></td>
+                                <td><code>@FormatPorts(rule.DestinationPort, rule.DestinationPorts)</code></td>
+                                <td><code>@FormatInterfaces(rule.InputInterface, rule.OutputInterface)</code></td>
+                                <td>
+                                    <code>@FormatStates(rule.ConnectionStates)</code>
+                                    @if (rule.MatchOriginalDestinationDnat)
+                                    {
+                                        <span class="badge badge-warning">ct dnat</span>
+                                    }
+                                </td>
+                                <td><code>@FormatRateLimit(rule.RateLimit)</code></td>
+                                <td>
+                                    <span class="badge @(rule.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
+                                        @rule.Verdict.ToString().ToLowerInvariant()
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
 
         @if (Bundle.Nat is { } nat)
         {
-            <h3>NAT rules (<code>inet nergal_nat</code>)</h3>
-            <p>DNAT rules: <strong>@nat.DnatRules.Count</strong> · SNAT rules: <strong>@nat.SnatRules.Count</strong></p>
+            <h3>NAT (<code>inet nergal_nat</code>)</h3>
+            <p class="muted">DNAT rules: <strong>@nat.DnatRules.Count</strong> · Explicit SNAT rules: <strong>@nat.SnatRules.Count</strong></p>
         }
 
         @if (Bundle.Bridge is { } bridge)
         {
-            <h3>Bridge rules (<code>bridge nergal_bridge</code>)</h3>
-            <p>Default verdict: <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · Rules: <strong>@bridge.Rules.Count</strong></p>
+            <h3>Bridge (<code>bridge nergal_bridge</code>)</h3>
+            <p class="muted mb-0">Default verdict: <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · Forward rules: <strong>@bridge.Rules.Count</strong></p>
         }
     </section>
 }
@@ -109,5 +136,12 @@
         if ((states & ConnectionStateFlags.Related) != 0) { parts.Add("related"); }
         if ((states & ConnectionStateFlags.Invalid) != 0) { parts.Add("invalid"); }
         return string.Join(", ", parts);
+    }
+
+    private static string FormatRateLimit(PerSourceRateLimit? rl)
+    {
+        if (rl is null) { return "—"; }
+        var unit = rl.WindowUnit == RateLimitTimeUnit.Second ? "s" : "m";
+        return $"{rl.PacketsPerWindow}/{unit} (burst {rl.Burst}, {rl.EntryTimeoutSeconds}s)";
     }
 }

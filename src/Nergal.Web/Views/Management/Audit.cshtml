@@ -1,98 +1,111 @@
-@{ Layout = null; }
 @model Nergal.Web.AuditHistoryViewModel
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Audit &amp; revision history · nergal</title>
-</head>
-<body>
-<main>
-    <h1>Controller audit &amp; revision history</h1>
-    <p>Signed in as <code>@Model.ActorId</code> (role: <code>@Model.ActorRole</code>).</p>
-    <nav>
-        <a href="@Url.Content("~/manage")">Fleet dashboard</a> ·
-        <a href="@Url.Content("~/manage/policies")">Policy editor &amp; diff</a> ·
-        <a href="@Url.Content("~/manage/apply")">Confirmed apply</a> ·
-        <a href="@Url.Content("~/session")">Session</a>
-    </nav>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Audit & revision history";
+    ViewData["ActiveNav"] = "audit";
+    ViewData["ActorRole"] = Model.ActorRole;
+    ViewData["ShowManageNav"] = true;
+}
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>Controller audit &amp; revision history</h1>
+            <p class="page-subtitle">Trigger-protected append-only audit log and immutable policy revision archive.</p>
+        </div>
+        <span class="badge badge-neutral">@Model.Entries.Count events · @Model.Revisions.Count revisions</span>
+    </div>
 
-    <section>
-        <h2>Append-only audit log (@Model.Entries.Count)</h2>
+    <section class="card">
+        <div class="card-header">
+            <h2>Append-only audit log (@Model.Entries.Count)</h2>
+            <div style="min-width: 240px;">
+                <input type="text" placeholder="Filter by actor, action, target, outcome…" data-audit-filter aria-label="Filter audit entries" />
+            </div>
+        </div>
+
         @if (Model.Entries.Count == 0)
         {
-            <p>No audit events recorded.</p>
+            <p class="muted mb-0">No audit events recorded.</p>
         }
         else
         {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Seq</th>
-                        <th>UTC Timestamp</th>
-                        <th>Actor</th>
-                        <th>Role</th>
-                        <th>Action</th>
-                        <th>Target</th>
-                        <th>Revision</th>
-                        <th>Outcome</th>
-                        <th>Detail</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var entry in Model.Entries)
-                    {
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td>@entry.Sequence</td>
-                            <td>@entry.TimestampUtc.ToString("u")</td>
-                            <td><code>@entry.ActorId</code></td>
-                            <td><code>@entry.ActorRole</code></td>
-                            <td><code>@entry.Action</code></td>
-                            <td><code>@entry.Target</code></td>
-                            <td>@(entry.Revision?.ToString() ?? "-")</td>
-                            <td>@entry.Outcome</td>
-                            <td><code>@(entry.DetailCode ?? "-")</code></td>
+                            <th>Seq</th>
+                            <th>UTC Timestamp</th>
+                            <th>Actor</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>Target</th>
+                            <th>Rev</th>
+                            <th>Outcome</th>
+                            <th>Detail</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Model.Entries)
+                        {
+                            var badge = entry.Outcome is "confirmed" or "saved" or "registered" or "matched"
+                                ? "badge-success"
+                                : entry.Outcome is "rejected" or "failed" or "denied"
+                                    ? "badge-danger"
+                                    : "badge-warning";
+                            <tr data-audit-row>
+                                <td>#@entry.Sequence</td>
+                                <td class="mono">@entry.TimestampUtc.ToString("u")</td>
+                                <td><code>@entry.ActorId</code></td>
+                                <td><span class="badge badge-neutral">@entry.ActorRole</span></td>
+                                <td><code>@entry.Action</code></td>
+                                <td><code>@entry.Target</code></td>
+                                <td>@(entry.Revision?.ToString() ?? "—")</td>
+                                <td><span class="badge @badge">@entry.Outcome</span></td>
+                                <td><code>@(entry.DetailCode ?? "—")</code></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
     </section>
 
-    <section>
-        <h2>Policy revisions (@Model.Revisions.Count)</h2>
+    <section class="card">
+        <div class="card-header">
+            <h2>Saved policy revisions (@Model.Revisions.Count)</h2>
+            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/policies")">Open Policy Builder</a>
+        </div>
         @if (Model.Revisions.Count == 0)
         {
-            <p>No saved policy revisions.</p>
+            <p class="muted mb-0">No saved policy revisions.</p>
         }
         else
         {
-            <table>
-                <thead>
-                    <tr>
-                        <th>Revision</th>
-                        <th>Candidate SHA-256</th>
-                        <th>Created by</th>
-                        <th>Created UTC</th>
-                        <th>Summary</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var rev in Model.Revisions)
-                    {
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td><a href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">@rev.Revision</a></td>
-                            <td><code>@rev.CandidateDigest</code></td>
-                            <td><code>@rev.CreatedByActor</code></td>
-                            <td>@rev.CreatedAtUtc.ToString("u")</td>
-                            <td>@(rev.Summary ?? "-")</td>
+                            <th>Revision</th>
+                            <th>Candidate SHA-256</th>
+                            <th>Created by</th>
+                            <th>Created UTC</th>
+                            <th>Summary</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var rev in Model.Revisions)
+                        {
+                            <tr>
+                                <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Rev @rev.Revision</a></td>
+                                <td><code>@rev.CandidateDigest</code></td>
+                                <td><code>@rev.CreatedByActor</code></td>
+                                <td class="mono">@rev.CreatedAtUtc.ToString("u")</td>
+                                <td>@(rev.Summary ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
     </section>
 </main>
-</body>
-</html>
