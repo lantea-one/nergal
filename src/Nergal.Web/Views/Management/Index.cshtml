@@ -1,20 +1,37 @@
 @model Nergal.Web.FleetDashboardViewModel
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = "Fleet dashboard";
+    ViewData["Title"] = "Dashboard";
     ViewData["ActiveNav"] = "fleet";
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
+
+    var matchedCount = Model.HostHealth.Count(h => h.StateLabel is "matched" or "online");
+    var driftCount = Model.HostHealth.Count(h => h.StateLabel is "drift" or "missing");
+    var pendingCount = Model.HostHealth.Count(h => h.StateLabel == "pending");
+    var unavailableCount = Model.HostHealth.Count(h => h.StateLabel == "unavailable");
+
+    var filterRuleCount = Model.LatestBundle?.Filter.Rules.Count ?? 0;
+    var dnatRuleCount = Model.LatestBundle?.Nat?.DnatRules.Count ?? 0;
+    var snatRuleCount = Model.LatestBundle?.Nat?.SnatRules.Count ?? 0;
+    var bridgeRuleCount = Model.LatestBundle?.Bridge?.Rules.Count ?? 0;
+    var totalRuleCount = filterRuleCount + dnatRuleCount + snatRuleCount + bridgeRuleCount;
+
+    var authMethods = new List<string>();
+    if (Model.Settings.LocalAuth.Enabled) { authMethods.Add("Local"); }
+    if (Model.Settings.Oidc.Enabled) { authMethods.Add("OIDC"); }
+    if (Model.Settings.Ldap.Enabled) { authMethods.Add("LDAP"); }
 }
 <main class="container">
     <div class="page-header">
         <div>
-            <h1>Controller fleet dashboard</h1>
-            <p class="page-subtitle">Signed in as <code>@Model.ActorId</code> · Role <code>@Model.ActorRole</code></p>
+            <h1>@Model.Settings.Branding.ApplicationName overview dashboard</h1>
+            <p class="page-subtitle">@Model.Settings.Branding.InstanceSubtitle · Signed in as <code>@Model.ActorId</code> · Role <code>@Model.ActorRole</code></p>
         </div>
         <div class="btn-group">
             <a class="btn" href="@Url.Content("~/manage/policies")">Open Policy Builder</a>
             <a class="btn btn-secondary" href="@Url.Content("~/manage/apply")">Confirmed Apply</a>
+            <a class="btn btn-secondary" href="@Url.Content("~/manage/settings")">System Settings</a>
         </div>
     </div>
 
@@ -25,16 +42,21 @@
 
     <div class="kpi-grid">
         <div class="kpi-card">
-            <div class="kpi-label">Managed Hosts</div>
-            <div class="kpi-value">@Model.Hosts.Count</div>
-            <div class="kpi-meta">Enrolled Unix &amp; TLS 1.3 mTLS agents</div>
+            <div class="kpi-label">Fleet Health</div>
+            <div class="kpi-value">@matchedCount / @Model.Hosts.Count</div>
+            <div class="kpi-meta">
+                <span class="badge badge-success">@matchedCount synced</span>
+                @if (driftCount > 0) { <span class="badge badge-warning">@driftCount drift</span> }
+                @if (pendingCount > 0) { <span class="badge badge-primary">@pendingCount pending</span> }
+                @if (unavailableCount > 0) { <span class="badge badge-danger">@unavailableCount offline</span> }
+            </div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">Latest Policy Revision</div>
+            <div class="kpi-label">Active Policy Revision</div>
             @if (Model.LatestRevision is { } latest)
             {
                 <div class="kpi-value">Rev @latest.Revision</div>
-                <div class="kpi-meta">SHA-256 <code>@latest.CandidateDigest[..12]</code> · @latest.CreatedAtUtc.ToString("u")</div>
+                <div class="kpi-meta">SHA-256 <code>@latest.CandidateDigest[..12]</code> · @Model.TotalRevisions total revisions</div>
             }
             else
             {
@@ -43,11 +65,55 @@
             }
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">Recent Audit Events</div>
-            <div class="kpi-value">@Model.RecentAudit.Count</div>
-            <div class="kpi-meta"><a href="@Url.Content("~/manage/audit")">View full append-only log →</a></div>
+            <div class="kpi-label">Compiled Rule Inventory</div>
+            <div class="kpi-value">@totalRuleCount rules</div>
+            <div class="kpi-meta">
+                Filter <strong>@filterRuleCount</strong> · DNAT <strong>@dnatRuleCount</strong> · SNAT <strong>@snatRuleCount</strong> · Bridge <strong>@bridgeRuleCount</strong>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Audit Trail</div>
+            <div class="kpi-value">@Model.RecentAudit.Count recent</div>
+            <div class="kpi-meta"><a href="@Url.Content("~/manage/audit")">Inspect full append-only log →</a></div>
         </div>
     </div>
+
+    <section class="card">
+        <div class="card-header">
+            <h2>System posture &amp; runtime configuration</h2>
+            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/settings")">Configure system</a>
+        </div>
+        <div class="status-grid">
+            <div class="status-tile">
+                <div class="status-tile-title">Firewall Backend</div>
+                <div class="status-tile-value">Native nftables</div>
+                <div class="status-tile-meta">Schema v@(Model.Settings.FirewallDefaults.DefaultFilterSchemaVersion) · Watchdog default @(Model.Settings.FirewallDefaults.DefaultConfirmationTimeoutSeconds)s</div>
+            </div>
+            <div class="status-tile">
+                <div class="status-tile-title">Authentication Providers</div>
+                <div class="status-tile-value">@(authMethods.Count > 0 ? string.Join(" + ", authMethods) : "None")</div>
+                <div class="status-tile-meta">Session timeout @(Model.Settings.LocalAuth.SessionIdleTimeoutMinutes)m · Lockout after @(Model.Settings.LocalAuth.LockoutMaxFailedAttempts) tries</div>
+            </div>
+            <div class="status-tile">
+                <div class="status-tile-title">Controller Database</div>
+                <div class="status-tile-value">@Model.Settings.Database.Provider.ToUpperInvariant()</div>
+                <div class="status-tile-meta">@(Model.Settings.Database.Provider == "sqlite" ? "Protected local WAL store (0600)" : $"{Model.Settings.Database.Host ?? "unconfigured"}:{Model.Settings.Database.Port ?? 0}/{Model.Settings.Database.DatabaseName ?? "-"}")</div>
+            </div>
+            <div class="status-tile">
+                <div class="status-tile-title">Default Policy Posture</div>
+                @if (Model.LatestBundle is { } bundle)
+                {
+                    <div class="status-tile-value">in:@bundle.Filter.InputDefaultVerdict · fwd:@bundle.Filter.ForwardDefaultVerdict · out:@bundle.Filter.OutputDefaultVerdict</div>
+                    <div class="status-tile-meta">NAT @(bundle.Nat is not null ? "enabled" : "disabled") · Bridge @(bundle.Bridge is not null ? "enabled" : "disabled")</div>
+                }
+                else
+                {
+                    <div class="status-tile-value">Not yet authored</div>
+                    <div class="status-tile-meta"><a href="@Url.Content("~/manage/policies")">Create initial policy →</a></div>
+                }
+            </div>
+        </div>
+    </section>
 
     <section class="card">
         <div class="card-header">
@@ -68,18 +134,35 @@
                     <thead>
                         <tr>
                             <th>Host Name</th>
+                            <th>Live Status</th>
                             <th>Transport</th>
                             <th>Endpoint</th>
                             <th>Pin / Peer Identity</th>
-                            <th>Last Revision</th>
+                            <th>Revision</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var host in Model.Hosts)
+                        @foreach (var health in Model.HostHealth)
                         {
+                            var host = health.Host;
+                            var statusBadge = health.StateLabel switch
+                            {
+                                "matched" or "online" => "badge-success",
+                                "pending" => "badge-primary",
+                                "drift" or "missing" => "badge-warning",
+                                "unavailable" => "badge-danger",
+                                _ => "badge-neutral",
+                            };
                             <tr>
                                 <td><strong>@host.Name</strong></td>
+                                <td>
+                                    <span class="badge @statusBadge">@health.StateLabel</span>
+                                    @if (!string.IsNullOrEmpty(health.ErrorCode))
+                                    {
+                                        <span class="muted">(@health.ErrorCode)</span>
+                                    }
+                                </td>
                                 <td>
                                     <span class="badge @(host.TransportKind == Nergal.Core.Controller.AgentTransportKind.Tls ? "badge-primary" : "badge-neutral")">
                                         @host.TransportKind
@@ -91,7 +174,7 @@
                                         ? pin[..16] + "…"
                                         : (host.PinnedServerThumbprint ?? ($"uid={host.ExpectedServerUserId?.ToString() ?? "-"}" + (host.SocketGroupId.HasValue ? $" gid={host.SocketGroupId}" : ""))))</code>
                                 </td>
-                                <td><span class="badge badge-neutral">rev @host.LastKnownRevision</span></td>
+                                <td><span class="badge badge-neutral">rev @(health.ReportedRevision ?? host.LastKnownRevision)</span></td>
                                 <td>
                                     <div class="btn-group">
                                         <a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/apply?hostId={host.Id:D}")">Apply / Status</a>
@@ -184,7 +267,7 @@
                     <tbody>
                         @foreach (var entry in Model.RecentAudit)
                         {
-                            var badge = entry.Outcome is "confirmed" or "saved" or "registered" or "ok" or "matched"
+                            var badge = entry.Outcome is "confirmed" or "saved" or "registered" or "ok" or "matched" or "succeeded"
                                 ? "badge-success"
                                 : entry.Outcome is "rejected" or "failed" or "denied"
                                     ? "badge-danger"

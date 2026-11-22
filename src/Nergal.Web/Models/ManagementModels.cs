@@ -3,7 +3,26 @@ using Nergal.Nftables;
 
 namespace Nergal.Web;
 
-/// <summary>View model for the controller host fleet dashboard.</summary>
+/// <summary>Live health summary for a registered managed host displayed on the overview dashboard.</summary>
+public sealed class HostHealthSummary
+{
+    /// <summary>Gets the registered managed host record.</summary>
+    public required ManagedHostRecord Host { get; init; }
+
+    /// <summary>Gets whether the agent control endpoint responded cleanly.</summary>
+    public required bool Reachable { get; init; }
+
+    /// <summary>Gets drift or operational status label (e.g., <c>matched</c>, <c>drift</c>, <c>pending</c>, <c>unavailable</c>).</summary>
+    public required string StateLabel { get; init; }
+
+    /// <summary>Gets live reported baseline revision when reachable.</summary>
+    public ulong? ReportedRevision { get; init; }
+
+    /// <summary>Gets optional non-sensitive error code when unreachable or errored.</summary>
+    public string? ErrorCode { get; init; }
+}
+
+/// <summary>View model for the controller overview and host fleet dashboard.</summary>
 public sealed class FleetDashboardViewModel
 {
     /// <summary>Gets canonical authenticated actor identifier.</summary>
@@ -18,14 +37,51 @@ public sealed class FleetDashboardViewModel
     /// <summary>Gets all registered managed hosts.</summary>
     public required IReadOnlyList<ManagedHostRecord> Hosts { get; init; }
 
+    /// <summary>Gets live per-host health summaries when queried.</summary>
+    public required IReadOnlyList<HostHealthSummary> HostHealth { get; init; }
+
     /// <summary>Gets latest saved policy revision when present.</summary>
     public PolicyRevisionRecord? LatestRevision { get; init; }
+
+    /// <summary>Gets decoded latest policy bundle when valid, for rule breakdown KPIs.</summary>
+    public Core.Policy.FirewallPolicyBundle? LatestBundle { get; init; }
+
+    /// <summary>Gets total count of persisted policy revisions.</summary>
+    public int TotalRevisions { get; init; }
+
+    /// <summary>Gets current persisted system settings snapshot.</summary>
+    public required SystemSettingsSnapshot Settings { get; init; }
 
     /// <summary>Gets recent append-only audit events.</summary>
     public required IReadOnlyList<ControllerAuditEntry> RecentAudit { get; init; }
 
     /// <summary>Gets an optional non-sensitive validation message.</summary>
     public string? ErrorMessage { get; init; }
+}
+
+/// <summary>View model for the Administrator System Settings console.</summary>
+public sealed class SystemSettingsViewModel
+{
+    /// <summary>Gets canonical authenticated actor identifier.</summary>
+    public required string ActorId { get; init; }
+
+    /// <summary>Gets authenticated controller RBAC role.</summary>
+    public required string ActorRole { get; init; }
+
+    /// <summary>Gets whether the viewer can save system settings.</summary>
+    public required bool CanMutate { get; init; }
+
+    /// <summary>Gets the current system settings snapshot.</summary>
+    public required SystemSettingsSnapshot Settings { get; init; }
+
+    /// <summary>Gets optional non-sensitive confirmation notice.</summary>
+    public string? StatusMessage { get; init; }
+
+    /// <summary>Gets optional non-sensitive error summary.</summary>
+    public string? ErrorMessage { get; init; }
+
+    /// <summary>Gets structured validation error codes when save failed.</summary>
+    public required IReadOnlyList<string> ValidationErrors { get; init; }
 }
 
 /// <summary>View model for the typed policy bundle editor, compatibility report, and diff preview.</summary>

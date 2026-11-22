@@ -18,11 +18,13 @@ public enum BridgeEtherType
 /// <param name="Verdict">Terminal allow or drop verdict.</param>
 /// <param name="InputInterface">Optional ingress bridge port name (<c>iifname</c>).</param>
 /// <param name="OutputInterface">Optional egress bridge port name (<c>oifname</c>).</param>
+/// <param name="Description">Optional human-readable operator note (max 160 printable characters; metadata only).</param>
 public sealed record BridgeFilterRule(
     BridgeEtherType EtherType,
     FilterVerdict Verdict,
     string? InputInterface = null,
-    string? OutputInterface = null);
+    string? OutputInterface = null,
+    string? Description = null);
 
 /// <summary>An immutable, versioned snapshot of ordered L2 bridge forward rules.</summary>
 public sealed class BridgePolicy

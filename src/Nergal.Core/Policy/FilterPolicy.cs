@@ -97,6 +97,7 @@ public sealed record PerSourceRateLimit(
 /// <param name="SourcePrefixes">Optional inline source CIDR set (2–64 distinct prefixes; mutually exclusive with <paramref name="Source"/>; schema 2 only).</param>
 /// <param name="DestinationPrefixes">Optional inline destination CIDR set (2–64 distinct prefixes; mutually exclusive with <paramref name="Destination"/>; schema 2 only).</param>
 /// <param name="DestinationPorts">Optional inline TCP/UDP destination port set (2–64 distinct ports in 1–65535; mutually exclusive with <paramref name="DestinationPort"/>; schema 2 only).</param>
+/// <param name="Description">Optional human-readable operator note (max 160 printable characters; metadata only).</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -113,7 +114,8 @@ public sealed record FilterRule(
     bool MatchOriginalDestinationDnat = false,
     IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
     IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
-    IReadOnlyList<int>? DestinationPorts = null)
+    IReadOnlyList<int>? DestinationPorts = null,
+    string? Description = null)
 {
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
@@ -143,7 +145,8 @@ public sealed record FilterRule(
             MatchOriginalDestinationDnat == other.MatchOriginalDestinationDnat &&
             SequenceEqual(SourcePrefixes, other.SourcePrefixes) &&
             SequenceEqual(DestinationPrefixes, other.DestinationPrefixes) &&
-            SequenceEqual(DestinationPorts, other.DestinationPorts);
+            SequenceEqual(DestinationPorts, other.DestinationPorts) &&
+            string.Equals(Description, other.Description, StringComparison.Ordinal);
     }
 
     /// <inheritdoc />
@@ -166,6 +169,7 @@ public sealed record FilterRule(
         AddSequenceHash(ref hash, SourcePrefixes);
         AddSequenceHash(ref hash, DestinationPrefixes);
         AddSequenceHash(ref hash, DestinationPorts);
+        hash.Add(Description, StringComparer.Ordinal);
         return hash.ToHashCode();
     }
 

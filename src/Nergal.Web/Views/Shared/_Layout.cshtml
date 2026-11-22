@@ -1,32 +1,36 @@
 @{
-    var title = ViewData["Title"] as string ?? "nergal";
+    var branding = ViewData["Branding"] as Nergal.Core.Controller.BrandingSettings ?? Nergal.Core.Controller.SystemSettingsSnapshot.Default.Branding;
+    var appName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "nergal" : branding.ApplicationName;
+    var brandMark = char.ToUpperInvariant(appName[0]);
+    var title = ViewData["Title"] as string ?? appName;
     var activeNav = ViewData["ActiveNav"] as string ?? "";
     var actorRole = ViewData["ActorRole"] as string;
     var showNav = ViewData["ShowManageNav"] as bool? ?? false;
 }
 <!doctype html>
-<html lang="en">
+<html lang="en" data-accent="@branding.AccentColor" data-default-theme="@branding.DefaultTheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@title · nergal</title>
+    <title>@title · @appName</title>
     <link rel="stylesheet" href="@Url.Content("~/css/nergal.css")" />
 </head>
 <body>
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="@Url.Content(showNav ? "~/manage" : "~/")">
-                <span class="brand-mark" aria-hidden="true">N</span>
-                <span>nergal</span>
+                <span class="brand-mark" aria-hidden="true">@brandMark</span>
+                <span>@appName</span>
             </a>
 
             @if (showNav)
             {
                 <nav class="nav-links" aria-label="Primary navigation">
-                    <a class="nav-link @(activeNav == "fleet" ? "active" : "")" href="@Url.Content("~/manage")">Fleet</a>
+                    <a class="nav-link @(activeNav == "fleet" ? "active" : "")" href="@Url.Content("~/manage")">Dashboard</a>
                     <a class="nav-link @(activeNav == "policies" ? "active" : "")" href="@Url.Content("~/manage/policies")">Policies</a>
                     <a class="nav-link @(activeNav == "apply" ? "active" : "")" href="@Url.Content("~/manage/apply")">Confirmed Apply</a>
                     <a class="nav-link @(activeNav == "audit" ? "active" : "")" href="@Url.Content("~/manage/audit")">Audit</a>
+                    <a class="nav-link @(activeNav == "settings" ? "active" : "")" href="@Url.Content("~/manage/settings")">Settings</a>
                     <a class="nav-link @(activeNav == "session" ? "active" : "")" href="@Url.Content("~/session")">Session</a>
                 </nav>
             }

@@ -392,6 +392,79 @@ public sealed class ControllerStateStore
         });
     }
 
+    /// <summary>Reads the persisted system settings snapshot, returning <see cref="SystemSettingsSnapshot.Default"/> when not yet configured.</summary>
+    public SystemSettingsSnapshot ReadSystemSettings()
+    {
+        return Read((conn, tx) =>
+        {
+            var tableExists = ScalarLong(conn, tx,
+                "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'system_settings'");
+            if (tableExists == 0)
+            {
+                return SystemSettingsSnapshot.Default;
+            }
+
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = "SELECT settings_json FROM system_settings WHERE singleton = 1";
+            var raw = cmd.ExecuteScalar() as string;
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return SystemSettingsSnapshot.Default;
+            }
+
+            return SystemSettingsCodec.Deserialize(raw) ?? throw new ControllerStateException("settings.corrupt");
+        });
+    }
+
+    /// <summary>Validates and persists system settings and appends an immutable <c>settings.update</c> audit record.</summary>
+    /// <exception cref="ArgumentNullException">Required argument is null.</exception>
+    /// <exception cref="ArgumentException">Actor identity or role is invalid.</exception>
+    /// <exception cref="ControllerStateException">Actor is not an administrator or settings fail validation.</exception>
+    public void SaveSystemSettings(SystemSettingsSnapshot settings, string actorId, string actorRole)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ValidateActor(actorId, actorRole);
+        if (actorRole != NergalRoles.Administrator)
+        {
+            throw new ControllerStateException("rbac.denied");
+        }
+
+        var errors = SystemSettingsCodec.Validate(settings);
+        if (errors.Count > 0)
+        {
+            throw new ControllerStateException("settings.invalid");
+        }
+
+        var json = SystemSettingsCodec.Serialize(settings);
+        Write((conn, tx) =>
+        {
+            ExecuteNonQuery(conn, tx, """
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
+                    settings_json TEXT NOT NULL,
+                    updated_by_actor TEXT NOT NULL,
+                    updated_at_utc TEXT NOT NULL
+                ) STRICT;
+                """);
+
+            var nowUtc = _timeProvider.GetUtcNow();
+            ExecuteNonQuery(conn, tx, """
+                INSERT INTO system_settings (singleton, settings_json, updated_by_actor, updated_at_utc)
+                VALUES (1, $json, $actor, $updated)
+                ON CONFLICT(singleton) DO UPDATE SET
+                    settings_json = excluded.settings_json,
+                    updated_by_actor = excluded.updated_by_actor,
+                    updated_at_utc = excluded.updated_at_utc
+                """,
+                ("$json", json),
+                ("$actor", actorId),
+                ("$updated", nowUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)));
+
+            InsertAudit(conn, tx, nowUtc, actorId, actorRole, "settings.update", "system", null, "succeeded", null);
+        });
+    }
+
     private ControllerAuditEntry InsertAudit(
         SqliteConnection conn,
         SqliteTransaction tx,
@@ -696,6 +769,13 @@ public sealed class ControllerStateStore
             revision TEXT,
             outcome TEXT NOT NULL,
             detail_code TEXT
+        ) STRICT;
+
+        CREATE TABLE IF NOT EXISTS system_settings (
+            singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
+            settings_json TEXT NOT NULL,
+            updated_by_actor TEXT NOT NULL,
+            updated_at_utc TEXT NOT NULL
         ) STRICT;
 
         CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_log

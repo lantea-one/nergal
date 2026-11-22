@@ -143,7 +143,7 @@ public static class PolicyBundleJsonCodec
             if (item.ValueKind != JsonValueKind.Object ||
                 !HasOnlyProperties(item, "family", "protocol", "verdict", "source", "destination", "destinationPort",
                     "sourcePrefixes", "destinationPrefixes", "destinationPorts",
-                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat") ||
+                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description") ||
                 !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                 !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
                 !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
@@ -277,7 +277,12 @@ public static class PolicyBundleJsonCodec
                 }
             }
 
-            rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports));
+            if (!TryReadOptionalDescription(item, out var description))
+            {
+                return new(null, [new("filter.description", $"filter.rules[{index}].description")]);
+            }
+
+            rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports, description));
             index++;
         }
 
@@ -313,7 +318,7 @@ public static class PolicyBundleJsonCodec
             foreach (var item in dnatEl.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object ||
-                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "translatedPort", "inputInterface", "source") ||
+                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "translatedPort", "inputInterface", "source", "description") ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                     !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
                     !item.TryGetProperty("originalDestination", out var odEl) || odEl.ValueKind != JsonValueKind.String ||
@@ -349,12 +354,17 @@ public static class PolicyBundleJsonCodec
                     return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]);
                 }
 
+                if (!TryReadOptionalDescription(item, out var dnatDescription))
+                {
+                    return new(null, [new("nat.description", $"nat.dnatRules[{idx}].description")]);
+                }
+
                 try
                 {
                     var src = item.TryGetProperty("source", out var sEl) && sEl.ValueKind != JsonValueKind.Null
                         ? (sEl.ValueKind == JsonValueKind.String ? new NetworkPrefix(sEl.GetString()!) : throw new FormatException())
                         : null;
-                    dnatRules.Add(new DnatRule(family, protocol, new NetworkPrefix(odEl.GetString()!), taEl.GetString()!, origPort, transPort, dnatIif, src));
+                    dnatRules.Add(new DnatRule(family, protocol, new NetworkPrefix(odEl.GetString()!), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -377,7 +387,7 @@ public static class PolicyBundleJsonCodec
             foreach (var item in snatEl.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object ||
-                    !HasOnlyProperties(item, "family", "source", "translatedAddress", "destination", "outputInterface") ||
+                    !HasOnlyProperties(item, "family", "source", "translatedAddress", "destination", "outputInterface", "description") ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                     !item.TryGetProperty("source", out var srcEl) || srcEl.ValueKind != JsonValueKind.String ||
                     !item.TryGetProperty("translatedAddress", out var taEl) || taEl.ValueKind != JsonValueKind.String)
@@ -390,12 +400,17 @@ public static class PolicyBundleJsonCodec
                     return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]);
                 }
 
+                if (!TryReadOptionalDescription(item, out var snatDescription))
+                {
+                    return new(null, [new("nat.description", $"nat.snatRules[{idx}].description")]);
+                }
+
                 try
                 {
                     var dst = item.TryGetProperty("destination", out var dEl) && dEl.ValueKind != JsonValueKind.Null
                         ? (dEl.ValueKind == JsonValueKind.String ? new NetworkPrefix(dEl.GetString()!) : throw new FormatException())
                         : null;
-                    snatRules.Add(new SnatRule(family, new NetworkPrefix(srcEl.GetString()!), taEl.GetString()!, dst, snatOif));
+                    snatRules.Add(new SnatRule(family, new NetworkPrefix(srcEl.GetString()!), taEl.GetString()!, dst, snatOif, snatDescription));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -433,7 +448,7 @@ public static class PolicyBundleJsonCodec
         foreach (var item in rulesEl.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object ||
-                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface") ||
+                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description") ||
                 !item.TryGetProperty("etherType", out var etEl) || etEl.ValueKind != JsonValueKind.String ||
                 !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
             {
@@ -459,7 +474,12 @@ public static class PolicyBundleJsonCodec
                 return new(null, [new("bridge.ruleFields", $"bridge.rules[{idx}]")]);
             }
 
-            rules.Add(new BridgeFilterRule(etherType.Value, verdict, brIif, brOif));
+            if (!TryReadOptionalDescription(item, out var bridgeDescription))
+            {
+                return new(null, [new("bridge.description", $"bridge.rules[{idx}].description")]);
+            }
+
+            rules.Add(new BridgeFilterRule(etherType.Value, verdict, brIif, brOif, bridgeDescription));
             idx++;
         }
 
@@ -579,6 +599,7 @@ public static class PolicyBundleJsonCodec
             }
 
             if (r.MatchOriginalDestinationDnat) { writer.WriteBoolean("matchOriginalDestinationDnat", true); }
+            if (!string.IsNullOrWhiteSpace(r.Description)) { writer.WriteString("description", r.Description.Trim()); }
             writer.WriteEndObject();
         }
 
@@ -610,6 +631,7 @@ public static class PolicyBundleJsonCodec
             if (r.TranslatedPort.HasValue) { writer.WriteNumber("translatedPort", r.TranslatedPort.Value); }
             if (r.InputInterface is not null) { writer.WriteString("inputInterface", r.InputInterface); }
             if (r.Source is not null) { writer.WriteString("source", r.Source.Value); }
+            if (!string.IsNullOrWhiteSpace(r.Description)) { writer.WriteString("description", r.Description.Trim()); }
             writer.WriteEndObject();
         }
 
@@ -628,6 +650,7 @@ public static class PolicyBundleJsonCodec
             writer.WriteString("translatedAddress", r.TranslatedAddress);
             if (r.Destination is not null) { writer.WriteString("destination", r.Destination.Value); }
             if (r.OutputInterface is not null) { writer.WriteString("outputInterface", r.OutputInterface); }
+            if (!string.IsNullOrWhiteSpace(r.Description)) { writer.WriteString("description", r.Description.Trim()); }
             writer.WriteEndObject();
         }
 
@@ -663,6 +686,7 @@ public static class PolicyBundleJsonCodec
             writer.WriteString("verdict", VerdictName(r.Verdict));
             if (r.InputInterface is not null) { writer.WriteString("inputInterface", r.InputInterface); }
             if (r.OutputInterface is not null) { writer.WriteString("outputInterface", r.OutputInterface); }
+            if (!string.IsNullOrWhiteSpace(r.Description)) { writer.WriteString("description", r.Description.Trim()); }
             writer.WriteEndObject();
         }
 
@@ -818,6 +842,43 @@ public static class PolicyBundleJsonCodec
         }
 
         value = el.GetString();
+        return true;
+    }
+
+    private static bool TryReadOptionalDescription(JsonElement obj, out string? value)
+    {
+        value = null;
+        if (!obj.TryGetProperty("description", out var el) || el.ValueKind == JsonValueKind.Null)
+        {
+            return true;
+        }
+
+        if (el.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        var raw = el.GetString();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return true;
+        }
+
+        var trimmed = raw.Trim();
+        if (trimmed.Length > 160)
+        {
+            return false;
+        }
+
+        foreach (var c in trimmed)
+        {
+            if (char.IsControl(c))
+            {
+                return false;
+            }
+        }
+
+        value = trimmed;
         return true;
     }
 

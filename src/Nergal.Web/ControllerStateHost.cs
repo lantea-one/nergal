@@ -60,16 +60,20 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-policies-preview", "manage/policies/preview", new { controller = "Management", action = "PreviewPolicy" });
         app.MapControllerRoute("manage-policies-save", "manage/policies/save", new { controller = "Management", action = "SavePolicy" });
         app.MapControllerRoute("manage-policies-rule-add", "manage/policies/rules/add", new { controller = "Management", action = "AddFilterRule" });
+        app.MapControllerRoute("manage-policies-rule-edit", "manage/policies/rules/edit", new { controller = "Management", action = "EditFilterRule" });
         app.MapControllerRoute("manage-policies-rule-remove", "manage/policies/rules/remove", new { controller = "Management", action = "RemoveFilterRule" });
         app.MapControllerRoute("manage-policies-rule-move", "manage/policies/rules/move", new { controller = "Management", action = "MoveFilterRule" });
         app.MapControllerRoute("manage-policies-filter-defaults", "manage/policies/filter/defaults", new { controller = "Management", action = "UpdateFilterDefaults" });
         app.MapControllerRoute("manage-policies-nat-dnat-add", "manage/policies/nat/dnat/add", new { controller = "Management", action = "AddDnatRule" });
+        app.MapControllerRoute("manage-policies-nat-dnat-edit", "manage/policies/nat/dnat/edit", new { controller = "Management", action = "EditDnatRule" });
         app.MapControllerRoute("manage-policies-nat-dnat-remove", "manage/policies/nat/dnat/remove", new { controller = "Management", action = "RemoveDnatRule" });
         app.MapControllerRoute("manage-policies-nat-snat-add", "manage/policies/nat/snat/add", new { controller = "Management", action = "AddSnatRule" });
+        app.MapControllerRoute("manage-policies-nat-snat-edit", "manage/policies/nat/snat/edit", new { controller = "Management", action = "EditSnatRule" });
         app.MapControllerRoute("manage-policies-nat-snat-remove", "manage/policies/nat/snat/remove", new { controller = "Management", action = "RemoveSnatRule" });
         app.MapControllerRoute("manage-policies-nat-clear", "manage/policies/nat/clear", new { controller = "Management", action = "ClearNat" });
         app.MapControllerRoute("manage-policies-bridge-defaults", "manage/policies/bridge/defaults", new { controller = "Management", action = "UpdateBridgeDefaults" });
         app.MapControllerRoute("manage-policies-bridge-add", "manage/policies/bridge/rules/add", new { controller = "Management", action = "AddBridgeRule" });
+        app.MapControllerRoute("manage-policies-bridge-edit", "manage/policies/bridge/rules/edit", new { controller = "Management", action = "EditBridgeRule" });
         app.MapControllerRoute("manage-policies-bridge-remove", "manage/policies/bridge/rules/remove", new { controller = "Management", action = "RemoveBridgeRule" });
         app.MapControllerRoute("manage-policies-bridge-clear", "manage/policies/bridge/clear", new { controller = "Management", action = "ClearBridge" });
         app.MapControllerRoute("manage-apply", "manage/apply", new { controller = "Management", action = "Apply" });
@@ -77,6 +81,8 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-apply-confirm", "manage/apply/confirm", new { controller = "Management", action = "ConfirmApply" });
         app.MapControllerRoute("manage-apply-rollback", "manage/apply/rollback", new { controller = "Management", action = "RollbackApply" });
         app.MapControllerRoute("manage-audit", "manage/audit", new { controller = "Management", action = "Audit" });
+        app.MapControllerRoute("manage-settings", "manage/settings", new { controller = "Management", action = "Settings" });
+        app.MapControllerRoute("manage-settings-save", "manage/settings/save", new { controller = "Management", action = "SaveSettings" });
     }
 
     internal static IResult ListAudit(HttpContext context, ControllerStateStore store)

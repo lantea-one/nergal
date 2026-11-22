@@ -1,0 +1,344 @@
+@model Nergal.Web.SystemSettingsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "System settings";
+    ViewData["ActiveNav"] = "settings";
+    ViewData["ActorRole"] = Model.ActorRole;
+    ViewData["ShowManageNav"] = true;
+    var s = Model.Settings;
+    var disabledAttr = Model.CanMutate ? null : "disabled";
+    var accentColors = new[] { "blue", "emerald", "violet", "amber", "rose", "slate" };
+    var themes = new[] { "system", "light", "dark" };
+    var dbProviders = new[] { "sqlite", "postgresql", "mariadb" };
+    var tlsModes = new[] { "disable", "prefer", "require", "verify-full" };
+    var verdicts = new[] { "accept", "drop" };
+}
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>System settings</h1>
+            <p class="page-subtitle">Configure branding, authentication providers (Local, OIDC/OAuth 2.0, LDAP/AD), database backend, and firewall defaults.</p>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-secondary" href="@Url.Content("~/manage")">Back to Dashboard</a>
+            <a class="btn btn-secondary" href="@Url.Content("~/manage/audit")">Audit Log</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>@Model.ErrorMessage</strong>
+            @if (Model.ValidationErrors.Count > 0)
+            {
+                <ul class="mb-0 mt-1">
+                    @foreach (var err in Model.ValidationErrors)
+                    {
+                        <li><code>@err</code></li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    @if (!Model.CanMutate)
+    {
+        <div class="alert alert-warning" role="status">
+            Signed in as <code>@Model.ActorRole</code> (read-only). Only Administrators can save system settings.
+        </div>
+    }
+
+    <div class="tabs" role="tablist" aria-label="System settings sections">
+        <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab-target="branding">Branding &amp; Theme</button>
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="auth">Authentication (Local / OIDC / LDAP)</button>
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="database">Database Backend</button>
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="firewall">Firewall Defaults</button>
+    </div>
+
+    <form method="post" action="@Url.Content("~/manage/settings/save")">
+        @Html.AntiForgeryToken()
+
+        <section class="card" data-tab-panel="branding">
+            <div class="card-header">
+                <h2>Branding &amp; appearance</h2>
+                <span class="badge badge-primary">Live applied</span>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="s-app-name">Application name</label>
+                    <input id="s-app-name" type="text" name="applicationName" value="@s.Branding.ApplicationName" maxlength="64" required disabled="@disabledAttr" />
+                    <span class="hint">Displayed in the top navigation bar and page titles.</span>
+                </div>
+                <div class="field">
+                    <label for="s-subtitle">Instance subtitle</label>
+                    <input id="s-subtitle" type="text" name="instanceSubtitle" value="@s.Branding.InstanceSubtitle" maxlength="160" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-accent">Accent color</label>
+                    <select id="s-accent" name="accentColor" disabled="@disabledAttr">
+                        @foreach (var color in accentColors)
+                        {
+                            <option value="@color" selected="@(s.Branding.AccentColor == color)">@color</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="s-theme">Default theme</label>
+                    <select id="s-theme" name="defaultTheme" disabled="@disabledAttr">
+                        @foreach (var theme in themes)
+                        {
+                            <option value="@theme" selected="@(s.Branding.DefaultTheme == theme)">@theme</option>
+                        }
+                    </select>
+                </div>
+                <div class="field span-2">
+                    <label for="s-banner">Login / security notice banner (optional)</label>
+                    <input id="s-banner" type="text" name="loginBanner" value="@s.Branding.LoginBanner" maxlength="256" placeholder="Authorized firewall administrators only. All changes are audited." disabled="@disabledAttr" />
+                </div>
+            </div>
+        </section>
+
+        <section class="card hidden" data-tab-panel="auth">
+            <div class="card-header">
+                <h2>Local authentication</h2>
+                <span class="badge @(s.LocalAuth.Enabled ? "badge-success" : "badge-neutral")">@(s.LocalAuth.Enabled ? "Enabled" : "Disabled")</span>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="localAuthEnabled" value="true" checked="@s.LocalAuth.Enabled" disabled="@disabledAttr" />
+                        Enable local administrator accounts
+                    </label>
+                    <span class="hint">At least one authentication provider (Local, OIDC, or LDAP) must stay enabled.</span>
+                </div>
+                <div class="field">
+                    <label for="s-session-timeout">Session idle timeout (minutes)</label>
+                    <input id="s-session-timeout" type="number" name="sessionIdleTimeoutMinutes" value="@s.LocalAuth.SessionIdleTimeoutMinutes" min="5" max="1440" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-lockout-threshold">Failed login lockout threshold</label>
+                    <input id="s-lockout-threshold" type="number" name="lockoutMaxFailedAttempts" value="@s.LocalAuth.LockoutMaxFailedAttempts" min="3" max="20" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-lockout-duration">Lockout duration (minutes)</label>
+                    <input id="s-lockout-duration" type="number" name="lockoutDurationMinutes" value="@s.LocalAuth.LockoutDurationMinutes" min="1" max="1440" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-min-password">Minimum password length</label>
+                    <input id="s-min-password" type="number" name="minimumPasswordLength" value="@s.LocalAuth.MinimumPasswordLength" min="8" max="128" disabled="@disabledAttr" />
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="card-header">
+                <h2>OpenID Connect / OAuth 2.0</h2>
+                <span class="badge @(s.Oidc.Enabled ? "badge-success" : "badge-neutral")">@(s.Oidc.Enabled ? "Enabled" : "Disabled")</span>
+            </div>
+            <p class="muted">Client secrets are managed externally via environment variables or protected secret files and are never persisted in SQLite.</p>
+            <div class="form-grid">
+                <div class="field">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="oidcEnabled" value="true" checked="@s.Oidc.Enabled" disabled="@disabledAttr" />
+                        Enable OIDC / OAuth 2.0 SSO
+                    </label>
+                </div>
+                <div class="field">
+                    <label for="s-oidc-maxage">Max authentication age (seconds)</label>
+                    <input id="s-oidc-maxage" type="number" name="oidcMaxAuthAgeSeconds" value="@s.Oidc.MaxAuthAgeSeconds" min="60" max="86400" disabled="@disabledAttr" />
+                </div>
+                <div class="field span-2">
+                    <label for="s-oidc-authority">Issuer / Authority URL (HTTPS required)</label>
+                    <input id="s-oidc-authority" type="url" name="oidcAuthorityUrl" value="@s.Oidc.AuthorityUrl" placeholder="https://idp.example.test/realms/infra" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-oidc-clientid">Client ID</label>
+                    <input id="s-oidc-clientid" type="text" name="oidcClientId" value="@s.Oidc.ClientId" placeholder="nergal-web" maxlength="128" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-oidc-scopes">Scopes</label>
+                    <input id="s-oidc-scopes" type="text" name="oidcScopes" value="@s.Oidc.Scopes" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field span-2">
+                    <label for="s-oidc-redirect">Redirect URI (optional)</label>
+                    <input id="s-oidc-redirect" type="url" name="oidcRedirectUri" value="@s.Oidc.RedirectUri" placeholder="https://firewall.example.test/signin-oidc" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-oidc-groupsclaim">Groups claim name</label>
+                    <input id="s-oidc-groupsclaim" type="text" name="oidcGroupsClaim" value="@s.Oidc.GroupsClaim" maxlength="64" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-oidc-admingroups">Administrator group(s)</label>
+                    <input id="s-oidc-admingroups" type="text" name="oidcAdministratorGroups" value="@s.Oidc.AdministratorGroups" placeholder="nergal-admin" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field span-2">
+                    <label for="s-oidc-auditorgroups">Auditor group(s)</label>
+                    <input id="s-oidc-auditorgroups" type="text" name="oidcAuditorGroups" value="@s.Oidc.AuditorGroups" placeholder="nergal-auditor" maxlength="256" disabled="@disabledAttr" />
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="card-header">
+                <h2>LDAP / Active Directory</h2>
+                <span class="badge @(s.Ldap.Enabled ? "badge-success" : "badge-neutral")">@(s.Ldap.Enabled ? "Enabled" : "Disabled")</span>
+            </div>
+            <p class="muted">Directory bind passwords are managed externally via environment variables or protected secret files and are never stored in SQLite.</p>
+            <div class="form-grid">
+                <div class="field">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="ldapEnabled" value="true" checked="@s.Ldap.Enabled" disabled="@disabledAttr" />
+                        Enable LDAP / AD directory authentication
+                    </label>
+                </div>
+                <div class="field">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="ldapUseStartTls" value="true" checked="@s.Ldap.UseStartTls" disabled="@disabledAttr" />
+                        Require StartTLS (for ldap://)
+                    </label>
+                </div>
+                <div class="field span-2">
+                    <label for="s-ldap-uri">Directory Server URI (<code>ldaps://</code> or <code>ldap://</code>)</label>
+                    <input id="s-ldap-uri" type="text" name="ldapServerUri" value="@s.Ldap.ServerUri" placeholder="ldaps://directory.example.test:636" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field span-2">
+                    <label for="s-ldap-basedn">Base DN</label>
+                    <input id="s-ldap-basedn" type="text" name="ldapBaseDn" value="@s.Ldap.BaseDn" placeholder="dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-ldap-binddn">Service Bind DN (optional)</label>
+                    <input id="s-ldap-binddn" type="text" name="ldapBindDn" value="@s.Ldap.BindDn" placeholder="cn=nergal-svc,ou=services,dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-ldap-filter">User search filter</label>
+                    <input id="s-ldap-filter" type="text" name="ldapUserSearchFilter" value="@s.Ldap.UserSearchFilter" placeholder="(uid={0})" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-ldap-groupattr">Group membership attribute</label>
+                    <input id="s-ldap-groupattr" type="text" name="ldapGroupMembershipAttribute" value="@s.Ldap.GroupMembershipAttribute" placeholder="memberOf" maxlength="64" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-ldap-admingrp">Administrator group DN</label>
+                    <input id="s-ldap-admingrp" type="text" name="ldapAdministratorGroupDn" value="@s.Ldap.AdministratorGroupDn" placeholder="cn=firewall-admins,ou=groups,dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
+                </div>
+                <div class="field span-2">
+                    <label for="s-ldap-auditorgrp">Auditor group DN</label>
+                    <input id="s-ldap-auditorgrp" type="text" name="ldapAuditorGroupDn" value="@s.Ldap.AuditorGroupDn" placeholder="cn=firewall-auditors,ou=groups,dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
+                </div>
+            </div>
+        </section>
+
+        <section class="card hidden" data-tab-panel="database">
+            <div class="card-header">
+                <h2>Database &amp; storage backend</h2>
+                <span class="badge badge-primary">Active: SQLite WAL</span>
+            </div>
+            <p class="muted">SQLite WAL with <code>0600</code> file protection is the default zero-dependency store. Configure PostgreSQL or MariaDB connection targets below for externalized deployments; database passwords must be provided externally via environment or secret files.</p>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="s-db-provider">Database provider</label>
+                    <select id="s-db-provider" name="databaseProvider" disabled="@disabledAttr">
+                        @foreach (var prov in dbProviders)
+                        {
+                            <option value="@prov" selected="@(s.Database.Provider == prov)">@prov</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="s-db-tls">TLS / SSL mode</label>
+                    <select id="s-db-tls" name="databaseTlsMode" disabled="@disabledAttr">
+                        @foreach (var mode in tlsModes)
+                        {
+                            <option value="@mode" selected="@(s.Database.TlsMode == mode)">@mode</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="s-db-host">Database host (PostgreSQL / MariaDB)</label>
+                    <input id="s-db-host" type="text" name="databaseHost" value="@s.Database.Host" placeholder="db.internal.example.test" maxlength="253" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-db-port">Port</label>
+                    <input id="s-db-port" type="number" name="databasePort" value="@s.Database.Port" placeholder="5432 or 3306" min="1" max="65535" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-db-name">Database name</label>
+                    <input id="s-db-name" type="text" name="databaseName" value="@s.Database.DatabaseName" placeholder="nergal" maxlength="128" disabled="@disabledAttr" />
+                </div>
+                <div class="field">
+                    <label for="s-db-user">Username</label>
+                    <input id="s-db-user" type="text" name="databaseUsername" value="@s.Database.Username" placeholder="nergal_app" maxlength="128" disabled="@disabledAttr" />
+                </div>
+            </div>
+        </section>
+
+        <section class="card hidden" data-tab-panel="firewall">
+            <div class="card-header">
+                <h2>Firewall &amp; apply defaults</h2>
+                <span class="badge badge-neutral">Native nftables</span>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="s-fw-timeout">Default confirmation watchdog timeout (seconds)</label>
+                    <input id="s-fw-timeout" type="number" name="defaultConfirmationTimeoutSeconds" value="@s.FirewallDefaults.DefaultConfirmationTimeoutSeconds" min="10" max="3600" disabled="@disabledAttr" />
+                    <span class="hint">Agents automatically roll back unconfirmed applies when this timer expires.</span>
+                </div>
+                <div class="field">
+                    <label for="s-fw-schema">Default filter schema version</label>
+                    <select id="s-fw-schema" name="defaultFilterSchemaVersion" disabled="@disabledAttr">
+                        <option value="2" selected="@(s.FirewallDefaults.DefaultFilterSchemaVersion == 2)">Schema 2 (Stateful + Forward/Output + Sets + Rate limits)</option>
+                        <option value="1" selected="@(s.FirewallDefaults.DefaultFilterSchemaVersion == 1)">Schema 1 (Minimal Input filter)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="s-fw-in">Default input verdict</label>
+                    <select id="s-fw-in" name="defaultInputVerdict" disabled="@disabledAttr">
+                        @foreach (var v in verdicts)
+                        {
+                            <option value="@v" selected="@(s.FirewallDefaults.DefaultInputVerdict == v)">@v</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="s-fw-fwd">Default forward verdict</label>
+                    <select id="s-fw-fwd" name="defaultForwardVerdict" disabled="@disabledAttr">
+                        @foreach (var v in verdicts)
+                        {
+                            <option value="@v" selected="@(s.FirewallDefaults.DefaultForwardVerdict == v)">@v</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="s-fw-out">Default output verdict</label>
+                    <select id="s-fw-out" name="defaultOutputVerdict" disabled="@disabledAttr">
+                        @foreach (var v in verdicts)
+                        {
+                            <option value="@v" selected="@(s.FirewallDefaults.DefaultOutputVerdict == v)">@v</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="requireChangeSummary" value="true" checked="@s.FirewallDefaults.RequireChangeSummary" disabled="@disabledAttr" />
+                        Require change summaries on saved policy revisions
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        @if (Model.CanMutate)
+        {
+            <div class="card">
+                <div class="btn-group">
+                    <button type="submit">Save system settings</button>
+                    <span class="muted">Changes are validated and recorded as an immutable <code>settings.update</code> audit event.</span>
+                </div>
+            </div>
+        }
+    </form>
+</main>

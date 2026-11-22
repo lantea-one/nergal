@@ -9,6 +9,7 @@ namespace Nergal.Core.Policy;
 /// <param name="TranslatedPort">Optional translated TCP/UDP destination port in 1–65535; requires TCP or UDP.</param>
 /// <param name="InputInterface">Optional ingress interface name (<c>iifname</c>).</param>
 /// <param name="Source">Optional canonical source network restriction.</param>
+/// <param name="Description">Optional human-readable operator note (max 160 printable characters; metadata only).</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -17,7 +18,8 @@ public sealed record DnatRule(
     int? OriginalPort = null,
     int? TranslatedPort = null,
     string? InputInterface = null,
-    NetworkPrefix? Source = null);
+    NetworkPrefix? Source = null,
+    string? Description = null);
 
 /// <summary>An immutable explicit source NAT rule evaluated in the inet postrouting hook.</summary>
 /// <param name="Family">The explicit IP family.</param>
@@ -25,12 +27,14 @@ public sealed record DnatRule(
 /// <param name="TranslatedAddress">Explicit single canonical translated source IP address (never implicit masquerade).</param>
 /// <param name="Destination">Optional canonical destination network restriction.</param>
 /// <param name="OutputInterface">Optional egress interface name (<c>oifname</c>).</param>
+/// <param name="Description">Optional human-readable operator note (max 160 printable characters; metadata only).</param>
 public sealed record SnatRule(
     IpFamily Family,
     NetworkPrefix Source,
     string TranslatedAddress,
     NetworkPrefix? Destination = null,
-    string? OutputInterface = null);
+    string? OutputInterface = null,
+    string? Description = null);
 
 /// <summary>An immutable, versioned snapshot of ordered dual-stack DNAT and explicit SNAT rules.</summary>
 public sealed class NatPolicy
