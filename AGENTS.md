@@ -52,6 +52,12 @@ Use MVC, Blazor and framework-independent POCOs; keep browser, policy, compiler
 and privileged-agent boundaries explicit. Do not require AD, Forgejo, WireGuard
 or any particular network topology for a basic installation.
 
+Provide UI workflows for reusable typed sets/IP lists and nftables.conf import/export.
+Provide inline per-rule enable/disable controls that preserve rule settings/order,
+and contextual accessible form hints. Rule state changes follow revision review
+and confirmed apply. Preserve named-object references and immutable revision contents; report unsupported
+import semantics explicitly. Source inspection alone is not full import/conversion.
+
 Develop independently from public specifications. No FWCloud code or assets may
 be copied. Do not advertise formal clean-room assurance without supporting evidence.
 Production deployment, account/group changes, merges and firewall applies are
