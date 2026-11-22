@@ -1,0 +1,179 @@
+@{ Layout = null; }
+@model Nergal.Web.ConfirmedApplyViewModel
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Confirmed apply · nergal</title>
+</head>
+<body>
+<main>
+    <h1>Two-phase confirmed apply</h1>
+    <p>Signed in as <code>@Model.ActorId</code> (role: <code>@Model.ActorRole</code>).</p>
+    <nav>
+        <a href="@Url.Content("~/manage")">Fleet dashboard</a> ·
+        <a href="@Url.Content("~/manage/policies")">Policy editor &amp; diff</a> ·
+        <a href="@Url.Content("~/manage/audit")">Audit &amp; revision history</a> ·
+        <a href="@Url.Content("~/session")">Session</a>
+    </nav>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <p role="status">@Model.StatusMessage</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p role="alert">@Model.ErrorMessage</p>
+    }
+
+    @if (Model.Hosts.Count == 0)
+    {
+        <section>
+            <h2>Target host</h2>
+            <p>No managed hosts registered yet. Register a host from the fleet dashboard before dispatching an apply.</p>
+        </section>
+    }
+    else
+    {
+        <section>
+            <h2>Target host selection</h2>
+            <form method="get" action="@Url.Content("~/manage/apply")">
+                <label>Host
+                    <select name="hostId">
+                        @foreach (var host in Model.Hosts)
+                        {
+                            <option value="@host.Id.ToString("D")" selected="@(Model.SelectedHost?.Id == host.Id)">@host.Name (@host.TransportKind — rev @host.LastKnownRevision)</option>
+                        }
+                    </select>
+                </label>
+                <button type="submit">Refresh live status</button>
+            </form>
+        </section>
+
+        @if (Model.SelectedHost is { } selectedHost)
+        {
+            <section>
+                <h2>Live agent status for <code>@selectedHost.Name</code></h2>
+                <p>Transport: <code>@selectedHost.TransportKind</code> at <code>@selectedHost.Endpoint</code> · Controller recorded revision: <code>@selectedHost.LastKnownRevision</code></p>
+                @if (Model.LiveReply is { } reply)
+                {
+                    <dl>
+                        <dt>Outcome</dt><dd><code>@Nergal.Web.ControllerStateHost.FormatOutcome(reply.Outcome)</code></dd>
+                        @if (reply.Revision is { } agentRev)
+                        {
+                            <dt>Agent baseline revision</dt><dd><code>@agentRev</code></dd>
+                        }
+                        @if (reply.ActivePhase is { } phase)
+                        {
+                            <dt>Active phase</dt><dd><code>@Nergal.Web.ControllerStateHost.FormatPhase(phase)</code></dd>
+                        }
+                        @if (reply.RemainingSeconds is { } rem)
+                        {
+                            <dt>Watchdog countdown</dt><dd><code>@rem s remaining</code></dd>
+                        }
+                        @if (reply.OperationId is { } opId)
+                        {
+                            <dt>Operation ID</dt><dd><code>@opId.ToString("D")</code></dd>
+                        }
+                        @if (reply.WatchdogId is { } wdId)
+                        {
+                            <dt>Watchdog ID</dt><dd><code>@wdId.ToString("D")</code></dd>
+                        }
+                        @if (!string.IsNullOrEmpty(reply.CandidateDigest))
+                        {
+                            <dt>Candidate SHA-256</dt><dd><code>@reply.CandidateDigest</code></dd>
+                        }
+                        @if (!string.IsNullOrEmpty(reply.ErrorCode))
+                        {
+                            <dt>Detail</dt><dd><code>@reply.ErrorCode</code></dd>
+                        }
+                    </dl>
+                }
+            </section>
+
+            @if (Model.CanMutate)
+            {
+                @if (Model.LiveReply?.OperationId is { } pendingOp &&
+                     Model.LiveReply?.WatchdogId is { } pendingWd &&
+                     Model.LiveReply.ActivePhase == Nergal.Core.Deployment.ApplyPhase.AwaitingConfirmation)
+                {
+                    <section>
+                        <h2>Pending confirmation window</h2>
+                        <form method="post" action="@Url.Content("~/manage/apply/confirm")">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
+                            <input type="hidden" name="operationId" value="@pendingOp.ToString("D")" />
+                            <input type="hidden" name="watchdogId" value="@pendingWd.ToString("D")" />
+                            @if (Model.SelectedRevision is { } selRev)
+                            {
+                                <input type="hidden" name="targetRevision" value="@selRev" />
+                            }
+                            <button type="submit">Confirm active apply</button>
+                        </form>
+                        <form method="post" action="@Url.Content("~/manage/apply/rollback")">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
+                            <input type="hidden" name="operationId" value="@pendingOp.ToString("D")" />
+                            <input type="hidden" name="watchdogId" value="@pendingWd.ToString("D")" />
+                            @if (Model.SelectedRevision is { } rbRev)
+                            {
+                                <input type="hidden" name="targetRevision" value="@rbRev" />
+                            }
+                            <button type="submit">Immediate rollback</button>
+                        </form>
+                    </section>
+                }
+                else if (Model.Revisions.Count > 0)
+                {
+                    <section>
+                        <h2>Start confirmed apply</h2>
+                        <form method="post" action="@Url.Content("~/manage/apply/start")">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
+                            <label>Policy revision
+                                <select name="revision">
+                                    @foreach (var rev in Model.Revisions)
+                                    {
+                                        <option value="@rev.Revision" selected="@(Model.SelectedRevision == rev.Revision)">Revision @rev.Revision (@rev.CandidateDigest[..8])</option>
+                                    }
+                                </select>
+                            </label>
+                            <label>Confirmation timeout (seconds, 1–3600)
+                                <input type="number" name="confirmationTimeoutSeconds" min="1" max="3600" value="30" required />
+                            </label>
+                            <button type="submit">Start confirmed apply</button>
+                        </form>
+                    </section>
+                }
+                else
+                {
+                    <section>
+                        <h2>Start confirmed apply</h2>
+                        <p>No saved policy revisions exist yet. Create and save a policy revision in the editor before applying.</p>
+                    </section>
+                }
+            }
+        }
+    }
+
+    <section>
+        <h2>Recent audit activity</h2>
+        @if (Model.RecentAudit.Count == 0)
+        {
+            <p>No audit records yet.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var entry in Model.RecentAudit)
+                {
+                    <li>#@entry.Sequence [@entry.TimestampUtc.ToString("u")] <code>@entry.ActorId</code>: @entry.Action on <code>@entry.Target</code> -> @entry.Outcome</li>
+                }
+            </ul>
+        }
+    </section>
+</main>
+</body>
+</html>

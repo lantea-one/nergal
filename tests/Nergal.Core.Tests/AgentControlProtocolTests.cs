@@ -297,14 +297,18 @@ public sealed class AgentControlProtocolTests
 
         var port = server.BoundEndPoint.Port;
 
-        // 1. Valid pinned mTLS succeeds.
-        var okReply = await TlsControlClient.SendAsync(
-            new TlsControlClientOptions("127.0.0.1", port, clientCert, [serverPin], serverNameIndication: "nergal-agent", timeProvider: fixedClock),
-            new AgentControlRequest(AgentControlCommand.Status),
-            cts.Token);
-        Assert.Equal(AgentControlOutcome.Matched, okReply.Outcome);
-        Assert.Equal(12UL, okReply.Revision);
-        Assert.Equal(1, Volatile.Read(ref handlerInvocations));
+        // 1. Valid pinned mTLS succeeds across repeated connections without TLS 1.3 PSK ticket downgrade.
+        for (var iteration = 0; iteration < 6; iteration++)
+        {
+            var okReply = await TlsControlClient.SendAsync(
+                new TlsControlClientOptions("127.0.0.1", port, clientCert, [serverPin], serverNameIndication: "nergal-agent", timeProvider: fixedClock),
+                new AgentControlRequest(AgentControlCommand.Status),
+                cts.Token);
+            Assert.Equal(AgentControlOutcome.Matched, okReply.Outcome);
+            Assert.Equal(12UL, okReply.Revision);
+        }
+
+        Assert.Equal(6, Volatile.Read(ref handlerInvocations));
 
         // 2. Client rejects unpinned server certificate.
         await Assert.ThrowsAsync<RemoteTransportException>(() =>
@@ -312,7 +316,7 @@ public sealed class AgentControlProtocolTests
                 new TlsControlClientOptions("127.0.0.1", port, clientCert, [roguePin], serverNameIndication: "nergal-agent", timeProvider: fixedClock),
                 new AgentControlRequest(AgentControlCommand.Status),
                 cts.Token));
-        Assert.Equal(1, Volatile.Read(ref handlerInvocations));
+        Assert.Equal(6, Volatile.Read(ref handlerInvocations));
 
         // 3. Server rejects unpinned client certificate before running handler.
         await Assert.ThrowsAsync<RemoteTransportException>(() =>
@@ -320,7 +324,7 @@ public sealed class AgentControlProtocolTests
                 new TlsControlClientOptions("127.0.0.1", port, rogueClientCert, [serverPin], serverNameIndication: "nergal-agent", timeProvider: fixedClock),
                 new AgentControlRequest(AgentControlCommand.Status),
                 cts.Token));
-        Assert.Equal(1, Volatile.Read(ref handlerInvocations));
+        Assert.Equal(6, Volatile.Read(ref handlerInvocations));
 
         // 4. Server rejects expired client certificate even when thumbprint is pinned.
         await Assert.ThrowsAsync<RemoteTransportException>(() =>
@@ -328,7 +332,7 @@ public sealed class AgentControlProtocolTests
                 new TlsControlClientOptions("127.0.0.1", port, expiredClientCert, [serverPin], serverNameIndication: "nergal-agent", timeProvider: fixedClock),
                 new AgentControlRequest(AgentControlCommand.Status),
                 cts.Token));
-        Assert.Equal(1, Volatile.Read(ref handlerInvocations));
+        Assert.Equal(6, Volatile.Read(ref handlerInvocations));
 
         // 5. Client clock past server expiry rejects handshake even with valid pin.
         var futureClock = new FixedTimeProvider(now.AddHours(3));
@@ -337,7 +341,7 @@ public sealed class AgentControlProtocolTests
                 new TlsControlClientOptions("127.0.0.1", port, clientCert, [serverPin], serverNameIndication: "nergal-agent", timeProvider: futureClock),
                 new AgentControlRequest(AgentControlCommand.Status),
                 cts.Token));
-        Assert.Equal(1, Volatile.Read(ref handlerInvocations));
+        Assert.Equal(6, Volatile.Read(ref handlerInvocations));
 
         await cts.CancelAsync();
         await serverTask;

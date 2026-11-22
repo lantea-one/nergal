@@ -152,6 +152,7 @@ public sealed class TlsControlServer : IDisposable
                 ClientCertificateRequired = true,
                 EnabledSslProtocols = SslProtocols.Tls13,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                AllowTlsResume = false,
             };
 
             await ssl.AuthenticateAsServerAsync(authOptions, cts.Token).ConfigureAwait(false);

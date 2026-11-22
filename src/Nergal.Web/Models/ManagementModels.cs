@@ -83,3 +83,40 @@ public sealed class AuditHistoryViewModel
     /// <summary>Gets persisted policy revisions newest-first.</summary>
     public required IReadOnlyList<PolicyRevisionRecord> Revisions { get; init; }
 }
+
+/// <summary>View model for two-phase confirmed policy application, live countdown status, and explicit rollback.</summary>
+public sealed class ConfirmedApplyViewModel
+{
+    /// <summary>Gets canonical authenticated actor identifier.</summary>
+    public required string ActorId { get; init; }
+
+    /// <summary>Gets authenticated controller RBAC role.</summary>
+    public required string ActorRole { get; init; }
+
+    /// <summary>Gets whether the viewer can start, confirm, or roll back policy applies.</summary>
+    public required bool CanMutate { get; init; }
+
+    /// <summary>Gets all registered managed hosts.</summary>
+    public required IReadOnlyList<ManagedHostRecord> Hosts { get; init; }
+
+    /// <summary>Gets persisted policy revisions ordered newest-first.</summary>
+    public required IReadOnlyList<PolicyRevisionRecord> Revisions { get; init; }
+
+    /// <summary>Gets currently selected target host when registered.</summary>
+    public ManagedHostRecord? SelectedHost { get; init; }
+
+    /// <summary>Gets currently selected policy revision identifier.</summary>
+    public ulong? SelectedRevision { get; init; }
+
+    /// <summary>Gets live reply from querying the selected host agent control listener.</summary>
+    public Core.Agent.AgentControlReply? LiveReply { get; init; }
+
+    /// <summary>Gets recent append-only audit entries newest-first.</summary>
+    public required IReadOnlyList<ControllerAuditEntry> RecentAudit { get; init; }
+
+    /// <summary>Gets optional non-sensitive operator confirmation notice.</summary>
+    public string? StatusMessage { get; init; }
+
+    /// <summary>Gets optional non-sensitive validation or dispatch error message.</summary>
+    public string? ErrorMessage { get; init; }
+}

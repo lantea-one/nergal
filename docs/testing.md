@@ -224,6 +224,15 @@ and `/manage/audit` (`200`) while mutations on `/controller/hosts` and
 that both `oidc:<issuer>:<subject>` and `local:<uuid>` audit attributions persist
 across both JSON and MVC audit views.
 
+`tests/integration/local-status/web-apply-check.py` (invoked by `tests/integration/local-status/check.sh`)
+stages `Nergal.Web` under unprivileged mapped UID `1` (`CapEff == 0`) against
+root-owned `nergal-agent control-serve` and `nergal-agent tls-serve` processes in
+fresh user/network namespaces, verifying `Auditor` mutation denial (`403`),
+fail-closed NAT scope rejection (`policy.unsupportedScope`), MVC `/manage/apply/start`
+real UDP loopback packet enforcement + autonomous watchdog rollback after missed
+confirmation, MVC confirmation revision promotion, and TLS 1.3 pinned mTLS explicit
+rollback and confirmation against kernel packets while preserving foreign tables.
+
 ## Continuous integration
 
 The Forgejo workflow builds, checks formatting, runs unit tests with coverage

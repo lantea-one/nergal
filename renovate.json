@@ -3,5 +3,17 @@
   "extends": [
     "config:recommended"
   ],
-  "automerge": false
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Stay on .NET 10 LTS SDK and 10.x runtime/framework servicing updates",
+      "matchPackageNames": [
+        "dotnet-sdk",
+        "Microsoft.Data.Sqlite",
+        "/^Microsoft\\.AspNetCore\\./",
+        "/^Microsoft\\.EntityFrameworkCore\\./"
+      ],
+      "allowedVersions": "<11.0.0"
+    }
+  ]
 }

@@ -139,6 +139,7 @@ public static class TlsControlClient
             LocalCertificateSelectionCallback = (_, _, _, _, _) => options.ClientCertificate,
             EnabledSslProtocols = SslProtocols.Tls13,
             CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+            AllowTlsResume = false,
         };
 
         try
@@ -173,16 +174,23 @@ public static class TlsControlClient
             }
 
             var payload = await ReadExactAsync(ssl, length, cts.Token).ConfigureAwait(false);
-            var extra = new byte[1];
-            if (await ssl.ReadAsync(extra, cts.Token).ConfigureAwait(false) != 0)
-            {
-                throw new RemoteTransportException("reply.trailing");
-            }
-
             var decoded = AgentControlCodec.DecodeReply(payload);
             if (!decoded.IsValid)
             {
                 throw new RemoteTransportException("reply.invalid");
+            }
+
+            var extra = new byte[1];
+            try
+            {
+                if (await ssl.ReadAsync(extra, cts.Token).ConfigureAwait(false) != 0)
+                {
+                    throw new RemoteTransportException("reply.trailing");
+                }
+            }
+            catch (Exception ex) when (ex is IOException or SocketException)
+            {
+                // Server may close TCP immediately after delivering the complete TLS reply and close_notify.
             }
 
             return decoded.Reply!;

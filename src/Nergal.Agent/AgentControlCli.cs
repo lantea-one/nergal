@@ -89,7 +89,11 @@ internal static class AgentControlCli
         {
             _ = ApplyJournal.Open(command.Directory);
 
-            var options = new UnixControlOptions(command.SocketPath, [command.AllowedPeerUid], command.SocketGroupId);
+            var options = new UnixControlOptions(
+                command.SocketPath,
+                [command.AllowedPeerUid],
+                command.SocketGroupId,
+                TimeSpan.FromSeconds(20));
             using var server = UnixControlServer.Bind(options);
             var handler = new AgentControlHandler(command.Directory);
 
@@ -131,7 +135,11 @@ internal static class AgentControlCli
 
             ValidatePemPaths(command.ServerCertPath, command.ServerKeyPath);
             using var serverCert = X509Certificate2.CreateFromPemFile(command.ServerCertPath, command.ServerKeyPath);
-            var options = new TlsControlServerOptions(command.ListenEndPoint, serverCert, command.TrustedClientThumbprints);
+            var options = new TlsControlServerOptions(
+                command.ListenEndPoint,
+                serverCert,
+                command.TrustedClientThumbprints,
+                TimeSpan.FromSeconds(20));
             using var server = TlsControlServer.Bind(options);
             var handler = new AgentControlHandler(command.Directory);
 

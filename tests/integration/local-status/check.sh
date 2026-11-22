@@ -15,3 +15,5 @@ unshare --user --map-auto --map-root-user --net python3 -B tests/integration/loc
     "$fixture" "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"
 unshare --user --map-auto --map-root-user --net python3 -B tests/integration/local-status/control-check.py \
     "$agent" "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"
+unshare --user --map-auto --map-root-user --net python3 -B tests/integration/local-status/web-apply-check.py \
+    "$agent" "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"

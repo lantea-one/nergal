@@ -135,6 +135,15 @@ route uses that session boundary and an explicitly configured shared socket. An 
 exact configured groups, with distinct issuer/subject identities and a fifteen-minute maximum.
 Protected receipt binding and offline local operator enrollment (`nergal-agent enroll`)
 are not production apply authority or automated recovery. Keep Web
-disconnected from privileged execution. Production receipt-aware apply/rollback, reboot recovery and arbitrary snapshots
-need their own design and conformance evidence. NAT, forwarding, connection state and
-IPv6 neighbor discovery remain outside the tested input-filter slice.
+disconnected from privileged execution: [ADR 0031](decisions/0031-two-phase-web-confirmed-apply.md)
+routes `/manage/apply*` and `/controller/apply/*` through `ApplyWorkflowService`
+and `IAgentControlDispatcher`, sending typed `AgentControlRequest` frames over
+`UnixControlClient` (`SO_PEERCRED` peer-UID check) or `TlsControlClient`
+(pinned TLS 1.3 mTLS with owner-only `0600` client private keys) to an isolated
+`nergal-agent control-serve` or `tls-serve` process. Single-table `FilterPolicy`
+revisions dispatch via two-phase `prepare-apply` / `confirm` / `rollback`,
+synchronizing host revision metadata and recording `apply.start`, `apply.confirm`,
+and `apply.rollback` in `audit_log`; multi-table NAT/bridge bundles fail closed
+with `policy.unsupportedScope` at controller dispatch. Production multi-table
+agent apply and host-wide reboot recovery require their own design and conformance
+evidence.
