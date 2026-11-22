@@ -9,9 +9,9 @@ namespace Nergal.Core.Tests;
 /// <summary>Verifies CalVer release metadata stamped uniformly across shipped assemblies.</summary>
 public sealed class ReleaseVersionTests
 {
-    private const string ExpectedCalVer = "2026.11.21";
+    private const string ExpectedCalVer = "2026.11.21.1";
 
-    /// <summary>Core, compiler, and transport assemblies report exact CalVer <c>2026.11.21</c> metadata.</summary>
+    /// <summary>Core, compiler, and transport assemblies report exact CalVer <c>2026.11.21.1</c> metadata.</summary>
     [Fact]
     public void ShippedLibraries_ReportExpectedCalVerMetadata()
     {
@@ -27,7 +27,7 @@ public sealed class ReleaseVersionTests
         {
             var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             Assert.Equal(ExpectedCalVer, info);
-            Assert.Equal(new Version(2026, 11, 21, 0), assembly.GetName().Version);
+            Assert.Equal(new Version(2026, 11, 21, 1), assembly.GetName().Version);
         }
     }
 }

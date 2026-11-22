@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026.11.21.1] - 2026-11-21
+
+### Multi-Table Confirmed Apply & Rollback
+- Extended the agent control protocol (`AgentControlRequest.Bundle`, `PolicyBundleJsonCodec`) and `ApplyWorkflowService` to dispatch full `FirewallPolicyBundle` revisions (`inet nergal_filter`, `inet nergal_nat`, `bridge nergal_bridge`) end-to-end (ADR 0032).
+- Added auxiliary table inspection (`NftTableObservation.TryInspectAuxiliaryTables`, `ParseBundleReplacementEcho`) and multi-table rollback/status verification in `nergal-agent` and `ApplyJournal.ResourceReceipts`, preserving foreign tables and failing closed on unowned collisions.
+
+### Inline Sets, IPv4 ICMPv4 & Visual Rule Builder
+- Added schema-2 inline anonymous sets (`sourcePrefixes`, `destinationPrefixes`, `destinationPorts`) with disjoint/non-adjacent `UInt128` interval validation and deterministic kernel observation round-tripping, plus allowlisted IPv4 ICMP `parameter-problem` (ADR 0033).
+- Added `PolicyBundleSummary.razor` Blazor summary component and CSRF-protected Administrator MVC rule-builder actions (`/manage/policies/rules/{add,move,remove}`) with Auditor `403` enforcement.
+
+### Forgejo Pages & Release Packaging
+- Added a static Docsify + Mermaid documentation portal under `pages/`, `scripts/verify-pages.py`, and `.forgejo/workflows/pages.yml` publishing `pages/` on `main`.
+- Added `deploy/systemd/nergal.sysusers`, `deploy/systemd/nergal.tmpfiles`, and `scripts/package-release.sh` assembling verified `.tar.gz`, `.deb`, and `SHA256SUMS` artifacts in CI.
+
 ## [2026.11.21] - 2026-11-21
 
 ### Core & Policy Model

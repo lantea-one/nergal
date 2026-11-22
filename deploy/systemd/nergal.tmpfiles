@@ -1,0 +1,9 @@
+# systemd-tmpfiles(5) configuration for nergal
+# Private owner-only state directories and runtime socket directory.
+d /var/lib/nergal 0755 root root -
+d /var/lib/nergal/agent 0700 nergal-agent nergal-agent -
+d /var/lib/nergal/web 0700 nergal-web nergal-web -
+d /etc/nergal 0755 root root -
+d /etc/nergal/agent 0750 root nergal-agent -
+d /etc/nergal/web 0750 root nergal-web -
+d /run/nergal 2710 nergal-agent nergal-ctl -
