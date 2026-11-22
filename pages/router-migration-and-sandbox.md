@@ -3,6 +3,12 @@
 This page describes unreleased local development. It does not claim that a native
 server configuration has been converted losslessly or deployed.
 
+The initial private deployment is an acceptance target within a general-purpose
+FOSS project. Migration-driven features must use reusable contracts and independent
+synthetic tests, without requiring that deployment's hosts, topology or integrations.
+The broader product includes authoring new policies through the UI and supporting
+independent single-host and multi-host installations.
+
 ## Support and verification
 
 | Construct | Development status |

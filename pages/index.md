@@ -2,6 +2,17 @@
 
 **nergal** is a self-hosted `.NET 10` firewall controller and privileged Linux `nftables` agent built around explicit resource ownership, atomic multi-table candidate validation, and independent local timed rollback.
 
+## Product scope
+
+Nergal is being developed as a fully functioning, general-purpose FOSS firewall
+manager for independent single-host and multi-host installations. The initial
+private deployment supplies migration acceptance cases; reusable contracts,
+synthetic public tests and UI workflows serve operators with other network layouts.
+Basic installation does not require a particular identity provider, VPN or hosting
+service. Migration is optional: operators must also be able to author new policies
+through the UI. This is the product direction, not a claim that every planned
+workflow is complete.
+
 ## Core Design Principles
 
 - **Native `nftables` first**: Compiles directly to canonical `inet nergal_filter`, `inet nergal_nat`, and `bridge nergal_bridge` tables without shelling out untrusted strings or flushing foreign tables.
