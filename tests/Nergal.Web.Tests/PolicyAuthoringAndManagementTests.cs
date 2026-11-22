@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nergal.ControllerState;
 using Nergal.Core;
 using Nergal.Core.Identity;
+using Nergal.Core.Policy;
 using Nergal.Web.Controllers;
 
 namespace Nergal.Web.Tests;
@@ -194,6 +195,110 @@ public sealed class PolicyAuthoringAndManagementTests
             Assert.Equal(3, auditModel.Entries.Count);
             Assert.Equal("host.register", auditModel.Entries[0].Action);
             Assert.Equal(adminActor, auditModel.Entries[0].ActorId);
+        }
+        finally
+        {
+            TryDelete(dir);
+        }
+    }
+
+    /// <summary>Visual rule builder appends inline address/port sets and IPv4 ICMP types, reorders/removes rules, and denies Auditors.</summary>
+    [Fact]
+    public void VisualRuleBuilder_AppendsInlineSetsReordersAndEnforcesAuditorForbid()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var dir = CreateOwnerOnlyTempDirectory();
+        try
+        {
+            var store = ControllerStateStore.Initialize(new ControllerStateOptions(dir));
+            var adminActor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+            var auditorActor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+
+            var adminController = CreateController(store, adminActor, NergalRoles.Administrator);
+            var auditorController = CreateController(store, auditorActor, NergalRoles.Auditor);
+
+            // Auditor is denied all visual rule builder mutations.
+            Assert.IsType<ForbidResult>(auditorController.AddFilterRule(PolicyAuthoringService.DefaultStarterBundleJson, null, null, "input", "ipv4", "tcp", "accept", "192.0.2.0/24", null, "443", null, null, null, null));
+            Assert.IsType<ForbidResult>(auditorController.MoveFilterRule(PolicyAuthoringService.DefaultStarterBundleJson, null, null, 0, 1));
+            Assert.IsType<ForbidResult>(auditorController.RemoveFilterRule(PolicyAuthoringService.DefaultStarterBundleJson, null, null, 0));
+
+            // Administrator appends an inline CIDR + port set rule.
+            var added1 = Assert.IsType<ViewResult>(adminController.AddFilterRule(
+                PolicyAuthoringService.DefaultStarterBundleJson,
+                "web-sets",
+                null,
+                "input",
+                "ipv4",
+                "tcp",
+                "accept",
+                "198.51.100.0/24, 192.0.2.0/24",
+                null,
+                "443, 80",
+                null,
+                null,
+                null,
+                "new"));
+            var model1 = Assert.IsType<PolicyEditorViewModel>(added1.Model);
+            Assert.Empty(model1.Diagnostics);
+            Assert.NotNull(model1.Bundle);
+            Assert.Equal(2, model1.Bundle!.Filter.Rules.Count);
+            Assert.Contains("ip saddr { 192.0.2.0/24, 198.51.100.0/24 }", model1.CandidateText, StringComparison.Ordinal);
+            Assert.Contains("tcp dport { 80, 443 }", model1.CandidateText, StringComparison.Ordinal);
+
+            // Append IPv4 ICMP parameter-problem rule.
+            var added2 = Assert.IsType<ViewResult>(adminController.AddFilterRule(
+                model1.BundleJson,
+                "web-sets",
+                null,
+                "input",
+                "ipv4",
+                "icmp",
+                "accept",
+                null,
+                null,
+                null,
+                "parameter-problem",
+                null,
+                null,
+                null));
+            var model2 = Assert.IsType<PolicyEditorViewModel>(added2.Model);
+            Assert.Empty(model2.Diagnostics);
+            Assert.Equal(3, model2.Bundle!.Filter.Rules.Count);
+            Assert.Contains("icmp type parameter-problem accept", model2.CandidateText, StringComparison.Ordinal);
+
+            // Move the ICMP rule up by one slot.
+            var moved = Assert.IsType<ViewResult>(adminController.MoveFilterRule(model2.BundleJson, "web-sets", null, 2, -1));
+            var movedModel = Assert.IsType<PolicyEditorViewModel>(moved.Model);
+            Assert.Equal(FilterProtocol.Icmp, movedModel.Bundle!.Filter.Rules[1]!.Protocol);
+
+            // Remove the first rule.
+            var removed = Assert.IsType<ViewResult>(adminController.RemoveFilterRule(movedModel.BundleJson, "web-sets", null, 0));
+            var removedModel = Assert.IsType<PolicyEditorViewModel>(removed.Model);
+            Assert.Equal(2, removedModel.Bundle!.Filter.Rules.Count);
+
+            // Invalid port set (duplicate) returns 400 with structured diagnostic.
+            var invalid = Assert.IsType<ViewResult>(adminController.AddFilterRule(
+                removedModel.BundleJson,
+                "web-sets",
+                null,
+                "input",
+                "ipv4",
+                "tcp",
+                "accept",
+                null,
+                null,
+                "443, 443",
+                null,
+                null,
+                null,
+                null));
+            Assert.Equal(StatusCodes.Status400BadRequest, adminController.Response.StatusCode);
+            var invalidModel = Assert.IsType<PolicyEditorViewModel>(invalid.Model);
+            Assert.Contains(invalidModel.Diagnostics, d => d.Code == "set.duplicate");
         }
         finally
         {

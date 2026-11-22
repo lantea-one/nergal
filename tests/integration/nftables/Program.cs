@@ -99,6 +99,47 @@ if (mode == "nat-filter")
     return 0;
 }
 
+if (mode == "sets")
+{
+    var result = NftFilterCompiler.Compile(BuildSetsPolicy(), routerIdentity);
+    if (!result.IsSuccess)
+    {
+        throw new InvalidOperationException("Sets policy failed: " + string.Join(", ", result.Diagnostics));
+    }
+
+    Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "verify-sets" && args.Length == 3)
+{
+    var expected = NftFilterCompiler.Compile(BuildSetsPolicy(), routerIdentity).Candidate!;
+    var echoed = NftTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
+    if (!echoed.IsSuccess)
+    {
+        throw new InvalidOperationException("Sets echo failed: " + echoed.ErrorCode);
+    }
+
+    var listed = NftTableObservation.Parse(File.ReadAllText(args[2]));
+    if (!listed.IsSuccess)
+    {
+        throw new InvalidOperationException("Sets listing failed: " + listed.ErrorCode);
+    }
+
+    if (echoed.Observation!.StateDigest != listed.Observation!.StateDigest)
+    {
+        throw new InvalidOperationException("Sets echo and listing state digests diverged.");
+    }
+
+    var recompiled = NftFilterCompiler.Compile(listed.Observation.Policy, listed.Observation.Identity).Candidate;
+    if (recompiled != expected)
+    {
+        throw new InvalidOperationException("Sets policy did not round-trip deterministically.");
+    }
+
+    return 0;
+}
+
 if (mode == "nat")
 {
     var result = NftNatCompiler.Compile(BuildNatPolicy(), routerIdentity);
@@ -272,3 +313,31 @@ static FilterPolicy BuildRouterPolicy()
 
     return new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, rules);
 }
+
+static FilterPolicy BuildSetsPolicy() => new(
+    2,
+    FilterVerdict.Drop,
+    FilterVerdict.Drop,
+    FilterVerdict.Accept,
+    [
+        new(
+            IpFamily.IPv4,
+            FilterProtocol.Tcp,
+            FilterVerdict.Accept,
+            Chain: FilterChainKind.Input,
+            SourcePrefixes: [new("192.0.2.0/24"), new("198.51.100.0/24")],
+            DestinationPorts: [80, 443]),
+        new(
+            IpFamily.IPv6,
+            FilterProtocol.Udp,
+            FilterVerdict.Accept,
+            Chain: FilterChainKind.Forward,
+            DestinationPrefixes: [new("2001:db8:1::/48"), new("2001:db8:3::/48")],
+            DestinationPorts: [53, 5353]),
+        new(
+            IpFamily.IPv4,
+            FilterProtocol.Icmp,
+            FilterVerdict.Accept,
+            Chain: FilterChainKind.Input,
+            IcmpType: FilterIcmpTypes.ParameterProblem),
+    ]);

@@ -18,6 +18,107 @@
         <a href="@Url.Content("~/session")">Session</a>
     </nav>
 
+    @if (Model.Bundle is not null)
+    {
+        <component type="typeof(Nergal.Web.Components.PolicyBundleSummary)" render-mode="Static" param-Bundle="Model.Bundle" />
+    }
+
+    @if (Model.CanMutate)
+    {
+        <section>
+            <h2>Visual filter rule builder</h2>
+            <form method="post" action="@Url.Content("~/manage/policies/rules/add")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                <input type="hidden" name="summary" value="@Model.Summary" />
+                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                <label>Chain
+                    <select name="chain">
+                        <option value="input">input</option>
+                        <option value="forward">forward</option>
+                        <option value="output">output</option>
+                    </select>
+                </label>
+                <label>Family
+                    <select name="family">
+                        <option value="ipv4">ipv4</option>
+                        <option value="ipv6">ipv6</option>
+                    </select>
+                </label>
+                <label>Protocol
+                    <select name="protocol">
+                        <option value="tcp">tcp</option>
+                        <option value="udp">udp</option>
+                        <option value="icmp">icmp</option>
+                        <option value="icmpv6">icmpv6</option>
+                        <option value="any">any</option>
+                    </select>
+                </label>
+                <label>Verdict
+                    <select name="verdict">
+                        <option value="accept">accept</option>
+                        <option value="drop">drop</option>
+                    </select>
+                </label>
+                <label>Source CIDR(s) <input type="text" name="sources" placeholder="192.0.2.0/24, 198.51.100.0/24" /></label>
+                <label>Destination CIDR(s) <input type="text" name="destinations" placeholder="203.0.113.0/24" /></label>
+                <label>Destination port(s) <input type="text" name="destinationPorts" placeholder="80, 443" /></label>
+                <label>ICMP/ICMPv6 type <input type="text" name="icmpType" placeholder="echo-request" /></label>
+                <label>Input iface <input type="text" name="inputInterface" placeholder="eth0" maxlength="15" /></label>
+                <label>Output iface <input type="text" name="outputInterface" placeholder="wan0" maxlength="15" /></label>
+                <label>States <input type="text" name="connectionStates" placeholder="new, established, related" /></label>
+                <button type="submit">Add filter rule to draft</button>
+            </form>
+
+            @if (Model.Bundle is { Filter.Rules.Count: > 0 } editableBundle)
+            {
+                <h3>Reorder or remove filter rules</h3>
+                <ul>
+                    @for (var idx = 0; idx < editableBundle.Filter.Rules.Count; idx++)
+                    {
+                        var r = editableBundle.Filter.Rules[idx];
+                        if (r is null) { continue; }
+                        <li>
+                            Rule #@(idx + 1): <code>@r.Chain</code> <code>@r.Family</code> <code>@r.Protocol</code> <strong>@r.Verdict</strong>
+                            @if (idx > 0)
+                            {
+                                <form method="post" action="@Url.Content("~/manage/policies/rules/move")" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                    <input type="hidden" name="summary" value="@Model.Summary" />
+                                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                    <input type="hidden" name="ruleIndex" value="@idx" />
+                                    <input type="hidden" name="direction" value="-1" />
+                                    <button type="submit">Move up</button>
+                                </form>
+                            }
+                            @if (idx + 1 < editableBundle.Filter.Rules.Count)
+                            {
+                                <form method="post" action="@Url.Content("~/manage/policies/rules/move")" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                    <input type="hidden" name="summary" value="@Model.Summary" />
+                                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                    <input type="hidden" name="ruleIndex" value="@idx" />
+                                    <input type="hidden" name="direction" value="1" />
+                                    <button type="submit">Move down</button>
+                                </form>
+                            }
+                            <form method="post" action="@Url.Content("~/manage/policies/rules/remove")" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                                <input type="hidden" name="summary" value="@Model.Summary" />
+                                <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                                <input type="hidden" name="ruleIndex" value="@idx" />
+                                <button type="submit">Remove</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+
     <section>
         <h2>Bundle draft (JSON)</h2>
         <form method="post" action="@Url.Content("~/manage/policies/preview")">

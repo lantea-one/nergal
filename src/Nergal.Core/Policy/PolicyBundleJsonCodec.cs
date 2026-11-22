@@ -142,6 +142,7 @@ public static class PolicyBundleJsonCodec
         {
             if (item.ValueKind != JsonValueKind.Object ||
                 !HasOnlyProperties(item, "family", "protocol", "verdict", "source", "destination", "destinationPort",
+                    "sourcePrefixes", "destinationPrefixes", "destinationPorts",
                     "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat") ||
                 !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                 !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
@@ -249,7 +250,34 @@ public static class PolicyBundleJsonCodec
                 matchDnat = dnatEl.GetBoolean();
             }
 
-            rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat));
+            IReadOnlyList<NetworkPrefix>? srcPrefixes = null;
+            IReadOnlyList<NetworkPrefix>? dstPrefixes = null;
+            if (item.TryGetProperty("sourcePrefixes", out var spEl) && spEl.ValueKind != JsonValueKind.Null)
+            {
+                if (!TryParsePrefixList(spEl, out srcPrefixes))
+                {
+                    return new(null, [new("filter.prefixSet", $"filter.rules[{index}].sourcePrefixes")]);
+                }
+            }
+
+            if (item.TryGetProperty("destinationPrefixes", out var dpSetEl) && dpSetEl.ValueKind != JsonValueKind.Null)
+            {
+                if (!TryParsePrefixList(dpSetEl, out dstPrefixes))
+                {
+                    return new(null, [new("filter.prefixSet", $"filter.rules[{index}].destinationPrefixes")]);
+                }
+            }
+
+            IReadOnlyList<int>? dports = null;
+            if (item.TryGetProperty("destinationPorts", out var portsEl) && portsEl.ValueKind != JsonValueKind.Null)
+            {
+                if (!TryParsePortList(portsEl, out dports))
+                {
+                    return new(null, [new("filter.portSet", $"filter.rules[{index}].destinationPorts")]);
+                }
+            }
+
+            rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports));
             index++;
         }
 
@@ -506,6 +534,26 @@ public static class PolicyBundleJsonCodec
             if (r.Source is not null) { writer.WriteString("source", r.Source.Value); }
             if (r.Destination is not null) { writer.WriteString("destination", r.Destination.Value); }
             if (r.DestinationPort.HasValue) { writer.WriteNumber("destinationPort", r.DestinationPort.Value); }
+            if (r.SourcePrefixes is { Count: > 0 })
+            {
+                writer.WriteStartArray("sourcePrefixes");
+                foreach (var p in r.SourcePrefixes) { writer.WriteStringValue(p.Value); }
+                writer.WriteEndArray();
+            }
+
+            if (r.DestinationPrefixes is { Count: > 0 })
+            {
+                writer.WriteStartArray("destinationPrefixes");
+                foreach (var p in r.DestinationPrefixes) { writer.WriteStringValue(p.Value); }
+                writer.WriteEndArray();
+            }
+
+            if (r.DestinationPorts is { Count: > 0 })
+            {
+                writer.WriteStartArray("destinationPorts");
+                foreach (var p in r.DestinationPorts) { writer.WriteNumberValue(p); }
+                writer.WriteEndArray();
+            }
             writer.WriteString("chain", ChainName(r.Chain));
             if (r.InputInterface is not null) { writer.WriteString("inputInterface", r.InputInterface); }
             if (r.OutputInterface is not null) { writer.WriteString("outputInterface", r.OutputInterface); }
@@ -702,6 +750,59 @@ public static class PolicyBundleJsonCodec
         FilterChainKind.Output => "output",
         _ => throw new ArgumentOutOfRangeException(nameof(c)),
     };
+
+    private static bool TryParsePrefixList(JsonElement el, out IReadOnlyList<NetworkPrefix>? list)
+    {
+        list = null;
+        if (el.ValueKind != JsonValueKind.Array || el.GetArrayLength() > 64)
+        {
+            return false;
+        }
+
+        var items = new List<NetworkPrefix>(el.GetArrayLength());
+        foreach (var entry in el.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.String)
+            {
+                return false;
+            }
+
+            try
+            {
+                items.Add(new NetworkPrefix(entry.GetString()!));
+            }
+            catch (Exception ex) when (ex is ArgumentException or FormatException)
+            {
+                return false;
+            }
+        }
+
+        list = Array.AsReadOnly(items.ToArray());
+        return true;
+    }
+
+    private static bool TryParsePortList(JsonElement el, out IReadOnlyList<int>? list)
+    {
+        list = null;
+        if (el.ValueKind != JsonValueKind.Array || el.GetArrayLength() > 64)
+        {
+            return false;
+        }
+
+        var items = new List<int>(el.GetArrayLength());
+        foreach (var entry in el.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Number || !entry.TryGetInt32(out var p))
+            {
+                return false;
+            }
+
+            items.Add(p);
+        }
+
+        list = Array.AsReadOnly(items.ToArray());
+        return true;
+    }
 
     private static bool TryReadOptionalString(JsonElement obj, string name, out string? value)
     {

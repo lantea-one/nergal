@@ -224,6 +224,99 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
         return LocalRedirect($"~/manage/policies?revision={saved.Revision.ToString(CultureInfo.InvariantCulture)}");
     }
 
+    /// <summary>Appends a validated filter rule to the draft policy bundle via the structured visual rule builder (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult AddFilterRule(
+        string? bundleJson,
+        string? summary,
+        ulong? compareToRevision,
+        string? chain,
+        string? family,
+        string? protocol,
+        string? verdict,
+        string? sources,
+        string? destinations,
+        string? destinationPorts,
+        string? icmpType,
+        string? inputInterface,
+        string? outputInterface,
+        string? connectionStates)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
+        var revisions = store.ListPolicyRevisions();
+        var input = new VisualFilterRuleInput(
+            chain, family, protocol, verdict, sources, destinations, destinationPorts,
+            icmpType, inputInterface, outputInterface, connectionStates);
+
+        if (!PolicyAuthoringService.TryAppendFilterRule(raw, input, out var updatedJson, out var diagnostics) || updatedJson is null)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            var existing = PolicyAuthoringService.EvaluateDraft(raw, store, compareToRevision);
+            var failed = existing with { IsValid = false, Diagnostics = diagnostics };
+            return View("Policies", BuildPolicyModel(role, raw, summary, null, compareToRevision, revisions, failed));
+        }
+
+        var report = PolicyAuthoringService.EvaluateDraft(updatedJson, store, compareToRevision);
+        return View("Policies", BuildPolicyModel(role, updatedJson, summary, null, compareToRevision, revisions, report));
+    }
+
+    /// <summary>Removes a filter rule by index from the draft policy bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult RemoveFilterRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        var revisions = store.ListPolicyRevisions();
+        if (!PolicyAuthoringService.TryRemoveFilterRule(raw, ruleIndex, out var updatedJson, out var diagnostics) || updatedJson is null)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            var existing = PolicyAuthoringService.EvaluateDraft(raw, store, compareToRevision);
+            var failed = existing with { IsValid = false, Diagnostics = diagnostics };
+            return View("Policies", BuildPolicyModel(role, raw, summary, null, compareToRevision, revisions, failed));
+        }
+
+        var report = PolicyAuthoringService.EvaluateDraft(updatedJson, store, compareToRevision);
+        return View("Policies", BuildPolicyModel(role, updatedJson, summary, null, compareToRevision, revisions, report));
+    }
+
+    /// <summary>Moves a filter rule up or down in the draft policy bundle (Administrator only).</summary>
+    [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
+    [RequestSizeLimit(65536)]
+    public IActionResult MoveFilterRule(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex, int direction)
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
+            role != NergalRoles.Administrator)
+        {
+            return Forbid();
+        }
+
+        var raw = bundleJson ?? "";
+        var revisions = store.ListPolicyRevisions();
+        if (!PolicyAuthoringService.TryMoveFilterRule(raw, ruleIndex, direction, out var updatedJson, out var diagnostics) || updatedJson is null)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            var existing = PolicyAuthoringService.EvaluateDraft(raw, store, compareToRevision);
+            var failed = existing with { IsValid = false, Diagnostics = diagnostics };
+            return View("Policies", BuildPolicyModel(role, raw, summary, null, compareToRevision, revisions, failed));
+        }
+
+        var report = PolicyAuthoringService.EvaluateDraft(updatedJson, store, compareToRevision);
+        return View("Policies", BuildPolicyModel(role, updatedJson, summary, null, compareToRevision, revisions, report));
+    }
+
     /// <summary>Displays live agent control state, countdown timer, and two-phase confirmed-apply controls.</summary>
     [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
     public async Task<IActionResult> Apply(string? hostId = null, ulong? revision = null, string? notice = null)
@@ -418,6 +511,7 @@ public sealed class ManagementController(ControllerStateStore store, ApplyWorkfl
             SelectedRevision = selectedRevision,
             CompareToRevision = compareToRevision,
             Revisions = revisions,
+            Bundle = report.Bundle,
             Compatibility = report.Compatibility,
             CandidateText = report.CandidateText,
             CandidateDigest = report.CandidateDigest,

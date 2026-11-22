@@ -47,3 +47,12 @@ unshare --user --map-root-user --net \
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- verify-bundle \
     "$fixture/bundle-filter-list.json" "$fixture/bundle-bridge-list.json"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- sets > "$fixture/sets.nft"
+unshare --user --map-root-user --net \
+    python3 tests/integration/nftables/sets_check.py \
+    "$fixture/sets.nft" "$fixture/sets-echo.json" "$fixture/sets-list.json" \
+    "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- verify-sets \
+    "$fixture/sets-echo.json" "$fixture/sets-list.json"

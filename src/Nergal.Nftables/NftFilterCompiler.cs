@@ -165,9 +165,42 @@ public static class NftFilterCompiler
                 {
                     errors.Add(new("ctStatus.requiresSchema2", path + ".matchOriginalDestinationDnat"));
                 }
+
+                if (rule.SourcePrefixes is not null)
+                {
+                    errors.Add(new("set.requiresSchema2", path + ".sourcePrefixes"));
+                }
+
+                if (rule.DestinationPrefixes is not null)
+                {
+                    errors.Add(new("set.requiresSchema2", path + ".destinationPrefixes"));
+                }
+
+                if (rule.DestinationPorts is not null)
+                {
+                    errors.Add(new("set.requiresSchema2", path + ".destinationPorts"));
+                }
             }
             else
             {
+                if (rule.Source is not null && rule.SourcePrefixes is not null)
+                {
+                    errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes"));
+                }
+
+                if (rule.Destination is not null && rule.DestinationPrefixes is not null)
+                {
+                    errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes"));
+                }
+
+                if (rule.DestinationPort.HasValue && rule.DestinationPorts is not null)
+                {
+                    errors.Add(new("set.conflictsWithScalar", path + ".destinationPorts"));
+                }
+
+                ValidatePrefixSet(rule.SourcePrefixes, rule.Family, path + ".sourcePrefixes", errors);
+                ValidatePrefixSet(rule.DestinationPrefixes, rule.Family, path + ".destinationPrefixes", errors);
+                ValidatePortSet(rule.DestinationPorts, rule.Protocol, path + ".destinationPorts", errors);
                 if (!Enum.IsDefined(rule.Chain))
                 {
                     errors.Add(new("chain.unknown", path + ".chain"));
@@ -326,10 +359,22 @@ public static class NftFilterCompiler
         {
             text.Append(family).Append(" saddr ").Append(rule.Source.Value).Append(' ');
         }
+        else if (rule.SourcePrefixes is { Count: > 0 })
+        {
+            text.Append(family).Append(" saddr { ")
+                .Append(string.Join(", ", rule.SourcePrefixes.Select(p => p.Value).Order(StringComparer.Ordinal)))
+                .Append(" } ");
+        }
 
         if (rule.Destination is not null)
         {
             text.Append(family).Append(" daddr ").Append(rule.Destination.Value).Append(' ');
+        }
+        else if (rule.DestinationPrefixes is { Count: > 0 })
+        {
+            text.Append(family).Append(" daddr { ")
+                .Append(string.Join(", ", rule.DestinationPrefixes.Select(p => p.Value).Order(StringComparer.Ordinal)))
+                .Append(" } ");
         }
 
         if (rule.MatchOriginalDestinationDnat)
@@ -361,6 +406,12 @@ public static class NftFilterCompiler
             if (rule.DestinationPort.HasValue)
             {
                 text.Append(protocol).Append(" dport ").Append(rule.DestinationPort.Value.ToString(CultureInfo.InvariantCulture)).Append(' ');
+            }
+            else if (rule.DestinationPorts is { Count: > 0 })
+            {
+                text.Append(protocol).Append(" dport { ")
+                    .Append(string.Join(", ", rule.DestinationPorts.Order().Select(p => p.ToString(CultureInfo.InvariantCulture))))
+                    .Append(" } ");
             }
         }
 
@@ -423,4 +474,135 @@ public static class NftFilterCompiler
         FilterVerdict.Drop => "drop",
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
+
+    private static void ValidatePrefixSet(
+        IReadOnlyList<NetworkPrefix>? prefixes,
+        IpFamily expectedFamily,
+        string path,
+        List<PolicyDiagnostic> errors)
+    {
+        if (prefixes is null)
+        {
+            return;
+        }
+
+        if (prefixes.Count < 2)
+        {
+            errors.Add(new("set.minElements", path));
+            return;
+        }
+
+        if (prefixes.Count > 64)
+        {
+            errors.Add(new("set.tooManyElements", path));
+            return;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var intervals = new List<(UInt128 Start, UInt128 End, int Index)>(prefixes.Count);
+        for (var i = 0; i < prefixes.Count; i++)
+        {
+            var item = prefixes[i];
+            var itemPath = path + "[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+            if (item is null)
+            {
+                errors.Add(new("set.nullElement", itemPath));
+                continue;
+            }
+
+            if (item.Family != expectedFamily)
+            {
+                errors.Add(new("network.familyMismatch", itemPath));
+                continue;
+            }
+
+            if (!seen.Add(item.Value))
+            {
+                errors.Add(new("set.duplicate", itemPath));
+                continue;
+            }
+
+            var (start, end) = PrefixToInterval(item);
+            intervals.Add((start, end, i));
+        }
+
+        if (intervals.Count >= 2)
+        {
+            intervals.Sort((a, b) => a.Start.CompareTo(b.Start));
+            for (var i = 1; i < intervals.Count; i++)
+            {
+                var prev = intervals[i - 1];
+                var curr = intervals[i];
+                if (prev.End == UInt128.MaxValue || curr.Start <= prev.End + UInt128.One)
+                {
+                    errors.Add(new("set.overlappingOrAdjacent", path + "[" + curr.Index.ToString(CultureInfo.InvariantCulture) + "]"));
+                }
+            }
+        }
+    }
+
+    private static (UInt128 Start, UInt128 End) PrefixToInterval(NetworkPrefix prefix)
+    {
+        var slash = prefix.Value.IndexOf('/', StringComparison.Ordinal);
+        var ip = System.Net.IPAddress.Parse(prefix.Value.AsSpan(0, slash));
+        var len = int.Parse(prefix.Value.AsSpan(slash + 1), CultureInfo.InvariantCulture);
+        var bytes = ip.GetAddressBytes();
+        UInt128 start = 0;
+        foreach (var b in bytes)
+        {
+            start = (start << 8) | b;
+        }
+
+        var totalBits = prefix.Family == IpFamily.IPv4 ? 32 : 128;
+        var hostBits = totalBits - len;
+        var end = hostBits == 128
+            ? UInt128.MaxValue
+            : start | ((UInt128.One << hostBits) - UInt128.One);
+        return (start, end);
+    }
+
+    private static void ValidatePortSet(
+        IReadOnlyList<int>? ports,
+        FilterProtocol protocol,
+        string path,
+        List<PolicyDiagnostic> errors)
+    {
+        if (ports is null)
+        {
+            return;
+        }
+
+        if (protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp))
+        {
+            errors.Add(new("port.requiresTransport", path));
+        }
+
+        if (ports.Count < 2)
+        {
+            errors.Add(new("set.minElements", path));
+            return;
+        }
+
+        if (ports.Count > 64)
+        {
+            errors.Add(new("set.tooManyElements", path));
+            return;
+        }
+
+        var seen = new HashSet<int>();
+        for (var i = 0; i < ports.Count; i++)
+        {
+            var port = ports[i];
+            var itemPath = path + "[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+            if (port is < 1 or > 65535)
+            {
+                errors.Add(new("port.outOfRange", itemPath));
+            }
+
+            if (!seen.Add(port))
+            {
+                errors.Add(new("set.duplicate", itemPath));
+            }
+        }
+    }
 }
