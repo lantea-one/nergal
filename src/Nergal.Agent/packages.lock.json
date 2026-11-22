@@ -74,6 +74,12 @@
         "dependencies": {
           "Nergal.Core": "[1.0.0, )"
         }
+      },
+      "nergal.remotetransport": {
+        "type": "Project",
+        "dependencies": {
+          "Nergal.Core": "[1.0.0, )"
+        }
       }
     }
   }

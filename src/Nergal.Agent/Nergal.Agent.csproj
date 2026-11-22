@@ -9,4 +9,7 @@
     <ProjectReference Include="../Nergal.LocalTransport/Nergal.LocalTransport.csproj" />
     <InternalsVisibleTo Include="Nergal.LocalState.Tests" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nergal.RemoteTransport\Nergal.RemoteTransport.csproj" />
+  </ItemGroup>
 </Project>

@@ -163,6 +163,11 @@ No daemon is installed; only the harness writes synthetic namespace rules. See i
 The controller status fixture also checks the complete HTTPS-to-Unix path between
 separate mapped process identities. It counts native provider calls through
 authorized and rejected requests, including a temporarily missing socket.
+`tests/integration/local-status/control-check.py` (invoked by `check.sh`) additionally runs
+real `nergal-agent control-serve` (peer-UID `SO_PEERCRED`) and `nergal-agent tls-serve`
+(TLS 1.3 pinned mTLS) processes in disposable user/network namespaces, verifying UID and
+certificate/EKU/key-mode denials alongside Schema 1 and Schema 2 `prepare-apply`, live UDP
+packet filtering, explicit `rollback`, `confirm`, and autonomous `watch` timeout rollback.
 The Web unit suite checks HTTP presentation for every protocol outcome and
 preservation of a maximum UInt64 revision.
 
