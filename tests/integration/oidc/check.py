@@ -114,14 +114,15 @@ class RelyingParty:
         self.browser = browser
         self.cookies = {}
 
-    def request(self, path, expected, fields=None):
+    def request(self, path, expected, fields=None, method=None):
         browser = self.browser
         connection = http.client.HTTPSConnection("127.0.0.1", browser.ports["https"], context=browser.tls, timeout=10)
         headers = {"Cookie": "; ".join(k + "=" + v for k, v in self.cookies.items())}
         if fields is not None:
             headers["Content-Type"] = "application/x-www-form-urlencoded"
+        verb = method or ("GET" if fields is None else "POST")
         try:
-            connection.request("GET" if fields is None else "POST", path, None if fields is None else urlencode(fields), headers)
+            connection.request(verb, path, None if fields is None else urlencode(fields), headers)
             response = connection.getresponse()
             body = response.read().decode()
             assert response.status == expected, f"{path}: expected {expected}, received {response.status}"
@@ -216,7 +217,83 @@ def exercise(temp):
             replay = RelyingParty(browser)
             replay.cookies["__Host-nergal-federated"] = independent
             replay.request("/session", 401)
-    print("PASS: real discovery, code/PKCE exchange, signed group authorization, issuer/audience/nonce/age denial, logout replay and independent local login")
+
+        ctrl_dir = temp / "oidc-controller-state"
+        ctrl_dir.mkdir(mode=0o700)
+        subprocess.run(["dotnet", sessions.ADMIN_TOOL, "controller", "init", ctrl_dir], check=True)
+        rbac_settings = {
+            **host_settings(op, cert),
+            "Oidc__AuditorGroups__0": "fixture-auditors",
+            "ControllerState__Enabled": "true",
+            "ControllerState__Directory": str(ctrl_dir),
+        }
+        with sessions.host(temp, tls, rbac_settings) as browser:
+            anon = RelyingParty(browser)
+            anon.request("/controller/audit", 401)
+
+            op.overrides = {"sub": "oidc-auditor-sub", "groups": ["fixture-auditors"]}
+            auditor_rp = RelyingParty(browser)
+            auditor_rp.exchange(op, cert, 302)
+            audit_view = json.loads(auditor_rp.request("/controller/audit", 200)[0])
+            assert audit_view["role"] == "nergal:auditor"
+            assert audit_view["actorId"] == f"oidc:{op.issuer}:oidc-auditor-sub"
+            auditor_rp.request("/controller/hosts", 200)
+            auditor_rp.request("/controller/hosts", 403, {
+                "name": "auditor-blocked",
+                "transportKind": "tls",
+                "endpoint": "192.0.2.20:8443",
+                "pinnedServerThumbprint": "b" * 64,
+                "__RequestVerificationToken": auditor_rp.token("/session"),
+            })
+
+            op.overrides = {"sub": "oidc-admin-sub", "groups": ["fixture-admins"]}
+            admin_rp = RelyingParty(browser)
+            admin_rp.exchange(op, cert, 302)
+            admin_csrf = admin_rp.token("/session")
+            admin_rp.request("/controller/hosts", 400, {
+                "name": "missing-csrf",
+                "transportKind": "tls",
+                "endpoint": "192.0.2.21:8443",
+                "pinnedServerThumbprint": "c" * 64,
+            })
+            created_tls = json.loads(admin_rp.request("/controller/hosts", 201, {
+                "name": "edge-gw",
+                "transportKind": "tls",
+                "endpoint": "192.0.2.21:8443",
+                "pinnedServerThumbprint": "c" * 64,
+                "__RequestVerificationToken": admin_csrf,
+            })[0])
+
+            local_admin = RelyingParty(browser)
+            local_admin.request("/login", 302, {
+                "username": "fixture-admin",
+                "password": sessions.PASSWORD,
+                "__RequestVerificationToken": local_admin.token("/login"),
+            })
+            local_csrf = local_admin.token("/session")
+            local_admin.request("/controller/hosts", 201, {
+                "name": "local-agent",
+                "transportKind": "unix",
+                "endpoint": "/run/nergal/control.sock",
+                "expectedServerUserId": "100",
+                "__RequestVerificationToken": local_csrf,
+            })
+
+            auditor_rp.request(f"/controller/hosts/{created_tls['id']}", 403, {
+                "__RequestVerificationToken": auditor_rp.token("/session"),
+            }, method="DELETE")
+            admin_rp.request(f"/controller/hosts/{created_tls['id']}", 204, {
+                "__RequestVerificationToken": admin_csrf,
+            }, method="DELETE")
+
+            entries = json.loads(auditor_rp.request("/controller/audit", 200)[0])["entries"]
+            actions = [(e["action"], e["target"], e["actorId"], e["actorRole"]) for e in entries]
+            assert ("host.register", "edge-gw", f"oidc:{op.issuer}:oidc-admin-sub", "nergal:administrator") in actions
+            assert ("host.delete", "edge-gw", f"oidc:{op.issuer}:oidc-admin-sub", "nergal:administrator") in actions
+            assert any(a == "host.register" and t == "local-agent" and act.startswith("local:") and r == "nergal:administrator"
+                       for a, t, act, r in actions)
+
+    print("PASS: real discovery, code/PKCE exchange, signed group/role authorization, issuer/audience/nonce/age denial, logout replay, independent local login and audit attribution")
 
 
 if __name__ == "__main__":

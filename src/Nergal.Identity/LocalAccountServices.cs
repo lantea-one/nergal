@@ -38,7 +38,8 @@ public static class LocalAccountServices
             identity.Lockout.AllowedForNewUsers = true;
             identity.Lockout.MaxFailedAccessAttempts = 5;
             identity.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-        }).AddPasswordValidator<BoundedPasswordValidator>().AddSignInManager().AddEntityFrameworkStores<LocalAccountContext>();
+        }).AddPasswordValidator<BoundedPasswordValidator>().AddSignInManager().AddEntityFrameworkStores<LocalAccountContext>()
+          .AddClaimsPrincipalFactory<LocalAccountClaimsPrincipalFactory>();
         services.Configure<PasswordHasherOptions>(password =>
         {
             password.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV3;

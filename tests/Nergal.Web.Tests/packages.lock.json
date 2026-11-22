@@ -75,6 +75,16 @@
         "resolved": "18.12.0",
         "contentHash": "OhOPSaCAQhBJgXF1OrX0uK3eTkwZ1XnM44iGLZplYgKrmgKzQUdv9xtGGaE568RuQ738TlrTJ3pm9aWL5FH7iw=="
       },
+      "Microsoft.Data.Sqlite": {
+        "type": "Transitive",
+        "resolved": "10.0.15",
+        "contentHash": "PtnNCUloQOLAXhB09id+0CL2c9yd+9/wi0QHCHPa+zrTKEJTdu07jlUgblFjorYhKnwcHN1VS0z75jN8vFruuQ==",
+        "dependencies": {
+          "Microsoft.Data.Sqlite.Core": "10.0.15",
+          "SQLitePCLRaw.bundle_e_sqlite3": "2.1.13",
+          "SQLitePCLRaw.core": "2.1.13"
+        }
+      },
       "Microsoft.Data.Sqlite.Core": {
         "type": "Transitive",
         "resolved": "10.0.15",
@@ -428,6 +438,14 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "nergal.controllerstate": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Data.Sqlite": "[10.0.15, )",
+          "Nergal.Core": "[1.0.0, )",
+          "Nergal.Linux": "[1.0.0, )"
+        }
+      },
       "nergal.core": {
         "type": "Project"
       },
@@ -436,6 +454,7 @@
         "dependencies": {
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.15, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.15, )",
+          "Nergal.Core": "[1.0.0, )",
           "Nergal.Linux": "[1.0.0, )"
         }
       },
@@ -453,6 +472,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.15, )",
+          "Nergal.ControllerState": "[1.0.0, )",
           "Nergal.Core": "[1.0.0, )",
           "Nergal.Identity": "[1.0.0, )",
           "Nergal.LocalTransport": "[1.0.0, )"

@@ -101,6 +101,9 @@
           "SQLitePCLRaw.core": "2.1.13"
         }
       },
+      "nergal.core": {
+        "type": "Project"
+      },
       "nergal.linux": {
         "type": "Project"
       }

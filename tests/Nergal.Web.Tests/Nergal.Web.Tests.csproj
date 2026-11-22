@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Nergal.ControllerState/Nergal.ControllerState.csproj" />
     <ProjectReference Include="../../src/Nergal.Web/Nergal.Web.csproj" />
   </ItemGroup>
 
