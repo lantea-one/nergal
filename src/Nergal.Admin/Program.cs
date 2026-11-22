@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Nergal.Admin;
 using Nergal.ControllerState;
@@ -9,10 +10,20 @@ const string usage = """
       nergal-admin account init <absolute-directory>
       nergal-admin account provision <absolute-directory> <username> [--role <administrator|auditor>] [--password-stdin]
       nergal-admin controller init <absolute-directory>
+      nergal-admin --version
     Provisioning without --password-stdin prompts twice without echo on a terminal.
     The explicit stdin mode reads one UTF-8 password line to EOF (optional final LF or CRLF).
     """;
 if (args is ["--help"]) { Console.WriteLine(usage); return 0; }
+if (args is ["--version"])
+{
+    var version = typeof(PasswordInput).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? typeof(PasswordInput).Assembly.GetName().Version?.ToString()
+        ?? "2026.11.21";
+    Console.WriteLine(version);
+    return 0;
+}
 if (!OperatingSystem.IsLinux()) { Console.Error.WriteLine("platform.unsupported"); return 1; }
 if (args is ["controller", "init", var controllerDir])
 {
