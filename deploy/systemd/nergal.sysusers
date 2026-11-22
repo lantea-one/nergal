@@ -1,0 +1,7 @@
+# systemd-sysusers(5) configuration for nergal
+# Shared group granting Nergal.Web read/control access to the local Unix socket when co-located.
+g nergal-ctl -
+u nergal-agent - "nergal privileged nftables agent" /var/lib/nergal/agent /usr/sbin/nologin
+u nergal-web - "nergal unprivileged web controller" /var/lib/nergal/web /usr/sbin/nologin
+m nergal-agent nergal-ctl
+m nergal-web nergal-ctl

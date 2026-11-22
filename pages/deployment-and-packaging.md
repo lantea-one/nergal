@@ -5,9 +5,9 @@ nergal is designed for Linux hosts running `systemd` and `nftables` with strict 
 ## Systemd Units & Provisioning
 
 Repository artifacts under `deploy/systemd/`:
-- `nergal-agent.service`: Runs `/usr/libexec/nergal/agent/nergal-agent` with `CAP_NET_ADMIN` only (no full root shell, private tmp, strict filesystem protections).
-- `nergal-web.service`: Runs `/usr/libexec/nergal/web/Nergal.Web` as unprivileged user `nergal-web` with zero capabilities (`CapabilityBoundingSet=`).
-- `nergal.sysusers` & `nergal.tmpfiles`: Declaratively create the `nergal-web` / `nergal-agent` service accounts, socket group, and `0700` state directories (`/var/lib/nergal/agent`, `/var/lib/nergal/web`, `/run/nergal`).
+- `nergal-agent.service`: Runs `/opt/nergal/agent/nergal-agent.dll` under `User=nergal-agent` with `CAP_NET_ADMIN` only (no full root shell, private tmp, strict filesystem protections).
+- `nergal-web.service`: Runs `/opt/nergal/web/Nergal.Web.dll` as unprivileged user `nergal-web` with zero capabilities (`CapabilityBoundingSet=`).
+- `nergal.sysusers` & `nergal.tmpfiles`: Declaratively create the `nergal-web`, `nergal-agent`, and `nergal-ctl` accounts/groups plus private `0700` state directories (`/var/lib/nergal/agent`, `/var/lib/nergal/web`) and `/run/nergal` (`2710`).
 
 ## Initial Host Setup
 
@@ -28,6 +28,6 @@ Repository artifacts under `deploy/systemd/`:
 ## Release Packages
 
 Release builds produce reproducible Linux `x64` artifacts via `scripts/package-release.sh`:
-- `nergal_<version>_linux-x64.tar.gz`: Self-contained layout with `nergal-agent`, `nergal-web`, `nergal-admin`, and `deploy/systemd/` units.
-- `nergal_<version>_amd64.deb`: Debian/Ubuntu package built with `dpkg-deb --root-owner-group` installing binaries to `/usr/libexec/nergal/`, wrapper scripts in `/usr/sbin/`, and systemd/sysusers/tmpfiles definitions.
+- `nergal_<version>_linux-x64.tar.gz`: Self-contained layout installing binaries under `/opt/nergal/{agent,web,admin}`, CLI wrappers in `/usr/local/sbin/`, and systemd/sysusers/tmpfiles definitions.
+- `nergal_<version>_amd64.deb`: Debian/Ubuntu package built with `dpkg-deb --root-owner-group` installing `/opt/nergal/`, `/usr/local/sbin/` wrappers, and `systemd`/`sysusers.d`/`tmpfiles.d` units.
 - `SHA256SUMS`: Cryptographic checksums for all release archives.

@@ -34,10 +34,24 @@ sudo install -d -o nergal-web -g nergal-web -m 0700 \
 sudo install -d -o root -g root -m 0755 /etc/nergal/agent /etc/nergal/web /opt/nergal/agent /opt/nergal/web /opt/nergal/admin
 ```
 
-For `/run/nergal` across reboots, add a `tmpfiles.d` rule:
+For `/run/nergal` across reboots, install the repository's declarative `sysusers.d`
+and `tmpfiles.d` templates (`deploy/systemd/nergal.sysusers` and
+`deploy/systemd/nergal.tmpfiles`):
 
-```text
-d /run/nergal 2710 nergal-agent nergal-ctl -
+```sh
+sudo install -m 0644 deploy/systemd/nergal.sysusers /usr/lib/sysusers.d/nergal.conf
+sudo install -m 0644 deploy/systemd/nergal.tmpfiles /usr/lib/tmpfiles.d/nergal.conf
+sudo systemd-sysusers /usr/lib/sysusers.d/nergal.conf
+sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/nergal.conf
+```
+
+## Release packages
+
+Reproducible Linux release archives (`.tar.gz`, `.deb` when `dpkg-deb` is available,
+and `SHA256SUMS`) can be built and verified from source with:
+
+```sh
+bash scripts/package-release.sh --verify
 ```
 
 ## Offline initialization
