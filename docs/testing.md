@@ -418,3 +418,15 @@ component updates and system-timezone changes. Controller SQLite tests verify UT
 persistence even with offset-bearing input/clocks. HTTPS checks assert UTC instant
 markup and local-display labels; browser QA verifies rendered values and the named
 viewer timezone. Server-local time is never the display default.
+
+### Typed object library
+
+`ReusableObjectContentTests` verifies defensive snapshots, canonical normalization,
+family/type/entry bounds and unsupported-input denial. `ReusableObjectStoreTests`
+uses real SQLite for immutable history, stale-edit/duplicate-name/type-change/RBAC
+denial, transactional audit failure, capacity, digest/protection tampering and
+explicit schema-2 upgrade. The existing UTC test includes object version storage.
+The local-session HTTPS fixture exercises all three types, invalid/duplicate/unknown
+fields, retained stale input, escaping, history/search, restart persistence, CSRF
+and anonymous/Auditor boundaries. No native set or packet behavior is added by this
+slice; policy-reference and native compilation conformance remains future work.

@@ -99,8 +99,9 @@ being moved into ordinary configuration rows.
 This direction is not yet fully implemented. Native source uploads now persist
 immutable database snapshots with transactional audit and exact original downloads
 under ADR 0038. Operator-configured files are optional staging inputs. Some runtime
-configuration still comes from protected deployment files; reusable objects,
-semantic mapping records and other planned state remain future work.
+configuration still comes from protected deployment files. Typed reusable lists now
+have immutable database history; policy-reference integration, semantic mapping
+records and other planned state remain future work.
 Deployment/bootstrap trust remains a separate boundary.
 
 Stabilize the logical schema before implementing migrations for additional SQL
@@ -146,8 +147,9 @@ and invalid imports, and packet outcomes in disposable namespaces. Source format
 or comments must not be claimed as losslessly preserved unless verified. Raw code
 editing, where offered, uses the actual code editor and authoritative server validation.
 
-These are planned product requirements, not implemented import/export or object
-library capabilities.
+The [typed list library](reusable-object-library.md) now supports create/edit/search
+and immutable history. Policy references, impact visibility, native named sets and
+generated export remain planned capabilities.
 
 ## Code editor delivery
 

@@ -811,3 +811,12 @@ input[type="file"]::file-selector-button {
 }
 
 .time-zone-note { max-width: 1280px; margin: 0 auto; padding: 0 1.25rem 1.25rem; font-size: .875rem; }
+
+/* List forms keep long entry guidance readable and aligned with its control. */
+.object-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .object-form-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -7,39 +7,6 @@ namespace Nergal.ControllerState;
 
 public sealed partial class ControllerStateStore
 {
-    /// <summary>Explicitly upgrades a protected schema-1 controller database while preserving existing state and audit history.</summary>
-    /// <remarks>Stop controller writers first and retain a verified backup. The web host never calls this operation.</remarks>
-    /// <exception cref="ControllerStateException">Schema, protection, durability or migration validation fails.</exception>
-    public static ControllerStateStore Upgrade(ControllerStateOptions options, TimeProvider? timeProvider = null)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("Controller persistence requires Linux file protection."); }
-        var path = ValidatePaths(options.Directory, true);
-        try
-        {
-            using var conn = new SqliteConnection(ConnectionString(path)); conn.Open(); ConfigureConnection(conn);
-            using var tx = conn.BeginTransaction(deferred: false);
-            var version = ScalarLong(conn, tx, "PRAGMA user_version");
-            if (version == SchemaVersion) { ValidateSchemaAndIntegrity(conn, tx); }
-            else if (version == 1 && ScalarLong(conn, tx, "PRAGMA application_id") == ApplicationId &&
-                ScalarString(conn, tx, "PRAGMA quick_check") == "ok" &&
-                ScalarLong(conn, tx, "SELECT count(*) FROM sqlite_master WHERE type='trigger' AND tbl_name='audit_log' AND name IN ('audit_no_update','audit_no_delete')") == 2 &&
-                ScalarLong(conn, tx, "SELECT count(*) FROM sqlite_master WHERE name LIKE 'native_source%'") == 0)
-            {
-                ValidateAuditDefinitions(conn, tx);
-                // Exercise required legacy columns before creating anything. Failures roll the transaction back.
-                ExecuteNonQuery(conn, tx, "SELECT id,name FROM hosts LIMIT 0; SELECT revision,policy_json FROM policy_revisions LIMIT 0; SELECT sequence,actor_id FROM audit_log LIMIT 0;");
-                ExecuteNonQuery(conn, tx, NativeSourcesSchemaSql);
-                ExecuteNonQuery(conn, tx, "PRAGMA user_version=2;");
-                ValidateSchemaAndIntegrity(conn, tx);
-            }
-            else { throw new ControllerStateException("controller.upgradeUnsupported"); }
-            tx.Commit();
-        }
-        catch (SqliteException ex) { throw new ControllerStateException("controller.upgradeFailed", ex); }
-        return Open(options, timeProvider);
-    }
-
     /// <summary>Imports an immutable source and its audit entry atomically; it does not parse or execute nft syntax.</summary>
     /// <exception cref="ControllerStateException">Role is denied, capacity is exhausted or protected database integrity fails.</exception>
     public NativeSourceSummary ImportNativeSource(NativeSourceContent content, string actorId, string actorRole)

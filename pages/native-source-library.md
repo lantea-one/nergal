@@ -32,8 +32,8 @@ that record. A basic installation requires no staging directory or site integrat
 
 ## Existing databases
 
-New controller stores use schema 2. Stop the controller and make a verified SQLite
-backup, including any uncheckpointed WAL data, before upgrading an existing schema-1
+New controller stores use schema 3, including the typed list library. Stop the controller and make a verified SQLite
+backup, including any uncheckpointed WAL data, before upgrading an existing schema-1/2
 store under its owner identity:
 
 ```sh

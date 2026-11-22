@@ -40,7 +40,7 @@ no staging directory or particular deployment topology.
 
 ## Existing controller databases
 
-New controller stores use schema 2. Existing schema-1 stores require an explicit
+New controller stores use schema 3, including the typed object library. Existing schema-1/2 stores require an explicit
 offline upgrade; the web process never upgrades them automatically:
 
 1. Stop the controller and take a verified backup of its SQLite store using an
