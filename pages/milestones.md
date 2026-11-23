@@ -22,7 +22,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | ID | Milestone | Status | Completion gate |
 | --- | --- | --- | --- |
 | M1 | Rule lifecycle | Complete | Inline enable/disable for every supported rule, retained contents/order/references, intent review and confirmed apply, packet/rollback acceptance. |
-| M2 | Complete structured authoring | In progress | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
+| M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
 | M3 | Reusable-object coverage | Open | Finish declared reference scopes and native object semantics, explicit scope/type validation, immutable versions and impact visibility; no claims of unsupported dynamic sets/maps. |
 | M4 | Semantic native import/export | Open | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Open | Navigation/setup workflows, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
@@ -32,8 +32,9 @@ The initial private deployment is an acceptance environment, not the product sco
 
 ## Dependencies and support decisions
 
-M1 is merged into main (PR #81) after local and CI verification. M2 is in
-progress. M2–M4 share policy/reference contracts; neither
+M1 is merged into main (PR #81). M2 now has guided forms for the supported
+policy constructs, verified by unit/HTTPS/native packet checks and browser QA.
+M2–M4 share policy/reference contracts; neither
 forms nor lexical inspection establish semantic import equivalence. Native named
 sets/maps, dynamic flags/timeouts and NAT/bridge object references remain separate
 from the existing static controller-reference projection. Declare the supported v1
@@ -60,5 +61,6 @@ M2 progress: primary filter MAC matching/negation, source/destination meter keys
 explicit reject, and complete postrouting SNAT/masquerade/return forms are
 implemented. Raw/FIB/UDP source-port rules, MSS configuration, DNAT negation and
 NAT reordering are also implemented. Auxiliary inet table priority/defaults and
-complete ordered rule forms are implemented. Extended bridge/sub-chain forms
-remain before M2 can close. See [guided router forms](guided-router-forms.md).
+complete ordered rule forms are implemented. Extended bridge matching, priority,
+regular-chain creation, jump/return and ordering are also implemented.
+Broader UX refinement, scaling and product-wide accessibility checks remain M5. See [guided router forms](guided-router-forms.md).

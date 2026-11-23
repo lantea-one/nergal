@@ -97,3 +97,10 @@ extended bridge/sub-chain forms remain before M2 is complete.
 Auxiliary inet table priority/defaults and complete ordered filter-rule forms are
 now available. They preserve dormant state and other policy sections and require
 explicit empty-table removal. Extended bridge/sub-chain forms remain in M2.
+
+Complete bridge forms expose priority, bridge-master/MAC/IP/transport matching,
+local regular chains, explicit jump/return, ordering and per-rule enabled state.
+Auditors can inspect read-only matching fields. Missing/cyclic targets and
+referenced-chain removal remain denied. Structured authoring covers the current
+supported policy constructs; reusable-object expansion, semantic native import/export
+and broader UX/operations/database work remain separate product milestones.

@@ -63,6 +63,9 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-nat-move", "manage/policies/nat/move", new { controller = "Management", action = "MoveNatRule" });
         app.MapControllerRoute("manage-auxiliary-defaults", "manage/policies/auxiliary/defaults", new { controller = "Management", action = "SetAuxiliaryDefaults" });
         app.MapControllerRoute("manage-auxiliary-rule", "manage/policies/auxiliary/rule", new { controller = "Management", action = "SetAuxiliaryRule" });
+        app.MapControllerRoute("manage-bridge-settings", "manage/policies/bridge/settings", new { controller = "Management", action = "SetBridgeSettings" });
+        app.MapControllerRoute("manage-bridge-chain", "manage/policies/bridge/chain", new { controller = "Management", action = "SetBridgeChain" });
+        app.MapControllerRoute("manage-bridge-rule", "manage/policies/bridge/rule", new { controller = "Management", action = "SetExtendedBridgeRule" });
         app.MapControllerRoute("manage-raw-rule", "manage/policies/raw/rule", new { controller = "Management", action = "SetRawRule" });
         app.MapControllerRoute("manage-raw-default", "manage/policies/raw/default", new { controller = "Management", action = "SetRawDefault" });
         app.MapControllerRoute("manage-mss", "manage/policies/mss", new { controller = "Management", action = "SetMss" });
