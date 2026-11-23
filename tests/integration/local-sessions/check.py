@@ -337,6 +337,8 @@ def exercise(temp):
         })
         assert "Auditor access is read-only" in auditor_browser.request("/manage/objects", 200)
         assert 'action="/manage/objects/save"' not in auditor_browser.request(object_path, 200)
+        comparison = auditor_browser.request(object_path + "&compareToVersion=1", 200)
+        assert "Compare list versions" in comparison and 'action="/manage/objects/save"' not in comparison
         auditor_browser.request("/manage/objects/save", 403, {"name": "denied", "__RequestVerificationToken": auditor_browser.token("/session")})
         auditor_browser.request("/manage/policies/rules/state", 403, {"bundleJson": "{}", "__RequestVerificationToken": auditor_browser.token("/session")})
         for path in ("/manage/policies/rules/conditions", "/manage/policies/nat/postrouting", "/manage/policies/raw/rule", "/manage/policies/raw/default", "/manage/policies/mss", "/manage/policies/nat/dnat/conditions", "/manage/policies/nat/move", "/manage/policies/auxiliary/defaults", "/manage/policies/auxiliary/rule", "/manage/policies/bridge/settings", "/manage/policies/bridge/chain", "/manage/policies/bridge/rule"):

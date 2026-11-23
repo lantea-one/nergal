@@ -219,3 +219,8 @@ destination-port matching. A pure domain projection supplies existing literal
 matchers; stored intent and database usage retain identity/version/content. No
 compile-time database lookup, new host operation or receipt bypass is introduced.
 See [ADR 0042](decisions/0042-transport-port-list-references.md).
+
+Read-only list comparison loads two stored versions of the same identity/type.
+It compares canonical entries and descriptions, without network coverage analysis
+or live-host inference. Policy pin links open comparison in a separate tab.
+Existing database history, desired state, audit and apply receipts are unchanged.

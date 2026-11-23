@@ -9,9 +9,12 @@ class PortFields(HTMLParser):
     def __init__(self):
         super().__init__()
         self.fields = {}
+        self.links = []
 
     def handle_starttag(self, tag, attrs):
         fields = dict(attrs)
+        if tag == "a":
+            self.links.append(fields)
         if tag == "input" and fields.get("id"):
             self.fields[fields["id"]] = fields
 
@@ -60,6 +63,12 @@ def check_transport_references(browser, directory):
     for location in ("nat.snatRules[0].destinationPortObject", "bridge.rules[0].destinationPortObject", "bridge.subChains[0].rules[1].destinationPortObject"):
         assert location in usage
     browser.request("/manage/objects/save", 302, {"id": port_id, "expectedVersion": "1", "name": "web_ports", "kind": "port", "entries": "8443", "description": "Later transport list", "__RequestVerificationToken": browser.token("/manage/objects")})
+    summary = PortFields(); summary.feed(browser.request("/manage/policies?revision=5", 200))
+    expected_link = "/manage/objects?objectId=" + port_id + "&compareToVersion=1"
+    pin_links = [link for link in summary.links if link.get("href") == expected_link]
+    assert len(pin_links) >= 3 and all(link.get("target") == "_blank" and link.get("rel") == "noopener" for link in pin_links)
+    comparison = browser.request(expected_link, 200)
+    assert "Version 1" in comparison and "version 2" in comparison and "2 removed" in comparison and "1 added" in comparison
     forged = json.loads(current)
     forged["nat"]["snatRules"][0]["destinationPortObject"]["version"] = 2
     browser.request("/manage/policies/save", 400, {"bundleJson": json.dumps(forged), "__RequestVerificationToken": token})

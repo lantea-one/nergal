@@ -40,3 +40,10 @@ files and mounts neither private exports nor credentials. Its namespace capabili
 and relaxed container seccomp configuration belong only to test tooling; the web
 sandbox remains unprivileged. Extended auxiliary dispatch now has dedicated packet and receipt-bound recovery
 acceptance evidence, documented in the router support matrix.
+
+
+List comparison unit/HTTPS checks cover directional/same-version entry differences,
+metadata changes, exact CIDR handling, unrelated-identity rejection, escaped text,
+bad/duplicate/missing version requests, Auditor access and unchanged database/audit
+counts. Browser checks cover light/dark and mobile layouts. This read-only view
+adds no native enforcement semantics or traffic measurement.

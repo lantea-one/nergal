@@ -60,3 +60,8 @@ literal matchers; the database retains immutable identity/version/content and
 saved usage paths. Complete native observations and protected receipts still gate
 apply/rollback. No agent database lookup or new privileged browser operation is
 introduced. See [reusable object contracts](reusable-object-library.md).
+
+Read-only list comparison loads two stored versions of the same identity/type.
+It compares canonical entries and descriptions, without network coverage analysis
+or live-host inference. Policy pin links open comparison in a separate tab.
+Existing database history, desired state, audit and apply receipts are unchanged.
