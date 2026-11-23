@@ -1178,12 +1178,14 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         ulong? selectedRevision,
         ulong? compareToRevision,
         IReadOnlyList<PolicyRevisionRecord> revisions,
-        PolicyEvaluationReport report) =>
+        PolicyEvaluationReport report,
+        PolicyObjectBrowseSelection? objectBrowseSelection = null) =>
         new()
         {
             ActorRole = role,
             CanMutate = role == NergalRoles.Administrator,
-            LibraryObjects = store.ListReusableObjects(),
+            LibraryObjects = objectBrowseSelection is not null ? PolicyObjectVersionChoices.Load(store, objectBrowseSelection.ObjectId) : store.ListReusableObjects(),
+            ObjectBrowseSelection = objectBrowseSelection,
             BundleJson = bundleJson,
             Summary = summary,
             SelectedRevision = selectedRevision,

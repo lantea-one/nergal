@@ -224,3 +224,8 @@ Read-only list comparison loads two stored versions of the same identity/type.
 It compares canonical entries and descriptions, without network coverage analysis
 or live-host inference. Policy pin links open comparison in a separate tab.
 Existing database history, desired state, audit and apply receipts are unchanged.
+
+A draft reference form may explicitly load one bounded immutable list history
+for selection. Other lists retain their current-version choices. Target/form
+selection is presentation state; browsing never changes canonical intent and
+compilation/apply still use only the exact embedded, validated version snapshot.

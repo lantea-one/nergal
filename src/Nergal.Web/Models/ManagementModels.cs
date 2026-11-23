@@ -93,8 +93,11 @@ public sealed class PolicyEditorViewModel
     /// <summary>Gets whether the viewer can persist policy revisions.</summary>
     public required bool CanMutate { get; init; }
 
-    /// <summary>Gets selectable current library snapshots; selections are pinned to the displayed version.</summary>
+    /// <summary>Gets selectable snapshots: current versions plus one explicitly browsed list history; selections pin the displayed version.</summary>
     public IReadOnlyList<ReusableObjectVersion> LibraryObjects { get; init; } = [];
+
+    /// <summary>Gets the retained target and list selection for an explicitly requested immutable history, without changing draft intent.</summary>
+    public PolicyObjectBrowseSelection? ObjectBrowseSelection { get; init; }
 
     /// <summary>Gets current draft bundle JSON text displayed in the editor.</summary>
     public required string BundleJson { get; init; }
