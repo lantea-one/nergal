@@ -258,6 +258,8 @@ def exercise(temp):
         check_auxiliary_references(browser, ctrl_state)
         from transport_references import check_transport_references
         check_transport_references(browser, ctrl_state)
+        from postrouting_addresses import check_postrouting_addresses
+        check_postrouting_addresses(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)

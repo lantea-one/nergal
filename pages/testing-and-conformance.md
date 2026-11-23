@@ -67,3 +67,23 @@ HTTPS checks cover retained rule/matcher/version selections in all five supporte
 reference scopes, unchanged draft contents, exact old/new version attachment and
 denial of missing versions, invalid scope/chain/rule/slot and unknown operations.
 No compiler, ownership, agent or rollback contract changes in this UI workflow.
+
+### Postrouting address sets and references
+
+Core checks cover defensive source/destination snapshots, strict malformed/unknown
+JSON rejection, family/cardinality/conflict/overlap/adjacency denial including dormant
+rules, singleton/multiple reference equivalence and complete native echo/list
+fingerprints. Canonical native host addresses are strings, not /32 or /128 prefix
+objects. Web real-SQLite/unit/HTTPS checks cover both address slots/families, readonly
+pin fields, guided/legacy edit retention, forged history/usage and required-SNAT-source
+removal denial. Later library versions cannot modify saved policy bytes.
+
+The router namespace fixture observes actual dual-stack packet sources for set
+membership, independent source/destination misses, negation, return exemptions
+and disabled/restored exemptions. It round-trips complete native set observations.
+Agent auxiliary lifecycle now carries address-set NAT tables through confirm,
+explicit/independent watchdog rollback, removal/restoration and restart. The new
+`nat-set-drift` case changes native address-set contents and requires recovery
+without overwriting unexpected state. The mapped-identity HTTPS fixture selects
+address versions through the real UI before Unix/mTLS apply/confirm/rollback checks.
+These remain synthetic isolated fixtures, not real-server conversion acceptance.

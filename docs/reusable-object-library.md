@@ -89,7 +89,7 @@ multiple addresses must satisfy the existing disjoint/non-adjacent prefix bounds
 Overlapping or adjacent entries may be stored in the library but are rejected when
 attached to a rule if native observation cannot round-trip them. Family/protocol
 mismatches, conflicting literals, unknown flags and missing/forged references fail
-explicitly. Native named sets/maps, dynamic lists, NAT/bridge address references,
+explicitly. Native named sets/maps, dynamic lists, DNAT/bridge address references,
 DNAT port references and semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
 the primary policy, table priority, MAC restrictions, negation, rule order and
 enabled state. Omitting scope in existing API submissions continues to select
@@ -109,7 +109,7 @@ paths include `auxiliaryFilter.filter.rules[n]` and old versions remain immutabl
 ## Pinned postrouting and bridge port lists
 
 Postrouting NAT and bridge destination-port matchers can pin a **Port** list. In
-**Policies → NAT**, use **Reusable postrouting port lists** below the postrouting
+**Policies → NAT**, use **Reusable postrouting lists** below the postrouting
 editors. In **Policies → Bridge**, use the port-list selector inside the forward
 or regular-chain panel. Select a rule and displayed version, then **Attach port
 list to draft**. Port lists require TCP or UDP; bridge IP-prefix restrictions
@@ -132,7 +132,7 @@ matchers; exact artifacts and complete ownership receipts still gate apply and
 rollback. Use updated controller and agent builds; older strict codecs reject the
 new fields. No controller database schema upgrade is needed.
 
-This does not implement native named sets or NAT/bridge address lists and does not
+This does not implement native named sets or DNAT/bridge address lists and does not
 expand rules or approximate unsupported translation-list semantics. See
 [ADR 0042](decisions/0042-transport-port-list-references.md).
 
@@ -185,3 +185,37 @@ Older snapshots do not bypass compiler restrictions; inspect the draft and nativ
 diffs, save a revision, then use confirmed apply.
 
 ![Historical version selection](../pages/assets/screenshots/list-history-selector-dark.jpg)
+
+## Pinned postrouting source and destination lists
+
+In **Policies → NAT → Reusable postrouting lists**, choose a postrouting rule,
+**Source address** or **Destination address**, then a same-family IPv4/IPv6 list
+version. Browse history if an older snapshot is needed; attachment pins exactly
+that displayed version. Attachment replaces the selected matcher's literals or
+previous reference, retaining action/translation, ports, interfaces, negation,
+order and enabled state. Preview/save verifies immutable database history.
+
+The full postrouting editor also accepts literal CIDR lists. One entry is a scalar;
+2–64 entries form an anonymous set. Every entry must match the rule family and
+sets must be distinct, disjoint and non-adjacent so native observation preserves
+the exact restrictions. Overlapping/adjacent lists can be stored but cannot be
+attached when this native projection cannot round-trip them. No rules are expanded.
+
+Pinned address fields show name/version and contents read-only. Ordinary guided
+and legacy edits cannot silently replace them. Removing an address reference
+clears that matcher and its negation; explicit SNAT still requires a source
+restriction, so removing its sole source is denied. Masquerade/return may have an
+unrestricted source. Review both intent and native diffs, save a revision, then
+use confirmed apply. Saved usage paths include `nat.snatRules[n].sourceObject`
+and `.destinationObject`; later library edits never change saved versions.
+
+Canonical JSON retains `sourceObject`/`destinationObject`, or literal
+`sourcePrefixes`/`destinationPrefixes`, exclusively with the corresponding scalar.
+Native observations retain complete sets and use a v3 address-set fingerprint;
+scalar/port-only receipt fingerprints stay unchanged. Older controllers/agents
+reject the new JSON fields and cannot validate new receipts. Upgrade matching
+controller/agent builds together. No SQL schema upgrade is required; the native
+observation byte limit is unchanged. Native named sets/maps/dynamic objects,
+DNAT references and bridge address lists remain unsupported.
+
+![Pinned postrouting addresses](../pages/assets/screenshots/postrouting-addresses-dark.jpg)

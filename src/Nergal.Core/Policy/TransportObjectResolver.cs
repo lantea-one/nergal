@@ -3,7 +3,7 @@ using Nergal.Core.Controller;
 
 namespace Nergal.Core.Policy;
 
-/// <summary>Projects embedded immutable port-list versions onto existing NAT and bridge literal matchers without fetching database state.</summary>
+/// <summary>Projects embedded immutable list versions onto NAT address/port and bridge port literal matchers without fetching database state.</summary>
 /// <remarks>The original policy retains references. Invalid types or conflicting literals produce diagnostics, never partial enforcement.</remarks>
 public static class TransportObjectResolver
 {
@@ -11,16 +11,25 @@ public static class TransportObjectResolver
     public static NatPolicy Resolve(NatPolicy policy, ICollection<PolicyObjectDiagnostic> diagnostics)
     {
         ArgumentNullException.ThrowIfNull(policy); ArgumentNullException.ThrowIfNull(diagnostics);
-        if (!policy.SnatRules.Any(r => r?.DestinationPortObject is not null)) { return policy; }
+        if (!policy.SnatRules.Any(r => r?.DestinationPortObject is not null || r?.SourceObject is not null || r?.DestinationObject is not null)) { return policy; }
         return new(policy.SchemaVersion, policy.DnatRules, policy.SnatRules.Select((rule, i) =>
         {
-            if (rule?.DestinationPortObject is null) { return rule; }
-            var ports = Ports(rule.DestinationPortObject, rule.DestinationPort, rule.DestinationPorts, $"snatRules[{i.ToString(CultureInfo.InvariantCulture)}].destinationPortObject", diagnostics);
+            if (rule is null) { return rule; }
+            var path = $"snatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
+            var source = Prefixes(rule.SourceObject, rule.Source is not null || rule.SourcePrefixes is not null, rule.Family, path + ".sourceObject", diagnostics);
+            var destination = Prefixes(rule.DestinationObject, rule.Destination is not null || rule.DestinationPrefixes is not null, rule.Family, path + ".destinationObject", diagnostics);
+            var ports = rule.DestinationPortObject is { } portReference ? Ports(portReference, rule.DestinationPort, rule.DestinationPorts, path + ".destinationPortObject", diagnostics) : null;
             return rule with
             {
                 DestinationPort = ports?.Length == 1 ? ports[0] : rule.DestinationPort,
                 DestinationPorts = ports?.Length > 1 ? ports : rule.DestinationPorts,
-                DestinationPortObject = null
+                DestinationPortObject = null,
+                Source = source?.Length == 1 ? source[0] : rule.Source,
+                SourcePrefixes = source?.Length > 1 ? source : rule.SourcePrefixes,
+                Destination = destination?.Length == 1 ? destination[0] : rule.Destination,
+                DestinationPrefixes = destination?.Length > 1 ? destination : rule.DestinationPrefixes,
+                SourceObject = null,
+                DestinationObject = null
             };
         }));
     }
@@ -44,6 +53,15 @@ public static class TransportObjectResolver
                 DestinationPortObject = null
             };
         });
+    }
+
+    private static NetworkPrefix[]? Prefixes(PolicyObjectReference? reference, bool hasLiteral, IpFamily family, string path, ICollection<PolicyObjectDiagnostic> diagnostics)
+    {
+        if (reference is null) { return null; }
+        if (hasLiteral) { diagnostics.Add(new("object.conflictsWithLiteral", path)); }
+        var kind = family == IpFamily.IPv4 ? ReusableObjectKind.Ipv4 : ReusableObjectKind.Ipv6;
+        if (!Enum.IsDefined(family) || reference.Content.Kind != kind) { diagnostics.Add(new("object.kindMismatch", path)); return null; }
+        return reference.Content.Entries.Select(p => new NetworkPrefix(p)).ToArray();
     }
 
     private static int[]? Ports(PolicyObjectReference reference, int? scalar, IReadOnlyList<int>? list, string path, ICollection<PolicyObjectDiagnostic> diagnostics)

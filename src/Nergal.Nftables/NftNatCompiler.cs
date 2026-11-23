@@ -137,7 +137,7 @@ public static class NftNatCompiler
                 errors.Add(new("family.unknown", path + ".family"));
             }
 
-            if (rule.Source is null && rule.Action == NatPostroutingAction.Snat)
+            if (rule.Source is null && rule.SourcePrefixes is null && rule.Action == NatPostroutingAction.Snat)
             {
                 errors.Add(new("nat.sourceRequired", path + ".source"));
             }
@@ -251,11 +251,16 @@ public static class NftNatCompiler
 
             if (rule.Source is not null)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' '); }
+            else if (rule.SourcePrefixes is { } sources)
+            { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append("{ ").Append(string.Join(", ", sources.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
 
             if (rule.Destination is not null)
             {
                 text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.Destination.Value).Append(' ');
             }
+
+            else if (rule.DestinationPrefixes is { } destinations)
+            { text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append("{ ").Append(string.Join(", ", destinations.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
 
             if (rule.Protocol != FilterProtocol.Any)
             {

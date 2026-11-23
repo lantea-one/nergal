@@ -36,7 +36,7 @@ editing and reordering preserve references. Metadata-only changes remain visible
 in the reference summary even if native text is unchanged.
 
 Compilation projects each immutable snapshot onto the existing scalar/anonymous-set
-matcher contract. **Native named sets, NAT/bridge address references, DNAT port references, maps, dynamic flags,
+matcher contract. **Native named sets, DNAT/bridge address references, DNAT port references, maps, dynamic flags,
 timeouts and native named-object import remain unsupported.** Family/protocol and
 literal conflicts, missing/forged snapshots and unsupported overlap/adjacency fail
 explicitly. Single-element lists use scalar matching. The UI selectors edit primary and auxiliary inet filter rules through separate
@@ -71,13 +71,13 @@ references; these screenshots do not establish native named-set support.
 
 Auxiliary selection uses the existing database schema and immutable reference
 contract. Usage paths include `auxiliaryFilter.filter.rules[n]`. Native named sets,
-NAT/bridge address references and dynamic objects remain separate M3 work.
+DNAT/bridge address references and dynamic objects remain separate M3 work.
 
 ![Pinned auxiliary list selection](assets/screenshots/auxiliary-references-dark.jpg)
 
 ## Postrouting and bridge port lists
 
-**Policies → NAT → Reusable postrouting port lists** and each **Policies → Bridge**
+**Policies → NAT → Reusable postrouting lists** and each **Policies → Bridge**
 chain panel now select immutable Port-list versions for destination-port matching.
 Attach replaces literal ports or a prior reference. Editing retains all other
 matchers, actions/translation, jump/return, enabled state and order; ordinary port
@@ -89,7 +89,7 @@ References remain embedded in immutable revisions and verified against database
 history. Library edits do not update saved policies. Usage paths include postrouting,
 bridge forward and regular chains. Compilation projects a singleton to a scalar
 and larger lists to existing anonymous port sets. This adds no native named objects,
-address-list matching or rule expansion. Use updated controller and agent builds;
+DNAT/bridge address-list matching or rule expansion. Use updated controller and agent builds;
 older codecs reject unknown reference fields. No SQL schema change is required.
 
 ![Pinned bridge port list](assets/screenshots/transport-references-dark.jpg)
@@ -141,3 +141,37 @@ Older snapshots do not bypass compiler restrictions; inspect the draft and nativ
 diffs, save a revision, then use confirmed apply.
 
 ![Historical version selection](assets/screenshots/list-history-selector-dark.jpg)
+
+## Pinned postrouting source and destination lists
+
+In **Policies → NAT → Reusable postrouting lists**, choose a postrouting rule,
+**Source address** or **Destination address**, then a same-family IPv4/IPv6 list
+version. Browse history if an older snapshot is needed; attachment pins exactly
+that displayed version. Attachment replaces the selected matcher's literals or
+previous reference, retaining action/translation, ports, interfaces, negation,
+order and enabled state. Preview/save verifies immutable database history.
+
+The full postrouting editor also accepts literal CIDR lists. One entry is a scalar;
+2–64 entries form an anonymous set. Every entry must match the rule family and
+sets must be distinct, disjoint and non-adjacent so native observation preserves
+the exact restrictions. Overlapping/adjacent lists can be stored but cannot be
+attached when this native projection cannot round-trip them. No rules are expanded.
+
+Pinned address fields show name/version and contents read-only. Ordinary guided
+and legacy edits cannot silently replace them. Removing an address reference
+clears that matcher and its negation; explicit SNAT still requires a source
+restriction, so removing its sole source is denied. Masquerade/return may have an
+unrestricted source. Review both intent and native diffs, save a revision, then
+use confirmed apply. Saved usage paths include `nat.snatRules[n].sourceObject`
+and `.destinationObject`; later library edits never change saved versions.
+
+Canonical JSON retains `sourceObject`/`destinationObject`, or literal
+`sourcePrefixes`/`destinationPrefixes`, exclusively with the corresponding scalar.
+Native observations retain complete sets and use a v3 address-set fingerprint;
+scalar/port-only receipt fingerprints stay unchanged. Older controllers/agents
+reject the new JSON fields and cannot validate new receipts. Upgrade matching
+controller/agent builds together. No SQL schema upgrade is required; the native
+observation byte limit is unchanged. Native named sets/maps/dynamic objects,
+DNAT references and bridge address lists remain unsupported.
+
+![Pinned postrouting addresses](assets/screenshots/postrouting-addresses-dark.jpg)

@@ -58,6 +58,10 @@ public enum NatPostroutingAction
 /// <param name="NegateOutputInterface">Negate the egress restriction; requires an interface.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 /// <param name="DestinationPortObject">Optional immutable port-list version; mutually exclusive with literal destination ports. Compilation validates its type and every existing matcher constraint.</param>
+/// <param name="SourcePrefixes">Optional bounded source prefix set, exclusive with a scalar or reference.</param>
+/// <param name="DestinationPrefixes">Optional bounded destination prefix set, exclusive with a scalar or reference.</param>
+/// <param name="SourceObject">Optional immutable same-family address-list version, exclusive with source literals.</param>
+/// <param name="DestinationObject">Optional immutable same-family address-list version, exclusive with destination literals.</param>
 public sealed record SnatRule(
     IpFamily Family,
     NetworkPrefix? Source,
@@ -75,7 +79,11 @@ public sealed record SnatRule(
     bool NegateInputInterface = false,
     bool NegateOutputInterface = false,
     bool Enabled = true,
-    PolicyObjectReference? DestinationPortObject = null);
+    PolicyObjectReference? DestinationPortObject = null,
+    IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
+    IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
+    PolicyObjectReference? SourceObject = null,
+    PolicyObjectReference? DestinationObject = null);
 
 /// <summary>An immutable, versioned snapshot of ordered dual-stack DNAT and postrouting actions.</summary>
 public sealed class NatPolicy
@@ -97,6 +105,8 @@ public sealed class NatPolicy
         SnatRules = Array.AsReadOnly(snatRules.Select(r => r is null ? null : r with
         {
             DestinationPorts = r.DestinationPorts is null ? null : Array.AsReadOnly(r.DestinationPorts.ToArray()),
+            SourcePrefixes = r.SourcePrefixes is null ? null : Array.AsReadOnly(r.SourcePrefixes.ToArray()),
+            DestinationPrefixes = r.DestinationPrefixes is null ? null : Array.AsReadOnly(r.DestinationPrefixes.ToArray()),
         }).ToArray());
     }
 

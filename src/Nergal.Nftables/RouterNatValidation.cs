@@ -18,6 +18,10 @@ internal static class RouterNatValidation
         {
             if (policy.SnatRules[i] is not { } r) { continue; }
             var path = $"snatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
+            if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
+            if (r.Destination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
+            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors);
+            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors);
             if (!Enum.IsDefined(r.Action)) { errors.Add(new("nat.actionUnknown", path + ".action")); }
             if (r.Action != NatPostroutingAction.Snat && r.TranslatedAddress is not null)
             { errors.Add(new("nat.actionConflictsWithAddress", path + ".translatedAddress")); }
@@ -34,8 +38,8 @@ internal static class RouterNatValidation
                 if (ports.Count is < 2 or > 64 || ports.Any(p => p is < 1 or > 65535) || ports.Distinct().Count() != ports.Count)
                 { errors.Add(new("nat.portSetInvalid", path + ".destinationPorts")); }
             }
-            RouterFilterValidation.Require(r.NegateSource, r.Source is not null, path + ".negateSource", errors);
-            RouterFilterValidation.Require(r.NegateDestination, r.Destination is not null, path + ".negateDestination", errors);
+            RouterFilterValidation.Require(r.NegateSource, r.Source is not null || r.SourcePrefixes is not null, path + ".negateSource", errors);
+            RouterFilterValidation.Require(r.NegateDestination, r.Destination is not null || r.DestinationPrefixes is not null, path + ".negateDestination", errors);
             RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null, path + ".negateInputInterface", errors);
             RouterFilterValidation.Require(r.NegateOutputInterface, r.OutputInterface is not null, path + ".negateOutputInterface", errors);
         }

@@ -10,7 +10,7 @@ var routerIdentity = new NftTableIdentity(
 
 if (mode is "auxiliary-acceptance-json" or "auxiliary-open-json" or "auxiliary-acceptance-native")
 {
-    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json"));
+    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json")));
     if (mode.EndsWith("-json", StringComparison.Ordinal)) { Console.Write(PolicyBundleJsonCodec.EncodeBundle(bundle)); }
     else
     {
@@ -49,13 +49,32 @@ static FirewallPolicyBundle CompleteBundle() => new(1, RouterPolicySamples.Filte
         [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop, Destination: new("192.0.2.1/32"),
             DestinationPorts: [8080, 8443], InputInterface: "lo", NegateInputInterface: true)])));
 
+if (mode is "router-packet-nat-source-miss" or "router-packet-nat-destination-miss" or "router-packet-nat-negated")
+{
+    var policy = RouterPolicySamples.PacketNatMiss(mode.EndsWith("source-miss", StringComparison.Ordinal), mode.EndsWith("negated", StringComparison.Ordinal));
+    var bundle = RouterPolicySamples.WithPostroutingAddressReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), policy));
+    var compiled = NftNatCompiler.Compile(bundle.Nat!, routerIdentity);
+    if (!compiled.IsSuccess) { throw new InvalidOperationException(string.Join(", ", compiled.Diagnostics)); }
+    Console.Write(compiled.Candidate); return 0;
+}
+if (mode == "verify-postrouting-sets" && args.Length == 3)
+{
+    var echo = NftNatTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
+    var listed = NftNatTableObservation.Parse(File.ReadAllText(args[2]));
+    if (!echo.IsSuccess || !listed.IsSuccess) { throw new InvalidOperationException("Address set observation: " + echo.ErrorCode + "/" + listed.ErrorCode); }
+    if (echo.Observation!.StateDigest != listed.Observation!.StateDigest ||
+        NftNatCompiler.Compile(listed.Observation.Policy, routerIdentity).Candidate != NftNatCompiler.Compile(RouterPolicySamples.PacketNat(), routerIdentity).Candidate)
+    { throw new InvalidOperationException("Postrouting address sets did not round-trip completely."); }
+    return 0;
+}
+
 if (mode is "router-packets" or "router-packet-nat" or "router-packet-nat-disabled-return" or "router-bridge" or "router-auxiliary")
 {
     var result = mode switch
     {
         "router-packets" => NftFilterCompiler.Compile(RouterPolicySamples.PacketFilter(), routerIdentity),
         "router-packet-nat-disabled-return" => NftNatCompiler.Compile(new(1, RouterPolicySamples.PacketNat().DnatRules, RouterPolicySamples.PacketNat().SnatRules.Select(r => r! with { Enabled = r.Action != NatPostroutingAction.Return })), routerIdentity),
-        "router-packet-nat" => NftNatCompiler.Compile(RouterPolicySamples.WithTransportReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), RouterPolicySamples.PacketNat())).Nat!, routerIdentity),
+        "router-packet-nat" => NftNatCompiler.Compile(RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), RouterPolicySamples.PacketNat()))).Nat!, routerIdentity),
         "router-bridge" => NftBridgeCompiler.Compile(RouterPolicySamples.Bridge(), routerIdentity),
         _ => NftPolicyBundleCompiler.Compile(new(1, new(1, FilterVerdict.Accept, []), auxiliaryFilter: new(-5,
             new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop,

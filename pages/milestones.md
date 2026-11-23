@@ -36,7 +36,7 @@ M1 is merged into main (PR #81). M2 now has guided forms for the supported
 policy constructs, verified by unit/HTTPS/native packet checks and browser QA.
 M2–M4 share policy/reference contracts; neither
 forms nor lexical inspection establish semantic import equivalence. Native named
-sets/maps, dynamic flags/timeouts and NAT/bridge address references remain separate
+sets/maps, dynamic flags/timeouts, DNAT references and bridge address references remain separate
 from the existing static controller-reference projection. Declare the supported v1
 grammar and reject everything outside it, rather than silently approximating rules.
 
@@ -68,7 +68,7 @@ Broader UX refinement, scaling and product-wide accessibility checks remain M5. 
 M3 progress: primary and auxiliary inet rules can select immutable controller list
 versions through separate explicit forms. Postrouting and bridge destination-port
 references (including regular chains) are also implemented. Native named objects
-and NAT/bridge address references remain before M3 can close.
+and DNAT/bridge address references remain before M3 can close.
 
 M3 impact review: the library compares exact immutable version entries and
 descriptions in either direction, shows saved-reference counts and links from
@@ -78,3 +78,10 @@ or updates a pin automatically.
 M3 version selection: supported reference forms can explicitly browse one list's
 immutable history and attach a displayed old version without editing JSON. Browse
 preserves target/form selections and leaves canonical draft intent unchanged.
+
+M3 postrouting address coverage: source/destination literals support bounded prefix
+sets and immutable same-family list versions. Guided/legacy edits preserve pins,
+saved usage includes both address slots, and complete v3 native fingerprints bind
+every address-set entry. Dual-stack NAT set misses/negation, native round-trips,
+receipt-bound recovery and NAT-set drift denial are verified in disposable fixtures.
+Native named objects, DNAT lists and bridge address lists remain open.

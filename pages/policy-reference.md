@@ -106,5 +106,15 @@ Use matching updated controller/agent builds: older strict codecs reject this fi
 
 The contextual NAT/bridge selectors retain unrelated matchers, actions, jump/return,
 order and enabled state. Explicit removal clears the port restriction. These
-snapshots do not implement native named sets, address-list matching in NAT/bridge,
+snapshots do not implement native named sets, address-list matching in DNAT/bridge,
 or DNAT translation-port lists. See [the reusable library](reusable-object-library.md).
+
+Postrouting rules also support immutable `sourceObject`/`destinationObject` versions
+and literal `sourcePrefixes`/`destinationPrefixes`. Each slot is exclusive with
+its scalar/reference; 2–64 distinct, disjoint, non-adjacent prefixes must match
+the rule family. Single-entry references resolve to scalars. Negation applies to
+the complete matcher. Explicit SNAT requires a source restriction and target IP.
+Complete native v3 address-set observations preserve all entries and handles;
+old scalar/port-only fingerprints remain unchanged. Guided forms author literals
+and choose list versions without JSON. Native named sets/maps, DNAT references
+and bridge address lists remain unsupported. See [the library](reusable-object-library.md).

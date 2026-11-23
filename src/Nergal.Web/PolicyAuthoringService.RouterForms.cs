@@ -86,20 +86,17 @@ internal static partial class PolicyAuthoringService
         var errors = new List<PolicyDiagnostic>();
         if (!Enum.IsDefined(action)) { errors.Add(new("nat.actionUnknown", "rule.action")); }
         if (!Enum.IsDefined(protocol)) { errors.Add(new("protocol.unknown", "rule.protocol")); }
-        NetworkPrefix? source = null, destination = null;
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(input.Source)) { source = new(input.Source.Trim()); }
-            if (!string.IsNullOrWhiteSpace(input.Destination)) { destination = new(input.Destination.Trim()); }
-        }
-        catch (ArgumentException) { errors.Add(new("network.invalid", "nat.snatRules")); }
+        TryParsePrefixField(input.Source, "rule.source", out var source, out var sourcePrefixes, errors);
+        TryParsePrefixField(input.Destination, "rule.destination", out var destination, out var destinationPrefixes, errors);
         TryParsePortField(input.DestinationPorts, "rule.destinationPorts", out var port, out var ports, errors);
         if (!TryNormalizeDescription(input.Description, out var description)) { errors.Add(new("rule.descriptionInvalid", "rule.description")); }
         if (errors.Count != 0) { diagnostics = errors; return false; }
         var rule = new SnatRule(family, source, EmptyToNull(input.TranslatedAddress), destination,
             EmptyToNull(input.OutputInterface), description, action, EmptyToNull(input.InputInterface), protocol, port, ports,
             input.NegateSource, input.NegateDestination, input.NegateInputInterface, input.NegateOutputInterface,
-            index is not { } position || rules[position]!.Enabled, index is { } old ? rules[old]!.DestinationPortObject : null);
+            index is not { } position || rules[position]!.Enabled, index is { } old ? rules[old]!.DestinationPortObject : null,
+            sourcePrefixes, destinationPrefixes, index is { } oldSource ? rules[oldSource]!.SourceObject : null,
+            index is { } oldDestination ? rules[oldDestination]!.DestinationObject : null);
         if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
         var nat = new NatPolicy(NatPolicy.CurrentSchemaVersion, bundle.Nat?.DnatRules ?? [], rules);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);

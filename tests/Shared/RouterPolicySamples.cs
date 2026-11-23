@@ -40,6 +40,9 @@ internal static class RouterPolicySamples
         new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
             [new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001),
              new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001)]),
+        nat: new(1, [], [
+            new(IpFamily.IPv4, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("192.0.2.0/24"), new("198.51.100.0/24")], DestinationPrefixes: [new("203.0.113.10/32"), new("203.0.113.20/32")]),
+            new(IpFamily.IPv6, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("2001:db8:1::/64"), new("2001:db8:3::/64")], DestinationPrefixes: [new("2001:db8:2::10/128"), new("2001:db8:2::20/128")])]),
         bridge: new(1, FilterVerdict.Accept,
             [new(BridgeEtherType.Any, FilterVerdict.Drop, InputInterface: "lan0", OutputInterface: "lan1", BridgeName: "br0",
                 DestinationMac: new("02:00:00:00:00:02"), Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081], JumpTarget: "service"),
@@ -72,10 +75,12 @@ internal static class RouterPolicySamples
 
     internal static NatPolicy PacketNat() => new(1, [],
     [
-        new(IpFamily.IPv4, null, null, Destination: new("198.51.100.3/32"), Action: NatPostroutingAction.Return),
-        new(IpFamily.IPv6, null, null, Destination: new("2001:db8:2::3/128"), Action: NatPostroutingAction.Return),
-        new(IpFamily.IPv4, null, null, OutputInterface: "wan0", InputInterface: "lan0", Action: NatPostroutingAction.Masquerade, Protocol: FilterProtocol.Tcp, DestinationPort: 9001),
-        new(IpFamily.IPv6, null, null, OutputInterface: "wan0", InputInterface: "lan0", Action: NatPostroutingAction.Masquerade, Protocol: FilterProtocol.Tcp, DestinationPort: 9001),
+        new(IpFamily.IPv4, null, null, DestinationPrefixes: [new("198.51.100.3/32"), new("198.51.100.99/32")], Action: NatPostroutingAction.Return),
+        new(IpFamily.IPv6, null, null, DestinationPrefixes: [new("2001:db8:2::3/128"), new("2001:db8:2::99/128")], Action: NatPostroutingAction.Return),
+        new(IpFamily.IPv4, null, null, OutputInterface: "wan0", InputInterface: "lan0", Action: NatPostroutingAction.Masquerade, Protocol: FilterProtocol.Tcp, DestinationPort: 9001,
+            SourcePrefixes: [new("192.0.2.2/32"), new("192.0.2.90/32")], DestinationPrefixes: [new("198.51.100.2/31"), new("198.51.100.10/32")]),
+        new(IpFamily.IPv6, null, null, OutputInterface: "wan0", InputInterface: "lan0", Action: NatPostroutingAction.Masquerade, Protocol: FilterProtocol.Tcp, DestinationPort: 9001,
+            SourcePrefixes: [new("2001:db8:1::2/128"), new("2001:db8:1::90/128")], DestinationPrefixes: [new("2001:db8:2::2/127"), new("2001:db8:2::10/128")]),
     ]);
 
     internal static NatPolicy Nat() => new(1,
@@ -86,6 +91,34 @@ internal static class RouterPolicySamples
             InputInterface: "lan0", Protocol: FilterProtocol.Tcp, DestinationPorts: [443, 9001]),
         new(IpFamily.IPv6, new("2001:db8:1::/64"), null, OutputInterface: "wan0", Action: NatPostroutingAction.Masquerade),
     ]);
+    internal static NatPolicy PacketNatMiss(bool source, bool negate) => new(1, [], PacketNat().SnatRules.Select(r => r!.Action != NatPostroutingAction.Masquerade ? r : r with
+    {
+        SourcePrefixes = source || negate ? (r.Family == IpFamily.IPv4 ? [new("192.0.2.9/32"), new("192.0.2.90/32")] : [new("2001:db8:1::9/128"), new("2001:db8:1::90/128")]) : r.SourcePrefixes,
+        DestinationPrefixes = !source || negate ? (r.Family == IpFamily.IPv4 ? [new("198.51.100.9/32"), new("198.51.100.90/32")] : [new("2001:db8:2::9/128"), new("2001:db8:2::90/128")]) : r.DestinationPrefixes,
+        NegateSource = negate,
+        NegateDestination = negate
+    }));
+
+    internal static FirewallPolicyBundle WithPostroutingAddressReferences(FirewallPolicyBundle bundle)
+    {
+        PolicyObjectReference Reference(IpFamily family, NetworkPrefix? scalar, IReadOnlyList<NetworkPrefix>? prefixes)
+        {
+            var entries = prefixes ?? [scalar!];
+            var content = new Nergal.Core.Controller.ReusableObjectContent("networks", family == IpFamily.IPv4 ? Nergal.Core.Controller.ReusableObjectKind.Ipv4 : Nergal.Core.Controller.ReusableObjectKind.Ipv6, "Synthetic address snapshot", entries.Select(p => p.Value));
+            return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content);
+        }
+        var nat = bundle.Nat is not { } n ? null : new NatPolicy(n.SchemaVersion, n.DnatRules, n.SnatRules.Select(r => r is null ? null : r with
+        {
+            SourceObject = r.Source is not null || r.SourcePrefixes is not null ? Reference(r.Family, r.Source, r.SourcePrefixes) : r.SourceObject,
+            DestinationObject = r.Destination is not null || r.DestinationPrefixes is not null ? Reference(r.Family, r.Destination, r.DestinationPrefixes) : r.DestinationObject,
+            Source = null,
+            SourcePrefixes = null,
+            Destination = null,
+            DestinationPrefixes = null
+        }));
+        return new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter);
+    }
+
     // Agent fixtures carry self-contained snapshots, never a controller database lookup.
     internal static FirewallPolicyBundle WithTransportReferences(FirewallPolicyBundle bundle)
     {
