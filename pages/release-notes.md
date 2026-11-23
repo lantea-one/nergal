@@ -93,3 +93,7 @@ source/interface negation, defaults and ordered exceptions. MSS configuration
 preserves disabled state on resize and has explicit removal. DNAT negation and
 whole-rule NAT reordering are available without editing JSON. Auxiliary and
 extended bridge/sub-chain forms remain before M2 is complete.
+
+Auxiliary inet table priority/defaults and complete ordered filter-rule forms are
+now available. They preserve dormant state and other policy sections and require
+explicit empty-table removal. Extended bridge/sub-chain forms remain in M2.

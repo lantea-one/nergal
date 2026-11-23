@@ -485,3 +485,10 @@ MSS resize/removal, DNAT negation and NAT reordering. HTTP cases include missing
 CSRF, invalid integer binding, unknown/duplicate fields, incompatible matcher
 combinations and unchanged saved revisions. The unit runner uses one MSBuild node
 to avoid isolated-runner worker-pipe collisions while retaining all coverage checks.
+
+`AuxiliaryFormAuthoringTests` and `local-sessions/auxiliary_forms.py` verify
+priority/defaults, complete filter matchers, destination meters, disabled-state
+retention, order, explicit empty-table removal, unchanged primary/NAT/bridge
+sections and immutable saved revisions. Malformed/duplicate/unknown requests,
+CSRF and anonymous/Auditor access remain denied. Shared condition parsing is also
+covered by primary router-form tests; auxiliary forms add no compiler semantics.

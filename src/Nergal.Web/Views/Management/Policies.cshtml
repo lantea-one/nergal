@@ -421,6 +421,7 @@
             </section>
         }
 
+        @await Html.PartialAsync("_AuxiliaryForms", Model)
         @await Html.PartialAsync("_RawMssForms", Model)
         @await Html.PartialAsync("_AdvancedRuleStates", Model)
         @await Html.PartialAsync("_PolicyObjects", Model)

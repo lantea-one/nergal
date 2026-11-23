@@ -75,7 +75,29 @@ including its disabled flag and every matcher. Place return exemptions before
 translation rules as required by the intended policy. Reordering remains a draft
 change and must pass the same revision review and confirmed-apply workflow.
 
-M2 is still in progress: guided auxiliary and extended bridge/sub-chain authoring remain. The advanced JSON editor remains available for
+## Auxiliary inet table
+
+**Policies → Filter → Auxiliary inet filtering** configures the optional owned
+`inet nergal_aux` table. Select a priority in -300..300 (the form starts at -5) and
+explicit input/forward/output defaults. Lower priorities run first; an auxiliary
+accept does not override a later base-chain drop. The table uses the existing
+complete ownership/observation, atomic candidate and independent rollback boundary.
+It never adopts or edits a foreign table.
+
+Create the table before adding rules. Each auxiliary rule has a complete guided
+form for chain, family, protocol/verdict, CIDR/port sets, ICMP type, interfaces,
+connection states, original DNAT status, source MACs, negation and source/destination
+rate limits. Edits retain enabled state and existing list pins; up/down controls
+move the whole rule. Current library attachment workflows remain scoped to primary
+filter rules (M3 tracks additional reference coverage). Raw and MSS constructs
+belong to the primary filter table and are rejected in auxiliary intent.
+
+Remove auxiliary rules individually before removing the empty table. Removing the
+table also removes its chain defaults and may broaden traffic. All settings and
+rule submissions remain unsaved drafts until revision review/save and confirmed
+apply. No other policy section changes when an auxiliary rule is edited.
+
+M2 is still in progress: extended bridge/sub-chain authoring remains. The advanced JSON editor remains available for
 supported constructs without guided forms. This is not general native
 `nftables.conf` conversion; semantic import/export remains M4.
 
@@ -93,3 +115,5 @@ They show the UI, not evidence of packet enforcement.
 ![Guided raw prerouting rules](assets/screenshots/raw-prerouting-dark.jpg)
 
 ![Guided MSS configuration](assets/screenshots/mss-clamp-light.jpg)
+
+![Guided auxiliary inet filtering](assets/screenshots/auxiliary-forms-dark.jpg)

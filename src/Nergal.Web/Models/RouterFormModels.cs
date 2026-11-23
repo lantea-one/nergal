@@ -11,3 +11,6 @@ public sealed record RawRuleFormModel(PolicyEditorViewModel Editor, int? Index);
 
 /// <summary>One-step ordered NAT movement controls; kind is dnat or postrouting.</summary>
 public sealed record NatRuleMoveModel(PolicyEditorViewModel Editor, string Kind, int Index, int Count);
+
+/// <summary>Complete auxiliary filter rule editor; null index appends to the configured auxiliary table.</summary>
+public sealed record AuxiliaryRuleFormModel(PolicyEditorViewModel Editor, int? Index);

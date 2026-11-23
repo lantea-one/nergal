@@ -21,6 +21,18 @@ internal static partial class PolicyAuthoringService
         if (!TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
         if (index < 0 || index >= bundle.Filter.Rules.Count || bundle.Filter.Rules[index] is not { } previous)
         { diagnostics = [new("rule.indexOutOfRange", "filter.rules")]; return false; }
+        if (!TryApplyVisualConditions(previous, input, out var rule, out diagnostics)) { return false; }
+        var rules = bundle.Filter.Rules.ToArray();
+        rules[index] = rule;
+        var filter = new FilterPolicy(bundle.Filter.SchemaVersion == 1 ? 2 : bundle.Filter.SchemaVersion, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
+            bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+        return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
+    }
+
+    private static bool TryApplyVisualConditions(FilterRule previous, VisualFilterConditionsInput input,
+        out FilterRule? rule, out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        rule = null;
         var macs = new List<MacAddress>();
         foreach (var token in (input.SourceMacs ?? "").Split([',', ' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
@@ -32,8 +44,7 @@ internal static partial class PolicyAuthoringService
         var key = input.RateLimitKey == "destinationAddress" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress;
         if (previous.RateLimit is null && key != RateLimitKeyKind.SourceAddress)
         { diagnostics = [new("rateLimit.required", "rule.rateLimit")]; return false; }
-        var rules = bundle.Filter.Rules.ToArray();
-        rules[index] = previous with
+        rule = previous with
         {
             SourceMac = macs.Count == 1 ? macs[0] : null,
             SourceMacs = macs.Count > 1 ? macs : null,
@@ -44,9 +55,8 @@ internal static partial class PolicyAuthoringService
             NegateOutputInterface = input.NegateOutputInterface,
             RateLimit = previous.RateLimit is null ? null : previous.RateLimit with { KeyKind = key },
         };
-        var filter = new FilterPolicy(bundle.Filter.SchemaVersion == 1 ? 2 : bundle.Filter.SchemaVersion, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
-            bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
-        return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
+        diagnostics = [];
+        return true;
     }
 
     internal static bool TrySetPostrouting(string json, int? index, VisualPostroutingInput input,
