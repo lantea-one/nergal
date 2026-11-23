@@ -506,7 +506,7 @@ public static class NftFilterCompiler
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
 
-    private static void ValidatePrefixSet(
+    internal static void ValidatePrefixSet(
         IReadOnlyList<NetworkPrefix>? prefixes,
         IpFamily expectedFamily,
         string path,

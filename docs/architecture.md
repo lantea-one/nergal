@@ -229,3 +229,11 @@ A draft reference form may explicitly load one bounded immutable list history
 for selection. Other lists retain their current-version choices. Target/form
 selection is presentation state; browsing never changes canonical intent and
 compilation/apply still use only the exact embedded, validated version snapshot.
+
+Postrouting address lists project to scalar or bounded anonymous prefix sets,
+retaining identity/version/content in immutable intent. Native observations retain
+both complete sets; address-set receipts use an explicit v3 fingerprint while old
+scalar/port-only fingerprints remain unchanged. Guided/legacy edits preserve pins
+and explicit removal cannot erase a required SNAT source. No new host operation
+or controller database lookup during apply is introduced. See
+[ADR 0043](decisions/0043-postrouting-address-sets-and-references.md) and the reusable library.

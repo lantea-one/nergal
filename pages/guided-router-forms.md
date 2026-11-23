@@ -89,8 +89,8 @@ form for chain, family, protocol/verdict, CIDR/port sets, ICMP type, interfaces,
 connection states, original DNAT status, source MACs, negation and source/destination
 rate limits. Edits retain enabled state and existing list pins; up/down controls
 move the whole rule. Library attachment workflows support primary and auxiliary inet
-filter rules. Postrouting/bridge port lists have contextual selectors; address
-references in those scopes and native named objects remain M3 work. Raw and MSS constructs
+filter rules. Postrouting address/port lists and bridge port lists have contextual selectors;
+DNAT/bridge address references and native named objects remain M3 work. Raw and MSS constructs
 belong to the primary filter table and are rejected in auxiliary intent.
 
 Remove auxiliary rules individually before removing the empty table. Removing the
@@ -153,3 +153,9 @@ They show the UI, not evidence of packet enforcement.
 ![Complete bridge matching and local control flow](assets/screenshots/bridge-forms-dark.jpg)
 
 ![Bridge authoring on mobile](assets/screenshots/bridge-forms-mobile.jpg)
+
+Postrouting source/destination fields accept one CIDR or bounded, distinct,
+disjoint/non-adjacent same-family CIDR lists. Pinned address fields show their
+immutable contents read-only. Choose source/destination/ports in **Reusable
+postrouting lists**; explicit removal clears address negation too, but cannot
+remove the only required source restriction from explicit SNAT.

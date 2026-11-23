@@ -44,11 +44,12 @@ public sealed class NftNatTableObservation
         PostroutingChainHandle = postroutingChainHandle;
         Policy = policy;
 
-        var extended = dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
+        var addressSets = snatRules.Any(e => e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null);
+        var extended = addressSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
             snatRules.Any(e => e.Rule.Action != NatPostroutingAction.Snat || e.Rule.NegateSource || e.Rule.NegateDestination ||
                 e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any);
         var projection = new StringBuilder(string.Join('\n',
-            extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
+            addressSets ? "nergal-nat-observation-v3" : extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
             identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture),
             string.Join(' ', preroutingChainHandle.ToString(CultureInfo.InvariantCulture), "inet", NftNatCompiler.TableName, "prerouting", "nat", "prerouting", "-100", "accept"),
@@ -491,7 +492,7 @@ public sealed class NftNatTableObservation
             r.ConnectionStates != ConnectionStateFlags.None || r.MatchOriginalDestinationDnat || r.RateLimit is not null || r.IcmpType is not null) { return null; }
         return new(r.Family, r.Source, normalized, r.Destination, r.OutputInterface, Action: action,
             InputInterface: r.InputInterface, Protocol: r.Protocol, DestinationPort: r.DestinationPort, DestinationPorts: r.DestinationPorts,
-            NegateSource: r.NegateSource, NegateDestination: r.NegateDestination, NegateInputInterface: r.NegateInputInterface, NegateOutputInterface: r.NegateOutputInterface);
+            NegateSource: r.NegateSource, NegateDestination: r.NegateDestination, NegateInputInterface: r.NegateInputInterface, NegateOutputInterface: r.NegateOutputInterface, SourcePrefixes: r.SourcePrefixes, DestinationPrefixes: r.DestinationPrefixes);
     }
 
     private static NftNatObservationResult Deny(string code) => new(null, code);

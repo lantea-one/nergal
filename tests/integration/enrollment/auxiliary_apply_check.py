@@ -296,6 +296,10 @@ try:
                         nft('delete table inet nergal_aux\n' + table)
                     elif scenario == 'missing-table':
                         nft('delete table inet nergal_aux\n')
+                    elif scenario == 'nat-set-drift':
+                        listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'inet', 'nergal_nat'))
+                        handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'postrouting')
+                        nft(f'replace rule inet nergal_nat postrouting handle {handle} meta nfproto ipv4 ip saddr {{ 192.0.2.0/24, 198.51.100.0/24 }} ip daddr {{ 203.0.113.30, 203.0.113.40 }} return\n')
                     elif scenario == 'unknown-expression':
                         nft('add rule inet nergal_aux input counter\n')
                     else:

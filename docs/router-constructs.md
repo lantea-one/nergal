@@ -63,7 +63,11 @@ A postrouting rule chooses `action: "snat"`, `"masquerade"`, or `"return"`.
 Explicit SNAT requires a source and translated address. Masquerade/return require
 no translated address. They can restrict `inputInterface`, `outputInterface`,
 `protocol`, `destinationPort` or `destinationPorts`, and source/destination prefixes.
-Rule order is preserved so return exemptions precede later translation.
+Postrouting also accepts `sourcePrefixes`/`destinationPrefixes` (2–64 disjoint,
+non-adjacent same-family prefixes) or immutable `sourceObject`/`destinationObject`
+references, exclusive with scalar restrictions. Complete observations retain every
+set entry and use address-set fingerprint v3. Rule order is preserved so return
+exemptions precede later translation. See [ADR 0043](decisions/0043-postrouting-address-sets-and-references.md).
 
 `auxiliaryFilter` contains a numeric `priority` and a schema-2 `filter` policy;
 it compiles to reserved `inet nergal_aux`. Extended bridge policies retain reserved

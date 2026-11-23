@@ -14,6 +14,15 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 
 - Completed Milestones A–D (Phases 1–14): native `nftables` dual-stack filter/NAT/bridge compilers, exclusive ownership & boot/namespace receipts, autonomous timed watchdog rollback, `SO_PEERCRED` Unix and pinned TLS 1.3 mTLS control protocols, local sessions + optional OIDC + RBAC, MVC/Blazor management UI, and end-to-end confirmed apply over HTTPS.
 
+## Unreleased postrouting address lists
+
+Guided postrouting forms now author source/destination CIDR sets and pin immutable
+IPv4/IPv6 list versions. Ordinary/legacy edits retain pins; explicit removal cannot
+erase the required source of explicit SNAT. Complete native address sets are retained
+in v3 receipt fingerprints, with old scalar/port-only fingerprints unchanged. Native
+packet and recovery checks cover set misses, negation and NAT-set drift denial.
+See [postrouting lists](reusable-object-library.md#pinned-postrouting-source-and-destination-lists).
+
 ## Unreleased historical reference selection
 
 Supported policy reference forms now **Browse selected list history** without
@@ -139,4 +148,4 @@ now pin immutable Port-list versions through contextual UI selectors. Ordinary
 edits retain pinned versions and all unrelated intent. JSON/database usage covers
 all new scopes; type conflicts, invalid protocols and forged versions remain denied.
 Native packet and agent receipt/rollback fixtures use referenced snapshots.
-Native named objects and NAT/bridge address lists remain M3 work.
+Native named objects and DNAT/bridge address lists remain M3 work.

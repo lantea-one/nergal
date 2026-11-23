@@ -416,7 +416,7 @@ public static partial class PolicyBundleJsonCodec
             {
                 if (item.ValueKind != JsonValueKind.Object ||
                     !HasOnlyProperties(item, "family", "source", "translatedAddress", "destination", "outputInterface", "description",
-                        "action", "inputInterface", "protocol", "destinationPort", "destinationPorts", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "enabled", "destinationPortObject") || !TryReadEnabled(item, out var enabled) ||
+                        "action", "inputInterface", "protocol", "destinationPort", "destinationPorts", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "enabled", "destinationPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject") || !TryReadEnabled(item, out var enabled) ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family)
                 {
                     return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]);
@@ -448,11 +448,12 @@ public static partial class PolicyBundleJsonCodec
                         : NatPostroutingAction.Snat;
                     var protocol = item.TryGetProperty("protocol", out var protoEl) ? ParseProtocol(protoEl) : FilterProtocol.Any;
                     IReadOnlyList<int>? ports = null;
-                    if (!TryReadObjectReference(item, "destinationPortObject", out var portObject) || action is null || protocol is null ||
+                    if (!TryReadPostroutingAddresses(item, out var sourcePrefixes, out var destinationPrefixes, out var sourceObject, out var destinationObject) ||
+                        !TryReadObjectReference(item, "destinationPortObject", out var portObject) || action is null || protocol is null ||
                         (item.TryGetProperty("destinationPorts", out var portsEl) && portsEl.ValueKind != JsonValueKind.Null && !TryParsePortList(portsEl, out ports)))
                     { return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]); }
                     snatRules.Add(new SnatRule(family, source is null ? null : new NetworkPrefix(source), target, dst, snatOif, snatDescription,
-                        action.Value, iif, protocol.Value, port, ports, ns, nd, ni, no, enabled, portObject));
+                        action.Value, iif, protocol.Value, port, ports, ns, nd, ni, no, enabled, portObject, sourcePrefixes, destinationPrefixes, sourceObject, destinationObject));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -708,6 +709,7 @@ public static partial class PolicyBundleJsonCodec
             }
 
             writer.WriteStartObject();
+            WritePostroutingAddresses(writer, r);
             if (!r.Enabled) { writer.WriteBoolean("enabled", false); }
             writer.WriteString("family", r.Family == IpFamily.IPv4 ? "ipv4" : "ipv6");
             if (r.Source is not null) { writer.WriteString("source", r.Source.Value); }

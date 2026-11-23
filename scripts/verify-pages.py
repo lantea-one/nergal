@@ -48,6 +48,7 @@ REQUIRED_FILES = [
     "assets/screenshots/transport-references-dark.jpg",
     "assets/screenshots/list-version-comparison-dark.jpg",
     "assets/screenshots/list-history-selector-dark.jpg",
+    "assets/screenshots/postrouting-addresses-dark.jpg",
     "assets/screenshots/bridge-forms-dark.jpg",
     "assets/screenshots/bridge-forms-mobile.jpg",
     "assets/screenshots/mss-clamp-light.jpg",

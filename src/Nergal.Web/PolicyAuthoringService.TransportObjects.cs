@@ -10,14 +10,20 @@ internal static partial class PolicyObjectAuthoring
     {
         updated = null;
         diagnostics = [new("object.matcherInvalid", "object")];
-        if (slot != "ports" || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
+        if ((scope == "postrouting" ? slot is not ("source" or "destination" or "ports") : slot != "ports") || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
         FirewallPolicyBundle next;
         if (scope == "postrouting")
         {
             if (bundle.Nat is not { } nat || index < 0 || index >= nat.SnatRules.Count || nat.SnatRules[index] is not { } rule) { return false; }
-            if (reference is null && rule.DestinationPortObject is null) { diagnostics = [new("object.referenceMissing", "nat.snatRules")]; return false; }
+            var existing = slot switch { "source" => rule.SourceObject, "destination" => rule.DestinationObject, _ => rule.DestinationPortObject };
+            if (reference is null && existing is null) { diagnostics = [new("object.referenceMissing", "nat.snatRules")]; return false; }
             var rules = nat.SnatRules.ToArray();
-            rules[index] = rule with { DestinationPort = null, DestinationPorts = null, DestinationPortObject = reference };
+            rules[index] = slot switch
+            {
+                "source" => rule with { Source = null, SourcePrefixes = null, SourceObject = reference, NegateSource = reference is not null && rule.NegateSource },
+                "destination" => rule with { Destination = null, DestinationPrefixes = null, DestinationObject = reference, NegateDestination = reference is not null && rule.NegateDestination },
+                _ => rule with { DestinationPort = null, DestinationPorts = null, DestinationPortObject = reference }
+            };
             next = new(bundle.SchemaVersion, bundle.Filter, new(nat.SchemaVersion, nat.DnatRules, rules), bundle.Bridge, bundle.AuxiliaryFilter);
         }
         else

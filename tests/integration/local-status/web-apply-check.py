@@ -468,7 +468,24 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
             parser = DraftParser(); parser.feed(body)
             require(parser.value is not None, 'Transport port selection lost draft intent')
             rev3_bundle_json = parser.value
+        for slot, name, entries in (('source', 'probe_sources', '192.0.2.0/24\n198.51.100.0/24'),
+                                     ('destination', 'probe_destinations', '203.0.113.10\n203.0.113.20')):
+            _, location = admin.request('/manage/objects/save', 302, form={
+                'expectedVersion': '0', 'name': name, 'kind': 'ipv4', 'description': '', 'entries': entries,
+                '__RequestVerificationToken': admin.token('/manage/objects'),
+            }, expected_location_contains='/manage/objects?objectId=')
+            object_id = location.split('objectId=')[1]
+            body, _ = admin.request('/manage/policies/objects', 200, form={
+                'bundleJson': rev3_bundle_json, 'scope': 'postrouting', 'slot': slot, 'ruleIndex': '0',
+                'selection': object_id + '/1', 'operation': 'attach', '__RequestVerificationToken': admin.token('/manage/policies'),
+            })
+            parser = DraftParser(); parser.feed(body)
+            require(parser.value is not None, 'NAT address selection lost draft intent')
+            rev3_bundle_json = parser.value
         pinned = json.loads(rev3_bundle_json)
+        require(len(pinned['nat']['snatRules'][0]['sourceObject']['entries']) == 2 and
+                len(pinned['nat']['snatRules'][0]['destinationObject']['entries']) == 2,
+                'Complete address snapshots were not retained for native apply')
         require(pinned['nat']['snatRules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['rules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['subChains'][0]['rules'][0]['destinationPortObject']['id'] == port_id,

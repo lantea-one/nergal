@@ -849,11 +849,11 @@ internal static partial class PolicyAuthoringService
             return false;
         }
 
-        NetworkPrefix src;
+        NetworkPrefix? src;
         NetworkPrefix? dst = null;
         try
         {
-            src = new NetworkPrefix((input.Source ?? "").Trim());
+            src = string.IsNullOrWhiteSpace(input.Source) ? null : new NetworkPrefix(input.Source.Trim());
             if (!string.IsNullOrWhiteSpace(input.Destination))
             {
                 dst = new NetworkPrefix(input.Destination.Trim());
@@ -884,6 +884,10 @@ internal static partial class PolicyAuthoringService
             DestinationPort = previous.DestinationPort,
             DestinationPorts = previous.DestinationPorts,
             DestinationPortObject = previous.DestinationPortObject,
+            SourcePrefixes = previous.SourcePrefixes,
+            DestinationPrefixes = previous.DestinationPrefixes,
+            SourceObject = previous.SourceObject,
+            DestinationObject = previous.DestinationObject,
             NegateSource = previous.NegateSource,
             NegateDestination = previous.NegateDestination,
             NegateInputInterface = previous.NegateInputInterface,

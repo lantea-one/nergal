@@ -43,10 +43,10 @@ installation and hardening details before live deployment.
 
 The development version includes [typed router constructs and explicit support limits](docs/router-constructs.md),
 a Lantea.One-inspired light/dark management UI, validated audited settings intent,
-a [versioned typed list library with pinned filter references](docs/reusable-object-library.md),
+a [versioned typed list library with pinned policy references](docs/reusable-object-library.md),
 and an administrator-only [database-backed native source library](docs/native-source-library.md). Independent early inet tables and
-extended bridge jump/return support confirmed apply after complete native verification. New router fields are
-currently authored through **Advanced JSON & Revisions** in a locally bundled CodeMirror editor; simple forms retain them.
+extended bridge jump/return support confirmed apply after complete native verification. Supported router constructs have [guided forms](docs/guided-router-forms.md);
+**Advanced JSON & Revisions** remains available in a locally bundled CodeMirror editor.
 Rules also have [versioned inline enable/disable controls](docs/rule-enabled-state.md).
 See [the ordered product workflow](docs/product-workflow.md) for the remaining work.
 
@@ -166,4 +166,4 @@ unfinished. See [source library](docs/native-source-library.md) and [migration s
 
 See the [remaining product code-complete milestones](docs/milestones.md) for completion gates and dependencies.
 
-Guided [router condition and postrouting forms](docs/guided-router-forms.md) expose MAC matching, negation, destination meter keys and NAT actions while M2 remains in progress.
+Guided [router condition and postrouting forms](docs/guided-router-forms.md) cover the supported M2 constructs, including postrouting address sets and pinned lists. Broader administration UX remains M5.
