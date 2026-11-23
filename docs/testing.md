@@ -538,3 +538,16 @@ The object-library HTTPS fixture verifies forward/reverse/same-version pages,
 escaped descriptions, local time markup, missing/out-of-range/duplicate version
 inputs, read-only historical/Auditor access and unchanged database/audit counts.
 No compiler, agent or native enforcement semantics change in this view.
+
+Application theme action labels are verified by `scripts/app-theme.test.mjs`:
+saved/configured/system preferences, first-render accessible labels, unrelated
+clicks, system theme changes and switching with storage denied. The application
+and Pages both label the destination theme explicitly. These are browser
+presentation preferences; configured defaults and saved policies are unaffected.
+
+The HTTPS object-library fixture also verifies content-versioned URLs for the
+shared theme/time/application scripts, stylesheet and bundled policy editor.
+It fetches each asset and checks the URL's version against the SHA-256 of the
+served bytes. Script/link MVC tag helpers are enabled explicitly without
+changing form tag-helper or CSRF behavior. Changed assets receive new URLs on
+upgrade so browser caches cannot keep the preceding editor/theme code by URL.

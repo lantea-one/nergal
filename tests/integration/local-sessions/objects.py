@@ -1,8 +1,38 @@
 """Synthetic HTTPS object-library conformance, without kernel or agent access."""
+import base64
+import hashlib
 import sqlite3
+from html.parser import HTMLParser
+from urllib.parse import parse_qs, urlsplit
+
+
+class VersionedAssets(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.urls = []
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        url = attributes.get("src") if tag == "script" else attributes.get("href") if tag == "link" else None
+        if url and url.startswith(("/js/", "/css/")):
+            assert "asp-append-version" not in attributes
+            self.urls.append(url)
+
+
+def check_versioned_assets(browser):
+    assets = VersionedAssets()
+    assets.feed(browser.request("/manage/policies", 200))
+    assert {urlsplit(url).path for url in assets.urls} >= {"/js/theme.js", "/js/nergal.js", "/js/local-time.js", "/js/code-editor.bundle.js", "/css/nergal.css"}
+    for url in assets.urls:
+        version = parse_qs(urlsplit(url).query).get("v", [])
+        assert len(version) == 1 and len(version[0]) == 43, f"asset URL is not content-versioned: {url}"
+        content = browser.request(url, 200)
+        digest = base64.urlsafe_b64encode(hashlib.sha256(content.encode("utf-8")).digest()).decode().rstrip("=")
+        assert version[0] == digest, "asset URL must bind exactly the served bytes"
 
 
 def check_objects(browser, controller_directory):
+    check_versioned_assets(browser)
     fields = {"expectedVersion": "0", "name": "trusted_clients", "kind": "ipv4",
               "description": "Synthetic <script>alert(1)</script>", "entries": "192.0.2.10\r\n198.51.100.0/24"}
     assert "Policies can pin a list version" in browser.request("/manage/objects", 200)
