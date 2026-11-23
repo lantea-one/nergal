@@ -4,30 +4,36 @@
 {
     <section class="card" aria-labelledby="policy-objects-heading">
         <h2 id="policy-objects-heading">Reusable list references</h2>
-        <p class="hint">Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary inet filter source, destination and destination-port matchers. Native named sets, NAT and bridge references are not supported.</p>
+        <p class="hint">Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary and auxiliary inet filter source, destination and destination-port matchers. Native named sets, NAT and bridge references are not supported.</p>
         @if (PolicyObjectReferences.Enumerate(bundle) is { Count: > 0 } bindings)
         { <ul>@foreach (var binding in bindings) { <li><strong>@binding.Reference.Content.Name v@(binding.Reference.Version)</strong> · <code>@binding.Path</code> · @string.Join(", ", binding.Reference.Content.Entries)</li> }</ul> }
         else { <p class="muted">No pinned list references in this draft.</p> }
-        @if (Model.CanMutate && bundle.Filter.Rules.Count > 0)
+        @foreach (var target in new[] { (Scope: "primary", Label: "Primary inet", Filter: (FilterPolicy?)bundle.Filter), (Scope: "auxiliary", Label: "Auxiliary inet", Filter: bundle.AuxiliaryFilter?.Filter) })
         {
-            <form method="post" action="@Url.Content("~/manage/policies/objects")" aria-describedby="reference-change-hint">
+        if (Model.CanMutate && target.Filter is { Rules.Count: > 0 } filter)
+        {
+            var prefix = "reference-" + target.Scope;
+            <h3>@target.Label references</h3>
+            <form method="post" action="@Url.Content("~/manage/policies/objects")" aria-describedby="@(prefix)-change-hint">
                 @Html.AntiForgeryToken()
+                <input type="hidden" name="scope" value="@target.Scope" />
                 <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
                 <input type="hidden" name="summary" value="@Model.Summary" />
                 <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                 <div class="form-grid object-form-grid">
-                    <div class="field"><label for="reference-rule">Filter rule</label><select id="reference-rule" name="ruleIndex">
-                        @for (var i = 0; i < bundle.Filter.Rules.Count; i++) { var rule = bundle.Filter.Rules[i]; if (rule is not null) { <option value="@i">Rule @(i + 1) · @rule.Chain · @rule.Family · @rule.Protocol · @rule.Verdict</option> } }
+                    <div class="field"><label for="@(prefix)-rule">Filter rule</label><select id="@(prefix)-rule" name="ruleIndex">
+                        @for (var i = 0; i < filter.Rules.Count; i++) { var rule = filter.Rules[i]; if (rule is not null) { <option value="@i">Rule @(i + 1) · @rule.Chain · @rule.Family · @rule.Protocol · @rule.Verdict</option> } }
                     </select></div>
-                    <div class="field"><label for="reference-slot">Matcher to change</label><select id="reference-slot" name="slot"><option value="source">Source address</option><option value="destination">Destination address</option><option value="ports">Destination ports</option></select></div>
-                    <div class="field"><label for="reference-selection">List version</label><select id="reference-selection" name="selection" aria-describedby="reference-version-hint">
+                    <div class="field"><label for="@(prefix)-slot">Matcher to change</label><select id="@(prefix)-slot" name="slot"><option value="source">Source address</option><option value="destination">Destination address</option><option value="ports">Destination ports</option></select></div>
+                    <div class="field"><label for="@(prefix)-selection">List version</label><select id="@(prefix)-selection" name="selection" aria-describedby="@(prefix)-version-hint">
                         <option value="">Choose a list for attachment</option>
                         @foreach (var item in Model.LibraryObjects) { <option value="@item.Id/@item.Version">@item.Content.Name · v@(item.Version) · @(item.Content.Kind switch { Nergal.Core.Controller.ReusableObjectKind.Ipv4 => "IPv4", Nergal.Core.Controller.ReusableObjectKind.Ipv6 => "IPv6", _ => "Ports" }) · @item.Content.Entries.Count entries</option> }
-                    </select><span class="hint" id="reference-version-hint">The displayed version is pinned even if a newer version is saved before you submit. Address family and protocol must match the rule; unsupported overlaps/adjacency are rejected.</span></div>
+                    </select><span class="hint" id="@(prefix)-version-hint">The displayed version is pinned even if a newer version is saved before you submit. Address family and protocol must match the rule; unsupported overlaps/adjacency are rejected.</span></div>
                 </div>
-                <p id="reference-change-hint" class="hint">Attach replaces the selected matcher's literal restriction or prior reference. Remove clears that reference and its restriction, which can broaden the rule. Both actions change only this draft: inspect the summary and native diff before saving a revision and confirmed apply.</p>
+                <p id="@(prefix)-change-hint" class="hint">Attach replaces the selected matcher's literal restriction or prior reference. Remove clears that reference and its restriction, which can broaden the rule. Both actions change only this draft: inspect the summary and native diff before saving a revision and confirmed apply.</p>
                 <div class="btn-group mt-2"><button type="submit" name="operation" value="attach" class="btn">Attach selected version to draft</button><button type="submit" name="operation" value="remove" class="btn btn-secondary">Remove reference from draft</button><a href="@Url.Content("~/manage/objects")" class="btn btn-secondary">Manage lists</a></div>
             </form>
+        }
         }
     </section>
 }

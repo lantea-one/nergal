@@ -252,6 +252,8 @@ def exercise(temp):
         check_auxiliary_forms(browser, ctrl_state)
         from bridge_forms import check_bridge_forms
         check_bridge_forms(browser, ctrl_state)
+        from auxiliary_references import check_auxiliary_references
+        check_auxiliary_references(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -268,7 +270,7 @@ def exercise(temp):
         assert "synthetic" in database_only_html and "immutable database content" in database_only_html
         assert 'data-local-time datetime="' in database_only_html and 'Stored UTC:' in database_only_html
         assert "Imported (local time)" in database_only_html and "browser time zone" in database_only_html
-        assert "New library version" in browser.request(object_path, 200)
+        assert "Later contents" in browser.request(object_path, 200)
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
         browser.cookies[ADMIN] = session

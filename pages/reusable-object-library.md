@@ -21,7 +21,7 @@ in the footer.
 
 ## Pinned policy references
 
-In **Policies → Reusable list references**, choose a primary inet filter rule,
+In **Policies → Reusable list references**, use the primary or auxiliary inet form and choose a rule,
 source/destination/port matcher and the displayed list version. **Attach selected
 version to draft** explicitly replaces that matcher's literals or prior reference.
 Inspect the rule summary/native diff, save a revision, then use confirmed apply.
@@ -39,8 +39,9 @@ Compilation projects each immutable snapshot onto the existing scalar/anonymous-
 matcher contract. **Native named sets, NAT/bridge references, maps, dynamic flags,
 timeouts and native named-object import remain unsupported.** Family/protocol and
 literal conflicts, missing/forged snapshots and unsupported overlap/adjacency fail
-explicitly. Single-element lists use scalar matching. The UI selector edits primary
-filter rules; the shared codec also retains auxiliary inet references. Updated
+explicitly. Single-element lists use scalar matching. The UI selectors edit primary and auxiliary inet filter rules through separate
+explicit forms. Existing API submissions without a scope still select primary
+filtering; query parameters cannot select an auxiliary target. Updated
 controller and agent builds are required; older codecs reject unknown fields.
 
 The library retains at most 128 lists and 64 versions per list. Descriptions are
@@ -67,3 +68,9 @@ references; these screenshots do not establish native named-set support.
 ![Sets and IP lists on mobile](assets/screenshots/object-library-mobile.jpg)
 
 ![Pinned list selection and policy review](assets/screenshots/policy-objects-dark.jpg)
+
+Auxiliary selection uses the existing database schema and immutable reference
+contract. Usage paths include `auxiliaryFilter.filter.rules[n]`. Native named sets,
+NAT/bridge references and dynamic objects remain separate M3 work.
+
+![Pinned auxiliary list selection](assets/screenshots/auxiliary-references-dark.jpg)

@@ -5,14 +5,17 @@ namespace Nergal.Web;
 
 internal static class PolicyObjectAuthoring
 {
-    internal static bool TrySet(string json, int index, string slot, PolicyObjectReference? reference, out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    internal static bool TrySet(string json, int index, string slot, PolicyObjectReference? reference, out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics, string scope = "primary")
     {
         updated = null;
         if (!PolicyAuthoringService.TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
-        if (index < 0 || index >= bundle.Filter.Rules.Count || bundle.Filter.Rules[index] is not { } rule || slot is not ("source" or "destination" or "ports"))
-        { diagnostics = [new("object.matcherInvalid", "filter.rules")]; return false; }
+        if (scope is not ("primary" or "auxiliary")) { diagnostics = [new("object.scopeInvalid", "scope")]; return false; }
+        var path = scope == "auxiliary" ? "auxiliaryFilter.filter.rules" : "filter.rules";
+        var current = scope switch { "primary" => bundle.Filter, "auxiliary" => bundle.AuxiliaryFilter?.Filter, _ => null };
+        if (current is null || index < 0 || index >= current.Rules.Count || current.Rules[index] is not { } rule || slot is not ("source" or "destination" or "ports"))
+        { diagnostics = [new("object.matcherInvalid", path)]; return false; }
         var existing = slot switch { "source" => rule.SourceObject, "destination" => rule.DestinationObject, _ => rule.DestinationPortObject };
-        if (reference is null && existing is null) { diagnostics = [new("object.referenceMissing", "filter.rules")]; return false; }
+        if (reference is null && existing is null) { diagnostics = [new("object.referenceMissing", path)]; return false; }
         var changed = slot switch
         {
             "source" => rule with { Source = null, SourcePrefixes = null, SourceObject = reference },
@@ -24,9 +27,11 @@ internal static class PolicyObjectAuthoring
         {
             changed = slot switch { "source" => changed with { NegateSource = false }, "destination" => changed with { NegateDestination = false }, _ => changed };
         }
-        var rules = bundle.Filter.Rules.ToArray(); rules[index] = changed;
-        var filter = new FilterPolicy(2, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict, bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
-        var next = new FirewallPolicyBundle(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
+        var rules = current.Rules.ToArray(); rules[index] = changed;
+        var filter = new FilterPolicy(current.SchemaVersion == 1 ? 2 : current.SchemaVersion, current.InputDefaultVerdict, current.ForwardDefaultVerdict, current.OutputDefaultVerdict, rules, current.RpFilter, current.ForwardTcpMssClamp, current.ForwardTcpMssClampEnabled);
+        var next = scope == "primary"
+            ? new FirewallPolicyBundle(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter)
+            : new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge, new(bundle.AuxiliaryFilter!.Priority, filter));
         var compiled = NftPolicyBundleCompiler.Compile(next);
         diagnostics = compiled.Diagnostics;
         if (!compiled.IsSuccess) { return false; }
