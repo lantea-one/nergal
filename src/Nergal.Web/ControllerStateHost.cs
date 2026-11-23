@@ -60,6 +60,11 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-policies-preview", "manage/policies/preview", new { controller = "Management", action = "PreviewPolicy" });
         app.MapControllerRoute("manage-policies-save", "manage/policies/save", new { controller = "Management", action = "SavePolicy" });
         app.MapControllerRoute("manage-rule-state", "manage/policies/rules/state", new { controller = "Management", action = "SetRuleState" });
+        app.MapControllerRoute("manage-nat-move", "manage/policies/nat/move", new { controller = "Management", action = "MoveNatRule" });
+        app.MapControllerRoute("manage-raw-rule", "manage/policies/raw/rule", new { controller = "Management", action = "SetRawRule" });
+        app.MapControllerRoute("manage-raw-default", "manage/policies/raw/default", new { controller = "Management", action = "SetRawDefault" });
+        app.MapControllerRoute("manage-mss", "manage/policies/mss", new { controller = "Management", action = "SetMss" });
+        app.MapControllerRoute("manage-dnat-conditions", "manage/policies/nat/dnat/conditions", new { controller = "Management", action = "SetDnatConditions" });
         app.MapControllerRoute("manage-filter-conditions", "manage/policies/rules/conditions", new { controller = "Management", action = "EditFilterConditions" });
         app.MapControllerRoute("manage-postrouting", "manage/policies/nat/postrouting", new { controller = "Management", action = "SetPostrouting" });
         app.MapControllerRoute("manage-policy-object", "manage/policies/objects", new { controller = "Management", action = "SetPolicyObject" });

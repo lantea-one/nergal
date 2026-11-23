@@ -421,6 +421,7 @@
             </section>
         }
 
+        @await Html.PartialAsync("_RawMssForms", Model)
         @await Html.PartialAsync("_AdvancedRuleStates", Model)
         @await Html.PartialAsync("_PolicyObjects", Model)
 
@@ -612,16 +613,17 @@
                                     <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Dnat, i, null, d.Enabled, "Dnat rule " + (i + 1))))</td>
                                     <td><code>@d.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
-                                    <td><code>@d.OriginalDestination.Value</code></td>
+                                    <td><code>@(d.NegateDestination ? "!= " : "")@d.OriginalDestination.Value</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
                                     <td><code>@(d.OriginalPort?.ToString() ?? "any") → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
-                                    <td><code>@(d.InputInterface ?? "any")</code> · <code>@(d.Source?.Value ?? "any")</code></td>
+                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.Source?.Value ?? "any")</code></td>
 
                                     <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
                                     @if (Model.CanMutate)
                                     {
                                         <td>
                                             <div class="btn-group">
+                                                @await Html.PartialAsync("_NatRuleMove", new Nergal.Web.NatRuleMoveModel(Model, "dnat", i, bundle.Nat.DnatRules.Count))
                                                 <details class="inline-edit-details">
                                                     <summary class="btn btn-secondary btn-sm">Edit</summary>
                                                     <div class="inline-edit-popover">
@@ -749,6 +751,8 @@
             }
         </section>
 
+        @await Html.PartialAsync("_DnatConditions", Model)
+
         <section class="card">
             <div class="card-header">
                 <h2>Postrouting NAT rules (<code>inet nergal_nat</code>)</h2>
@@ -793,6 +797,7 @@
                                     {
                                         <td>
                                             <div class="btn-group">
+                                                @await Html.PartialAsync("_NatRuleMove", new Nergal.Web.NatRuleMoveModel(Model, "postrouting", i, bundle.Nat.SnatRules.Count))
                                                 <a class="btn btn-secondary btn-sm" href="#postrouting-editor-@i">Edit postrouting #@(i + 1)</a>
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/snat/remove")">
                                                     @Html.AntiForgeryToken()

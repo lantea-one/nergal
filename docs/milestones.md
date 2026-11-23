@@ -58,5 +58,6 @@ Update this table when a completion gate is actually satisfied, with evidence in
 
 M2 progress: primary filter MAC matching/negation, source/destination meter keys,
 explicit reject, and complete postrouting SNAT/masquerade/return forms are
-implemented. Raw/MSS, DNAT negation, auxiliary and extended bridge/sub-chain forms
+implemented. Raw/FIB/UDP source-port rules, MSS configuration, DNAT negation and
+NAT reordering are also implemented. Auxiliary and extended bridge/sub-chain forms
 remain before M2 can close. See [guided router forms](guided-router-forms.md).

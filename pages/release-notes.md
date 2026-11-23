@@ -87,3 +87,9 @@ and negation. Edits preserve dormant state and pinned references; full-width
 panels keep hints reachable outside scrollable tables. All edits remain unsaved
 until revision review/save, then confirmed apply. See [guided forms](guided-router-forms.md)
 for remaining scope and synthetic light/dark/mobile screenshots.
+
+Guided raw-chain forms now cover FIB reverse-path matching, UDP source ports,
+source/interface negation, defaults and ordered exceptions. MSS configuration
+preserves disabled state on resize and has explicit removal. DNAT negation and
+whole-rule NAT reordering are available without editing JSON. Auxiliary and
+extended bridge/sub-chain forms remain before M2 is complete.

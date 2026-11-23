@@ -478,3 +478,10 @@ HTTPS routes, CSRF, duplicate/unknown/malformed inputs, anonymous/Auditor denial
 pinned list retention and unchanged saved revisions. These UI changes reuse the
 native compiler; generated text is not new packet-level proof. Existing router
 namespace packet checks cover the underlying matcher and NAT semantics.
+
+`RawFormAuthoringTests` and `local-sessions/raw_forms.py` cover ordered raw
+exceptions/FIB rules, source ports, dormant-state preservation, raw defaults,
+MSS resize/removal, DNAT negation and NAT reordering. HTTP cases include missing
+CSRF, invalid integer binding, unknown/duplicate fields, incompatible matcher
+combinations and unchanged saved revisions. The unit runner uses one MSBuild node
+to avoid isolated-runner worker-pipe collisions while retaining all coverage checks.
