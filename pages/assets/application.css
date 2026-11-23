@@ -822,6 +822,11 @@ input[type="file"]::file-selector-button {
 }
 
 /* Matcher cells must remain readable when pinned list names and contents are shown. */
-.policy-rules-table td:nth-child(5),
-.policy-rules-table td:nth-child(6) { min-width: 12rem; }
-.policy-rules-table td:nth-child(7) { min-width: 10rem; }
+.policy-rules-table:not(.rule-state-table) td:nth-child(5),
+.policy-rules-table:not(.rule-state-table) td:nth-child(6),
+.rule-state-table td:nth-child(6),
+.rule-state-table td:nth-child(7) { min-width: 12rem; }
+.policy-rules-table:not(.rule-state-table) td:nth-child(7),
+.rule-state-table td:nth-child(8) { min-width: 10rem; }
+
+.rule-state-control { min-width: 10rem; display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }

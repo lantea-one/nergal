@@ -13,6 +13,7 @@ namespace Nergal.Core.Policy;
 /// <param name="NegateSource">Negate the source restriction; requires a source matcher.</param>
 /// <param name="NegateDestination">Negate the destination restriction.</param>
 /// <param name="NegateInputInterface">Negate the ingress restriction; requires an interface.</param>
+/// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -25,7 +26,8 @@ public sealed record DnatRule(
     string? Description = null,
     bool NegateSource = false,
     bool NegateDestination = false,
-    bool NegateInputInterface = false);
+    bool NegateInputInterface = false,
+    bool Enabled = true);
 
 /// <summary>Postrouting action; exemptions return before later NAT rules.</summary>
 public enum NatPostroutingAction
@@ -54,6 +56,7 @@ public enum NatPostroutingAction
 /// <param name="NegateDestination">Negate the destination restriction; requires a matcher.</param>
 /// <param name="NegateInputInterface">Negate the ingress restriction; requires an interface.</param>
 /// <param name="NegateOutputInterface">Negate the egress restriction; requires an interface.</param>
+/// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 public sealed record SnatRule(
     IpFamily Family,
     NetworkPrefix? Source,
@@ -69,7 +72,8 @@ public sealed record SnatRule(
     bool NegateSource = false,
     bool NegateDestination = false,
     bool NegateInputInterface = false,
-    bool NegateOutputInterface = false);
+    bool NegateOutputInterface = false,
+    bool Enabled = true);
 
 /// <summary>An immutable, versioned snapshot of ordered dual-stack DNAT and postrouting actions.</summary>
 public sealed class NatPolicy

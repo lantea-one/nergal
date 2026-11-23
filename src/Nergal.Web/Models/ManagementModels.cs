@@ -123,6 +123,9 @@ public sealed class PolicyEditorViewModel
     /// <summary>Gets SHA-256 hex candidate digest when compiled cleanly.</summary>
     public string? CandidateDigest { get; init; }
 
+    /// <summary>Gets canonical intent diff including disabled rules and reference metadata.</summary>
+    public string? IntentDiff { get; init; }
+
     /// <summary>Gets unified diff against <see cref="CompareToRevision"/> or empty baseline.</summary>
     public string? UnifiedDiff { get; init; }
 

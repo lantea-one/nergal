@@ -6,7 +6,7 @@
         <div class="card-header">
             <h2>Bundle summary</h2>
             <div class="btn-group">
-                <span class="badge badge-primary">Filter v@Bundle.Filter.SchemaVersion (@Bundle.Filter.Rules.Count rules)</span>
+                <span class="badge badge-primary">Filter v@(Bundle.Filter.SchemaVersion) (@Bundle.Filter.Rules.Count rules)</span>
                 @if (Bundle.Nat is { } natBadge)
                 {
                     <span class="badge badge-warning">NAT (@(natBadge.DnatRules.Count + natBadge.SnatRules.Count) rules)</span>
@@ -18,6 +18,7 @@
             </div>
         </div>
 
+        <p class="muted">Disabled rules below retain intent but do not enforce traffic policy. Native observations contain active rules only.</p>
         <p class="muted" style="margin-top: 0;">
             Filter defaults — Input: <code>@Bundle.Filter.InputDefaultVerdict.ToString().ToLowerInvariant()</code> ·
             Forward: <code>@Bundle.Filter.ForwardDefaultVerdict.ToString().ToLowerInvariant()</code> ·
@@ -44,7 +45,7 @@
                             <th>Interfaces</th>
                             <th>States / Match</th>
                             <th>Rate Limit</th>
-                            <th>Verdict</th>
+                            <th>Enabled state</th><th>Verdict</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,6 +79,7 @@
                                     }
                                 </td>
                                 <td><code>@FormatRateLimit(rule.RateLimit)</code></td>
+                                <td>@(rule.Enabled ? "Enabled" : "Disabled · omitted")</td>
                                 <td>
                                     <span class="badge @(rule.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
                                         @rule.Verdict.ToString().ToLowerInvariant()
@@ -90,10 +92,13 @@
             </div>
         }
 
+        <details class="disclosure"><summary>All authored rule states</summary>
+            <ul>@foreach (var state in PolicyRuleStates.Enumerate(Bundle)) { <li>@state.Label: <strong>@(state.Enabled ? "Enabled" : "Disabled · omitted")</strong></li> }</ul>
+        </details>
         @if (Bundle.Filter.RpFilter is { } rp)
         { <p>Raw rpfilter: @rp.Rules.Count rules.</p> }
         @if (Bundle.Filter.ForwardTcpMssClamp is { } mss)
-        { <p>Forward TCP SYN MSS clamp: @mss bytes.</p> }
+        { <p>Forward TCP SYN MSS clamp: @mss bytes · @(Bundle.Filter.ForwardTcpMssClampEnabled ? "Enabled" : "Disabled · omitted").</p> }
         @if (Bundle.RequiresExtendedApplySupport)
         { <p class="alert alert-info">Auxiliary/extended bridge scope requires complete bundle receipts. Confirmed apply and local rollback cover all owned tables; unexpected drift requires recovery.</p> }
         @if (Bundle.Nat is { } nat)

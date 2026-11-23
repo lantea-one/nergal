@@ -73,6 +73,7 @@ and maintain policies through the UI without importing an existing ruleset.
   an explicit local operator boundary, represented by a guided enrollment workflow;
   the browser never gains a shell or direct privileged host capability.
 
+Inline [rule enabled-state controls](rule-enabled-state.md) now implement the retained-state/revision boundary. Other requirements below remain tracked in [the milestone overview](milestones.md).
 This is an active implementation plan, not a claim that all listed workflows exist.
 
 ## Database source of truth and later SQL migrations
@@ -175,3 +176,5 @@ namespaces. No host account/mapping changes or fixture guard relaxations are
 required. The auxiliary/extended bridge packet and watchdog acceptance milestone now also
 passes under ADR 0036. The next milestone is explicit private server conversion,
 followed by complete structured authoring and the broader UX/profile/chart work.
+
+See the [remaining product code-complete milestones](milestones.md) for completion gates and dependencies.

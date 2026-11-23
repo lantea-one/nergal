@@ -395,6 +395,27 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         rev1_json = pin_probe(rev1_json, 'probe4', 'ipv4', '127.0.0.1', 0)
         rev2_json = pin_probe(rev2_json, 'probe6', 'ipv6', '::1', 1)
 
+        def set_state(bundle, index, enabled):
+            fields = {'bundleJson': bundle, 'scope': 'Filter', 'ruleIndex': str(index),
+                      '__RequestVerificationToken': admin.token('/manage/policies')}
+            if enabled:
+                fields['enabled'] = 'true'
+            body, _ = admin.request('/manage/policies/rules/state', 200, form=fields)
+            parser = DraftParser(); parser.feed(body)
+            require(parser.value is not None, 'State change lost its draft')
+            rule = json.loads(parser.value)['filter']['rules'][index]
+            require(rule.get('enabled', True) == enabled, 'State flag was not preserved')
+            return parser.value
+
+        # An omitted dormant IPv6 drop must not defeat the existing allowed IPv6 packet probes.
+        dormant = json.loads(rev1_json)
+        dormant['filter']['rules'].insert(1, {'family': 'ipv6', 'protocol': 'udp', 'verdict': 'drop',
+                                             'description': 'Retained dormant IPv6 drop'})
+        rev1_json = set_state(json.dumps(dormant), 1, False)
+        # The next revision enables its pinned IPv6 drop through the same actual UI boundary.
+        pending = json.loads(rev2_json); pending['filter']['rules'][1]['enabled'] = False
+        rev2_json = set_state(json.dumps(pending), 1, True)
+
         rev3_bundle_json = json.dumps({
             'schemaVersion': 1,
             'filter': {

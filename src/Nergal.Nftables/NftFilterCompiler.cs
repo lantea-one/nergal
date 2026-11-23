@@ -297,7 +297,7 @@ public static class NftFilterCompiler
         {
             foreach (var draft in policy.Rules)
             {
-                AppendRule(text, draft!, null);
+                if (draft!.Enabled) { AppendRule(text, draft, null); }
             }
 
             return new(text.ToString(), []);
@@ -321,7 +321,7 @@ public static class NftFilterCompiler
             foreach (var draft in policy.Rules)
             {
                 var rule = draft!;
-                if (rule.Chain != chain)
+                if (!rule.Enabled || rule.Chain != chain)
                 {
                     continue;
                 }
@@ -342,7 +342,7 @@ public static class NftFilterCompiler
 
         foreach (var chain in ChainOrder)
         {
-            if (chain == FilterChainKind.Forward && policy.ForwardTcpMssClamp is { } mss)
+            if (chain == FilterChainKind.Forward && policy.ForwardTcpMssClampEnabled && policy.ForwardTcpMssClamp is { } mss)
             {
                 text.Append("add rule inet " + TableName + " forward tcp flags syn tcp option maxseg size set ")
                     .Append(mss.ToString(CultureInfo.InvariantCulture)).Append('\n');
@@ -354,7 +354,7 @@ public static class NftFilterCompiler
         }
         if (policy.RpFilter is { } raw)
         {
-            foreach (var rule in raw.Rules) { RouterFilterValidation.AppendRpFilterRule(text, rule!); }
+            foreach (var rule in raw.Rules) { if (rule!.Enabled) { RouterFilterValidation.AppendRpFilterRule(text, rule); } }
         }
 
         return new(text.ToString(), []);

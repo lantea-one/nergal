@@ -61,3 +61,7 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+See [Milestones to Product Code-Complete](milestones.md) for the remaining work and
+completion gates. Historical foundation releases do not establish product-wide
+code-complete status.

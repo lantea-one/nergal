@@ -207,3 +207,9 @@ with transactional audit. Auditors can inspect history. Pinned references under 
 filter rules. Compilation projects those snapshots onto existing matchers; no
 latest-version lookup occurs during apply and native named sets remain unsupported.
 Saved policies cannot change as a side effect of editing a library object.
+
+[Rule enabled state](rule-enabled-state.md) remains in canonical revision intent
+under ADR 0041. Compilers validate all rules before emitting the active projection,
+omitting disabled rules/meters without changing defaults. Native observation never
+claims to reconstruct dormant intent. Inline controls alter a draft only; revision
+save and confirmed apply preserve the existing privilege boundary.

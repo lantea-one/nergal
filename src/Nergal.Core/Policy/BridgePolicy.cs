@@ -32,6 +32,7 @@ public enum BridgeEtherType
 /// <param name="DestinationPorts">Optional bounded destination port set.</param>
 /// <param name="JumpTarget">Optional regular-chain target; mutually exclusive with Return.</param>
 /// <param name="Return">Return to the caller, only inside regular chains. When true, or when JumpTarget is set, Verdict must be Drop as a neutral draft value.</param>
+/// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 public sealed record BridgeFilterRule(
     BridgeEtherType EtherType,
     FilterVerdict Verdict,
@@ -50,7 +51,8 @@ public sealed record BridgeFilterRule(
     int? DestinationPort = null,
     IReadOnlyList<int>? DestinationPorts = null,
     string? JumpTarget = null,
-    bool Return = false);
+    bool Return = false,
+    bool Enabled = true);
 
 /// <summary>A named, non-base bridge chain. Only local declared jump targets are permitted.</summary>
 public sealed class BridgeSubChain

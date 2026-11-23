@@ -105,6 +105,7 @@ public sealed record PerSourceRateLimit(
 /// <param name="DestinationPort">Optional TCP/UDP destination port.</param>
 /// <param name="MatchFibUnreachable">When true, emits <c>fib saddr . iif oif == 0</c> reverse-path lookup.</param>
 /// <param name="Description">Optional human-readable operator note (max 160 printable characters; metadata only).</param>
+/// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 public sealed record RpFilterRule(
     FilterVerdict Verdict,
     IpFamily? Family = null,
@@ -116,7 +117,8 @@ public sealed record RpFilterRule(
     int? SourcePort = null,
     int? DestinationPort = null,
     bool MatchFibUnreachable = false,
-    string? Description = null);
+    string? Description = null,
+    bool Enabled = true);
 
 /// <summary>Optional raw prerouting reverse-path filtering chain configuration for <c>inet nergal_filter</c>.</summary>
 public sealed class RpFilterPolicy
@@ -167,6 +169,7 @@ public sealed class RpFilterPolicy
 /// <param name="SourceObject">Optional pinned address-list reference, exclusive with source literals.</param>
 /// <param name="DestinationObject">Optional pinned address-list reference, exclusive with destination literals.</param>
 /// <param name="DestinationPortObject">Optional pinned port-list reference, exclusive with destination-port literals.</param>
+/// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -194,7 +197,8 @@ public sealed record FilterRule(
     bool NegateSourceMac = false,
     PolicyObjectReference? SourceObject = null,
     PolicyObjectReference? DestinationObject = null,
-    PolicyObjectReference? DestinationPortObject = null)
+    PolicyObjectReference? DestinationPortObject = null,
+    bool Enabled = true)
 {
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
@@ -233,7 +237,7 @@ public sealed record FilterRule(
             Equals(SourceMac, other.SourceMac) &&
             SequenceEqual(SourceMacs, other.SourceMacs) &&
             NegateSourceMac == other.NegateSourceMac &&
-            Equals(SourceObject, other.SourceObject) && Equals(DestinationObject, other.DestinationObject) && Equals(DestinationPortObject, other.DestinationPortObject);
+            Enabled == other.Enabled && Equals(SourceObject, other.SourceObject) && Equals(DestinationObject, other.DestinationObject) && Equals(DestinationPortObject, other.DestinationPortObject);
     }
 
     /// <inheritdoc />
@@ -264,7 +268,7 @@ public sealed record FilterRule(
         hash.Add(SourceMac);
         AddSequenceHash(ref hash, SourceMacs);
         hash.Add(NegateSourceMac);
-        hash.Add(SourceObject); hash.Add(DestinationObject); hash.Add(DestinationPortObject);
+        hash.Add(Enabled); hash.Add(SourceObject); hash.Add(DestinationObject); hash.Add(DestinationPortObject);
         return hash.ToHashCode();
     }
 
@@ -328,6 +332,7 @@ public sealed class FilterPolicy
     /// <param name="outputDefaultVerdict">Decision for unmatched traffic on the output hook.</param>
     /// <param name="rules">Ordered rules; null entries are retained for diagnostics.</param>
     /// <param name="rpFilter">Optional raw prerouting reverse-path filter chain (schema 2 only).</param>
+    /// <param name="forwardTcpMssClampEnabled">Whether the retained MSS clamp contributes to native enforcement.</param>
     /// <param name="forwardTcpMssClamp">Optional forward-chain TCP SYN MSS clamp in bytes (536–1460; schema 2 only).</param>
     /// <exception cref="ArgumentNullException">The collection is null.</exception>
     public FilterPolicy(
@@ -337,7 +342,8 @@ public sealed class FilterPolicy
         FilterVerdict outputDefaultVerdict,
         IEnumerable<FilterRule?> rules,
         RpFilterPolicy? rpFilter = null,
-        int? forwardTcpMssClamp = null)
+        int? forwardTcpMssClamp = null,
+        bool forwardTcpMssClampEnabled = true)
     {
         ArgumentNullException.ThrowIfNull(rules);
         SchemaVersion = schemaVersion;
@@ -353,6 +359,7 @@ public sealed class FilterPolicy
         }).ToArray());
         RpFilter = rpFilter;
         ForwardTcpMssClamp = forwardTcpMssClamp;
+        ForwardTcpMssClampEnabled = forwardTcpMssClampEnabled;
     }
 
     /// <summary>Gets the schema version, validated before compilation.</summary>
@@ -378,6 +385,9 @@ public sealed class FilterPolicy
 
     /// <summary>Gets the optional forward-chain TCP SYN MSS clamp in bytes (536–1460).</summary>
     public int? ForwardTcpMssClamp { get; }
+
+    /// <summary>Gets whether the retained MSS clamp is active in the native projection.</summary>
+    public bool ForwardTcpMssClampEnabled { get; }
 
     /// <summary>Computes the semantic backend features required by this filter policy.</summary>
     public IReadOnlySet<FirewallFeature> GetRequiredFeatures()
