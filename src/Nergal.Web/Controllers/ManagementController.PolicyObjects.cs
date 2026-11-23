@@ -8,10 +8,10 @@ namespace Nergal.Web.Controllers;
 
 public sealed partial class ManagementController
 {
-    /// <summary>Explicitly replaces or removes a primary filter matcher reference in an unsaved draft; no revision/apply occurs.</summary>
+    /// <summary>Explicitly replaces or removes a primary or auxiliary inet filter matcher reference in an unsaved draft; no revision/apply occurs.</summary>
     [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
     [RequestSizeLimit(524288)]
-    public async Task<IActionResult> SetPolicyObject(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex, string? slot, string? selection, string? operation)
+    public async Task<IActionResult> SetPolicyObject(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex, string? slot, string? selection, string? operation, string? scope = null)
     {
         if (!SourceAdministrator(out _)) { return Forbid(); }
         var form = await Request.ReadFormAsync(HttpContext.RequestAborted);
@@ -19,8 +19,8 @@ public sealed partial class ManagementController
         IReadOnlyList<PolicyDiagnostic> errors = [];
         PolicyObjectReference? reference = null;
         if (!ModelState.IsValid || form.Files.Count != 0 || form.Any(kv => kv.Value.Count != 1) ||
-            form.Keys.Any(k => k is not ("bundleJson" or "summary" or "compareToRevision" or "ruleIndex" or "slot" or "selection" or "operation" or "__RequestVerificationToken")) ||
-            !form.ContainsKey("ruleIndex") || operation is not ("attach" or "remove")) { errors = [new("object.formInvalid", "object")]; }
+            form.Keys.Any(k => k is not ("bundleJson" or "summary" or "compareToRevision" or "ruleIndex" or "slot" or "selection" or "operation" or "scope" or "__RequestVerificationToken")) ||
+            !form.ContainsKey("ruleIndex") || operation is not ("attach" or "remove") || (form.ContainsKey("scope") && scope is not ("primary" or "auxiliary"))) { errors = [new("object.formInvalid", "object")]; }
         else if (operation == "attach")
         {
             var parts = (selection ?? "").Split('/');
@@ -30,7 +30,7 @@ public sealed partial class ManagementController
             else { reference = new(selected.Id, selected.Version, selected.Content); }
         }
         if (errors.Count != 0) { return ObjectDraftFailure(raw, summary, compareToRevision, errors); }
-        var valid = PolicyObjectAuthoring.TrySet(raw, ruleIndex, slot ?? "", reference, out var updated, out errors);
+        var valid = PolicyObjectAuthoring.TrySet(raw, ruleIndex, slot ?? "", reference, out var updated, out errors, form.ContainsKey("scope") ? scope! : "primary");
         return ApplyDraftMutation(Nergal.Core.Identity.NergalRoles.Administrator, raw, summary, compareToRevision, valid, updated, errors);
     }
     private IActionResult ObjectDraftFailure(string raw, string? summary, ulong? baseline, IReadOnlyList<PolicyDiagnostic> errors)

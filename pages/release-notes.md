@@ -104,3 +104,8 @@ Auditors can inspect read-only matching fields. Missing/cyclic targets and
 referenced-chain removal remain denied. Structured authoring covers the current
 supported policy constructs; reusable-object expansion, semantic native import/export
 and broader UX/operations/database work remain separate product milestones.
+
+M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
+filtering. Table scope is explicit, existing API submissions remain primary-only,
+and saved usage paths include auxiliary references. Native named objects and
+NAT/bridge reference expansion remain open.

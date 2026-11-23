@@ -44,6 +44,7 @@ REQUIRED_FILES = [
     "guided-router-forms.md",
     "assets/screenshots/raw-prerouting-dark.jpg",
     "assets/screenshots/auxiliary-forms-dark.jpg",
+    "assets/screenshots/auxiliary-references-dark.jpg",
     "assets/screenshots/bridge-forms-dark.jpg",
     "assets/screenshots/bridge-forms-mobile.jpg",
     "assets/screenshots/mss-clamp-light.jpg",

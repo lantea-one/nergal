@@ -30,3 +30,11 @@ receipts still gate apply/confirm/rollback. Verify reference compilation against
 literal equivalents and real packets in disposable namespaces; unit tests alone
 cannot establish packet semantics or rollback correctness. No production firewall
 or SQL schema change is required for self-contained immutable revision snapshots.
+
+## Selector scope extension
+
+The same immutable-reference contract now has explicit primary and auxiliary inet
+selectors. Database verification, usage enumeration and native projection already
+cover both scopes. A missing scope retains the original primary-only API behavior;
+unknown/empty/duplicate form scopes are denied. Scope selection changes no native
+semantics, SQL schema, receipt boundary or implicit host-application behavior.

@@ -88,8 +88,8 @@ Create the table before adding rules. Each auxiliary rule has a complete guided
 form for chain, family, protocol/verdict, CIDR/port sets, ICMP type, interfaces,
 connection states, original DNAT status, source MACs, negation and source/destination
 rate limits. Edits retain enabled state and existing list pins; up/down controls
-move the whole rule. Current library attachment workflows remain scoped to primary
-filter rules (M3 tracks additional reference coverage). Raw and MSS constructs
+move the whole rule. Library attachment workflows support primary and auxiliary inet
+filter rules; NAT/bridge references and native named objects remain M3 work. Raw and MSS constructs
 belong to the primary filter table and are rejected in auxiliary intent.
 
 Remove auxiliary rules individually before removing the empty table. Removing the

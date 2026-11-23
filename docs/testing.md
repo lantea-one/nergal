@@ -502,3 +502,9 @@ The HTTPS fixture restarts the host and verifies Auditor read-only bridge fields
 `check-auxiliary-apply.sh` independently exercises real packet outcomes for early
 inet/bridge tables and local control flow in disposable namespaces; screenshots
 and native generated text alone do not establish packet behavior.
+
+Auxiliary-reference unit/HTTPS checks cover explicit table selection, legacy
+primary-only submissions (including ignored query scope), retained MAC/negation and
+dormant state, stable primary intent, immutable saved old versions after library
+updates and saved auxiliary usage paths. Unknown/empty/duplicate scopes and wrong
+matcher kinds remain denied; unknown filter schemas are never normalized.

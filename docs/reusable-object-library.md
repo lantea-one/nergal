@@ -1,7 +1,7 @@
 # Typed sets and IP lists library
 
 Open **Sets & IP lists** (`/manage/objects`) to create and maintain typed lists.
-Library management and pinned primary filter-rule references are implemented;
+Library management and pinned primary/auxiliary inet filter-rule references are implemented;
 native named-set compilation is not implemented. Saving a list changes database history only.
 It does not create a policy revision, apply a firewall or change saved policies.
 
@@ -56,11 +56,12 @@ usage. A list edit never silently changes a saved policy. Native named-set
 observation and packet/rollback conformance remain a separate capability.
 See [ADR 0039](decisions/0039-versioned-typed-object-library.md).
 
-## Pinned filter-rule references
+## Pinned inet filter-rule references
 
-Policies can now attach the current displayed list version to a primary inet
+Policies can attach the displayed list version to a primary or auxiliary inet
 filter rule's source address, destination address or destination ports. Open
-**Policies → Reusable list references**, select a rule, matcher and version, then
+**Policies → Reusable list references**, use the explicitly labeled primary or
+auxiliary form, select a rule, matcher and version, then
 choose **Attach selected version to draft**. This explicitly replaces that
 matcher's literals or previous reference. Check the rule summary and native diff,
 save a policy revision, then use the existing confirmed-apply workflow.
@@ -89,10 +90,18 @@ Overlapping or adjacent entries may be stored in the library but are rejected wh
 attached to a rule if native observation cannot round-trip them. Family/protocol
 mismatches, conflicting literals, unknown flags and missing/forged references fail
 explicitly. NAT and bridge references, native named sets/maps, dynamic lists and
-semantic native import remain unsupported. Auxiliary inet references are represented
-by the shared codec, but the structured selector currently edits primary filter
-rules only. Use updated controller and agent builds; older codecs reject the new
+semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
+the primary policy, table priority, MAC restrictions, negation, rule order and
+enabled state. Omitting scope in existing API submissions continues to select
+primary filtering; query parameters cannot select an auxiliary target. Unknown,
+empty or duplicate submitted scopes are rejected. Use updated controller and agent builds; older codecs reject the new
 fields rather than silently accepting weaker policy.
 
 No database schema change is needed beyond schema 3. See
 [ADR 0040](decisions/0040-pinned-controller-policy-references.md).
+
+Auxiliary selectors reuse controller schema 3 and the existing embedded snapshot
+contract; no SQL migration or compiler semantics change is required. Saved usage
+paths include `auxiliaryFilter.filter.rules[n]` and old versions remain immutable.
+
+![Pinned auxiliary list selection](../pages/assets/screenshots/auxiliary-references-dark.jpg)

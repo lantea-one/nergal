@@ -23,7 +23,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | --- | --- | --- | --- |
 | M1 | Rule lifecycle | Complete | Inline enable/disable for every supported rule, retained contents/order/references, intent review and confirmed apply, packet/rollback acceptance. |
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
-| M3 | Reusable-object coverage | Open | Finish declared reference scopes and native object semantics, explicit scope/type validation, immutable versions and impact visibility; no claims of unsupported dynamic sets/maps. |
+| M3 | Reusable-object coverage | In progress | Finish declared reference scopes and native object semantics, explicit scope/type validation, immutable versions and impact visibility; no claims of unsupported dynamic sets/maps. |
 | M4 | Semantic native import/export | Open | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Open | Navigation/setup workflows, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
@@ -64,3 +64,7 @@ NAT reordering are also implemented. Auxiliary inet table priority/defaults and
 complete ordered rule forms are implemented. Extended bridge matching, priority,
 regular-chain creation, jump/return and ordering are also implemented.
 Broader UX refinement, scaling and product-wide accessibility checks remain M5. See [guided router forms](guided-router-forms.md).
+
+M3 progress: primary and auxiliary inet rules can select immutable controller list
+versions through separate explicit forms. Native named objects and additional
+NAT/bridge reference scopes remain before M3 can close.

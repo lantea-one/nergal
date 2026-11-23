@@ -77,6 +77,51 @@ public sealed class PolicyObjectBindingTests
         Assert.False(PolicyObjectAuthoring.TrySet(attached!, 99, "source", reference, out _, out _));
     }
 
+    /// <summary>Auxiliary attachment pins the exact database version without changing primary intent or lifecycle state.</summary>
+    [Fact]
+    public void AuxiliaryReference_PreservesPrimaryAndReportsSavedUsage()
+    {
+        WithStore(store =>
+        {
+            var item = store.SaveReusableObject(null, 0, new("clients", ReusableObjectKind.Ipv4, "", ["192.0.2.10"]), Actor, NergalRoles.Administrator);
+            var reference = new PolicyObjectReference(item.Id, item.Version, item.Content);
+            var primary = Bundle(reference).Filter;
+            var auxiliary = new FilterPolicy(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
+                [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop, Source: new("198.51.100.0/24"), NegateSource: true, SourceMac: new("02:00:00:00:00:01"), Enabled: false)]);
+            var original = PolicyBundleJsonCodec.EncodeBundle(new(1, primary, auxiliaryFilter: new(-5, auxiliary)), indented: true);
+            Assert.True(PolicyObjectAuthoring.TrySet(original, 0, "source", reference, out var updated, out _, "auxiliary"));
+            var changed = PolicyBundleJsonCodec.DecodeBundle(updated!).Value!;
+            Assert.Equal(primary.Rules[0], changed.Filter.Rules[0]);
+            var rule = changed.AuxiliaryFilter!.Filter.Rules[0]!;
+            Assert.False(rule.Enabled); Assert.True(rule.NegateSource); Assert.Equal(reference, rule.SourceObject);
+            Assert.Equal("02:00:00:00:00:01", rule.SourceMac!.Value); Assert.Null(rule.Source);
+            var report = PolicyAuthoringService.EvaluateDraft(updated!, store);
+            Assert.True(report.IsValid);
+            var saved = store.SavePolicyRevision(updated!, report.CandidateDigest!, Actor, NergalRoles.Administrator);
+            Assert.Contains(store.ListPolicyObjectUsage(item.Id), u => u.Path == "auxiliaryFilter.filter.rules[0].sourceObject");
+            store.SaveReusableObject(item.Id, 1, new("clients", ReusableObjectKind.Ipv4, "Updated", ["203.0.113.10"]), Actor, NergalRoles.Administrator);
+            Assert.Equal(updated, store.GetPolicyRevision(saved.Revision)!.PolicyJson);
+            Assert.True(PolicyObjectAuthoring.TrySet(updated!, 0, "source", null, out var removed, out _, "auxiliary"));
+            var cleared = PolicyBundleJsonCodec.DecodeBundle(removed!).Value!;
+            Assert.False(cleared.AuxiliaryFilter!.Filter.Rules[0]!.NegateSource); Assert.Null(cleared.AuxiliaryFilter.Filter.Rules[0]!.SourceObject);
+            Assert.Equal(primary.Rules[0], cleared.Filter.Rules[0]);
+            Assert.False(PolicyObjectAuthoring.TrySet(updated!, 0, "source", reference, out _, out _, "unknown"));
+            Assert.False(PolicyObjectAuthoring.TrySet(PolicyBundleJsonCodec.EncodeBundle(new(1, primary)), 0, "source", reference, out _, out _, "auxiliary"));
+        });
+    }
+
+    /// <summary>Reference attachment never normalizes unknown filter schema versions to a known schema.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void Reference_RejectUnknownSchema(int schema)
+    {
+        var reference = new PolicyObjectReference(Guid.NewGuid(), 1, new("clients", ReusableObjectKind.Ipv4, "", ["192.0.2.10"]));
+        var json = PolicyBundleJsonCodec.EncodeBundle(new(1, new(schema, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept,
+            [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept)])));
+        Assert.False(PolicyObjectAuthoring.TrySet(json, 0, "source", reference, out _, out _));
+    }
+
     private static void WithStore(Action<ControllerStateStore> action)
     {
         if (!OperatingSystem.IsLinux()) { return; }
