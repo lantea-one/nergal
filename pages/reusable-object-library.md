@@ -117,3 +117,27 @@ available to Auditors. It creates no list version, policy revision, audit event 
 firewall apply; existing pins remain unchanged.
 
 ![List version comparison](assets/screenshots/list-version-comparison-dark.jpg)
+
+## Select a historical list version in a draft
+
+In any supported reference form, choose a rule, matcher and list, then **Browse
+selected list history**. This loads that list's immutable versions into the same
+selector while retaining the table/chain, rule index, matcher, selected version,
+revision comparison baseline and draft summary. It does not alter any rule or pin.
+Only one list history is expanded at a time; other lists retain their current
+versions, so the UI does not load every historical list snapshot.
+
+Choose the desired displayed version and **Attach** it explicitly. The controller
+validates its exact stored snapshot, matcher type and the complete policy. A newer
+library edit cannot substitute its contents for the submitted old version. Ordinary
+draft actions may reset selector choices to current versions; existing pins remain
+unchanged. Browse history again to select another historical version.
+
+Browsing requires the same Administrator/CSRF-protected draft form as attachment.
+Auditors can inspect immutable history and comparisons in the library. Missing
+versions, invalid targets, unknown/duplicate fields and invalid drafts are denied.
+No version, revision, audit event or firewall operation occurs during browsing.
+Older snapshots do not bypass compiler restrictions; inspect the draft and native
+diffs, save a revision, then use confirmed apply.
+
+![Historical version selection](assets/screenshots/list-history-selector-dark.jpg)

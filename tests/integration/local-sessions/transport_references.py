@@ -10,13 +10,23 @@ class PortFields(HTMLParser):
         super().__init__()
         self.fields = {}
         self.links = []
+        self.selected = {}
+        self.active_select = None
 
     def handle_starttag(self, tag, attrs):
         fields = dict(attrs)
+        if tag == "select":
+            self.active_select = fields.get("id")
+        if tag == "option" and "selected" in fields and self.active_select:
+            self.selected[self.active_select] = fields.get("value")
         if tag == "a":
             self.links.append(fields)
         if tag == "input" and fields.get("id"):
             self.fields[fields["id"]] = fields
+
+    def handle_endtag(self, tag):
+        if tag == "select":
+            self.active_select = None
 
 
 def check_transport_references(browser, directory):
@@ -69,6 +79,40 @@ def check_transport_references(browser, directory):
     assert len(pin_links) >= 3 and all(link.get("target") == "_blank" and link.get("rel") == "noopener" for link in pin_links)
     comparison = browser.request(expected_link, 200)
     assert "Version 1" in comparison and "version 2" in comparison and "2 removed" in comparison and "1 added" in comparison
+    for scope in ("primary", "auxiliary", "postrouting", "bridge", "bridgeChain"):
+        history_fields = {"bundleJson": current, "summary": "Retained historical draft", "compareToRevision": "4", "scope": scope, "ruleIndex": "1" if scope == "bridgeChain" else "0", "slot": "ports", "selection": port_id + "/2", "operation": "history", "__RequestVerificationToken": token}
+        if scope == "bridgeChain":
+            history_fields["chain"] = "mail"
+        html = browser.request(path, 200, history_fields)
+        _, unchanged = decode(html)
+        assert unchanged == json.loads(current), "history browsing must not mutate any matcher or reference"
+        assert "Saved versions loaded for" in html and "Retained historical draft" in html
+        assert 'name="compareToRevision" value="4"' in html
+        assert f'value="{port_id}/1"' in html and f'value="{port_id}/2"' in html
+        rendered = PortFields(); rendered.feed(html)
+        prefix = "reference-" + scope + ("-mail" if scope == "bridgeChain" else "-base" if scope in ("postrouting", "bridge") else "")
+        assert rendered.selected[prefix + "-rule"] == history_fields["ruleIndex"]
+        assert rendered.selected[prefix + "-selection"] == port_id + "/2"
+        if scope in ("primary", "auxiliary"):
+            assert rendered.selected[prefix + "-slot"] == "ports"
+        for bad in ({"slot": "unknown"}, {"ruleIndex": "-1"}, {"ruleIndex": "999"}, {"chain": "unknown"}, {"selection": port_id + "/64"}, {"selection": ""}, {"operation": "unsupported"}, {"scope": "unknown"}):
+            browser.request(path, 400, {**history_fields, **bad})
+        # The existing attach contract must accept the exact displayed old snapshot, never substitute the current version.
+        attached = {**history_fields, "operation": "attach", "ruleIndex": "1" if scope == "bridgeChain" else "0"}
+        def matcher(bundle):
+            if scope == "primary":
+                return bundle["filter"]["rules"][0]
+            if scope == "auxiliary":
+                return bundle["auxiliaryFilter"]["filter"]["rules"][0]
+            if scope == "postrouting":
+                return bundle["nat"]["snatRules"][0]
+            if scope == "bridge":
+                return bundle["bridge"]["rules"][0]
+            return bundle["bridge"]["subChains"][0]["rules"][1]
+        _, retained = decode(browser.request(path, 200, attached))
+        assert matcher(retained)["destinationPortObject"]["version"] == 2
+        _, old = decode(browser.request(path, 200, {**attached, "selection": port_id + "/1"}))
+        assert matcher(old)["destinationPortObject"]["version"] == 1
     forged = json.loads(current)
     forged["nat"]["snatRules"][0]["destinationPortObject"]["version"] = 2
     browser.request("/manage/policies/save", 400, {"bundleJson": json.dumps(forged), "__RequestVerificationToken": token})

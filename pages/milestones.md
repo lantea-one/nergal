@@ -74,3 +74,7 @@ M3 impact review: the library compares exact immutable version entries and
 descriptions in either direction, shows saved-reference counts and links from
 policy pins to comparison with the current version. It never infers live host use
 or updates a pin automatically.
+
+M3 version selection: supported reference forms can explicitly browse one list's
+immutable history and attach a displayed old version without editing JSON. Browse
+preserves target/form selections and leaves canonical draft intent unchanged.

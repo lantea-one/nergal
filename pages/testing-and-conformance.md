@@ -60,3 +60,10 @@ It fetches each asset and checks the URL's version against the SHA-256 of the
 served bytes. Script/link MVC tag helpers are enabled explicitly without
 changing form tag-helper or CSRF behavior. Changed assets receive new URLs on
 upgrade so browser caches cannot keep the preceding editor/theme code by URL.
+
+History-selector unit checks use real SQLite state to verify one-list expansion,
+other-current-only choices, defensive snapshots and unchanged revision/audit state.
+HTTPS checks cover retained rule/matcher/version selections in all five supported
+reference scopes, unchanged draft contents, exact old/new version attachment and
+denial of missing versions, invalid scope/chain/rule/slot and unknown operations.
+No compiler, ownership, agent or rollback contract changes in this UI workflow.

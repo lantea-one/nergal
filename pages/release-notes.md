@@ -14,6 +14,13 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 
 - Completed Milestones A–D (Phases 1–14): native `nftables` dual-stack filter/NAT/bridge compilers, exclusive ownership & boot/namespace receipts, autonomous timed watchdog rollback, `SO_PEERCRED` Unix and pinned TLS 1.3 mTLS control protocols, local sessions + optional OIDC + RBAC, MVC/Blazor management UI, and end-to-end confirmed apply over HTTPS.
 
+## Unreleased historical reference selection
+
+Supported policy reference forms now **Browse selected list history** without
+altering the draft. Select and explicitly attach a displayed immutable old version;
+the table/chain, rule, matcher and previous selection remain visible after browsing.
+Only one list history is loaded at a time. See [historical version selection](reusable-object-library.md#select-a-historical-list-version-in-a-draft).
+
 ## Unreleased theme accessibility
 
 The application now initializes the theme button to **Light mode** or **Dark mode**
