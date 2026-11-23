@@ -43,6 +43,7 @@ REQUIRED_FILES = [
     "rule-enabled-state.md",
     "guided-router-forms.md",
     "assets/screenshots/raw-prerouting-dark.jpg",
+    "assets/screenshots/auxiliary-forms-dark.jpg",
     "assets/screenshots/mss-clamp-light.jpg",
     "assets/screenshots/router-conditions-dark.jpg",
     "assets/screenshots/router-postrouting-light.jpg",
