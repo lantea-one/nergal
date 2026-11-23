@@ -492,3 +492,13 @@ retention, order, explicit empty-table removal, unchanged primary/NAT/bridge
 sections and immutable saved revisions. Malformed/duplicate/unknown requests,
 CSRF and anonymous/Auditor access remain denied. Shared condition parsing is also
 covered by primary router-form tests; auxiliary forms add no compiler semantics.
+
+`BridgeFormAuthoringTests` and `local-sessions/bridge_forms.py` cover complete
+bridge-master/MAC/IP/transport matching, priority, local chain creation, jump and
+return, dormant edits/reordering, explicit empty removal and immutable graph saves.
+They deny malformed/unknown input, missing/cyclic jumps, base-chain returns,
+referenced-chain removal, incompatible matchers and anonymous/Auditor mutations.
+The HTTPS fixture restarts the host and verifies Auditor read-only bridge fields.
+`check-auxiliary-apply.sh` independently exercises real packet outcomes for early
+inet/bridge tables and local control flow in disposable namespaces; screenshots
+and native generated text alone do not establish packet behavior.

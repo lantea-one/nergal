@@ -97,7 +97,38 @@ table also removes its chain defaults and may broaden traffic. All settings and
 rule submissions remain unsaved drafts until revision review/save and confirmed
 apply. No other policy section changes when an auxiliary rule is edited.
 
-M2 is still in progress: extended bridge/sub-chain authoring remains. The advanced JSON editor remains available for
+## Complete bridge rules and local regular chains
+
+**Policies → Bridge** configures the optional owned `bridge nergal_bridge` table,
+forward hook priority (-300..300) and unmatched-frame verdict. The initial priority
+is -200; -5 is also supported. Create the table, then add local regular chains by
+name before adding jumps. Names contain 1–32 ASCII letters, digits or underscores,
+start with a letter, and cannot be `forward`.
+
+The forward and each regular-chain panel expose complete rule forms for Ethernet
+protocol, input bridge master (`meta ibrname`), ingress/egress bridge ports, source
+and destination MACs/negation, IP family/prefixes, TCP/UDP destination ports, and
+accept/drop/jump/return. Ethernet and IP families must agree. IP/transport matching
+requires a matching IP family. Jump requires a declared local target; other actions
+require an empty jump selection. Return resumes the caller and is allowed only
+inside regular chains. Reaching a regular chain's end also resumes its caller.
+
+Each existing rule has an inline enabled control and a complete editor. Edits and
+up/down moves retain enabled state, matchers, descriptions and order. Rule action
+labels show Jump/Return explicitly, rather than presenting their neutral internal
+verdict as a drop. Auditors can expand disabled read-only fields to inspect complete
+matching and control flow. Server authorization still independently denies writes.
+
+Missing/cyclic targets, excessive nesting, incompatible family/protocol/MAC fields
+and malformed form values are rejected across the whole draft, including disabled
+rules. Remove incoming jumps and chain rules before deleting a regular chain;
+remove forward rules and regular chains before removing an empty bridge table.
+Removing the table also removes its default policy and can broaden access.
+
+Structured forms now cover the supported policy constructs. M3 still tracks
+additional reusable-object scope/native-object semantics; M4 tracks semantic
+native import/export. Broader navigation, performance and UX refinement remain M5.
+All enforcement still requires immutable revision review and confirmed apply. The advanced JSON editor remains available for
 supported constructs without guided forms. This is not general native
 `nftables.conf` conversion; semantic import/export remains M4.
 
@@ -117,3 +148,7 @@ They show the UI, not evidence of packet enforcement.
 ![Guided MSS configuration](../pages/assets/screenshots/mss-clamp-light.jpg)
 
 ![Guided auxiliary inet filtering](../pages/assets/screenshots/auxiliary-forms-dark.jpg)
+
+![Complete bridge matching and local control flow](../pages/assets/screenshots/bridge-forms-dark.jpg)
+
+![Bridge authoring on mobile](../pages/assets/screenshots/bridge-forms-mobile.jpg)

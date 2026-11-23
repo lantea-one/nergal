@@ -14,3 +14,9 @@ public sealed record NatRuleMoveModel(PolicyEditorViewModel Editor, string Kind,
 
 /// <summary>Complete auxiliary filter rule editor; null index appends to the configured auxiliary table.</summary>
 public sealed record AuxiliaryRuleFormModel(PolicyEditorViewModel Editor, int? Index);
+
+/// <summary>Complete bridge rule editor for the forward base chain or a declared regular chain.</summary>
+public sealed record BridgeRuleFormModel(PolicyEditorViewModel Editor, string? Chain, int? Index);
+
+/// <summary>Ordered bridge chain editor; null chain identifies forward.</summary>
+public sealed record BridgeChainEditorModel(PolicyEditorViewModel Editor, string? Chain);
