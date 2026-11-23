@@ -526,3 +526,15 @@ confirm, independent watchdog rollback and drift/recreation/collision denial.
 The mapped-identity web fixture selects the port versions through the actual UI
 before its Unix/mTLS multi-table apply/confirm/rollback scenarios. No host accounts,
 production sockets, foreign host rules or production exports are modified.
+
+
+### Object version comparison
+
+`ObjectVersionComparisonTests` verifies directional entry differences, unchanged
+entries, metadata-only changes, same-version results, defensive collections and
+rejection of unrelated identities/types. Overlapping IPv6 prefixes remain exact
+entry differences; the view does not infer network coverage or traffic outcomes.
+The object-library HTTPS fixture verifies forward/reverse/same-version pages,
+escaped descriptions, local time markup, missing/out-of-range/duplicate version
+inputs, read-only historical/Auditor access and unchanged database/audit counts.
+No compiler, agent or native enforcement semantics change in this view.

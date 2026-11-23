@@ -137,3 +137,27 @@ expand rules or approximate unsupported translation-list semantics. See
 [ADR 0042](decisions/0042-transport-port-list-references.md).
 
 ![Pinned bridge port list](../pages/assets/screenshots/transport-references-dark.jpg)
+
+## Compare versions before changing a pin
+
+Open a list and use **Compare list versions**. Choose **From version** and
+**To version**, then **Compare versions**. Either direction and same-version
+comparisons are supported. The view shows added, removed and unchanged canonical
+entries, description changes, each version's local save time and counts of saved
+references to the compared versions. Revision links above the comparison identify
+the matcher locations. Counts include historical revisions and dormant rules;
+they are not active host or traffic measurements.
+
+CIDRs are compared as exact stored entries, without calculating address coverage
+or deciding whether access broadens. For example, replacing a `/64` with a `/48`
+is one removed entry and one added entry. The surrounding policy matchers,
+negation, rule order and verdict determine enforcement.
+
+Each pinned reference in the policy summary includes **Compare current library
+version with this pin**, opening a separate tab so an unsaved draft remains open.
+Compare the immutable pinned version against the current stored version before
+explicitly updating the reference in a draft. This read-only workflow is also
+available to Auditors. It creates no list version, policy revision, audit event or
+firewall apply; existing pins remain unchanged.
+
+![List version comparison](../pages/assets/screenshots/list-version-comparison-dark.jpg)

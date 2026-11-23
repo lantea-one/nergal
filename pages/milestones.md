@@ -69,3 +69,8 @@ M3 progress: primary and auxiliary inet rules can select immutable controller li
 versions through separate explicit forms. Postrouting and bridge destination-port
 references (including regular chains) are also implemented. Native named objects
 and NAT/bridge address references remain before M3 can close.
+
+M3 impact review: the library compares exact immutable version entries and
+descriptions in either direction, shows saved-reference counts and links from
+policy pins to comparison with the current version. It never infers live host use
+or updates a pin automatically.

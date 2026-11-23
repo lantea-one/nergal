@@ -43,6 +43,21 @@ def check_objects(browser, controller_directory):
     browser.request("/manage/objects?objectId=invalid", 400)
     browser.request(path + "&version=0", 400)
     browser.request(path + "&version=3", 404)
+    comparison = browser.request(path + "&version=2&compareToVersion=1", 200)
+    assert "2 removed" in comparison and "1 added" in comparison and "0 unchanged entries" in comparison
+    assert "Description changed" in comparison and "&lt;script&gt;" in comparison
+    assert "<script>alert(1)</script>" not in comparison
+    reverse = browser.request(path + "&version=1&compareToVersion=2", 200)
+    assert "2 added" in reverse and "1 removed" in reverse
+    assert 'action="/manage/objects/save"' not in reverse
+    same = browser.request(path + "&version=1&compareToVersion=1", 200)
+    assert "0 added" in same and "0 removed" in same and "2 unchanged entries" in same
+    assert "Description unchanged" in same
+    for query in ("compareToVersion=0", "compareToVersion=65", "compareToVersion=invalid",
+                  "compareToVersion=1&compareToVersion=2", "version=1&version=2"):
+        browser.request(path + "&" + query, 400)
+    browser.request(path + "&compareToVersion=3", 404)
+    browser.request("/manage/objects?compareToVersion=1", 400)
     save({**fields, "name": "web_ports", "kind": "port", "entries": "80\n443"})
     save({**fields, "name": "ipv6_clients", "kind": "ipv6", "entries": "2001:db8::1\n2001:db8:1::/64"})
     browser.request("/manage/objects/save", 413, {**fields, "entries": "x" * 25_000})

@@ -10,13 +10,17 @@ public sealed partial class ManagementController
 {
     /// <summary>Displays typed library contents and immutable version history to authorized readers.</summary>
     [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
-    public IActionResult Objects(Guid? objectId = null, int? version = null, string? q = null)
+    public IActionResult Objects(Guid? objectId = null, int? version = null, string? q = null, int? compareToVersion = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role)) { return Forbid(); }
-        if (!ModelState.IsValid || q?.Length > 120 || version is < 1 or > 64 || (version.HasValue && !objectId.HasValue)) { return BadRequest(); }
+        if (!ModelState.IsValid || q?.Length > 120 || version is < 1 or > 64 || compareToVersion is < 1 or > 64 || ((version.HasValue || compareToVersion.HasValue) && !objectId.HasValue) ||
+            Request.Query.Any(kv => kv.Value.Count != 1)) { return BadRequest(); }
         var selected = objectId.HasValue ? store.ReadReusableObject(objectId.Value, version) : null;
         if (objectId.HasValue && selected is null) { return NotFound(); }
-        return View(ObjectModel(selected, role == NergalRoles.Administrator, q));
+        var baseline = compareToVersion.HasValue ? store.ReadReusableObject(objectId!.Value, compareToVersion.Value) : null;
+        if (compareToVersion.HasValue && baseline is null) { return NotFound(); }
+        var model = ObjectModel(selected, role == NergalRoles.Administrator, q);
+        return View(baseline is null ? model : model with { Comparison = ObjectVersionComparison.Create(baseline, selected!) });
     }
 
     /// <summary>Appends a validated library version with audit and stale-edit protection; never changes a policy.</summary>

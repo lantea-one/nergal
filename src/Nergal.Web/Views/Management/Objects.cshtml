@@ -46,6 +46,7 @@
             </details>
         </section>
     }
+    @await Html.PartialAsync("_ObjectVersionComparison", Model)
     @if (Model.CanMutate && !historical)
     {
         <section class="card mt-2" aria-labelledby="edit-object-heading"><h2 id="edit-object-heading">@(input.Id.HasValue ? "Save a new list version" : "Create a list")</h2>

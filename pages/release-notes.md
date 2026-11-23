@@ -14,6 +14,14 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 
 - Completed Milestones A–D (Phases 1–14): native `nftables` dual-stack filter/NAT/bridge compilers, exclusive ownership & boot/namespace receipts, autonomous timed watchdog rollback, `SO_PEERCRED` Unix and pinned TLS 1.3 mTLS control protocols, local sessions + optional OIDC + RBAC, MVC/Blazor management UI, and end-to-end confirmed apply over HTTPS.
 
+## Unreleased list comparison
+
+The list library now compares any two stored versions, with added/removed entries,
+description changes, local save times and saved-reference counts. Policy reference
+summaries link to comparison with the current library version in a separate tab.
+Administrators and Auditors can review changes without altering pins, revisions or
+firewalls. See [list comparison](reusable-object-library.md#compare-versions-before-changing-a-pin).
+
 ## Unreleased router and settings work
 
 See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
