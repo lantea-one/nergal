@@ -323,6 +323,7 @@
                                                                     <select name="verdict">
                                                                         <option value="accept" selected="@(r.Verdict == FilterVerdict.Accept)">accept</option>
                                                                         <option value="drop" selected="@(r.Verdict == FilterVerdict.Drop)">drop</option>
+                                                                        <option value="reject" selected="@(r.Verdict == FilterVerdict.Reject)">reject — ICMP admin prohibited</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="field span-2">
@@ -408,6 +409,18 @@
             }
         </section>
 
+        @if (Model.CanMutate && bundle is not null && bundle.Filter.Rules.Count > 0)
+        {
+            <section class="card" aria-labelledby="filter-conditions-heading">
+                <h2 id="filter-conditions-heading">MAC, negation &amp; meter conditions</h2>
+                @for (var i = 0; i < bundle.Filter.Rules.Count; i++)
+                {
+                    if (bundle.Filter.Rules[i] is not null)
+                    { @await Html.PartialAsync("_FilterConditions", new Nergal.Web.FilterConditionsFormModel(Model, i)) }
+                }
+            </section>
+        }
+
         @await Html.PartialAsync("_AdvancedRuleStates", Model)
         @await Html.PartialAsync("_PolicyObjects", Model)
 
@@ -455,6 +468,7 @@
                             <select id="r-verdict" name="verdict">
                                 <option value="accept">accept</option>
                                 <option value="drop">drop</option>
+                            <option value="reject">reject — ICMP admin prohibited</option>
                             </select>
                         </div>
 
@@ -741,7 +755,7 @@
             </div>
             @if (bundle?.Nat is null || bundle.Nat.SnatRules.Count == 0)
             {
-                <p class="muted mb-0">No postrouting SNAT rules defined.</p>
+                <p class="muted mb-0">No postrouting rules defined.</p>
             }
             else
             {
@@ -754,7 +768,7 @@
                                 <th>Source CIDR</th>
                                 <th>Action / translated source</th>
                                 <th>Destination CIDR</th>
-                                <th>Output Iface</th>
+                                <th>Interfaces</th><th>Protocol / destination ports</th>
                                 <th>Description</th>
                                 @if (Model.CanMutate) { <th>Action</th> }
                             </tr>
@@ -770,56 +784,16 @@
                                     <td><code>@s.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@(s.NegateSource ? "!= " : "")@(s.Source?.Value ?? "any")</code></td>
                                     <td><code>@(s.Action == NatPostroutingAction.Snat ? s.TranslatedAddress : s.Action.ToString().ToLowerInvariant())</code></td>
-                                    <td><code>@(s.Destination?.Value ?? "any")</code></td>
-                                    <td><code>@(s.OutputInterface ?? "any")</code></td>
+                                    <td><code>@(s.NegateDestination ? "!= " : "")@(s.Destination?.Value ?? "any")</code></td>
+                                    <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterface ?? "any")</code></td>
+                                    <td><code>@s.Protocol · @(s.DestinationPort?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? (s.DestinationPorts is null ? "any" : string.Join(", ", s.DestinationPorts)))</code></td>
 
                                     <td>@(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)</td>
                                     @if (Model.CanMutate)
                                     {
                                         <td>
                                             <div class="btn-group">
-                                                <details class="inline-edit-details">
-                                                    <summary class="btn btn-secondary btn-sm">Edit</summary>
-                                                    <div class="inline-edit-popover">
-                                                        <form method="post" action="@Url.Content("~/manage/policies/nat/snat/edit")">
-                                                            @Html.AntiForgeryToken()
-                                                            <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                                                            <input type="hidden" name="summary" value="@Model.Summary" />
-                                                            <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                                                            <input type="hidden" name="ruleIndex" value="@i" />
-                                                            <div class="form-grid">
-                                                                <div class="field">
-                                                                    <label>Family</label>
-                                                                    <select name="family">
-                                                                        <option value="ipv4" selected="@(s.Family == IpFamily.IPv4)">ipv4</option>
-                                                                        <option value="ipv6" selected="@(s.Family == IpFamily.IPv6)">ipv6</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label>Source CIDR</label>
-                                                                    <input type="text" name="source" value="@s.Source?.Value" required />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label>Translated IP</label>
-                                                                    <input type="text" name="translatedAddress" value="@s.TranslatedAddress" required />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label>Destination CIDR</label>
-                                                                    <input type="text" name="destination" value="@s.Destination?.Value" />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label>Output iface</label>
-                                                                    <input type="text" name="outputInterface" value="@s.OutputInterface" maxlength="15" />
-                                                                </div>
-                                                                <div class="field span-2">
-                                                                    <label>Description</label>
-                                                                    <input type="text" name="description" value="@s.Description" maxlength="160" />
-                                                                </div>
-                                                            </div>
-                                                            <div class="mt-2"><button type="submit" class="btn btn-sm">Save SNAT #@(i + 1)</button></div>
-                                                        </form>
-                                                    </div>
-                                                </details>
+                                                <a class="btn btn-secondary btn-sm" href="#postrouting-editor-@i">Edit postrouting #@(i + 1)</a>
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/snat/remove")">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
@@ -840,40 +814,21 @@
 
             @if (Model.CanMutate)
             {
-                <h3 class="mt-2">Add explicit SNAT rule</h3>
-                <form method="post" action="@Url.Content("~/manage/policies/nat/snat/add")">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                    <input type="hidden" name="summary" value="@Model.Summary" />
-                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                    <div class="form-grid">
-                        <div class="field">
-                            <label>Family</label>
-                            <select name="family"><option value="ipv4">ipv4</option><option value="ipv6">ipv6</option></select>
-                        </div>
-                        <div class="field">
-                            <label>Source CIDR</label>
-                            <input type="text" name="source" placeholder="192.0.2.0/24" required />
-                        </div>
-                        <div class="field">
-                            <label>Translated IP address</label>
-                            <input type="text" name="translatedAddress" placeholder="198.51.100.1" required />
-                        </div>
-                        <div class="field">
-                            <label>Destination CIDR (optional)</label>
-                            <input type="text" name="destination" placeholder="203.0.113.0/24" />
-                        </div>
-                        <div class="field">
-                            <label>Output interface (optional)</label>
-                            <input type="text" name="outputInterface" placeholder="wan0" maxlength="15" />
-                        </div>
-                        <div class="field span-2">
-                            <label>Description (optional)</label>
-                            <input type="text" name="description" placeholder="Egress SNAT for DMZ" maxlength="160" />
-                        </div>
-                    </div>
-                    <div class="mt-2"><button type="submit">Add SNAT rule</button></div>
-                </form>
+                @if (bundle?.Nat is not null)
+                {
+                    @for (var i = 0; i < bundle.Nat.SnatRules.Count; i++)
+                    {
+                        if (bundle.Nat.SnatRules[i] is { } rule)
+                        {
+                            <details class="router-form-details" id="postrouting-editor-@i">
+                                <summary>Edit postrouting #@(i + 1) · @rule.Family · @rule.Action · @(rule.Description ?? "No description")</summary>
+                                <div class="router-form-body">@await Html.PartialAsync("_PostroutingForm", new Nergal.Web.PostroutingFormModel(Model, i))</div>
+                            </details>
+                        }
+                    }
+                }
+                <h3 class="mt-2">Add postrouting rule</h3>
+                @await Html.PartialAsync("_PostroutingForm", new Nergal.Web.PostroutingFormModel(Model, null))
             }
         </section>
     </div>

@@ -467,3 +467,14 @@ actual packet source translation. Foreign tables are preserved. The mapped-ident
 runner submits disabled/enabled rules through the UI before its Unix/mTLS packet,
 confirmation and independent watchdog rollback cases. These do not establish
 semantic source import, generated export or arbitrary production equivalence.
+
+### Guided router form checks
+
+`RouterFormAuthoringTests` verifies explicit MAC/IP restrictions, destination
+meter keys, reject, complete postrouting edits, dormant state/order retention,
+and denied unknown keys, invalid MACs, unbound negation and incompatible action
+fields. `tests/integration/local-sessions/router_forms.py` exercises the real
+HTTPS routes, CSRF, duplicate/unknown/malformed inputs, anonymous/Auditor denial,
+pinned list retention and unchanged saved revisions. These UI changes reuse the
+native compiler; generated text is not new packet-level proof. Existing router
+namespace packet checks cover the underlying matcher and NAT semantics.

@@ -165,3 +165,5 @@ ingestion/review workflows; semantic conversion and generated policy export rema
 unfinished. See [source library](docs/native-source-library.md) and [migration status](docs/router-constructs.md).
 
 See the [remaining product code-complete milestones](docs/milestones.md) for completion gates and dependencies.
+
+Guided [router condition and postrouting forms](docs/guided-router-forms.md) expose MAC matching, negation, destination meter keys and NAT actions while M2 remains in progress.

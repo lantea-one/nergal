@@ -64,7 +64,7 @@ internal sealed record PolicyEvaluationReport(
     string? IntentDiff = null);
 
 /// <summary>Pure in-memory JSON bundle codec, compatibility check, native candidate compiler preview, and unified line diff builder.</summary>
-internal static class PolicyAuthoringService
+internal static partial class PolicyAuthoringService
 {
     internal const string DefaultStarterBundleJson = """
         {
@@ -349,6 +349,7 @@ internal static class PolicyAuthoringService
     }
 
     private static bool RequiresSchema2(FilterRule rule) =>
+        rule.Verdict == FilterVerdict.Reject ||
         rule.Chain != FilterChainKind.Input ||
         rule.InputInterface is not null ||
         rule.OutputInterface is not null ||
@@ -400,6 +401,7 @@ internal static class PolicyAuthoringService
         {
             "accept" => FilterVerdict.Accept,
             "drop" => FilterVerdict.Drop,
+            "reject" => FilterVerdict.Reject,
             _ => (FilterVerdict)(-1),
         };
         if (!Enum.IsDefined(verdict)) { errors.Add(new("verdict.unknown", "rule.verdict")); }
