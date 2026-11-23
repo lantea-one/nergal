@@ -99,7 +99,7 @@ internal static partial class PolicyAuthoringService
         var rule = new SnatRule(family, source, EmptyToNull(input.TranslatedAddress), destination,
             EmptyToNull(input.OutputInterface), description, action, EmptyToNull(input.InputInterface), protocol, port, ports,
             input.NegateSource, input.NegateDestination, input.NegateInputInterface, input.NegateOutputInterface,
-            index is not { } position || rules[position]!.Enabled);
+            index is not { } position || rules[position]!.Enabled, index is { } old ? rules[old]!.DestinationPortObject : null);
         if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
         var nat = new NatPolicy(NatPolicy.CurrentSchemaVersion, bundle.Nat?.DnatRules ?? [], rules);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);

@@ -36,7 +36,7 @@ editing and reordering preserve references. Metadata-only changes remain visible
 in the reference summary even if native text is unchanged.
 
 Compilation projects each immutable snapshot onto the existing scalar/anonymous-set
-matcher contract. **Native named sets, NAT/bridge references, maps, dynamic flags,
+matcher contract. **Native named sets, NAT/bridge address references, DNAT port references, maps, dynamic flags,
 timeouts and native named-object import remain unsupported.** Family/protocol and
 literal conflicts, missing/forged snapshots and unsupported overlap/adjacency fail
 explicitly. Single-element lists use scalar matching. The UI selectors edit primary and auxiliary inet filter rules through separate
@@ -71,6 +71,25 @@ references; these screenshots do not establish native named-set support.
 
 Auxiliary selection uses the existing database schema and immutable reference
 contract. Usage paths include `auxiliaryFilter.filter.rules[n]`. Native named sets,
-NAT/bridge references and dynamic objects remain separate M3 work.
+NAT/bridge address references and dynamic objects remain separate M3 work.
 
 ![Pinned auxiliary list selection](assets/screenshots/auxiliary-references-dark.jpg)
+
+## Postrouting and bridge port lists
+
+**Policies → NAT → Reusable postrouting port lists** and each **Policies → Bridge**
+chain panel now select immutable Port-list versions for destination-port matching.
+Attach replaces literal ports or a prior reference. Editing retains all other
+matchers, actions/translation, jump/return, enabled state and order; ordinary port
+inputs become read-only and show the pinned contents. Explicit removal clears the
+port restriction and may broaden matching. Requires TCP/UDP; bridge IP-prefix
+matching needs a family selection, while transport matching can cover both families.
+
+References remain embedded in immutable revisions and verified against database
+history. Library edits do not update saved policies. Usage paths include postrouting,
+bridge forward and regular chains. Compilation projects a singleton to a scalar
+and larger lists to existing anonymous port sets. This adds no native named objects,
+address-list matching or rule expansion. Use updated controller and agent builds;
+older codecs reject unknown reference fields. No SQL schema change is required.
+
+![Pinned bridge port list](assets/screenshots/transport-references-dark.jpg)

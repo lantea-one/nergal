@@ -1,0 +1,21 @@
+@model Nergal.Web.TransportReferenceFormModel
+@using Nergal.Core.Controller
+@{
+    var prefix = "reference-" + Model.Scope + "-" + (Model.Chain ?? "base");
+    var label = Model.Scope == "postrouting" ? "Postrouting NAT port references" : "Bridge " + (Model.Chain ?? "forward") + " port references";
+}
+@if (Model.Editor.CanMutate && Model.Rules.Count > 0)
+{
+    <h3 id="@(prefix)-heading">@label</h3>
+    <form method="post" action="@Url.Content("~/manage/policies/objects")" aria-describedby="@(prefix)-hint">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" /><input type="hidden" name="summary" value="@Model.Editor.Summary" /><input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" /><input type="hidden" name="scope" value="@Model.Scope" /><input type="hidden" name="slot" value="ports" />
+        @if (Model.Chain is not null) { <input type="hidden" name="chain" value="@Model.Chain" /> }
+        <div class="form-grid">
+            <div class="field"><label for="@(prefix)-rule">Destination-port rule</label><select id="@(prefix)-rule" name="ruleIndex">@foreach (var rule in Model.Rules) { <option value="@rule.Index">@rule.Label</option> }</select></div>
+            <div class="field"><label for="@(prefix)-selection">Port-list version</label><select id="@(prefix)-selection" name="selection"><option value="">Choose a port list for attachment</option>@foreach (var item in Model.Editor.LibraryObjects.Where(o => o.Content.Kind == ReusableObjectKind.Port)) { <option value="@item.Id/@item.Version">@item.Content.Name · v@(item.Version) · @string.Join(", ", item.Content.Entries)</option> }</select></div>
+        </div>
+        <p id="@(prefix)-hint" class="hint">Pins the displayed immutable version. Requires TCP or UDP; bridge IP-prefix matching requires an IP family. Attach replaces literal ports or the prior port reference. Remove clears the port restriction, which can broaden matching. Other matchers, action, enabled state and order remain. Review the draft, save a revision, then use confirmed apply.</p>
+        <div class="btn-group"><button type="submit" name="operation" value="attach">Attach port list to draft</button><button type="submit" name="operation" value="remove" class="btn btn-secondary">Remove port reference from draft</button></div>
+    </form>
+}

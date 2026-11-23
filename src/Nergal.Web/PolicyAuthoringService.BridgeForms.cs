@@ -74,7 +74,7 @@ internal static partial class PolicyAuthoringService
         else
         {
             if (!TryParseExtendedBridgeRule(input, out var rule, out diagnostics)) { return false; }
-            if (index is { } existing) { rules[existing] = rule! with { Enabled = rules[existing]!.Enabled }; }
+            if (index is { } existing) { rules[existing] = rule! with { Enabled = rules[existing]!.Enabled, DestinationPortObject = rules[existing]!.DestinationPortObject }; }
             else { rules.Add(rule); }
         }
         var chains = bridge.SubChains.Select(c => c.Name == chain ? new BridgeSubChain(c.Name, rules) : c).ToArray();

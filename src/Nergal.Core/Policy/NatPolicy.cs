@@ -57,6 +57,7 @@ public enum NatPostroutingAction
 /// <param name="NegateInputInterface">Negate the ingress restriction; requires an interface.</param>
 /// <param name="NegateOutputInterface">Negate the egress restriction; requires an interface.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
+/// <param name="DestinationPortObject">Optional immutable port-list version; mutually exclusive with literal destination ports. Compilation validates its type and every existing matcher constraint.</param>
 public sealed record SnatRule(
     IpFamily Family,
     NetworkPrefix? Source,
@@ -73,7 +74,8 @@ public sealed record SnatRule(
     bool NegateDestination = false,
     bool NegateInputInterface = false,
     bool NegateOutputInterface = false,
-    bool Enabled = true);
+    bool Enabled = true,
+    PolicyObjectReference? DestinationPortObject = null);
 
 /// <summary>An immutable, versioned snapshot of ordered dual-stack DNAT and postrouting actions.</summary>
 public sealed class NatPolicy

@@ -45,5 +45,6 @@
                 <button type="submit" class="btn btn-secondary btn-sm">Remove empty regular chain @Model.Chain</button>
             </form>
         }
+        @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model.Editor, Model.Chain is null ? "bridge" : "bridgeChain", Model.Chain, rules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, "Rule " + (i + 1) + " · " + (r?.Family?.ToString() ?? r?.EtherType.ToString()) + " · " + r?.Protocol)).ToArray()))
     }
 </section>

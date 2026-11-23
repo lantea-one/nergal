@@ -29,6 +29,10 @@ public static class NftNatCompiler
     private static CompilationResult CompileCore(NatPolicy policy, NftTableIdentity? identity)
     {
         ArgumentNullException.ThrowIfNull(policy);
+        var referenceErrors = new List<PolicyObjectDiagnostic>();
+        policy = TransportObjectResolver.Resolve(policy, referenceErrors);
+        if (referenceErrors.Count != 0) { return new(null, referenceErrors.Select(d => new PolicyDiagnostic(d.Code, d.Path)).ToArray()); }
+
         var errors = new List<PolicyDiagnostic>();
         if (policy.SchemaVersion != NatPolicy.CurrentSchemaVersion)
         {

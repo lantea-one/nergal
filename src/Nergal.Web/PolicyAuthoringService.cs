@@ -883,6 +883,7 @@ internal static partial class PolicyAuthoringService
             Protocol = previous.Protocol,
             DestinationPort = previous.DestinationPort,
             DestinationPorts = previous.DestinationPorts,
+            DestinationPortObject = previous.DestinationPortObject,
             NegateSource = previous.NegateSource,
             NegateDestination = previous.NegateDestination,
             NegateInputInterface = previous.NegateInputInterface,

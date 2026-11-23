@@ -53,3 +53,10 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+Reusable port-list versions can also be embedded in postrouting and bridge rules,
+including regular chains. Framework-independent projection supplies existing
+literal matchers; the database retains immutable identity/version/content and
+saved usage paths. Complete native observations and protected receipts still gate
+apply/rollback. No agent database lookup or new privileged browser operation is
+introduced. See [reusable object contracts](reusable-object-library.md).

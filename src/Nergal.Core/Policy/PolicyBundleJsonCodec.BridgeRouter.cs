@@ -12,7 +12,7 @@ public static partial class PolicyBundleJsonCodec
             !TryReadOptionalString(el, "destinationMac", out var dm) || !TryReadBool(el, "negateSourceMac", out var ns) ||
             !TryReadBool(el, "negateDestinationMac", out var nd) || !TryReadOptionalString(el, "source", out var source) ||
             !TryReadOptionalString(el, "destination", out var destination) || !TryReadOptionalInt(el, "destinationPort", out var port) ||
-            !TryReadOptionalString(el, "jumpTarget", out var target) || !TryReadBool(el, "return", out var ret)) { return false; }
+            !TryReadObjectReference(el, "destinationPortObject", out var portObject) || !TryReadOptionalString(el, "jumpTarget", out var target) || !TryReadBool(el, "return", out var ret)) { return false; }
         IpFamily? family = null;
         if (el.TryGetProperty("family", out var f) && f.ValueKind != JsonValueKind.Null)
         { family = ParseFamily(f); if (family is null) { return false; } }
@@ -35,6 +35,7 @@ public static partial class PolicyBundleJsonCodec
                 Protocol = protocol.Value,
                 DestinationPort = port,
                 DestinationPorts = ports,
+                DestinationPortObject = portObject,
                 JumpTarget = target,
                 Return = ret
             };
@@ -77,6 +78,7 @@ public static partial class PolicyBundleJsonCodec
         if (r.DestinationPort is { } port) { w.WriteNumber("destinationPort", port); }
         if (r.DestinationPorts is { } ports)
         { w.WriteStartArray("destinationPorts"); foreach (var p in ports) { w.WriteNumberValue(p); } w.WriteEndArray(); }
+        WriteObjectReference(w, "destinationPortObject", r.DestinationPortObject);
         if (r.JumpTarget is not null) { w.WriteString("jumpTarget", r.JumpTarget); }
         if (r.Return) { w.WriteBoolean("return", true); }
     }

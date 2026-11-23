@@ -3,12 +3,15 @@ using Nergal.Nftables;
 
 namespace Nergal.Web;
 
-internal static class PolicyObjectAuthoring
+internal static partial class PolicyObjectAuthoring
 {
-    internal static bool TrySet(string json, int index, string slot, PolicyObjectReference? reference, out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics, string scope = "primary")
+    internal static bool TrySet(string json, int index, string slot, PolicyObjectReference? reference, out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics, string scope = "primary", string? chain = null)
     {
         updated = null;
         if (!PolicyAuthoringService.TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
+        if (scope is "postrouting" or "bridge" or "bridgeChain")
+        { return TrySetTransport(bundle, index, slot, reference, scope, chain, out updated, out diagnostics); }
+        if (chain is not null) { diagnostics = [new("object.scopeInvalid", "chain")]; return false; }
         if (scope is not ("primary" or "auxiliary")) { diagnostics = [new("object.scopeInvalid", "scope")]; return false; }
         var path = scope == "auxiliary" ? "auxiliaryFilter.filter.rules" : "filter.rules";
         var current = scope switch { "primary" => bundle.Filter, "auxiliary" => bundle.AuxiliaryFilter?.Filter, _ => null };

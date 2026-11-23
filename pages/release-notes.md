@@ -109,3 +109,10 @@ M3 now exposes immutable list selectors for auxiliary inet rules alongside prima
 filtering. Table scope is explicit, existing API submissions remain primary-only,
 and saved usage paths include auxiliary references. Native named objects and
 NAT/bridge reference expansion remain open.
+
+Postrouting NAT and bridge destination-port rules, including regular chains, can
+now pin immutable Port-list versions through contextual UI selectors. Ordinary
+edits retain pinned versions and all unrelated intent. JSON/database usage covers
+all new scopes; type conflicts, invalid protocols and forged versions remain denied.
+Native packet and agent receipt/rollback fixtures use referenced snapshots.
+Native named objects and NAT/bridge address lists remain M3 work.
