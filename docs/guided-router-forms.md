@@ -89,7 +89,8 @@ form for chain, family, protocol/verdict, CIDR/port sets, ICMP type, interfaces,
 connection states, original DNAT status, source MACs, negation and source/destination
 rate limits. Edits retain enabled state and existing list pins; up/down controls
 move the whole rule. Library attachment workflows support primary and auxiliary inet
-filter rules; NAT/bridge references and native named objects remain M3 work. Raw and MSS constructs
+filter rules. Postrouting/bridge port lists have contextual selectors; address
+references in those scopes and native named objects remain M3 work. Raw and MSS constructs
 belong to the primary filter table and are rejected in auxiliary intent.
 
 Remove auxiliary rules individually before removing the empty table. Removing the
@@ -108,8 +109,8 @@ start with a letter, and cannot be `forward`.
 The forward and each regular-chain panel expose complete rule forms for Ethernet
 protocol, input bridge master (`meta ibrname`), ingress/egress bridge ports, source
 and destination MACs/negation, IP family/prefixes, TCP/UDP destination ports, and
-accept/drop/jump/return. Ethernet and IP families must agree. IP/transport matching
-requires a matching IP family. Jump requires a declared local target; other actions
+accept/drop/jump/return. Ethernet and IP families must agree. IP-prefix matching requires a matching IP family; transport matching can cover
+both families. Jump requires a declared local target; other actions
 require an empty jump selection. Return resumes the caller and is allowed only
 inside regular chains. Reaching a regular chain's end also resumes its caller.
 

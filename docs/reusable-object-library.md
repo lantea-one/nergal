@@ -89,8 +89,8 @@ multiple addresses must satisfy the existing disjoint/non-adjacent prefix bounds
 Overlapping or adjacent entries may be stored in the library but are rejected when
 attached to a rule if native observation cannot round-trip them. Family/protocol
 mismatches, conflicting literals, unknown flags and missing/forged references fail
-explicitly. NAT and bridge references, native named sets/maps, dynamic lists and
-semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
+explicitly. Native named sets/maps, dynamic lists, NAT/bridge address references,
+DNAT port references and semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
 the primary policy, table priority, MAC restrictions, negation, rule order and
 enabled state. Omitting scope in existing API submissions continues to select
 primary filtering; query parameters cannot select an auxiliary target. Unknown,
@@ -105,3 +105,35 @@ contract; no SQL migration or compiler semantics change is required. Saved usage
 paths include `auxiliaryFilter.filter.rules[n]` and old versions remain immutable.
 
 ![Pinned auxiliary list selection](../pages/assets/screenshots/auxiliary-references-dark.jpg)
+
+## Pinned postrouting and bridge port lists
+
+Postrouting NAT and bridge destination-port matchers can pin a **Port** list. In
+**Policies → NAT**, use **Reusable postrouting port lists** below the postrouting
+editors. In **Policies → Bridge**, use the port-list selector inside the forward
+or regular-chain panel. Select a rule and displayed version, then **Attach port
+list to draft**. Port lists require TCP or UDP; bridge IP-prefix restrictions
+require an IP family, while transport matching can cover both families.
+
+Attachment replaces literal destination ports or a prior port reference. It retains
+the action/translation, MAC/IP restrictions, jump/return, priority, enabled state
+and order. Ordinary editors show the pinned name/version/entries and make literal
+ports read-only. Change the reference explicitly in its selector. **Remove port
+reference from draft** clears only that port restriction, which may broaden matching.
+Review the intent/native diffs, save an immutable revision, then use confirmed apply.
+
+Canonical intent retains `destinationPortObject` on postrouting or bridge rules,
+including regular chains. Singleton snapshots project to scalar port matching;
+larger lists project to the existing anonymous port-set matcher. Saved usage paths
+include `nat.snatRules[n]`, `bridge.rules[n]` and `bridge.subChains[n].rules[n]`.
+Database verification covers every scope, including disabled rules. Later library
+edits cannot change saved snapshots. Native observations describe projected kernel
+matchers; exact artifacts and complete ownership receipts still gate apply and
+rollback. Use updated controller and agent builds; older strict codecs reject the
+new fields. No controller database schema upgrade is needed.
+
+This does not implement native named sets or NAT/bridge address lists and does not
+expand rules or approximate unsupported translation-list semantics. See
+[ADR 0042](decisions/0042-transport-port-list-references.md).
+
+![Pinned bridge port list](../pages/assets/screenshots/transport-references-dark.jpg)

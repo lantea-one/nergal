@@ -508,3 +508,21 @@ primary-only submissions (including ignored query scope), retained MAC/negation 
 dormant state, stable primary intent, immutable saved old versions after library
 updates and saved auxiliary usage paths. Unknown/empty/duplicate scopes and wrong
 matcher kinds remain denied; unknown filter schemas are never normalized.
+
+### Transport list references
+
+`TransportObjectReferenceTests` covers strict JSON round-trips in every scope,
+independent literal/native equivalence for singleton/multi-port and enabled/dormant
+rules, type/literal/protocol denial and malformed snapshots. `TransportPolicyObjectTests`
+and `local-sessions/transport_references.py` cover scoped selection/removal,
+ordinary-edit pin preservation, immutable database history/usage, forged versions,
+CSRF/RBAC and unrelated matcher retention. All existing immutable saved revisions
+remain independently validated.
+
+Router namespace fixtures now compile referenced NAT port matchers. Auxiliary
+native/agent fixtures carry referenced bridge-forward and regular-chain ports
+through dual-stack packet acceptance, native echo/list reconstruction, apply,
+confirm, independent watchdog rollback and drift/recreation/collision denial.
+The mapped-identity web fixture selects the port versions through the actual UI
+before its Unix/mTLS multi-table apply/confirm/rollback scenarios. No host accounts,
+production sockets, foreign host rules or production exports are modified.

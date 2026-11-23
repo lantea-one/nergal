@@ -254,6 +254,8 @@ def exercise(temp):
         check_bridge_forms(browser, ctrl_state)
         from auxiliary_references import check_auxiliary_references
         check_auxiliary_references(browser, ctrl_state)
+        from transport_references import check_transport_references
+        check_transport_references(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)

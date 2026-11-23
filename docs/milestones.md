@@ -36,7 +36,7 @@ M1 is merged into main (PR #81). M2 now has guided forms for the supported
 policy constructs, verified by unit/HTTPS/native packet checks and browser QA.
 M2–M4 share policy/reference contracts; neither
 forms nor lexical inspection establish semantic import equivalence. Native named
-sets/maps, dynamic flags/timeouts and NAT/bridge object references remain separate
+sets/maps, dynamic flags/timeouts and NAT/bridge address references remain separate
 from the existing static controller-reference projection. Declare the supported v1
 grammar and reject everything outside it, rather than silently approximating rules.
 
@@ -66,5 +66,6 @@ regular-chain creation, jump/return and ordering are also implemented.
 Broader UX refinement, scaling and product-wide accessibility checks remain M5. See [guided router forms](guided-router-forms.md).
 
 M3 progress: primary and auxiliary inet rules can select immutable controller list
-versions through separate explicit forms. Native named objects and additional
-NAT/bridge reference scopes remain before M3 can close.
+versions through separate explicit forms. Postrouting and bridge destination-port
+references (including regular chains) are also implemented. Native named objects
+and NAT/bridge address references remain before M3 can close.

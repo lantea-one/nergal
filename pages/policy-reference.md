@@ -93,3 +93,18 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+## Immutable reusable port snapshots
+
+Postrouting NAT rules and bridge rules (including regular chains) accept an optional
+`destinationPortObject`. It embeds the selected controller object's identity,
+version, typed contents and digest, mutually exclusive with literal destination
+ports. Compilation validates every rule, including dormant rules, and projects the
+snapshot onto existing scalar/anonymous port-set matchers. Preview/save verifies
+all references against immutable database history; apply never fetches "latest".
+Use matching updated controller/agent builds: older strict codecs reject this field.
+
+The contextual NAT/bridge selectors retain unrelated matchers, actions, jump/return,
+order and enabled state. Explicit removal clears the port restriction. These
+snapshots do not implement native named sets, address-list matching in NAT/bridge,
+or DNAT translation-port lists. See [the reusable library](reusable-object-library.md).

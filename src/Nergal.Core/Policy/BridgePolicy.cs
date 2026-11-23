@@ -33,6 +33,7 @@ public enum BridgeEtherType
 /// <param name="JumpTarget">Optional regular-chain target; mutually exclusive with Return.</param>
 /// <param name="Return">Return to the caller, only inside regular chains. When true, or when JumpTarget is set, Verdict must be Drop as a neutral draft value.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
+/// <param name="DestinationPortObject">Optional immutable port-list version; mutually exclusive with literal destination ports. Compilation validates its type and every existing matcher constraint.</param>
 public sealed record BridgeFilterRule(
     BridgeEtherType EtherType,
     FilterVerdict Verdict,
@@ -52,7 +53,8 @@ public sealed record BridgeFilterRule(
     IReadOnlyList<int>? DestinationPorts = null,
     string? JumpTarget = null,
     bool Return = false,
-    bool Enabled = true);
+    bool Enabled = true,
+    PolicyObjectReference? DestinationPortObject = null);
 
 /// <summary>A named, non-base bridge chain. Only local declared jump targets are permitted.</summary>
 public sealed class BridgeSubChain
@@ -106,7 +108,7 @@ public sealed class BridgePolicy
     public bool HasExtendedRules => Priority != -200 || SubChains.Count > 0 || Rules.Any(r => r is not null &&
         (r.BridgeName is not null || r.SourceMac is not null || r.DestinationMac is not null || r.NegateSourceMac || r.NegateDestinationMac ||
          r.Family is not null || r.Source is not null || r.Destination is not null || r.Protocol != FilterProtocol.Any ||
-         r.DestinationPort is not null || r.DestinationPorts is not null || r.JumpTarget is not null || r.Return));
+         r.DestinationPort is not null || r.DestinationPorts is not null || r.DestinationPortObject is not null || r.JumpTarget is not null || r.Return));
 
     /// <summary>Gets the forward base-chain priority (-300..300).</summary>
     public int Priority { get; }

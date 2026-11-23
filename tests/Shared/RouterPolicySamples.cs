@@ -86,4 +86,23 @@ internal static class RouterPolicySamples
             InputInterface: "lan0", Protocol: FilterProtocol.Tcp, DestinationPorts: [443, 9001]),
         new(IpFamily.IPv6, new("2001:db8:1::/64"), null, OutputInterface: "wan0", Action: NatPostroutingAction.Masquerade),
     ]);
+    // Agent fixtures carry self-contained snapshots, never a controller database lookup.
+    internal static FirewallPolicyBundle WithTransportReferences(FirewallPolicyBundle bundle)
+    {
+        PolicyObjectReference Reference(int? port, IReadOnlyList<int>? ports)
+        {
+            var entries = (ports ?? [port!.Value]).Order().Select(p => p.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            var content = new Nergal.Core.Controller.ReusableObjectContent("ports_" + string.Join("_", entries), Nergal.Core.Controller.ReusableObjectKind.Port, "Synthetic immutable port list", entries);
+            return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content);
+        }
+        IEnumerable<BridgeFilterRule?> BridgeRules(IReadOnlyList<BridgeFilterRule?> rules) => rules.Select(r =>
+            r is null || (r.DestinationPort is null && r.DestinationPorts is null) ? r : r with
+            { DestinationPortObject = Reference(r.DestinationPort, r.DestinationPorts), DestinationPort = null, DestinationPorts = null });
+        var nat = bundle.Nat is not { } n ? null : new NatPolicy(n.SchemaVersion, n.DnatRules, n.SnatRules.Select(r =>
+            r is null || (r.DestinationPort is null && r.DestinationPorts is null) ? r : r with
+            { DestinationPortObject = Reference(r.DestinationPort, r.DestinationPorts), DestinationPort = null, DestinationPorts = null }));
+        var bridge = bundle.Bridge is not { } b ? null : new BridgePolicy(b.SchemaVersion, b.DefaultVerdict, BridgeRules(b.Rules), b.Priority,
+            b.SubChains.Select(c => new BridgeSubChain(c.Name, BridgeRules(c.Rules))));
+        return new(bundle.SchemaVersion, bundle.Filter, nat, bridge, bundle.AuxiliaryFilter);
+    }
 }

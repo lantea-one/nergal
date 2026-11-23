@@ -416,7 +416,7 @@ public static partial class PolicyBundleJsonCodec
             {
                 if (item.ValueKind != JsonValueKind.Object ||
                     !HasOnlyProperties(item, "family", "source", "translatedAddress", "destination", "outputInterface", "description",
-                        "action", "inputInterface", "protocol", "destinationPort", "destinationPorts", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "enabled") || !TryReadEnabled(item, out var enabled) ||
+                        "action", "inputInterface", "protocol", "destinationPort", "destinationPorts", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "enabled", "destinationPortObject") || !TryReadEnabled(item, out var enabled) ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family)
                 {
                     return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]);
@@ -448,11 +448,11 @@ public static partial class PolicyBundleJsonCodec
                         : NatPostroutingAction.Snat;
                     var protocol = item.TryGetProperty("protocol", out var protoEl) ? ParseProtocol(protoEl) : FilterProtocol.Any;
                     IReadOnlyList<int>? ports = null;
-                    if (action is null || protocol is null ||
+                    if (!TryReadObjectReference(item, "destinationPortObject", out var portObject) || action is null || protocol is null ||
                         (item.TryGetProperty("destinationPorts", out var portsEl) && portsEl.ValueKind != JsonValueKind.Null && !TryParsePortList(portsEl, out ports)))
                     { return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]); }
                     snatRules.Add(new SnatRule(family, source is null ? null : new NetworkPrefix(source), target, dst, snatOif, snatDescription,
-                        action.Value, iif, protocol.Value, port, ports, ns, nd, ni, no, enabled));
+                        action.Value, iif, protocol.Value, port, ports, ns, nd, ni, no, enabled, portObject));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -490,7 +490,7 @@ public static partial class PolicyBundleJsonCodec
         foreach (var item in rulesEl.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object ||
-                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "family", "source", "destination", "protocol", "destinationPort", "destinationPorts", "jumpTarget", "return", "enabled") || !TryReadEnabled(item, out var enabled) ||
+                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "family", "source", "destination", "protocol", "destinationPort", "destinationPorts", "jumpTarget", "return", "enabled", "destinationPortObject") || !TryReadEnabled(item, out var enabled) ||
                 !item.TryGetProperty("etherType", out var etEl) || etEl.ValueKind != JsonValueKind.String ||
                 !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
             {
@@ -729,6 +729,7 @@ public static partial class PolicyBundleJsonCodec
             if (r.Destination is not null) { writer.WriteString("destination", r.Destination.Value); }
             if (r.OutputInterface is not null) { writer.WriteString("outputInterface", r.OutputInterface); }
             if (!string.IsNullOrWhiteSpace(r.Description)) { writer.WriteString("description", r.Description.Trim()); }
+            WriteObjectReference(writer, "destinationPortObject", r.DestinationPortObject);
             writer.WriteEndObject();
         }
 

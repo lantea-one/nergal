@@ -448,6 +448,32 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
             }},
         })
 
+        # Carry controller-created port snapshots through the real multi-UID Unix/TLS apply boundary.
+        _, location = admin.request('/manage/objects/save', 302, form={
+            'expectedVersion': '0', 'name': 'probe_ports', 'kind': 'port', 'description': '', 'entries': '80\n443',
+            '__RequestVerificationToken': admin.token('/manage/objects'),
+        }, expected_location_contains='/manage/objects?objectId=')
+        port_id = location.split('objectId=')[1]
+        transport = json.loads(rev3_bundle_json)
+        transport['nat']['snatRules'][0]['protocol'] = 'tcp'
+        transport['bridge']['rules'][0]['protocol'] = 'tcp'
+        transport['bridge']['subChains'][0]['rules'][0]['protocol'] = 'tcp'
+        rev3_bundle_json = json.dumps(transport)
+        for scope in ('postrouting', 'bridge', 'bridgeChain'):
+            fields = {'bundleJson': rev3_bundle_json, 'scope': scope, 'slot': 'ports', 'ruleIndex': '0',
+                      'selection': port_id + '/1', 'operation': 'attach', '__RequestVerificationToken': admin.token('/manage/policies')}
+            if scope == 'bridgeChain':
+                fields['chain'] = 'service'
+            body, _ = admin.request('/manage/policies/objects', 200, form=fields)
+            parser = DraftParser(); parser.feed(body)
+            require(parser.value is not None, 'Transport port selection lost draft intent')
+            rev3_bundle_json = parser.value
+        pinned = json.loads(rev3_bundle_json)
+        require(pinned['nat']['snatRules'][0]['destinationPortObject']['id'] == port_id and
+                pinned['bridge']['rules'][0]['destinationPortObject']['id'] == port_id and
+                pinned['bridge']['subChains'][0]['rules'][0]['destinationPortObject']['id'] == port_id,
+                'Transport port identity was not retained across all selected scopes')
+
         for idx, (bundle, note) in enumerate([(rev1_json, 'drop-v4-udp'), (rev2_json, 'drop-v6-udp'), (rev3_bundle_json, 'multitable-filter-nat-bridge')], start=1):
             csrf = admin.token('/manage/policies')
             admin.request('/manage/policies/save', 302, form={

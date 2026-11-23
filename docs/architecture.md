@@ -213,3 +213,9 @@ under ADR 0041. Compilers validate all rules before emitting the active projecti
 omitting disabled rules/meters without changing defaults. Native observation never
 claims to reconstruct dormant intent. Inline controls alter a draft only; revision
 save and confirmed apply preserve the existing privilege boundary.
+
+Pinned port-list snapshots also support postrouting NAT and bridge/regular-chain
+destination-port matching. A pure domain projection supplies existing literal
+matchers; stored intent and database usage retain identity/version/content. No
+compile-time database lookup, new host operation or receipt bypass is introduced.
+See [ADR 0042](decisions/0042-transport-port-list-references.md).

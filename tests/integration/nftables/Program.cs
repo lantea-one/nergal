@@ -10,7 +10,7 @@ var routerIdentity = new NftTableIdentity(
 
 if (mode is "auxiliary-acceptance-json" or "auxiliary-open-json" or "auxiliary-acceptance-native")
 {
-    var bundle = RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json");
+    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json"));
     if (mode.EndsWith("-json", StringComparison.Ordinal)) { Console.Write(PolicyBundleJsonCodec.EncodeBundle(bundle)); }
     else
     {
@@ -55,7 +55,7 @@ if (mode is "router-packets" or "router-packet-nat" or "router-packet-nat-disabl
     {
         "router-packets" => NftFilterCompiler.Compile(RouterPolicySamples.PacketFilter(), routerIdentity),
         "router-packet-nat-disabled-return" => NftNatCompiler.Compile(new(1, RouterPolicySamples.PacketNat().DnatRules, RouterPolicySamples.PacketNat().SnatRules.Select(r => r! with { Enabled = r.Action != NatPostroutingAction.Return })), routerIdentity),
-        "router-packet-nat" => NftNatCompiler.Compile(RouterPolicySamples.PacketNat(), routerIdentity),
+        "router-packet-nat" => NftNatCompiler.Compile(RouterPolicySamples.WithTransportReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), RouterPolicySamples.PacketNat())).Nat!, routerIdentity),
         "router-bridge" => NftBridgeCompiler.Compile(RouterPolicySamples.Bridge(), routerIdentity),
         _ => NftPolicyBundleCompiler.Compile(new(1, new(1, FilterVerdict.Accept, []), auxiliaryFilter: new(-5,
             new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop,
@@ -67,7 +67,7 @@ if (mode is "router-packets" or "router-packet-nat" or "router-packet-nat-disabl
 if (mode is "router-constructs" or "router-nat")
 {
     var result = mode == "router-constructs" ? NftFilterCompiler.Compile(RouterPolicySamples.Filter(), routerIdentity)
-        : NftNatCompiler.Compile(RouterPolicySamples.Nat(), routerIdentity);
+        : NftNatCompiler.Compile(RouterPolicySamples.WithTransportReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), RouterPolicySamples.Nat())).Nat!, routerIdentity);
     if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); }
     Console.Write(result.Candidate);
     return 0;
