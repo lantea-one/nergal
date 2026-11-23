@@ -10,7 +10,7 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 - **Forgejo Pages portal**: Added this static Docsify + Mermaid documentation site deployed automatically from `pages/` on `main`.
 - **Linux release packaging**: Added `nergal.sysusers`, `nergal.tmpfiles`, and `scripts/package-release.sh` producing verified `.deb`, `.tar.gz`, and `SHA256SUMS` artifacts.
 
-## `2026.11.21` (First Code-Complete Release)
+## `2026.11.21` (Foundation release; historical A–D milestone)
 
 - Completed Milestones A–D (Phases 1–14): native `nftables` dual-stack filter/NAT/bridge compilers, exclusive ownership & boot/namespace receipts, autonomous timed watchdog rollback, `SO_PEERCRED` Unix and pinned TLS 1.3 mTLS control protocols, local sessions + optional OIDC + RBAC, MVC/Blazor management UI, and end-to-end confirmed apply over HTTPS.
 
@@ -66,3 +66,14 @@ references and library updates cannot change saved policy bytes. Static referenc
 compile to existing matchers; native named sets remain unsupported. Disposable
 IPv4/IPv6 packet and separate-UID HTTPS/Unix/mTLS watchdog conformance covers the
 resolved reference path. See [Sets & IP lists](reusable-object-library.md).
+
+Product-wide code-complete is tracked separately in [the milestone overview](milestones.md).
+
+## Unreleased rule lifecycle
+
+[Inline enabled-state controls](rule-enabled-state.md) cover primary/raw/auxiliary
+filter, DNAT/postrouting, bridge/sub-chain rules and the configured MSS clamp.
+Disabled intent retains settings/order/references and remains fully validated.
+Native compilation omits disabled enforcement/meters; an intent diff preserves
+review of dormant changes. Rule state follows revision save and confirmed apply,
+with dual-stack packet/NAT exemption and mapped-identity watchdog acceptance.

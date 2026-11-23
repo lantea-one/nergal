@@ -47,6 +47,7 @@ a [versioned typed list library with pinned filter references](docs/reusable-obj
 and an administrator-only [database-backed native source library](docs/native-source-library.md). Independent early inet tables and
 extended bridge jump/return support confirmed apply after complete native verification. New router fields are
 currently authored through **Advanced JSON & Revisions** in a locally bundled CodeMirror editor; simple forms retain them.
+Rules also have [versioned inline enable/disable controls](docs/rule-enabled-state.md).
 See [the ordered product workflow](docs/product-workflow.md) for the remaining work.
 
 For a persistent, isolated local controller and check-only source containers, see
@@ -162,3 +163,5 @@ The native source library supports bounded file uploads, immutable database
 snapshots, source-bound reviews and exact original-file downloads. These are source
 ingestion/review workflows; semantic conversion and generated policy export remain
 unfinished. See [source library](docs/native-source-library.md) and [migration status](docs/router-constructs.md).
+
+See the [remaining product code-complete milestones](docs/milestones.md) for completion gates and dependencies.

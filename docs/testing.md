@@ -449,3 +449,21 @@ exists. `bash tools/integration/check-mapped-identities.sh` now pins controller-
 IPv4/IPv6 source objects through the actual UI before its existing Unix/mTLS agent
 packet, confirmation and independent timed rollback checks. These verify static
 resolved references, not native named sets or semantic import.
+
+### Versioned rule state
+
+`RuleEnabledStateTests` verifies every supported location, exact re-enable output,
+immutable retained settings/references/order, meter omission, validation of dormant
+rules and strict non-boolean denial across all rule types/MSS. Web authoring tests
+check every visual edit path retains state, and intent diffs expose dormant changes
+with identical native candidates. The HTTPS fixture checks inline controls, CSRF,
+role/unknown/duplicate/location denial, exact pinned intent, saved revision history
+and re-enable behavior.
+
+Run `bash tests/integration/nftables/check-rule-states.sh` for real dual-stack packet
+admission changes when accept/drop rules are disabled/restored. The router-constructs
+fixture additionally disables/restores dual-stack NAT return exemptions and checks
+actual packet source translation. Foreign tables are preserved. The mapped-identity
+runner submits disabled/enabled rules through the UI before its Unix/mTLS packet,
+confirmation and independent watchdog rollback cases. These do not establish
+semantic source import, generated export or arbitrary production equivalence.

@@ -1194,6 +1194,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             CandidateText = report.CandidateText,
             CandidateDigest = report.CandidateDigest,
             UnifiedDiff = report.UnifiedDiff,
+            IntentDiff = report.IntentDiff,
             Diagnostics = report.Diagnostics,
         };
 

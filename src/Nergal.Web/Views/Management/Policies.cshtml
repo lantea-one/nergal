@@ -1,4 +1,5 @@
 @model Nergal.Web.PolicyEditorViewModel
+@addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
 @using Nergal.Core.Policy
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -60,6 +61,8 @@
         @if (bundle?.RequiresExtendedApplySupport == true)
         { <p class="alert alert-info">This draft includes auxiliary tables or extended bridge chains. Use an updated agent with complete bundle receipts; confirmation and local rollback cover the entire bundle.</p> }
     </details>
+
+    <p class="alert alert-info">Rule checkboxes update the draft only. Disabled rules keep their settings and order and are omitted from the native candidate. Review the intent/native diffs, save a revision, then use confirmed apply. Disabling a rule can broaden or restrict traffic.</p>
 
     <!-- Top Save / Preview Bar -->
     <section class="card">
@@ -167,10 +170,10 @@
             else
             {
                 <div class="table-wrap">
-                    <table class="policy-rules-table">
+                    <table class="policy-rules-table rule-state-table">
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>#</th><th>Enabled state</th>
                                 <th>Chain</th>
                                 <th>Family</th>
                                 <th>Protocol</th>
@@ -213,6 +216,7 @@
                                 };
                                 <tr>
                                     <td>@(idx + 1)</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Filter, idx, null, r.Enabled, "Filter rule " + (idx + 1))))</td>
                                     <td><code>@r.Chain.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@r.Family.ToString().ToLowerInvariant()</code></td>
                                     <td>
@@ -240,6 +244,7 @@
                                             @r.Verdict.ToString().ToLowerInvariant()
                                         </span>
                                     </td>
+
                                     <td>
                                         @if (!string.IsNullOrEmpty(r.Description))
                                         {
@@ -403,6 +408,7 @@
             }
         </section>
 
+        @await Html.PartialAsync("_AdvancedRuleStates", Model)
         @await Html.PartialAsync("_PolicyObjects", Model)
 
         @if (Model.CanMutate)
@@ -571,7 +577,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>#</th><th>Enabled state</th>
                                 <th>Family</th>
                                 <th>Protocol</th>
                                 <th>Original Dest</th>
@@ -589,12 +595,14 @@
                                 if (d is null) { continue; }
                                 <tr>
                                     <td>@(i + 1)</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Dnat, i, null, d.Enabled, "Dnat rule " + (i + 1))))</td>
                                     <td><code>@d.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.OriginalDestination.Value</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
                                     <td><code>@(d.OriginalPort?.ToString() ?? "any") → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
                                     <td><code>@(d.InputInterface ?? "any")</code> · <code>@(d.Source?.Value ?? "any")</code></td>
+
                                     <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
                                     @if (Model.CanMutate)
                                     {
@@ -741,7 +749,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>#</th><th>Enabled state</th>
                                 <th>Family</th>
                                 <th>Source CIDR</th>
                                 <th>Action / translated source</th>
@@ -758,11 +766,13 @@
                                 if (s is null) { continue; }
                                 <tr>
                                     <td>@(i + 1)</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Postrouting, i, null, s.Enabled, "Postrouting rule " + (i + 1))))</td>
                                     <td><code>@s.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@(s.NegateSource ? "!= " : "")@(s.Source?.Value ?? "any")</code></td>
                                     <td><code>@(s.Action == NatPostroutingAction.Snat ? s.TranslatedAddress : s.Action.ToString().ToLowerInvariant())</code></td>
                                     <td><code>@(s.Destination?.Value ?? "any")</code></td>
                                     <td><code>@(s.OutputInterface ?? "any")</code></td>
+
                                     <td>@(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)</td>
                                     @if (Model.CanMutate)
                                     {
@@ -915,7 +925,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>#</th><th>Enabled state</th>
                                 <th>EtherType</th>
                                 <th>Input Port</th>
                                 <th>Output Port</th>
@@ -931,6 +941,7 @@
                                 if (br is null) { continue; }
                                 <tr>
                                     <td>@(i + 1)</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Bridge, i, null, br.Enabled, "Bridge rule " + (i + 1))))</td>
                                     <td><code>@br.EtherType.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@(br.InputInterface ?? "any")</code></td>
                                     <td><code>@(br.OutputInterface ?? "any")</code></td>
@@ -939,6 +950,7 @@
                                             @br.Verdict.ToString().ToLowerInvariant()
                                         </span>
                                     </td>
+
                                     <td>@(string.IsNullOrEmpty(br.Description) ? "—" : br.Description)</td>
                                     @if (Model.CanMutate)
                                     {
@@ -1067,6 +1079,13 @@
             </section>
         }
 
+        @if (!string.IsNullOrEmpty(Model.IntentDiff))
+        {
+            <section class="card"><h2>Intent diff — enabled state and retained settings</h2>
+                <p class="hint">This includes dormant rules and pinned references, which cannot be reconstructed from kernel observations. A state change is still a draft until saved and applied.</p>
+                <pre class="diff-view">@Model.IntentDiff</pre>
+            </section>
+        }
         @if (!string.IsNullOrEmpty(Model.UnifiedDiff))
         {
             <section class="card">

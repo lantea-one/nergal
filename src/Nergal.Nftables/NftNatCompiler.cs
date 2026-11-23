@@ -184,7 +184,7 @@ public static class NftNatCompiler
         text.Append("add chain inet " + TableName + " prerouting { type nat hook prerouting priority dstnat; policy accept; }\n");
         text.Append("add chain inet " + TableName + " postrouting { type nat hook postrouting priority srcnat; policy accept; }\n");
 
-        foreach (var (rule, addr) in normalizedDnat)
+        foreach (var (rule, addr) in normalizedDnat.Where(r => r.Rule.Enabled))
         {
             var familyToken = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
             text.Append("add rule inet " + TableName + " prerouting meta nfproto ")
@@ -232,7 +232,7 @@ public static class NftNatCompiler
             text.Append('\n');
         }
 
-        foreach (var (rule, addr) in normalizedSnat)
+        foreach (var (rule, addr) in normalizedSnat.Where(r => r.Rule.Enabled))
         {
             var familyToken = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
             text.Append("add rule inet " + TableName + " postrouting meta nfproto ")

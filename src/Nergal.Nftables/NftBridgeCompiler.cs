@@ -90,6 +90,7 @@ public static class NftBridgeCompiler
         foreach (var draft in policy.Rules)
         {
             var rule = draft!;
+            if (!rule.Enabled) { continue; }
             text.Append("add rule bridge " + TableName + " forward ");
             if (rule.InputInterface is not null)
             {

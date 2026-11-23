@@ -49,11 +49,12 @@ static FirewallPolicyBundle CompleteBundle() => new(1, RouterPolicySamples.Filte
         [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Drop, Destination: new("192.0.2.1/32"),
             DestinationPorts: [8080, 8443], InputInterface: "lo", NegateInputInterface: true)])));
 
-if (mode is "router-packets" or "router-packet-nat" or "router-bridge" or "router-auxiliary")
+if (mode is "router-packets" or "router-packet-nat" or "router-packet-nat-disabled-return" or "router-bridge" or "router-auxiliary")
 {
     var result = mode switch
     {
         "router-packets" => NftFilterCompiler.Compile(RouterPolicySamples.PacketFilter(), routerIdentity),
+        "router-packet-nat-disabled-return" => NftNatCompiler.Compile(new(1, RouterPolicySamples.PacketNat().DnatRules, RouterPolicySamples.PacketNat().SnatRules.Select(r => r! with { Enabled = r.Action != NatPostroutingAction.Return })), routerIdentity),
         "router-packet-nat" => NftNatCompiler.Compile(RouterPolicySamples.PacketNat(), routerIdentity),
         "router-bridge" => NftBridgeCompiler.Compile(RouterPolicySamples.Bridge(), routerIdentity),
         _ => NftPolicyBundleCompiler.Compile(new(1, new(1, FilterVerdict.Accept, []), auxiliaryFilter: new(-5,
@@ -178,6 +179,22 @@ if (mode == "nat-filter")
 
     Console.Write(result.Candidate);
     return 0;
+}
+
+if (mode is "state-accept-on" or "state-accept-off" or "state-drop-on" or "state-drop-off")
+{
+    FilterPolicy policy;
+    if (mode.StartsWith("state-accept", StringComparison.Ordinal)) { policy = BuildPinnedPolicy(); }
+    else
+    {
+        policy = new(2, FilterVerdict.Accept, FilterVerdict.Drop, FilterVerdict.Accept,
+        [new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop), new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Drop)]);
+    }
+    if (mode.EndsWith("off", StringComparison.Ordinal))
+    { policy = new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict, policy.Rules.Select(r => r! with { Enabled = false })); }
+    var result = NftFilterCompiler.Compile(policy, routerIdentity);
+    if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); }
+    Console.Write(result.Candidate); return 0;
 }
 
 if (mode is "sets" or "pinned")

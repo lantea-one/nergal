@@ -68,7 +68,7 @@ public static partial class PolicyBundleJsonCodec
         var rules = new List<RpFilterRule?>();
         foreach (var item in rulesEl.EnumerateArray())
         {
-            if (!HasOnlyProperties(item, "verdict", "family", "protocol", "source", "negateSource", "inputInterface", "negateInputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description") ||
+            if (!HasOnlyProperties(item, "verdict", "family", "protocol", "source", "negateSource", "inputInterface", "negateInputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description", "enabled") || !TryReadEnabled(item, out var enabled) ||
                 !item.TryGetProperty("verdict", out var vEl) || ParseVerdict(vEl) is not { } v ||
                 !TryReadBool(item, "negateSource", out var ns) || !TryReadBool(item, "negateInputInterface", out var ni) ||
                 !TryReadBool(item, "matchFibUnreachable", out var fib) || !TryReadOptionalString(item, "inputInterface", out var iif) ||
@@ -79,7 +79,7 @@ public static partial class PolicyBundleJsonCodec
             { family = ParseFamily(fEl); if (family is null) { return false; } }
             var protocol = item.TryGetProperty("protocol", out var pEl) ? ParseProtocol(pEl) : FilterProtocol.Any;
             if (protocol is null) { return false; }
-            try { rules.Add(new(v, family, protocol.Value, source is null ? null : new NetworkPrefix(source), ns, iif, ni, sport, dport, fib, description)); }
+            try { rules.Add(new(v, family, protocol.Value, source is null ? null : new NetworkPrefix(source), ns, iif, ni, sport, dport, fib, description, enabled)); }
             catch (ArgumentException) { return false; }
         }
         policy = new(verdict, rules);
@@ -104,6 +104,7 @@ public static partial class PolicyBundleJsonCodec
 
     private static void WriteRouterPolicy(Utf8JsonWriter w, FilterPolicy policy)
     {
+        if (!policy.ForwardTcpMssClampEnabled) { w.WriteBoolean("forwardTcpMssClampEnabled", false); }
         if (policy.ForwardTcpMssClamp is { } mss) { w.WriteNumber("forwardTcpMssClamp", mss); }
         if (policy.RpFilter is not { } rp) { return; }
         w.WriteStartObject("rpFilter");
@@ -113,6 +114,7 @@ public static partial class PolicyBundleJsonCodec
         {
             var r = draft ?? throw new ArgumentException("Null rpfilter rules cannot be serialized.");
             w.WriteStartObject();
+            if (!r.Enabled) { w.WriteBoolean("enabled", false); }
             w.WriteString("verdict", VerdictName(r.Verdict));
             if (r.Family is { } family) { w.WriteString("family", family == IpFamily.IPv4 ? "ipv4" : "ipv6"); }
             if (r.Protocol != FilterProtocol.Any) { w.WriteString("protocol", ProtocolName(r.Protocol)); }

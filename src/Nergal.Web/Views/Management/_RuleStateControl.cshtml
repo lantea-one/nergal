@@ -1,0 +1,18 @@
+@model Nergal.Web.RuleStateControlModel
+@if (Model.Editor.CanMutate)
+{
+    <form method="post" action="@Url.Content("~/manage/policies/rules/state")" class="rule-state-control">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" />
+        <input type="hidden" name="summary" value="@Model.Editor.Summary" />
+        <input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" />
+        <input type="hidden" name="scope" value="@Model.State.Scope" />
+        <input type="hidden" name="ruleIndex" value="@Model.State.Index" />
+        @if (Model.State.Chain is not null) { <input type="hidden" name="chain" value="@Model.State.Chain" /> }
+        <label class="checkbox-row"><input type="checkbox" name="enabled" value="true" checked="@Model.State.Enabled" aria-label="@Model.State.Label enabled" /> Enabled</label>
+        <span class="hint">@(Model.State.Enabled ? "Included in candidate" : "Disabled · omitted from candidate")</span>
+        <button type="submit" class="btn btn-secondary btn-sm">Update draft state</button>
+    </form>
+}
+else
+{ <span class="badge badge-neutral">@(Model.State.Enabled ? "Enabled" : "Disabled · omitted")</span> }

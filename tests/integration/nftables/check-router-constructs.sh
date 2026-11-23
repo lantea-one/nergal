@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../../.."
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 runner=(dotnet tests/integration/nftables/bin/Release/net10.0/Nergal.Nftables.Fixture.dll)
-for mode in router-packets router-packet-nat router-constructs router-nat router-bridge router-auxiliary; do
+for mode in router-packets router-packet-nat router-packet-nat-disabled-return router-constructs router-nat router-bridge router-auxiliary; do
     "${runner[@]}" "$mode" > "$fixture/$mode.nft"
 done
 unshare --user --map-root-user --net python3 tests/integration/nftables/router_constructs_check.py \

@@ -10,6 +10,7 @@ internal static class RouterFilterValidation
 {
     internal static void Validate(FilterPolicy policy, List<PolicyDiagnostic> errors)
     {
+        if (!policy.ForwardTcpMssClampEnabled && policy.ForwardTcpMssClamp is null) { errors.Add(new("mss.stateWithoutClamp", "forwardTcpMssClampEnabled")); }
         if (policy.ForwardTcpMssClamp is { } mss)
         {
             if (policy.SchemaVersion != 2) { errors.Add(new("mss.requiresSchema2", "forwardTcpMssClamp")); }

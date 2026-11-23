@@ -68,6 +68,7 @@ internal static class RouterBridgeCompiler
             foreach (var draft in rules)
             {
                 var r = draft!;
+                if (!r.Enabled) { continue; }
                 text.Append("add rule bridge " + NftBridgeCompiler.TableName + ' ').Append(name).Append(' ');
                 if (r.InputInterface is not null) { text.Append("iifname \"").Append(r.InputInterface).Append("\" "); }
                 if (r.OutputInterface is not null) { text.Append("oifname \"").Append(r.OutputInterface).Append("\" "); }

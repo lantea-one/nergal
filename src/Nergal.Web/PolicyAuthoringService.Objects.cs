@@ -25,7 +25,7 @@ internal static class PolicyObjectAuthoring
             changed = slot switch { "source" => changed with { NegateSource = false }, "destination" => changed with { NegateDestination = false }, _ => changed };
         }
         var rules = bundle.Filter.Rules.ToArray(); rules[index] = changed;
-        var filter = new FilterPolicy(2, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict, bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp);
+        var filter = new FilterPolicy(2, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict, bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
         var next = new FirewallPolicyBundle(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(next);
         diagnostics = compiled.Diagnostics;
