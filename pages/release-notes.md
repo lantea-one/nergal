@@ -77,3 +77,13 @@ Disabled intent retains settings/order/references and remains fully validated.
 Native compilation omits disabled enforcement/meters; an intent diff preserves
 review of dormant changes. Rule state follows revision save and confirmed apply,
 with dual-stack packet/NAT exemption and mapped-identity watchdog acceptance.
+
+## Guided router forms (M2 in progress)
+
+Primary filter forms now expose explicit ICMP reject, MAC restrictions/negation,
+IP/interface negation and source/destination meter keys. Complete postrouting
+forms support SNAT, masquerade and return, optional ingress/egress, protocol/ports
+and negation. Edits preserve dormant state and pinned references; full-width
+panels keep hints reachable outside scrollable tables. All edits remain unsaved
+until revision review/save, then confirmed apply. See [guided forms](guided-router-forms.md)
+for remaining scope and synthetic light/dark/mobile screenshots.

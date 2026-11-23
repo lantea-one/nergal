@@ -1,0 +1,107 @@
+using Nergal.Core.Policy;
+using Nergal.Nftables;
+
+namespace Nergal.Web;
+
+/// <summary>Explicit matcher-only edit; existing addresses, ports, list pins and lifecycle state are retained.</summary>
+internal sealed record VisualFilterConditionsInput(string? SourceMacs, bool NegateSourceMac, bool NegateSource,
+    bool NegateDestination, bool NegateInputInterface, bool NegateOutputInterface, string? RateLimitKey);
+
+/// <summary>Complete postrouting form. Empty optional matchers mean any; translation is allowed only for explicit SNAT.</summary>
+internal sealed record VisualPostroutingInput(string? Family, string? Action, string? Source, string? Destination,
+    string? TranslatedAddress, string? InputInterface, string? OutputInterface, string? Protocol, string? DestinationPorts,
+    bool NegateSource, bool NegateDestination, bool NegateInputInterface, bool NegateOutputInterface, string? Description);
+
+internal static partial class PolicyAuthoringService
+{
+    internal static bool TryUpdateFilterConditions(string json, int index, VisualFilterConditionsInput input,
+        out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        updated = null;
+        if (!TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
+        if (index < 0 || index >= bundle.Filter.Rules.Count || bundle.Filter.Rules[index] is not { } previous)
+        { diagnostics = [new("rule.indexOutOfRange", "filter.rules")]; return false; }
+        var macs = new List<MacAddress>();
+        foreach (var token in (input.SourceMacs ?? "").Split([',', ' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!MacAddress.TryParse(token, out var mac)) { diagnostics = [new("mac.invalid", "rule.sourceMacs")]; return false; }
+            macs.Add(mac!);
+        }
+        if (input.RateLimitKey is not ("sourceAddress" or "destinationAddress"))
+        { diagnostics = [new("rateLimit.keyUnknown", "rule.rateLimit.keyKind")]; return false; }
+        var key = input.RateLimitKey == "destinationAddress" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress;
+        if (previous.RateLimit is null && key != RateLimitKeyKind.SourceAddress)
+        { diagnostics = [new("rateLimit.required", "rule.rateLimit")]; return false; }
+        var rules = bundle.Filter.Rules.ToArray();
+        rules[index] = previous with
+        {
+            SourceMac = macs.Count == 1 ? macs[0] : null,
+            SourceMacs = macs.Count > 1 ? macs : null,
+            NegateSourceMac = input.NegateSourceMac,
+            NegateSource = input.NegateSource,
+            NegateDestination = input.NegateDestination,
+            NegateInputInterface = input.NegateInputInterface,
+            NegateOutputInterface = input.NegateOutputInterface,
+            RateLimit = previous.RateLimit is null ? null : previous.RateLimit with { KeyKind = key },
+        };
+        var filter = new FilterPolicy(2, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
+            bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+        return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
+    }
+
+    internal static bool TrySetPostrouting(string json, int? index, VisualPostroutingInput input,
+        out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        updated = null;
+        if (!TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
+        var rules = bundle.Nat?.SnatRules.ToList() ?? [];
+        if (index is { } i && (i < 0 || i >= rules.Count || rules[i] is null))
+        { diagnostics = [new("rule.indexOutOfRange", "nat.snatRules")]; return false; }
+        if (!TryParseFamily(input.Family, out var family))
+        { diagnostics = [new("family.unknown", "nat.snatRules")]; return false; }
+        var action = input.Action switch
+        {
+            "snat" => NatPostroutingAction.Snat,
+            "masquerade" => NatPostroutingAction.Masquerade,
+            "return" => NatPostroutingAction.Return,
+            _ => (NatPostroutingAction)(-1),
+        };
+        var protocol = input.Protocol switch
+        {
+            "any" => FilterProtocol.Any,
+            "tcp" => FilterProtocol.Tcp,
+            "udp" => FilterProtocol.Udp,
+            _ => (FilterProtocol)(-1),
+        };
+        var errors = new List<PolicyDiagnostic>();
+        if (!Enum.IsDefined(action)) { errors.Add(new("nat.actionUnknown", "rule.action")); }
+        if (!Enum.IsDefined(protocol)) { errors.Add(new("protocol.unknown", "rule.protocol")); }
+        NetworkPrefix? source = null, destination = null;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(input.Source)) { source = new(input.Source.Trim()); }
+            if (!string.IsNullOrWhiteSpace(input.Destination)) { destination = new(input.Destination.Trim()); }
+        }
+        catch (ArgumentException) { errors.Add(new("network.invalid", "nat.snatRules")); }
+        TryParsePortField(input.DestinationPorts, "rule.destinationPorts", out var port, out var ports, errors);
+        if (!TryNormalizeDescription(input.Description, out var description)) { errors.Add(new("rule.descriptionInvalid", "rule.description")); }
+        if (errors.Count != 0) { diagnostics = errors; return false; }
+        var rule = new SnatRule(family, source, EmptyToNull(input.TranslatedAddress), destination,
+            EmptyToNull(input.OutputInterface), description, action, EmptyToNull(input.InputInterface), protocol, port, ports,
+            input.NegateSource, input.NegateDestination, input.NegateInputInterface, input.NegateOutputInterface,
+            index is not { } position || rules[position]!.Enabled);
+        if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
+        var nat = new NatPolicy(NatPolicy.CurrentSchemaVersion, bundle.Nat?.DnatRules ?? [], rules);
+        return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
+    }
+
+    private static string? EmptyToNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static bool TryCompileVisualBundle(FirewallPolicyBundle bundle, out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics)
+    {
+        var compiled = NftPolicyBundleCompiler.Compile(bundle);
+        diagnostics = compiled.Diagnostics;
+        updated = compiled.IsSuccess ? EncodeBundle(bundle) : null;
+        return compiled.IsSuccess;
+    }
+}

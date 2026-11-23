@@ -830,3 +830,17 @@ input[type="file"]::file-selector-button {
 .rule-state-table td:nth-child(8) { min-width: 10rem; }
 
 .rule-state-control { min-width: 10rem; display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }
+
+/* Structured rule forms stay outside scrollable tables so hints and controls remain reachable. */
+.router-form-details { margin-block: .8rem; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.router-form-details > summary { padding: .85rem; cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
+.router-form-body { padding: 0 .85rem .85rem; min-width: 0; }
+.router-form-body .hint { white-space: normal; }
+.router-form-body .form-grid > * { min-width: 0; }
+
+.router-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.router-form .checkbox-row { align-self: start; }
+@media (max-width: 640px) {
+  .router-form .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .router-form .span-2 { grid-column: auto; }
+}

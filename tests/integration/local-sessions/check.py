@@ -157,6 +157,8 @@ def exercise(temp):
                            "NativeSources__Directory": str(sources)}
     with host(temp, tls, controller_settings) as browser:
         browser.request("/manage/policies/rules/state", 401, {"bundleJson": "{}"})
+        browser.request("/manage/policies/rules/conditions", 401, {"bundleJson": "{}"})
+        browser.request("/manage/policies/nat/postrouting", 401, {"bundleJson": "{}"})
         browser.request("/manage/policies/objects", 401, {"bundleJson": "{}"})
         browser.request("/manage/objects", 401)
         browser.request("/manage/objects/save", 401, {"name": "denied"})
@@ -240,6 +242,8 @@ def exercise(temp):
         check_policy_objects(browser, ctrl_state)
         from rule_states import check_rule_states
         check_rule_states(browser, ctrl_state)
+        from router_forms import check_router_forms
+        check_router_forms(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -321,6 +325,8 @@ def exercise(temp):
         assert 'action="/manage/objects/save"' not in auditor_browser.request(object_path, 200)
         auditor_browser.request("/manage/objects/save", 403, {"name": "denied", "__RequestVerificationToken": auditor_browser.token("/session")})
         auditor_browser.request("/manage/policies/rules/state", 403, {"bundleJson": "{}", "__RequestVerificationToken": auditor_browser.token("/session")})
+        for path in ("/manage/policies/rules/conditions", "/manage/policies/nat/postrouting"):
+            auditor_browser.request(path, 403, {"bundleJson": "{}", "__RequestVerificationToken": auditor_browser.token("/session")})
         auditor_browser.request("/manage/policies/objects", 403, {"bundleJson": "{}", "__RequestVerificationToken": auditor_browser.token("/session")})
         auditor_browser.request("/manage/sources", 403)
         auditor_browser.request(report_path, 403)
