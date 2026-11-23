@@ -39,8 +39,43 @@ duplicate fields and malformed checkbox values, and compile the entire policy,
 including dormant rules, before returning an updated draft. Auditors remain
 read-only. No previously saved revision changes during editing.
 
-M2 is still in progress: guided raw/MSS, DNAT negation, auxiliary and extended
-bridge/sub-chain authoring remain. The advanced JSON editor remains available for
+## Raw prerouting and MSS
+
+In **Policies → Filter**, **Raw prerouting & reverse-path filtering** creates the
+optional `rpfilter` chain with `hook prerouting priority raw`. Its default is
+explicitly selectable as accept or drop. Accept in this early hook continues to
+later hooks; it does not override ordinary filter drops. A drop default can
+interrupt traffic before ordinary filter rules run.
+
+Expand **Add raw prerouting rule** to choose either/both IP families, protocol,
+source CIDR and ingress restriction/negation, source/destination ports, verdict,
+and the failed reverse-path lookup matcher (`fib saddr . iif oif == 0`). A source
+CIDR requires a single matching IP family; ports require TCP or UDP. An intentional
+DHCP exception can use UDP source port 68. Scope exceptions carefully and move
+them ahead of a FIB drop using the raw rule's up/down controls. Raw edits and moves
+preserve enabled state. Remove rules individually before removing an empty raw
+chain; removing a drop-default chain can broaden access.
+
+**Forward TCP MSS clamping** configures an explicit size in the supported
+536–1460-byte range, for forwarded SYN packets in both IP families. It does not
+accept traffic. Resizing preserves a configured clamp's enabled flag. Use the
+separate Enabled control to disable while retaining the size, or **Remove MSS
+configuration from draft** to remove it explicitly. Adding a new clamp enables it.
+
+## DNAT conditions and NAT order
+
+In **Policies → NAT**, **DNAT negation conditions** changes source, original
+destination and input-interface negation without replacing translation settings,
+ports, order or enabled state. Source and interface negation require an existing
+matcher. Existing basic edits preserve these flags and still reject removal of a
+matcher while its negation remains set.
+
+DNAT and postrouting table up/down buttons move a whole rule by one position,
+including its disabled flag and every matcher. Place return exemptions before
+translation rules as required by the intended policy. Reordering remains a draft
+change and must pass the same revision review and confirmed-apply workflow.
+
+M2 is still in progress: guided auxiliary and extended bridge/sub-chain authoring remain. The advanced JSON editor remains available for
 supported constructs without guided forms. This is not general native
 `nftables.conf` conversion; semantic import/export remains M4.
 
@@ -54,3 +89,7 @@ They show the UI, not evidence of packet enforcement.
 ![Guided postrouting in light mode](assets/screenshots/router-postrouting-light.jpg)
 
 ![Guided postrouting on mobile](assets/screenshots/router-postrouting-mobile.jpg)
+
+![Guided raw prerouting rules](assets/screenshots/raw-prerouting-dark.jpg)
+
+![Guided MSS configuration](assets/screenshots/mss-clamp-light.jpg)

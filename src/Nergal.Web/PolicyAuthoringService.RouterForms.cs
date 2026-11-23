@@ -44,7 +44,7 @@ internal static partial class PolicyAuthoringService
             NegateOutputInterface = input.NegateOutputInterface,
             RateLimit = previous.RateLimit is null ? null : previous.RateLimit with { KeyKind = key },
         };
-        var filter = new FilterPolicy(2, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
+        var filter = new FilterPolicy(bundle.Filter.SchemaVersion == 1 ? 2 : bundle.Filter.SchemaVersion, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
     }
