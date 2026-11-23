@@ -2,19 +2,26 @@
 (function () {
   "use strict";
 
-  // 1. Theme toggle persisted in localStorage, falling back to admin-configured default theme.
+  // 1. Describe the action in both themes, including initial/system changes, as Pages does.
   const root = document.documentElement;
+  const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+  const isDark = () => root.getAttribute("data-theme") === "dark" ||
+    (!root.getAttribute("data-theme") && systemTheme.matches);
+  const updateThemeButtons = () => {
+    document.querySelectorAll("[data-theme-toggle]").forEach(toggle => {
+      toggle.textContent = isDark() ? "Light mode" : "Dark mode";
+      toggle.setAttribute("aria-label", "Switch to " + (isDark() ? "light" : "dark") + " theme");
+    });
+  };
   document.addEventListener("click", function (e) {
-    const toggle = e.target.closest("[data-theme-toggle]");
-    if (!toggle) return;
-    const isDark =
-      root.getAttribute("data-theme") === "dark" ||
-      (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    const next = isDark ? "light" : "dark";
+    if (!e.target.closest("[data-theme-toggle]")) return;
+    const next = isDark() ? "light" : "dark";
     root.setAttribute("data-theme", next);
     try { localStorage.setItem("nergal-theme", next); } catch { /* Storage can be disabled. */ }
-    toggle.textContent = next === "dark" ? "Light mode" : "Dark mode";
+    updateThemeButtons();
   });
+  systemTheme.addEventListener("change", updateThemeButtons);
+  updateThemeButtons();
 
   // 2. Register Host form: toggle Unix vs TLS fields based on transportKind.
   const transportSelect = document.querySelector("[data-transport-select]");

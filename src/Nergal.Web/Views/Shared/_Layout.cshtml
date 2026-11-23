@@ -1,3 +1,5 @@
+@addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     var branding = ViewData["Branding"] as Nergal.Core.Controller.BrandingSettings ?? Nergal.Core.Controller.SystemSettingsSnapshot.Default.Branding;
     var appName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "nergal" : branding.ApplicationName;
@@ -13,8 +15,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title · @appName</title>
-    <script src="@Url.Content("~/js/theme.js")"></script>
-    <link rel="stylesheet" href="@Url.Content("~/css/nergal.css")" />
+    <script src="@Url.Content("~/js/theme.js")" asp-append-version="true"></script>
+    <link rel="stylesheet" href="@Url.Content("~/css/nergal.css")" asp-append-version="true" />
 </head>
 <body>
     <header class="topbar">
@@ -54,8 +56,8 @@
     @RenderBody()
 
     <footer class="time-zone-note muted">Times shown in your browser time zone: <span data-local-time-zone>UTC (local time unavailable)</span>.</footer>
-    <script src="@Url.Content("~/js/local-time.js")" defer></script>
-    <script src="@Url.Content("~/js/nergal.js")" defer></script>
+    <script src="@Url.Content("~/js/local-time.js")" asp-append-version="true" defer></script>
+    <script src="@Url.Content("~/js/nergal.js")" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -92,6 +92,8 @@ def host(temp, tls, settings=None, *, executable="dotnet", dll=DLL, drop=None):
         "HOME": str(temp / "profile"),
         "XDG_DATA_HOME": str(temp / "profile"),
         "ASPNETCORE_URLS": "http://127.0.0.1:0;https://127.0.0.1:0",
+        # This fixture runs build output, not a publish directory: expose its actual source assets to MVC's file version provider.
+        "ASPNETCORE_WEBROOT": str(ROOT / "src/Nergal.Web/wwwroot"),
         "Kestrel__Certificates__Default__Path": str(temp / "tls.crt"),
         "Kestrel__Certificates__Default__KeyPath": str(temp / "tls.key"),
         "LocalSessions__Enabled": "true", "LocalSessions__AccountDirectory": str(temp / "accounts"),

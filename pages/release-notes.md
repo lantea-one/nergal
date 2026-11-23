@@ -14,6 +14,15 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 
 - Completed Milestones A–D (Phases 1–14): native `nftables` dual-stack filter/NAT/bridge compilers, exclusive ownership & boot/namespace receipts, autonomous timed watchdog rollback, `SO_PEERCRED` Unix and pinned TLS 1.3 mTLS control protocols, local sessions + optional OIDC + RBAC, MVC/Blazor management UI, and end-to-end confirmed apply over HTTPS.
 
+## Unreleased theme accessibility
+
+The application now initializes the theme button to **Light mode** or **Dark mode**
+with an explicit accessible action name, including after navigation. System-theme
+changes update the label while following the system preference. This matches the
+Pages control behavior and still works with browser storage disabled. Local
+application script/style URLs now include content versions, including the policy
+editor bundle, so updated assets receive new cache keys after an upgrade.
+
 ## Unreleased list comparison
 
 The list library now compares any two stored versions, with added/removed entries,
