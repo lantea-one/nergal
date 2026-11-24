@@ -158,6 +158,8 @@ def exercise(temp):
     controller_settings = {"ControllerState__Enabled": "true", "ControllerState__Directory": str(ctrl_state),
                            "NativeSources__Directory": str(sources)}
     with host(temp, tls, controller_settings) as browser:
+        for kind in ("native", "intent"):
+            browser.request("/manage/policies/export/" + kind + "?revision=1", 401)
         browser.request("/manage/policies/rules/state", 401, {"bundleJson": "{}"})
         for path in ("/manage/policies/raw/rule", "/manage/policies/raw/default", "/manage/policies/mss", "/manage/policies/nat/dnat/conditions", "/manage/policies/nat/move", "/manage/policies/auxiliary/defaults", "/manage/policies/auxiliary/rule", "/manage/policies/bridge/settings", "/manage/policies/bridge/chain", "/manage/policies/bridge/rule"):
             browser.request(path, 401, {"bundleJson": "{}"})
@@ -266,6 +268,8 @@ def exercise(temp):
         check_dnat_ports(browser, ctrl_state)
         from dnat_addresses import check_dnat_addresses
         check_dnat_addresses(browser, ctrl_state)
+        from policy_exports import check_policy_exports
+        check_policy_exports(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -328,6 +332,9 @@ def exercise(temp):
         })
         assert "Register agent host" not in auditor_browser.request("/manage", 200)
         read_only = auditor_browser.request("/manage/policies", 200)
+        assert "Export a saved revision" not in read_only
+        for kind in ("native", "intent"):
+            auditor_browser.request("/manage/policies/export/" + kind + "?revision=1", 403)
         assert "Save policy revision" not in read_only and "Update bridge rule draft" not in read_only
         assert "Bridge matchers and action" in read_only and "Regular chain: mail" in read_only and "<fieldset disabled" in read_only
         preview_html = auditor_browser.request("/manage/policies/preview", 200, {

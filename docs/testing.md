@@ -1,5 +1,13 @@
 # Testing standards
 
+Saved revision export regressions cover exact native digests, every table scope,
+native/literal list projections, dormant intent, deterministic bytes, invalid or
+mismatched revision denial and Administrator authorization. The real HTTPS fixture
+checks attachment names/content types, no-store responses, invalid identifiers,
+anonymous/Auditor denial and unchanged database/audit contents. These download
+checks do not establish native source conversion equivalence. See
+[policy exports](policy-exports.md) and ADR 0049.
+
 Tests are production code: keep them standardized, reusable, documented,
 deterministic and efficient. Explain why a safety property matters. Use synthetic
 RFC documentation addresses and avoid real credentials or exported host state.
@@ -407,7 +415,8 @@ operator staging directory, source escaping,
 CSRF, invalid UTF-8, maximum valid file size, request/file size rejection and
 anonymous/Auditor boundaries. The admin fixture checks explicit idempotent schema
 upgrade and unknown-version denial. These checks add no native firewall operation;
-conversion equivalence and generated export remain unverified/unimplemented.
+conversion equivalence remains unverified. Saved revision exports have separate
+unit/HTTPS checks described above; original-source ingestion is not conversion.
 
 ### Local timestamp presentation
 

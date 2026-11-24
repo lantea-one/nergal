@@ -130,4 +130,5 @@ omission/false retains the earlier literal projection. Identity, version, typed
 contents and digest stay in immutable intent. Matchers remain exclusive with their
 literals, and every dormant rule is validated. Definition handles, complete contents
 and rule lookup edges enter versioned receipts; older fingerprints remain unchanged.
-Source inspection is not semantic import, and generated revision export remains M4.
+Source inspection is not semantic import. [Saved revision exports](policy-exports.md)
+provide exact native candidates and separate complete typed intent.

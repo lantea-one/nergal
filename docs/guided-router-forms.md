@@ -126,12 +126,11 @@ rules. Remove incoming jumps and chain rules before deleting a regular chain;
 remove forward rules and regular chains before removing an empty bridge table.
 Removing the table also removes its default policy and can broaden access.
 
-Structured forms now cover the supported policy constructs. M3 still tracks
-additional reusable-object scope/native-object semantics; M4 tracks semantic
-native import/export. Broader navigation, performance and UX refinement remain M5.
+Structured forms now cover the supported policy constructs. M3 is complete for
+the declared static-list/reference scopes. M4 tracks semantic native import and its
+round-trip gates; [saved revision exports](policy-exports.md) are available. Broader navigation, performance and UX refinement remain M5.
 All enforcement still requires immutable revision review and confirmed apply. The advanced JSON editor remains available for
-supported constructs without guided forms. This is not general native
-`nftables.conf` conversion; semantic import/export remains M4.
+advanced review. General native `nftables.conf` conversion remains M4.
 
 ## Verified appearance
 

@@ -1,5 +1,10 @@
 # Architecture
 
+Selected saved revisions support deterministic native and complete intent
+[exports](policy-exports.md), verified against the persisted candidate digest.
+These read-only derived artifacts carry no ownership/apply authority or runtime
+observations. See [ADR 0049](decisions/0049-saved-revision-exports.md).
+
 The first milestone is an independently implemented, nftables-first management
 application, not a new packet-filtering engine. The kernel continues to enforce
 policy when the web console or identity provider is unavailable.

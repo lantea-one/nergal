@@ -2,6 +2,10 @@
 
 ## Unreleased — router authoring and settings review
 
+- Add Administrator-only exports of selected saved revisions: exact create-only
+  native candidates and separate canonical complete intent. Verify every saved
+  candidate digest before either download; retain dormant rules and pinned
+  snapshots in intent, without exporting host ownership or runtime state (ADR 0049).
 - Add typed raw rpfilter/source-port rules, forward MSS clamping, source-MAC
   pinning/negation, ICMPx rejection, destination meters, negated matchers, and
   postrouting masquerade/return with extended matchers.
@@ -23,7 +27,7 @@
   declared reference scopes. Preserve legacy artifacts, bind definition handles,
   complete contents and lookup edges, verify omitted IPv6 echo elements through
   generation-bound listings and exact protected artifacts, and reject oversized
-  native evidence before mutation (ADR 0048). Semantic import/export remains M4.
+  native evidence before mutation (ADR 0048). Semantic import remains M4.
 
 
 ## [2026.11.21.1] - 2026-11-21

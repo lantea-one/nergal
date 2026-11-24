@@ -59,6 +59,8 @@ internal static class ControllerStateHost
         app.MapControllerRoute("manage-policies", "manage/policies", new { controller = "Management", action = "Policies" });
         app.MapControllerRoute("manage-policies-preview", "manage/policies/preview", new { controller = "Management", action = "PreviewPolicy" });
         app.MapControllerRoute("manage-policies-save", "manage/policies/save", new { controller = "Management", action = "SavePolicy" });
+        app.MapControllerRoute("manage-policies-export-native", "manage/policies/export/native", new { controller = "Management", action = "ExportNativePolicy" });
+        app.MapControllerRoute("manage-policies-export-intent", "manage/policies/export/intent", new { controller = "Management", action = "ExportPolicyIntent" });
         app.MapControllerRoute("manage-rule-state", "manage/policies/rules/state", new { controller = "Management", action = "SetRuleState" });
         app.MapControllerRoute("manage-nat-move", "manage/policies/nat/move", new { controller = "Management", action = "MoveNatRule" });
         app.MapControllerRoute("manage-auxiliary-defaults", "manage/policies/auxiliary/defaults", new { controller = "Management", action = "SetAuxiliaryDefaults" });

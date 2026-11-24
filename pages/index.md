@@ -18,7 +18,8 @@ into immutable database history and downloads exact originals. The [typed sets/I
 library](reusable-object-library.md) supports creation, edits, search and immutable
 history, with pinned references across the declared rule scopes and saved revision
 impact visibility. [Native static sets](native-static-lists.md) now retain named
-lookups and complete receipts. Semantic conversion and generated policy export remain planned. Shared object changes require visible reference/impact review and
+lookups and complete receipts. Semantic conversion remains planned; [saved revision exports](policy-exports.md)
+provide separate native and complete intent downloads. Shared object changes require visible reference/impact review and
 immutable saved revisions. File import must report unsupported semantics explicitly;
 source ingestion and lexical inspection are not semantic policy conversion. Generated export identifies the
 selected managed revision and scope. Per-rule inline enable/disable controls and

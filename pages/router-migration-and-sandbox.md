@@ -173,11 +173,10 @@ a saved policy or a firewall. [Native static list references](native-static-list
 
 The product roadmap also includes `nftables.conf` file import and export through
 the UI. Import retains the original source, reports semantic mapping and gaps, and
-separates review from revision creation and confirmed apply. Export will download
-the selected managed revision with its resolved objects and explicit scope; original
-source download is a separate operation. Round-trip and isolated packet acceptance
-must precede equivalence claims. Semantic conversion
-and generated policy export remain planned.
+separates review from revision creation and confirmed apply. [Export](policy-exports.md)
+downloads a selected saved revision as an exact native candidate or separate
+complete typed intent; original-source download is a separate operation. Round-trip and isolated packet acceptance
+must precede equivalence claims. Semantic conversion remains planned.
 Database source ingestion and exact original downloads are implemented; lexical
 reviews do not establish policy equivalence.
 

@@ -74,7 +74,9 @@ low IPv6 echo omissions, real dual-stack/routed/bridge packets, dynamic-meter
 coexistence, lookup/content/handle drift denial and Unix/mTLS/web confirmation and
 independent rollback. See [native static lists](native-static-lists.md).
 
-M4 remains open for semantic source conversion and generated revision export.
+M4 remains open for semantic source conversion. Deterministic native and complete
+intent exports from explicitly selected saved revisions are implemented, with
+saved artifact verification and Administrator-only downloads. See [policy exports](policy-exports.md).
 Maps, concatenations, arbitrary native object types, standalone unused declarations
 and native dynamic-list options are not claimed by M3. Their treatment must be
 explicit in the supported import grammar and gap reports.
