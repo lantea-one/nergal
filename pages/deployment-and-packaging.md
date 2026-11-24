@@ -46,8 +46,8 @@ This local development work is not a published release.
 
 ## Shared organization CI runners
 
-Build verification and Pages publication use the shared organization CI pool,
-currently pinned to `asgard-ci`. `heimdall-ci` is also an approved shared runner.
+Build verification uses shared `asgard-ci`; Pages publication uses shared
+`heimdall-ci`, which has the established network path to the publication service.
 Labels must end in `-ci`, and registration must be organization-owned without a
 repository binding. A suffix alone does not prove shared scope. Private
 infrastructure runners and generic label fallbacks are prohibited.

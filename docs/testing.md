@@ -359,7 +359,7 @@ and early inet tables together; packet-specific acceptance runs separately below
 ### Documentation appearance
 
 CI and Pages use shared organization runners with dedicated `-ci` labels,
-currently pinned to verified `asgard-ci`; `heimdall-ci` is also approved. Private
+with verification pinned to `asgard-ci` and Pages to `heimdall-ci`. Private
 infrastructure runners and generic fallback labels are prohibited. `vidar-ci` is
 limited to small, short jobs, never the full build/integration/package workflow.
 Run `python3 -B scripts/test-ci-runner-policy.py` to verify literal reviewed labels
