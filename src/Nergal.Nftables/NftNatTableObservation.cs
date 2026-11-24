@@ -36,7 +36,7 @@ public sealed class NftNatTableObservation
         ulong postroutingChainHandle,
         NatPolicy policy,
         List<(ulong Handle, DnatRule Rule)> dnatRules,
-        List<(ulong Handle, SnatRule Rule)> snatRules)
+        List<(ulong Handle, SnatRule Rule)> snatRules, NftStaticSetSnapshot? named = null)
     {
         Identity = identity;
         TableHandle = tableHandle;
@@ -87,6 +87,11 @@ public sealed class NftNatTableObservation
                 new FilterPolicy(1, FilterVerdict.Drop, []), policy), indented: false));
         }
         StateDigest = CandidateDigest.FromText(projection.ToString());
+        if (named is { IsEmpty: false })
+        {
+            Policy = new(policy.SchemaVersion, dnatRules.Select(r => named.Restore(r.Handle, r.Rule)), snatRules.Select(r => named.Restore(r.Handle, r.Rule)));
+            StateDigest = named.Bind(StateDigest);
+        }
     }
 
     /// <summary>Gets the canonical owner/resource marker parsed from the table comment.</summary>
@@ -137,7 +142,9 @@ public sealed class NftNatTableObservation
                 return Deny("observation.shape");
             }
 
-            var items = root.GetProperty("nftables").EnumerateArray().ToArray();
+            var named = NftStaticSetSnapshot.Expand(json, "inet", NftNatCompiler.TableName, isEcho);
+            using var expanded = named.IsEmpty ? null : JsonDocument.Parse(named.Json);
+            var items = (expanded?.RootElement ?? root).GetProperty("nftables").EnumerateArray().ToArray();
             JsonElement table, preChain, postChain;
             int ruleStartIndex;
             if (isEcho)
@@ -285,9 +292,9 @@ public sealed class NftNatTableObservation
                 dnatRules.Select(entry => entry.Rule),
                 snatRules.Select(entry => entry.Rule));
             if (!NftNatCompiler.Compile(policy).IsSuccess) { return Deny("observation.rule"); }
-            return new(new(identity, tableHandle, preHandle, postHandle, policy, dnatRules, snatRules), null);
+            return new(new(identity, tableHandle, preHandle, postHandle, policy, dnatRules, snatRules, named), null);
         }
-        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
+        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException or ArgumentException or KeyNotFoundException)
         {
             return Deny("observation.invalidJson");
         }

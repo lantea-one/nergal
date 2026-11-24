@@ -16,13 +16,15 @@ public sealed class PolicyObjectBindingTests
         [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept, SourceObject: reference)]));
 
     /// <summary>Updating a shared object cannot change a saved policy's bytes, digest or reference version.</summary>
-    [Fact]
-    public void Revision_PinsOldContentsAndReportsHistoricalUsage()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Revision_PinsOldContentsAndReportsHistoricalUsage(bool nativeSet)
     {
         WithStore(store =>
         {
             var item = store.SaveReusableObject(null, 0, new("clients", ReusableObjectKind.Ipv4, "", ["192.0.2.10"]), Actor, NergalRoles.Administrator);
-            var bundle = Bundle(new(item.Id, item.Version, item.Content));
+            var bundle = Bundle(new(item.Id, item.Version, item.Content, nativeSet));
             var json = PolicyBundleJsonCodec.EncodeBundle(bundle); var digest = NftPolicyBundleCompiler.Compile(bundle).Digest!.Value;
             var revision = store.SavePolicyRevision(json, digest, Actor, NergalRoles.Administrator);
             store.SaveReusableObject(item.Id, 1, new("clients", ReusableObjectKind.Ipv4, "Changed", ["203.0.113.10"]), Actor, NergalRoles.Administrator);
@@ -52,11 +54,13 @@ public sealed class PolicyObjectBindingTests
     }
 
     /// <summary>Draft attachment preserves MAC/negation and explicit removal does not leave a hidden matcher.</summary>
-    [Fact]
-    public void Authoring_AttachMoveAndRemoveKeepReferenceIntentExplicit()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Authoring_AttachMoveAndRemoveKeepReferenceIntentExplicit(bool nativeSet)
     {
         var refContent = new ReusableObjectContent("clients", ReusableObjectKind.Ipv4, "", ["192.0.2.10"]);
-        var reference = new PolicyObjectReference(Guid.NewGuid(), 1, refContent);
+        var reference = new PolicyObjectReference(Guid.NewGuid(), 1, refContent, nativeSet);
         var literal = new FirewallPolicyBundle(1, new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept,
             [new(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept, Source: new("198.51.100.0/24"), SourceMac: new("02:00:00:00:00:10"), NegateSource: true)]));
         Assert.True(PolicyObjectAuthoring.TrySet(PolicyBundleJsonCodec.EncodeBundle(literal), 0, "source", reference, out var attached, out _));

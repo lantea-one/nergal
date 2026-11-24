@@ -12,6 +12,7 @@ native configurations can be imported losslessly.
 | Destination-keyed meters | `rateLimit.keyKind: destinationAddress` | IPv4 and IPv6 packet tests share state across sources and separate destinations |
 | Negated interface and IP matchers | Explicit `negate*` booleans | Compiler/codec validation, native reconstruction; dangling negation is rejected |
 | Postrouting masquerade and return, ingress/protocol/port restrictions | `snatRules[].action` plus optional matchers | Real dual-stack translated source and unmodified return-exemption source |
+| Shared static IPv4/IPv6/port list references | Generated constant named sets, exact immutable versions in every declared reference scope | Complete contents/handles/lookups, IPv6 echo omissions, real packets and receipt-bound apply/rollback |
 | Independent early inet filtering and extended bridge jump/return | `auxiliaryFilter` and extended `bridge`, including priority -5 | Real dual-stack bridge/early inet packets, complete receipts, confirmed apply and local rollback |
 
 All rows have typed compiler and complete native observation support. Auxiliary

@@ -55,7 +55,7 @@ public sealed class NftAuxiliaryTableObservation
                 if (inner.ValueKind != JsonValueKind.Object || inner.EnumerateObject().Count() != 1) { return null; }
                 var property = inner.EnumerateObject().Single();
                 var value = property.Value;
-                if (property.Name is not ("table" or "chain" or "rule" or "set") || value.ValueKind != JsonValueKind.Object ||
+                if (property.Name is not ("table" or "chain" or "rule" or "set" or "element") || value.ValueKind != JsonValueKind.Object ||
                     value.GetProperty("family").GetString() != "inet") { return null; }
                 var node = JsonNode.Parse(item.GetRawText())!;
                 var target = echo ? node[Properties(item, "create") ? "create" : "add"]![property.Name]! : node[property.Name]!;

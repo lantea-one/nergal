@@ -63,3 +63,11 @@ in addition to the ordinary fixture tools. Same-handle static-set mutations chan
 the generation; real dynamic meter packets do not. Capability denial cannot return
 a generation. This is groundwork for complete named-set observation, not support
 for named objects in Nergal policy. See [ADR 0047](../../../docs/decisions/0047-generation-consistent-native-observations.md).
+
+## Native static objects
+
+Run `bash tests/integration/nftables/check-native-static-sets.sh` for complete
+four-table native reconstruction, named routed NAT/filter packets, populated meter
+coexistence and low IPv6 echo-omission evidence. The fixture uses only synthetic
+addresses and disposable namespaces. Named lifecycle/drift and mapped-identity
+acceptance are documented in [testing](../../../docs/testing.md#native-static-list-references).

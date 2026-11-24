@@ -29,11 +29,12 @@ public static class NftBridgeCompiler
     private static CompilationResult CompileCore(BridgePolicy policy, NftTableIdentity? identity)
     {
         ArgumentNullException.ThrowIfNull(policy);
+        var intent = policy;
         var referenceErrors = new List<PolicyObjectDiagnostic>();
         policy = TransportObjectResolver.Resolve(policy, referenceErrors);
         if (referenceErrors.Count != 0) { return new(null, referenceErrors.Select(d => new PolicyDiagnostic(d.Code, d.Path)).ToArray()); }
 
-        if (policy.HasExtendedRules) { return RouterBridgeCompiler.Compile(policy, identity); }
+        if (policy.HasExtendedRules) { return RouterBridgeCompiler.Compile(policy, identity, intent); }
         var errors = new List<PolicyDiagnostic>();
         if (policy.SchemaVersion != BridgePolicy.CurrentSchemaVersion)
         {

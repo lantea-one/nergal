@@ -650,3 +650,38 @@ collections, query failure and cancellation. Existing agent and mapped-identity
 apply/confirm/watchdog suites exercise the guard on complete receipt collection.
 See [ADR 0047](decisions/0047-generation-consistent-native-observations.md) for the
 remaining observation-to-transaction race and conservative foreign-write denial.
+
+## Native static list references
+
+After a Release build, run:
+
+```sh
+bash tests/integration/nftables/check-native-static-sets.sh
+bash tests/integration/enrollment/check-auxiliary-apply.sh --named-sets
+bash tools/integration/check-mapped-identities.sh
+```
+
+The native fixture verifies complete echo/list identity and artifact round-trips in
+all four owned tables, actual routed dual-stack DNAT source/destination/port members
+and independent misses, complete-set negation, pinned filter admission, coexistence
+with populated dynamic meters and low IPv6 singleton/prefix member/miss packets.
+Static collection joins separate listings with exact definition/handle agreement;
+terse static contents alone are refused. Five named agent cases cover native bridge
+packets, confirm, explicit/independent watchdog rollback, restart and preservation
+of lookup/content/handle drift. The mapped-UID HTTPS fixture uses actual UI native
+attachments before Unix/mTLS apply and confirmation/rollback.
+
+Core tests check shared definitions, singleton/dormant behavior, strict projection
+flags, snapshot conflicts, unknown/partial/orphan objects, lookup/handle fingerprints,
+bounded collection and early observation-budget denial. Creation-completion tests
+remove emitted elements and require matching original definitions/handles, complete
+listings and an exact protected artifact. Conflicting echo values, listing handles,
+missing definitions/listings and changed artifacts fail. Real-SQLite tests also
+exercise native candidate/baseline mismatch and new-boot reconciliation. Unit tests
+establish these data/provenance contracts without kernel access; packet evidence
+comes from the disposable native fixtures above.
+
+HTTPS checks retain native projection through ordinary edits, history, immutable
+saves and inline disable/re-enable, including omission/restoration of unused native
+objects. Existing literal-projection tests remain for older revisions. See
+[the native static-set guide](native-static-lists.md) and ADR 0048 for support limits.

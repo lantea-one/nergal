@@ -18,7 +18,13 @@
 - Require stable kernel transaction generations across complete agent observations;
   reject mixed snapshots and unavailable/unknown netlink replies (ADR 0047). Verify
   same-handle set-element drift, stable meter traffic and capability denial in
-  disposable namespaces. Native named-set support remains outstanding.
+  disposable namespaces. Native static references now follow ADR 0048.
+- Add shared constant native IPv4/IPv6/port sets for new UI attachments across all
+  declared reference scopes. Preserve legacy artifacts, bind definition handles,
+  complete contents and lookup edges, verify omitted IPv6 echo elements through
+  generation-bound listings and exact protected artifacts, and reject oversized
+  native evidence before mutation (ADR 0048). Semantic import/export remains M4.
+
 
 ## [2026.11.21.1] - 2026-11-21
 

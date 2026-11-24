@@ -1,299 +1,97 @@
 # Typed sets and IP lists library
 
-Open **Sets & IP lists** (`/manage/objects`) to create and maintain typed lists.
-Library management and pinned primary/auxiliary inet filter-rule references are implemented;
-native named-set compilation is not implemented. Saving a list changes database history only.
-It does not create a policy revision, apply a firewall or change saved policies.
+Open **Sets & IP lists** (`/manage/objects`) to maintain reusable IPv4, IPv6 and
+transport-port lists. The database stores stable identities and immutable versions.
+New policy attachments use [shared native static sets](native-static-lists.md).
+Earlier saved references retain their original literal projection. Saving a list
+changes library history only; it does not update policies or apply a firewall.
 
-## Everyday workflow
+## Create and maintain a list
 
-1. Choose **New list**. Enter a unique lowercase name such as `trusted_clients`
-   and select IPv4, IPv6 or transport ports. Names/types remain fixed after creation.
-2. Add an optional description and 1–64 entries, one per line. Forms include
-   accessible contextual hints; JSON or native syntax is not required.
-3. Save the list. Numeric addresses become canonical `/32` or `/128` prefixes;
-   CIDRs must have zero host bits. IPv6 spelling and port numbers are normalized.
-   Entries are sorted, with overlapping prefixes retained without merging.
-4. Search by name/description and select a list to view or edit. Every save appends
-   an immutable version and attributed audit event in the same transaction.
-5. Expand **Version history** to inspect an older snapshot. Historical views are
-   read-only. They do not restore contents or change the latest version.
+1. Choose **New list**, enter a unique lowercase name such as `trusted_clients`,
+   and select IPv4, IPv6 or transport ports. Names and types stay fixed.
+2. Add an optional plain-text description and 1–64 entries, one per line. Numeric
+   addresses become canonical `/32` or `/128` prefixes. CIDRs require zero host
+   bits. Ports are individual integers from 1 to 65535; TCP/UDP belongs to the rule.
+3. Save. The controller appends an immutable version and attributed audit event in
+   one transaction. Entries are copied, normalized and sorted without merging.
+4. Search by name/description. **Version history** shows read-only old contents;
+   **Compare versions** reports added, removed and unchanged entries plus metadata
+   changes. Entry differences do not infer network coverage or packet outcomes.
+5. To use a changed version, explicitly select it in a policy draft, review the
+   candidate/diff, save a revision and use confirmed apply.
 
-IPv4/IPv6 lists cannot mix address families. Hostnames, scoped/mapped addresses,
-address/port ranges, duplicate canonical entries, dynamic flags and timeouts are
-rejected. Transport ports are individual integers from 1 to 65535; TCP versus UDP
-belongs to the referencing policy rule, not the list. Descriptions are plain text
-up to 500 characters. Blank lines and surrounding entry whitespace in forms are
-ignored; unsupported tokens are never passed through to nftables.
+Forms provide contextual hints and retain invalid input. IPv4 and IPv6 cannot mix.
+Hostnames, scopes, mapped addresses, host bits, duplicate canonical entries,
+address/port ranges, arbitrary native syntax and dynamic options are rejected.
+Descriptions allow up to 500 characters. Lists may store overlapping prefixes,
+but a multi-prefix rule reference must satisfy the compiler's disjoint/non-adjacent
+contract. Compilation rejects incompatible lists without merging or dropping entries.
 
-Administrators can create/edit; Auditors can inspect/search/history only. Anonymous
-requests are denied. All writes require CSRF protection. Invalid values are retained
-with actionable guidance. A stale edit returns HTTP 409 with the user's input,
-without overwriting the newer version. Compare with the current version before
-editing again. There is no force-save action. Names/types are immutable and no
-object deletion/rename workflow is provided in this first slice.
+Administrators can create/edit; Auditors can inspect/search/history. Writes require
+CSRF protection and the exact expected version. A stale edit returns HTTP 409 with
+retained input and leaves the newer contents untouched. Compare with the current
+version before editing again. There is no force-save, rename or deletion workflow.
 
-## Persistence and support boundary
+## Attach an immutable version
+
+Open **Policies → Reusable list references**, choose the table/chain and rule,
+select the matcher and a displayed list version, then choose **Attach selected
+version to draft**. This replaces only that matcher's literals or previous pin.
+The selector can browse one list's bounded history while preserving the draft;
+it never selects a newer version implicitly.
+
+| Scope | Supported matchers |
+| --- | --- |
+| Primary and auxiliary inet rules | Source addresses, destination addresses, destination ports |
+| DNAT | Source addresses, original destination addresses, original destination ports |
+| Postrouting NAT | Source addresses, destination addresses, destination ports |
+| Bridge forwarding and regular chains | Source addresses, destination addresses, destination ports |
+
+Snapshots retain identity, version, name, type, description, canonical entries,
+content digest and projection choice in policy JSON. Preview/save verifies each
+against immutable database history. Agent compilation uses those embedded snapshots
+without fetching "latest" or consulting the controller database. Editing a library
+object cannot change a saved policy's bytes, digest or enforcement.
+
+Ordinary editing, ordering and inline enable/disable retain every pin. Pinned
+literal fields are read-only and are not submitted as conflicting values. Disabled
+rules retain contents/order but emit no runtime rule or unused static definition;
+invalid dormant references still fail validation. **Remove reference from draft**
+clears that matcher and its negation, which may broaden access. Required DNAT
+destinations and explicit-SNAT sources cannot be removed without replacement.
+All changes remain drafts until revision save and confirmed apply.
+
+The detail page lists every saved revision reference, including older object
+versions and all supported matcher paths. This shows saved usage, not proof of
+active deployment. Reference-only metadata changes remain visible even where
+legacy native text is identical. For native projection, a different version has a
+different generated set identity even if its entries did not change.
+
+## Persistence and runtime boundaries
 
 The controller database is canonical. Object identity, type, contents, digest,
-version, actor and UTC time persist across restarts. Browser times are local with
-an explicit timezone indication. Immutable SQL protections cover identities and
-history, and selected contents are verified against canonical serialization and
-SHA-256. Lists are limited to 128 objects and 64 immutable versions per object.
-Capacity failures leave no partial object or audit event.
+version, actor and UTC time survive restart. Browser times show the viewer's local
+timezone explicitly. Immutable SQL protections cover identities/history and exact
+canonical contents are checked with SHA-256. Limits are 128 objects, 64 versions
+per object and 64 entries per version; capacity errors leave no partial audit/state.
+Native projection also has the stricter complete-observation budget documented in
+[the native static-set guide](native-static-lists.md#bounds-and-support-limits).
 
-New stores use controller schema 3. Existing schema-1/2 controllers must stop their
-writer, take a verified SQLite backup, then run the explicit offline
-`nergal-admin controller upgrade ABSOLUTE_CONTROLLER_DIRECTORY` before restarting.
-The upgrade preserves source snapshots, policy revisions, hosts, settings and audit;
-unknown versions, colliding tables and forged protections are rejected. The web
-process does not migrate. See [source-library upgrade procedure](native-source-library.md#existing-controller-databases).
-Additional SQL backends and their migrations remain deferred.
+New stores use controller schema 3. Existing schema-1/2 stores need a verified
+SQLite backup and explicit offline `nergal-admin controller upgrade` before restart;
+the web process never migrates. See the source-library upgrade procedure. Native
+projection adds no SQL migration. Additional SQL engines remain M6 work.
 
-Pinned references retain identity/version and resolved contents in saved policy
-JSON. Library detail shows saved revision references without inferring live host
-usage. A list edit never silently changes a saved policy. Native named-set
-observation and packet/rollback conformance remain a separate capability.
-See [ADR 0039](decisions/0039-versioned-typed-object-library.md).
+Native named objects now have complete definition/content/handle/lookup receipts,
+generation-consistent collection and confirmed apply/rollback. Dynamic meters remain
+separate; maps, concatenations, named MAC sets, standalone unused declarations and
+native dynamic-list options are unsupported. Semantic `nftables.conf` conversion and
+generated revision export remain M4. Original-source download is already available.
 
-## Pinned inet filter-rule references
+## Screenshots
 
-Policies can attach the displayed list version to a primary or auxiliary inet
-filter rule's source address, destination address or destination ports. Open
-**Policies → Reusable list references**, use the explicitly labeled primary or
-auxiliary form, select a rule, matcher and version, then
-choose **Attach selected version to draft**. This explicitly replaces that
-matcher's literals or previous reference. Check the rule summary and native diff,
-save a policy revision, then use the existing confirmed-apply workflow.
+The existing guided-reference screenshots show the retained UI for earlier saved
+revisions. Current native candidate screenshots are in the native static-set guide.
 
-Canonical policy JSON retains the object's identity, version, name, type, contents
-and content digest. Preview/save verifies the snapshot against immutable database
-history. Compiling or applying a saved revision never looks up "latest". An older
-pinned version remains valid after a library edit; reselect the newer version
-explicitly in a draft to change policy. Normal rule editing and reordering retain
-references. Literal fields for pinned matchers are read-only in the rule form.
-**Remove reference from draft** clears that matcher and its negation, which may
-broaden the rule; inspect the change before saving/applying. It does not retain a
-hidden copy of the old values.
-
-The library detail page shows every matching saved valid policy revision and
-matcher path, including older list versions. This is reference/impact visibility,
-not an assertion of active use on a host. A list edit does not update those
-revisions automatically. Reference-only metadata changes are visible in the
-reference summary even when native text is unchanged.
-
-This is controller reuse, not native named nftables sets. Compilation projects the
-embedded snapshot onto the existing scalar/anonymous-set matcher contract. No
-identity/version is discarded from saved intent. Singletons become scalar matches;
-multiple addresses must satisfy the existing disjoint/non-adjacent prefix bounds.
-Overlapping or adjacent entries may be stored in the library but are rejected when
-attached to a rule if native observation cannot round-trip them. Family/protocol
-mismatches, conflicting literals, unknown flags and missing/forged references fail
-explicitly. Native named sets/maps, dynamic lists,
-DNAT translation-port lists and semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
-the primary policy, table priority, MAC restrictions, negation, rule order and
-enabled state. Omitting scope in existing API submissions continues to select
-primary filtering; query parameters cannot select an auxiliary target. Unknown,
-empty or duplicate submitted scopes are rejected. Use updated controller and agent builds; older codecs reject the new
-fields rather than silently accepting weaker policy.
-
-No database schema change is needed beyond schema 3. See
-[ADR 0040](decisions/0040-pinned-controller-policy-references.md).
-
-Auxiliary selectors reuse controller schema 3 and the existing embedded snapshot
-contract; no SQL migration or compiler semantics change is required. Saved usage
-paths include `auxiliaryFilter.filter.rules[n]` and old versions remain immutable.
-
-![Pinned auxiliary list selection](../pages/assets/screenshots/auxiliary-references-dark.jpg)
-
-## Pinned postrouting and bridge port lists
-
-Postrouting NAT and bridge destination-port matchers can pin a **Port** list. In
-**Policies → NAT**, use **Reusable postrouting lists** below the postrouting
-editors. In **Policies → Bridge**, use the port-list selector inside the forward
-or regular-chain panel. Select a rule and displayed version, then **Attach port
-list to draft**. Port lists require TCP or UDP; bridge IP-prefix restrictions
-require an IP family, while transport matching can cover both families.
-
-Attachment replaces literal destination ports or a prior port reference. It retains
-the action/translation, MAC/IP restrictions, jump/return, priority, enabled state
-and order. Ordinary editors show the pinned name/version/entries and make literal
-ports read-only. Change the reference explicitly in its selector. **Remove port
-reference from draft** clears only that port restriction, which may broaden matching.
-Review the intent/native diffs, save an immutable revision, then use confirmed apply.
-
-Canonical intent retains `destinationPortObject` on postrouting or bridge rules,
-including regular chains. Singleton snapshots project to scalar port matching;
-larger lists project to the existing anonymous port-set matcher. Saved usage paths
-include `nat.snatRules[n]`, `bridge.rules[n]` and `bridge.subChains[n].rules[n]`.
-Database verification covers every scope, including disabled rules. Later library
-edits cannot change saved snapshots. Native observations describe projected kernel
-matchers; exact artifacts and complete ownership receipts still gate apply and
-rollback. Use updated controller and agent builds; older strict codecs reject the
-new fields. No controller database schema upgrade is needed.
-
-This does not implement native named sets and does not
-expand rules or approximate unsupported translation-list semantics. See
-[ADR 0042](decisions/0042-transport-port-list-references.md).
-
-![Pinned bridge port list](../pages/assets/screenshots/transport-references-dark.jpg)
-
-## Compare versions before changing a pin
-
-Open a list and use **Compare list versions**. Choose **From version** and
-**To version**, then **Compare versions**. Either direction and same-version
-comparisons are supported. The view shows added, removed and unchanged canonical
-entries, description changes, each version's local save time and counts of saved
-references to the compared versions. Revision links above the comparison identify
-the matcher locations. Counts include historical revisions and dormant rules;
-they are not active host or traffic measurements.
-
-CIDRs are compared as exact stored entries, without calculating address coverage
-or deciding whether access broadens. For example, replacing a `/64` with a `/48`
-is one removed entry and one added entry. The surrounding policy matchers,
-negation, rule order and verdict determine enforcement.
-
-Each pinned reference in the policy summary includes **Compare current library
-version with this pin**, opening a separate tab so an unsaved draft remains open.
-Compare the immutable pinned version against the current stored version before
-explicitly updating the reference in a draft. This read-only workflow is also
-available to Auditors. It creates no list version, policy revision, audit event or
-firewall apply; existing pins remain unchanged.
-
-![List version comparison](../pages/assets/screenshots/list-version-comparison-dark.jpg)
-
-## Select a historical list version in a draft
-
-In any supported reference form, choose a rule, matcher and list, then **Browse
-selected list history**. This loads that list's immutable versions into the same
-selector while retaining the table/chain, rule index, matcher, selected version,
-revision comparison baseline and draft summary. It does not alter any rule or pin.
-Only one list history is expanded at a time; other lists retain their current
-versions, so the UI does not load every historical list snapshot.
-
-Choose the desired displayed version and **Attach** it explicitly. The controller
-validates its exact stored snapshot, matcher type and the complete policy. A newer
-library edit cannot substitute its contents for the submitted old version. Ordinary
-draft actions may reset selector choices to current versions; existing pins remain
-unchanged. Browse history again to select another historical version.
-
-Browsing requires the same Administrator/CSRF-protected draft form as attachment.
-Auditors can inspect immutable history and comparisons in the library. Missing
-versions, invalid targets, unknown/duplicate fields and invalid drafts are denied.
-No version, revision, audit event or firewall operation occurs during browsing.
-Older snapshots do not bypass compiler restrictions; inspect the draft and native
-diffs, save a revision, then use confirmed apply.
-
-![Historical version selection](../pages/assets/screenshots/list-history-selector-dark.jpg)
-
-## Pinned postrouting source and destination lists
-
-In **Policies → NAT → Reusable postrouting lists**, choose a postrouting rule,
-**Source address** or **Destination address**, then a same-family IPv4/IPv6 list
-version. Browse history if an older snapshot is needed; attachment pins exactly
-that displayed version. Attachment replaces the selected matcher's literals or
-previous reference, retaining action/translation, ports, interfaces, negation,
-order and enabled state. Preview/save verifies immutable database history.
-
-The full postrouting editor also accepts literal CIDR lists. One entry is a scalar;
-2–64 entries form an anonymous set. Every entry must match the rule family and
-sets must be distinct, disjoint and non-adjacent so native observation preserves
-the exact restrictions. Overlapping/adjacent lists can be stored but cannot be
-attached when this native projection cannot round-trip them. No rules are expanded.
-
-Pinned address fields show name/version and contents read-only. Ordinary guided
-and legacy edits cannot silently replace them. Removing an address reference
-clears that matcher and its negation; explicit SNAT still requires a source
-restriction, so removing its sole source is denied. Masquerade/return may have an
-unrestricted source. Review both intent and native diffs, save a revision, then
-use confirmed apply. Saved usage paths include `nat.snatRules[n].sourceObject`
-and `.destinationObject`; later library edits never change saved versions.
-
-Canonical JSON retains `sourceObject`/`destinationObject`, or literal
-`sourcePrefixes`/`destinationPrefixes`, exclusively with the corresponding scalar.
-Native observations retain complete sets and use a v3 address-set fingerprint;
-scalar/port-only receipt fingerprints stay unchanged. Older controllers/agents
-reject the new JSON fields and cannot validate new receipts. Upgrade matching
-controller/agent builds together. No SQL schema upgrade is required; the native
-observation byte limit is unchanged. Native named sets/maps/dynamic objects,
-Native named objects remain unsupported.
-
-![Pinned postrouting addresses](../pages/assets/screenshots/postrouting-addresses-dark.jpg)
-
-## Bridge address sets and pinned lists
-
-Bridge forwarding and regular-chain rules support literal source/destination CIDR
-sets and immutable IPv4/IPv6 library versions. Choose an explicit matching IP
-family before attaching an address list. One entry compiles as a scalar; multiple
-entries must meet the existing 2–64 distinct, same-family, disjoint/non-adjacent
-prefix contract. Addresses remain conjunctive with MAC, EtherType, bridge-master,
-interface and transport restrictions. A jump still calls its declared local chain;
-a return still resumes its caller. Rule order and disabled state are retained.
-
-Use each chain's reusable-list selector to attach, browse history or explicitly
-remove a source/destination version. Guided edits keep pinned fields read-only;
-removal clears only that selected IP restriction and may broaden access. Review
-the complete intent/native diff and save a new revision before confirmed apply.
-Saved usage includes both `bridge.rules[n]` and `bridge.subChains[n].rules[n]`
-address paths. Later library edits cannot change saved snapshots.
-
-Native observation binds every address-set entry in a v3 bridge fingerprint,
-including handles and the complete chain graph. Scalar/port-only fingerprints
-remain unchanged. Deploy matching controller/agent builds; older codecs reject
-these fields. No SQL migration is required. Bridge IP negation, native named
-sets/maps/dynamic objects remain unsupported.
-
-![Pinned bridge addresses](../pages/assets/screenshots/bridge-addresses-dark.jpg)
-
-## DNAT original-port lists
-
-DNAT rules accept one original destination port, 2–64 distinct comma-separated
-ports, or an immutable Port-list version. Matching happens before translation;
-all original ports map to the same explicit translated address and optional port.
-This does not map a list of original ports onto a list of translated ports.
-TCP or UDP is required. Scalar, literal-set and reference forms are exclusive;
-invalid disabled rules are rejected too.
-
-Use **DNAT list references** to attach, browse history or remove a
-version. Guided edits show pinned entries read-only and retain source/destination
-restrictions, negation, ingress, translated target, order and disabled state.
-Removal clears only the original-port restriction and can broaden matching. Review
-the intent/native diff, save an immutable revision, then use confirmed apply.
-Saved usage includes `nat.dnatRules[n].originalPortObject`; later library edits
-cannot change a saved revision.
-
-Strict JSON retains `originalPorts` or `originalPortObject`. Native echo/list
-reconstruction preserves every original port; DNAT port sets use the complete v3
-NAT fingerprint, while preceding scalar fingerprints remain unchanged. Upgrade
-matching controller and agent builds together; no SQL migration is needed.
-Native named objects and translated-port lists remain unsupported.
-
-![Pinned original DNAT ports](../pages/assets/screenshots/dnat-port-references-dark.jpg)
-
-## DNAT address sets and pinned lists
-
-DNAT source and original-destination matchers accept one CIDR, 2–64 distinct,
-same-family, disjoint/non-adjacent CIDRs, or an immutable address-list version.
-A singleton list projects to a scalar. Every match retains the single explicit
-translated address and optional port; address lists describe matching before
-translation and never become a list of translated targets. Negation applies to
-the entire address matcher. Invalid disabled rules are rejected too.
-
-Choose **DNAT list references**, select source/original destination/ports, then
-attach a version or browse its immutable history. Ordinary edits keep pinned
-fields read-only and preserve negation, original-port versions, translation,
-ingress, order and enabled state. Removing a source pin clears only its matcher
-and source negation. Original-destination matching is required, so removing its
-sole pin is denied; replace that restriction explicitly or remove the rule.
-Review intent/native diffs and save a new revision before confirmed apply.
-
-Canonical JSON uses `sourcePrefixes`/`destinationPrefixes` or
-`sourceObject`/`destinationObject`, exclusive with the corresponding scalar
-`source`/`originalDestination`. Usage paths include both DNAT address slots, and
-later library versions cannot mutate saved policy contents. Complete native
-observations retain every prefix and negation in v3 NAT fingerprints. Existing
-scalar/port-only fingerprints stay unchanged. Upgrade matching controller/agent
-builds; no SQL migration is required. Native named objects and translated-target
-lists remain unsupported. Source ingestion is still separate from semantic import.
-
-![Pinned original DNAT addresses](../pages/assets/screenshots/dnat-address-references-dark.jpg)
+See [ADR 0039](decisions/0039-versioned-typed-object-library.md), [ADR 0040](decisions/0040-pinned-controller-policy-references.md) and [ADR 0048](decisions/0048-native-static-list-references.md) for the original library, legacy projection and native evidence contracts.

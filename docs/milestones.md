@@ -23,7 +23,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | --- | --- | --- | --- |
 | M1 | Rule lifecycle | Complete | Inline enable/disable for every supported rule, retained contents/order/references, intent review and confirmed apply, packet/rollback acceptance. |
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
-| M3 | Reusable-object coverage | In progress | Finish declared reference scopes and native object semantics, explicit scope/type validation, immutable versions and impact visibility; no claims of unsupported dynamic sets/maps. |
+| M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Open | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Open | Navigation/setup workflows, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
@@ -35,9 +35,9 @@ The initial private deployment is an acceptance environment, not the product sco
 M1 is merged into main (PR #81). M2 now has guided forms for the supported
 policy constructs, verified by unit/HTTPS/native packet checks and browser QA.
 M2–M4 share policy/reference contracts; neither
-forms nor lexical inspection establish semantic import equivalence. Native named
-sets/maps, dynamic flags/timeouts remain separate
-from the existing static controller-reference projection. Declare the supported v1
+forms nor lexical inspection establish semantic import equivalence. Native static
+list references are implemented; maps, dynamic flags/timeouts and arbitrary source
+object conversion remain outside that projection. Declare the supported v1
 grammar and reject everything outside it, rather than silently approximating rules.
 
 M5 charts depend on measured observations and their provenance, not configuration
@@ -65,49 +65,16 @@ complete ordered rule forms are implemented. Extended bridge matching, priority,
 regular-chain creation, jump/return and ordering are also implemented.
 Broader UX refinement, scaling and product-wide accessibility checks remain M5. See [guided router forms](guided-router-forms.md).
 
-M3 progress: primary and auxiliary inet rules can select immutable controller list
-versions through separate explicit forms. Postrouting and bridge destination-port
-references (including regular chains) are also implemented. Native named objects
-remain before M3 can close.
+M3 is complete for the declared static IPv4/IPv6/port library and reference scopes.
+New UI attachments share native definitions per table; existing revisions retain
+literal projection. Complete generation-bound element collection, creation-handle
+provenance, exact protected-artifact verification and full lookup/content receipts
+cover primary/auxiliary inet, DNAT, postrouting and both bridge scopes. Checks include
+low IPv6 echo omissions, real dual-stack/routed/bridge packets, dynamic-meter
+coexistence, lookup/content/handle drift denial and Unix/mTLS/web confirmation and
+independent rollback. See [native static lists](native-static-lists.md).
 
-M3 impact review: the library compares exact immutable version entries and
-descriptions in either direction, shows saved-reference counts and links from
-policy pins to comparison with the current version. It never infers live host use
-or updates a pin automatically.
-
-M3 version selection: supported reference forms can explicitly browse one list's
-immutable history and attach a displayed old version without editing JSON. Browse
-preserves target/form selections and leaves canonical draft intent unchanged.
-
-M3 postrouting address coverage: source/destination literals support bounded prefix
-sets and immutable same-family list versions. Guided/legacy edits preserve pins,
-saved usage includes both address slots, and complete v3 native fingerprints bind
-every address-set entry. Dual-stack NAT set misses/negation, native round-trips,
-receipt-bound recovery and NAT-set drift denial are verified in disposable fixtures.
-Native named objects remain open.
-
-M3 bridge address coverage: source/destination prefix sets and immutable list
-versions work in forwarding and regular chains. Explicit family checks, MAC/IP
-pinning, jump/return behavior and dormant state survive guided edits and complete
-native observation. Synthetic dual-stack packets, same-handle set drift denial,
-and Unix/mTLS apply/confirm/rollback are verified. M3 remains open for native named
-objects; import/export remains M4.
-
-M3 DNAT port coverage: original destination-port sets and immutable Port-list
-versions now retain explicit translation, restrictions, negation and dormant state
-through guided edits and complete native evidence. Dual-stack packet tests verify
-both set members reach one target and nonmembers fail; same-handle port drift and
-Unix/mTLS apply/confirm/rollback are checked. Native named objects remain before M3 can close.
-
-M3 DNAT address coverage: source and original-destination prefix sets and immutable
-address-list versions now preserve translation, negation, port pins and dormant
-intent through guided edits and complete native observations. Required-destination
-removal is denied; source removal clears its negation. Dual-stack members, independent
-misses and whole-set negation, ten agent recovery scenarios and Unix/mTLS web apply
-are verified in synthetic namespaces. Native named objects remain before M3 closes.
-
-M3 native named-set prerequisite: agent observations now require one stable kernel
-transaction generation across complete table collection (ADR 0047). Isolated tests
-cover same-handle static-set element changes, capability denial and stable dynamic
-meter traffic. This adds observation consistency, not native named-set authoring
-or import; complete element collection and receipts remain next.
+M4 remains open for semantic source conversion and generated revision export.
+Maps, concatenations, arbitrary native object types, standalone unused declarations
+and native dynamic-list options are not claimed by M3. Their treatment must be
+explicit in the supported import grammar and gap reports.

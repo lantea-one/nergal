@@ -2,7 +2,7 @@
 
 The implemented slice consists of immutable POCOs in `Nergal.Core.Policy` and
 `NftFilterCompiler.Compile` in the separate `Nergal.Nftables` library. Neither
-performs host operations. The web host does not reference the compiler.
+performs host operations. The web host uses the pure compiler for draft validation and candidate review.
 
 - **Schema version 1**: single `input` chain, stateless matching (`Family`, `Protocol`,
   `Source`, `Destination`, `DestinationPort`) and `Accept`/`Drop` verdicts.
@@ -97,7 +97,7 @@ contain stable identifiers rather than caller-supplied policy data.
 Successful results contain a complete deterministic native batch, its SHA-256
 `Digest` over exact UTF-8 bytes, and no diagnostics. Failed results contain no digest.
 See the [confirmed-apply contract](confirmed-apply.md) for artifact binding.
-The batch begins with `create table inet nergal_filter`, then adds a single input
+For schema 1, the create-only batch begins with `create table inet nergal_filter`, then adds a single input
 base chain at priority 0 and its ordered rules. It uses invariant numeric formatting
 and LF newlines. The compiler never returns partial output on validation failure.
 
@@ -107,22 +107,27 @@ contract and why the marker alone is not ownership proof.
 
 The table name is reserved; it is not proof of existing-table ownership. An existing
 table with that name causes the native batch to fail atomically, regardless of its
-contents. No adoption, replacement, deletion or ruleset flush is emitted. Other
+contents. The create-only overload emits no adoption, replacement, deletion or ruleset flush. The separate atomic-replacement API requires verified owned scope at the agent boundary. Other
 owners' base chains can still deny traffic accepted by this table.
 
-This is an in-process API, not a JSON import schema. It has no raw-text extension
-point. Unsupported features (NAT, output/forward filtering, connection tracking,
-rate limits, interfaces, logging, sets and bridge rules) cannot be requested through
-this contract. Future importers must reject unknown fields. Capability declarations
-elsewhere in Core do not imply these features exist in this compiler.
+Schema 1 remains a narrow in-process contract without a raw-text extension point. Schema 2 and bundle contracts above implement the additional declared features; strict policy JSON uses `PolicyBundleJsonCodec`. Native source conversion remains M4 and must reject unsupported input explicitly. Capability declarations alone do not establish implemented support.
 
 The [decision record](decisions/0002-filter-compiler.md) explains why create-only
-provisioning is the current boundary. Native validation, authorized execution,
-independent rollback, confirmed apply and recovery remain future agent work.
+provisioning is the compiler overload boundary. The agent implements separate native validation, ownership checks, confirmed apply and independent timed rollback; see [the complete receipt decision](decisions/0036-complete-bundle-observation-and-rollback.md).
 
 ## Router extensions
 
 See [router constructs](router-constructs.md) for optional schema-2 raw prerouting,
 MSS, MAC, destination-meter, negation, and postrouting action fields, JSON examples,
 and observation versions. Independent early inet and extended bridge jump/return
-contracts are compiler previews and are denied at agent apply.
+contracts support complete owned-table receipts, confirmed apply and independent rollback under ADR 0036.
+
+## Immutable native list references
+
+[Native static list references](native-static-lists.md) add `nativeSet: true` to an
+embedded `PolicyObjectReference`. New UI attachments select it automatically;
+omission/false retains the earlier literal projection. Identity, version, typed
+contents and digest stay in immutable intent. Matchers remain exclusive with their
+literals, and every dormant rule is validated. Definition handles, complete contents
+and rule lookup edges enter versioned receipts; older fingerprints remain unchanged.
+Source inspection is not semantic import, and generated revision export remains M4.

@@ -2,11 +2,12 @@
 # Each case receives fresh user/network namespaces, synthetic interfaces and private state.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
-[[ $# -le 1 ]] || { printf 'Usage: %s [--agent]\n' "$0" >&2; exit 2; }
+[[ $# -le 1 ]] || { printf 'Usage: %s [--agent|--named-sets]\n' "$0" >&2; exit 2; }
 case ${1:-} in
     '') cases=(native) ;;
+    --named-sets) cases=(named-native named-lifecycle named-lookup-drift named-content-drift named-handle-drift) ;;
     --agent) cases=(lifecycle explicit-drift timeout-recreated missing-table foreign-collision unknown-expression nat-set-drift bridge-set-drift dnat-port-drift dnat-address-drift) ;;
-    *) printf 'Usage: %s [--agent]\n' "$0" >&2; exit 2 ;;
+    *) printf 'Usage: %s [--agent|--named-sets]\n' "$0" >&2; exit 2 ;;
 esac
 for scenario in "${cases[@]}"; do
     unshare --user --map-root-user --net python3 -B tests/integration/enrollment/auxiliary_apply_check.py \

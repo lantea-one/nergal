@@ -38,3 +38,7 @@ selectors. Database verification, usage enumeration and native projection alread
 cover both scopes. A missing scope retains the original primary-only API behavior;
 unknown/empty/duplicate form scopes are denied. Scope selection changes no native
 semantics, SQL schema, receipt boundary or implicit host-application behavior.
+
+[ADR 0048](0048-native-static-list-references.md) adds complete native static-set
+projection while retaining the legacy projection specified here for old revisions.
+See [the current library guide](../reusable-object-library.md) for all supported slots.

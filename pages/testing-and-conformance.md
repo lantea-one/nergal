@@ -106,3 +106,14 @@ strict forms and required-destination removal denial, complete native fingerprin
 actual set members/independent misses/whole-set negation, and ten agent recovery
 scenarios including same-handle DNAT address drift. Distinct-UID Unix/mTLS web apply
 selects complete snapshots through actual UI endpoints. No production apply occurs.
+
+## Native static reference acceptance
+
+`check-native-static-sets.sh` verifies four-table definitions, handles, contents and
+lookup graphs, routed dual-stack membership/misses/negation, dynamic meter coexistence
+and low IPv6 packet/evidence cases. `check-auxiliary-apply.sh --named-sets` covers
+complete confirmation, watchdog/explicit rollback and lookup/content/handle drift
+denial. The mapped-UID HTTPS/Unix/mTLS fixture attaches versions through the UI.
+Creation-echo completion requires original creation handles, complete generation-bound
+listings and exact protected-artifact equality; unit/SQLite tests cover denied
+provenance, altered contents and new-boot intent. See [the static-set guide](native-static-lists.md).

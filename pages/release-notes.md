@@ -2,6 +2,20 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased native static list references
+
+New UI attachments now share constant native IPv4/IPv6/port sets in each owned
+table across all declared matcher scopes. Saved earlier references retain literal
+projection. Complete generation-bound element collection, creation handles, exact
+protected-artifact checks and definition/lookup receipts gate apply and rollback.
+Low IPv6 echo omissions are verified through complete listings; missing provenance
+or conflicting data is denied. A conservative echo budget rejects oversized new
+projections before mutation. No SQL migration is added. Upgrade controller and
+agent together. See [native static lists](native-static-lists.md).
+
+M3 is complete for the declared static-list slice. Semantic source conversion and
+generated revision export remain M4; charts/profiles/local account UI remain M5.
+
 ## `2026.11.21.1` (Milestone E)
 
 - **Multi-table agent confirmed apply & rollback**: `nergal-agent` and `Nergal.Web` now dispatch, verify, confirm, and roll back full `FirewallPolicyBundle` policies spanning `inet nergal_filter`, `inet nergal_nat`, and `bridge nergal_bridge` with auxiliary ownership checks and coordinated `--echo --handle --json` validation.
@@ -21,14 +35,14 @@ IPv4/IPv6 list versions. Ordinary/legacy edits retain pins; explicit removal can
 erase the required source of explicit SNAT. Complete native address sets are retained
 in v3 receipt fingerprints, with old scalar/port-only fingerprints unchanged. Native
 packet and recovery checks cover set misses, negation and NAT-set drift denial.
-See [postrouting lists](reusable-object-library.md#pinned-postrouting-source-and-destination-lists).
+See [postrouting lists](reusable-object-library.md#attach-an-immutable-version).
 
 ## Unreleased historical reference selection
 
 Supported policy reference forms now **Browse selected list history** without
 altering the draft. Select and explicitly attach a displayed immutable old version;
 the table/chain, rule, matcher and previous selection remain visible after browsing.
-Only one list history is loaded at a time. See [historical version selection](reusable-object-library.md#select-a-historical-list-version-in-a-draft).
+Only one list history is loaded at a time. See [historical version selection](reusable-object-library.md#attach-an-immutable-version).
 
 ## Unreleased theme accessibility
 
@@ -45,7 +59,7 @@ The list library now compares any two stored versions, with added/removed entrie
 description changes, local save times and saved-reference counts. Policy reference
 summaries link to comparison with the current library version in a separate tab.
 Administrators and Auditors can review changes without altering pins, revisions or
-firewalls. See [list comparison](reusable-object-library.md#compare-versions-before-changing-a-pin).
+firewalls. See [list comparison](reusable-object-library.md#create-and-maintain-a-list).
 
 ## Unreleased router and settings work
 
@@ -96,7 +110,7 @@ versions through the UI. Canonical policy JSON preserves identity, contents and
 digest; database saves reject forged/missing references. Library detail exposes
 saved revision references without claiming active host use. Edits/reordering retain
 references and library updates cannot change saved policy bytes. Static references
-compile to existing matchers; native named sets remain unsupported. Disposable
+compile to existing matchers; native projection is now covered by [the static-set contract](native-static-lists.md). Disposable
 IPv4/IPv6 packet and separate-UID HTTPS/Unix/mTLS watchdog conformance covers the
 resolved reference path. See [Sets & IP lists](reusable-object-library.md).
 
@@ -140,38 +154,37 @@ and broader UX/operations/database work remain separate product milestones.
 
 M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
 filtering. Table scope is explicit, existing API submissions remain primary-only,
-and saved usage paths include auxiliary references. Native named objects and
-native named objects remain open.
+and saved usage paths include auxiliary references. Native static support now follows [the current contract](native-static-lists.md); semantic import remains open.
 
 Postrouting NAT and bridge destination-port rules, including regular chains, can
 now pin immutable Port-list versions through contextual UI selectors. Ordinary
 edits retain pinned versions and all unrelated intent. JSON/database usage covers
 all new scopes; type conflicts, invalid protocols and forged versions remain denied.
 Native packet and agent receipt/rollback fixtures use referenced snapshots.
-Native named objects remain M3 work.
+Native static support now follows [the current contract](native-static-lists.md).
 
 Bridge source/destination CIDR sets and immutable address-list versions now work
 in forwarding and regular chains. Guided forms preserve MAC restrictions, family,
 jump/return behavior, enabled state and pinned history. Complete native address-set
 receipts use v3 fingerprints; scalar/port-only receipts remain unchanged. Upgrade
-controller and agent together. Native named objects remain M3.
+controller and agent together. Native static support now follows [the current contract](native-static-lists.md).
 
 DNAT original destination ports now support literal sets and immutable Port-list
 versions. Every matched original port uses one explicit translated target. Guided
 edits retain pinned history, negation and disabled state; native observation keeps
 all ports in complete v3 fingerprints. Older scalar fingerprints stay unchanged.
-Native named objects remain M3 work.
+Native static support now follows [the current contract](native-static-lists.md).
 
 DNAT source/original-destination sets and immutable address-list versions now work
 alongside original-port pins. Guided edits retain all restrictions, translation and
 dormant state. Source removal clears its negation; sole-destination removal is
 denied. Native observations retain complete sets in v3 fingerprints; older scalar/
-port-only fingerprints remain unchanged. Native named objects remain M3 work.
+port-only fingerprints remain unchanged. Native static support now follows [the current contract](native-static-lists.md).
 
 Agent observations now require a stable kernel transaction generation across the
 complete filter/NAT/bridge/auxiliary collection. Denied, malformed or changing
 generation queries make collection unavailable. Isolated tests cover same-handle
 set-element drift, actual dynamic-meter packets and capability denial. This guards
 collection consistency; competing privileged writers remain unsupported and native
-named-set compilation/import is still M3 work. No UI or screenshot changes accompany
+static references are now implemented; semantic import remains M4. No UI or screenshot changes accompany
 this internal observation boundary.

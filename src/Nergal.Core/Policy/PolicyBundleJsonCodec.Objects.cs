@@ -10,7 +10,7 @@ public static partial class PolicyBundleJsonCodec
         reference = null;
         if (!rule.TryGetProperty(property, out var el)) { return true; }
         if (el.ValueKind != JsonValueKind.Object || HasDuplicateProperties(el) ||
-            !HasOnlyProperties(el, "id", "version", "name", "kind", "description", "entries", "digest") ||
+            !HasOnlyProperties(el, "id", "version", "name", "kind", "description", "entries", "digest", "nativeSet") ||
             !el.TryGetProperty("id", out var idEl) || idEl.ValueKind != JsonValueKind.String ||
             !Guid.TryParseExact(idEl.GetString(), "D", out var id) || id.ToString("D") != idEl.GetString() ||
             !el.TryGetProperty("version", out var verEl) || verEl.ValueKind != JsonValueKind.Number || !verEl.TryGetInt32(out var version) ||
@@ -25,7 +25,10 @@ public static partial class PolicyBundleJsonCodec
         {
             var content = new ReusableObjectContent(name.GetString()!, kind.Value, description.GetString()!, entries.EnumerateArray().Select(e => e.GetString()!));
             if (content.Digest != digest.GetString()) { return false; }
-            reference = new(id, version, content); return true;
+            var nativeSet = false;
+            if (el.TryGetProperty("nativeSet", out var native) && native.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) { return false; }
+            if (el.TryGetProperty("nativeSet", out native)) { nativeSet = native.GetBoolean(); }
+            reference = new(id, version, content, nativeSet); return true;
         }
         catch (ArgumentException) { return false; }
     }
@@ -38,6 +41,8 @@ public static partial class PolicyBundleJsonCodec
         writer.WriteString("description", reference.Content.Description);
         writer.WriteStartArray("entries"); foreach (var entry in reference.Content.Entries) { writer.WriteStringValue(entry); }
         writer.WriteEndArray();
-        writer.WriteString("digest", reference.Content.Digest); writer.WriteEndObject();
+        writer.WriteString("digest", reference.Content.Digest);
+        if (reference.NativeSet) { writer.WriteBoolean("nativeSet", true); }
+        writer.WriteEndObject();
     }
 }

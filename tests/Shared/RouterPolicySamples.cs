@@ -107,6 +107,51 @@ internal static class RouterPolicySamples
         NegateDestination = negate
     }));
 
+    internal static FirewallPolicyBundle WithNativeSetReferences(FirewallPolicyBundle bundle)
+    {
+        PolicyObjectReference? Address(IpFamily family, NetworkPrefix? scalar, IReadOnlyList<NetworkPrefix>? list)
+        {
+            if (scalar is null && list is null) { return null; }
+            var content = new Nergal.Core.Controller.ReusableObjectContent("addresses", family == IpFamily.IPv4 ? Nergal.Core.Controller.ReusableObjectKind.Ipv4 : Nergal.Core.Controller.ReusableObjectKind.Ipv6,
+                "Synthetic addresses", (list ?? [scalar!]).Select(p => p.Value));
+            return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content, true);
+        }
+        PolicyObjectReference? Ports(int? scalar, IReadOnlyList<int>? list)
+        {
+            if (scalar is null && list is null) { return null; }
+            var content = new Nergal.Core.Controller.ReusableObjectContent("ports", Nergal.Core.Controller.ReusableObjectKind.Port,
+                "Synthetic ports", (list ?? [scalar!.Value]).Select(p => p.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content, true);
+        }
+        FilterPolicy Filter(FilterPolicy p) => new(p.SchemaVersion, p.InputDefaultVerdict, p.ForwardDefaultVerdict, p.OutputDefaultVerdict,
+            p.Rules.Select(r => r is null ? null : r with
+            {
+                SourceObject = r.SourceObject ?? Address(r.Family, r.Source, r.SourcePrefixes),
+                Source = null,
+                SourcePrefixes = null,
+                DestinationObject = r.DestinationObject ?? Address(r.Family, r.Destination, r.DestinationPrefixes),
+                Destination = null,
+                DestinationPrefixes = null,
+                DestinationPortObject = r.DestinationPortObject ?? Ports(r.DestinationPort, r.DestinationPorts),
+                DestinationPort = null,
+                DestinationPorts = null
+            }), p.RpFilter, p.ForwardTcpMssClamp, p.ForwardTcpMssClampEnabled);
+        bundle = new(bundle.SchemaVersion, Filter(bundle.Filter), bundle.Nat, bundle.Bridge,
+            bundle.AuxiliaryFilter is { } aux ? new(aux.Priority, Filter(aux.Filter)) : null);
+        var root = System.Text.Json.Nodes.JsonNode.Parse(PolicyBundleJsonCodec.EncodeBundle(bundle))!;
+        void Visit(System.Text.Json.Nodes.JsonNode? node)
+        {
+            if (node is System.Text.Json.Nodes.JsonObject obj)
+            {
+                if (obj.ContainsKey("id") && obj.ContainsKey("digest") && obj.ContainsKey("entries")) { obj["nativeSet"] = true; }
+                foreach (var value in obj.ToArray()) { Visit(value.Value); }
+            }
+            else if (node is System.Text.Json.Nodes.JsonArray array) { foreach (var value in array) { Visit(value); } }
+        }
+        Visit(root);
+        return PolicyBundleJsonCodec.DecodeBundle(root.ToJsonString()).Value ?? throw new InvalidOperationException("Synthetic native-set fixture is invalid.");
+    }
+
     internal static FirewallPolicyBundle WithPostroutingAddressReferences(FirewallPolicyBundle bundle)
     {
         PolicyObjectReference Reference(IpFamily family, NetworkPrefix? scalar, IReadOnlyList<NetworkPrefix>? prefixes)

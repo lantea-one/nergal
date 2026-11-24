@@ -507,6 +507,8 @@ internal static class AgentCommands
             var expectAuxiliary = NftPolicyBundleCompiler.ArtifactContainsAuxiliary(enrollment.Artifact);
             await NativeNft.Run(["--check", "--file", "-"], enrollment.Artifact);
             var echo = await NativeNft.Run(["--echo", "--handle", "--json", "--file", "-"], enrollment.Artifact);
+            var complete = await NativeNft.TryObserveCompleteAsync() ?? throw new IOException("Complete creation listing unavailable.");
+            echo = CompleteCreationEvidence(echo, complete, enrollment.Artifact);
             var created = (expectNat || expectBridge || expectAuxiliary
                 ? NftTableObservation.ParseBundleReplacementEcho(echo, prior.Identity, expectNat, expectBridge, expectAuxiliary)
                 : NftTableObservation.ParseReplacementEcho(echo)).Observation;
@@ -516,7 +518,7 @@ internal static class AgentCommands
             }
 
             var recreatedExpected = new NftTableReceipt(now.BootId, ns, created.Identity, created.TableHandle, created.StateDigest);
-            var recreatedActual = await ObserveLiveAsync();
+            var recreatedActual = complete.Observation;
             var recreatedAux = await NativeNft.TryInspectAuxiliaryTablesAsync(prior.Identity)
                 ?? throw new IOException("Auxiliary table observation unavailable.");
             if (!AuxiliaryTablesMatchArtifact(recreatedAux, enrollment.Artifact))
@@ -607,6 +609,8 @@ internal static class AgentCommands
         var expectNat = ArtifactHasNat(artifact);
         var expectBridge = ArtifactHasBridge(artifact);
         var expectAuxiliary = NftPolicyBundleCompiler.ArtifactContainsAuxiliary(artifact);
+        var complete = await NativeNft.TryObserveCompleteAsync() ?? throw new IOException("Complete replacement listing unavailable.");
+        echo = CompleteCreationEvidence(echo, complete, artifact);
         var created = (expectNat || expectBridge || expectAuxiliary
             ? NftTableObservation.ParseBundleReplacementEcho(echo, expectedIdentity, expectNat, expectBridge, expectAuxiliary)
             : NftTableObservation.ParseReplacementEcho(echo)).Observation;
@@ -616,7 +620,7 @@ internal static class AgentCommands
         }
 
         var receipt = new NftTableReceipt(boot, ns, expectedIdentity, created.TableHandle, created.StateDigest);
-        var listing = await ObserveLiveAsync();
+        var listing = complete.Observation;
         var afterAux = await NativeNft.TryInspectAuxiliaryTablesAsync(expectedIdentity)
             ?? throw new IOException("Auxiliary table observation unavailable.");
         if (!AuxiliaryTablesMatchArtifact(afterAux, artifact))
@@ -625,6 +629,12 @@ internal static class AgentCommands
         }
 
         return (receipt, listing);
+    }
+
+    private static string CompleteCreationEvidence(string echo, NativeNft.CompleteObservation complete, string expectedArtifact)
+    {
+        try { return NftStaticSetCreationEvidence.Complete(echo, complete.Snapshots, expectedArtifact); }
+        catch (ArgumentException) { throw new IOException("Static creation evidence unavailable."); }
     }
 
     internal abstract record AgentCommand;

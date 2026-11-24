@@ -38,6 +38,8 @@ public static class NftFilterCompiler
     {
         ArgumentNullException.ThrowIfNull(policy);
         var errors = new List<PolicyDiagnostic>();
+        var intent = policy;
+        var sets = new NftStaticSetPlan(intent.Rules.SelectMany(NftStaticSetPlan.References), errors);
         var objectErrors = new List<PolicyObjectDiagnostic>();
         policy = FilterObjectResolver.Resolve(policy, objectErrors);
         errors.AddRange(objectErrors.Select(d => new PolicyDiagnostic(d.Code, d.Path)));
@@ -282,6 +284,9 @@ public static class NftFilterCompiler
             return new(null, errors);
         }
 
+        policy = new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict,
+            policy.Rules.Select((r, i) => NftStaticSetPlan.Attach(r!, intent.Rules[i]!)), policy.RpFilter, policy.ForwardTcpMssClamp, policy.ForwardTcpMssClampEnabled);
+
         // create fails on collision: neither an existing reserved table nor foreign tables are changed.
         var text = new StringBuilder("create table inet " + TableName);
         if (identity is not null)
@@ -314,6 +319,7 @@ public static class NftFilterCompiler
                 .Append(Verdict(rp.DefaultVerdict)).Append("; }\n");
         }
 
+        sets.Append(text, "inet", TableName);
         var orderedRules = new List<(FilterRule Rule, string? SetName)>(policy.Rules.Count);
         var setIndex = 0;
         foreach (var chain in ChainOrder)
@@ -357,7 +363,7 @@ public static class NftFilterCompiler
             foreach (var rule in raw.Rules) { if (rule!.Enabled) { RouterFilterValidation.AppendRpFilterRule(text, rule); } }
         }
 
-        return new(text.ToString(), []);
+        return sets.Finish(text.ToString());
     }
 
     private static void AppendRule(StringBuilder text, FilterRule rule, string? rateLimitSetName)
@@ -385,7 +391,9 @@ public static class NftFilterCompiler
             text.Append(' ');
         }
 
-        if (rule.Source is not null)
+        if (rule.SourceObject is { NativeSet: true } sourceSet)
+        { text.Append(family).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
+        else if (rule.Source is not null)
         {
             text.Append(family).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' ');
         }
@@ -396,7 +404,9 @@ public static class NftFilterCompiler
                 .Append(" } ");
         }
 
-        if (rule.Destination is not null)
+        if (rule.DestinationObject is { NativeSet: true } destinationSet)
+        { text.Append(family).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(destinationSet)).Append(' '); }
+        else if (rule.Destination is not null)
         {
             text.Append(family).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.Destination.Value).Append(' ');
         }
@@ -433,7 +443,9 @@ public static class NftFilterCompiler
                 _ => throw new InvalidOperationException("Unvalidated protocol."),
             };
             text.Append("meta l4proto ").Append(protocol).Append(' ');
-            if (rule.DestinationPort.HasValue)
+            if (rule.DestinationPortObject is { NativeSet: true } portSet)
+            { text.Append(protocol).Append(" dport @").Append(NftStaticSetPlan.Name(portSet)).Append(' '); }
+            else if (rule.DestinationPort.HasValue)
             {
                 text.Append(protocol).Append(" dport ").Append(rule.DestinationPort.Value.ToString(CultureInfo.InvariantCulture)).Append(' ');
             }

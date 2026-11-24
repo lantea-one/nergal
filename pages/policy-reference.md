@@ -100,13 +100,13 @@ Postrouting NAT rules and bridge rules (including regular chains) accept an opti
 `destinationPortObject`. It embeds the selected controller object's identity,
 version, typed contents and digest, mutually exclusive with literal destination
 ports. Compilation validates every rule, including dormant rules, and projects the
-snapshot onto existing scalar/anonymous port-set matchers. Preview/save verifies
+snapshot onto legacy scalar/anonymous matchers or shared native sets according to its retained projection choice. Preview/save verifies
 all references against immutable database history; apply never fetches "latest".
 Use matching updated controller/agent builds: older strict codecs reject this field.
 
 The contextual NAT/bridge selectors retain unrelated matchers, actions, jump/return,
 order and enabled state. Explicit removal clears the port restriction. These
-snapshots do not implement native named sets or DNAT translation-port lists. See [the reusable library](reusable-object-library.md).
+snapshots retain native static sets for new attachments; DNAT translation-port lists remain unsupported. See [the reusable library](reusable-object-library.md).
 
 Postrouting rules also support immutable `sourceObject`/`destinationObject` versions
 and literal `sourcePrefixes`/`destinationPrefixes`. Each slot is exclusive with
@@ -124,11 +124,11 @@ exclusive with corresponding literals. Require an explicit matching IP family;
 MAC/interface/transport constraints and jump/return behavior are preserved. Multiple
 prefixes use the existing bounded disjoint/non-adjacent contract. Native observation
 retains every entry and binds complete address-set graphs with v3 fingerprints.
-Bridge IP negation and native named objects remain unsupported.
+Bridge IP negation remains unsupported. Native list references follow [the static-set contract](native-static-lists.md).
 
 DNAT `originalPorts` and `originalPortObject` are exclusive with `originalPort`.
-Port sets contain 2–64 distinct valid ports and require TCP/UDP; singleton references
-project to scalars. These match before translation and never replace the single
+Port sets contain 2–64 distinct valid ports and require TCP/UDP; legacy singleton references
+project to scalars; native singleton references retain named lookups. These match before translation and never replace the single
 explicit `translatedAddress`/`translatedPort`. Guided selectors preserve immutable
 versions; native observation retains complete sets with v3 NAT fingerprints.
 

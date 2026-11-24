@@ -90,11 +90,18 @@ DNAT original destination-port lists use embedded immutable snapshots, resolved
 without database lookup into scalar/set matchers before one explicit translation.
 Complete native observations retain every port and bind set policies with v3 NAT
 fingerprints. This preserves the existing receipt/watchdog boundary; no new agent
-command or SQL schema is introduced. Native named objects remain separate work.
+command or SQL schema is introduced. Native projection now follows [the complete static-set contract](native-static-lists.md).
 
 DNAT source/original-destination address snapshots use the same self-contained
 reference contract. Compilation projects scalars/sets without database lookups,
 retains whole-set negation and one explicit translation, and rejects missing
 original-destination restrictions. Complete native v3 observations bind all address
 entries; older scalar/port-only fingerprints remain unchanged. No new privileged
-command or SQL migration is introduced. Native named objects remain separate.
+command or SQL migration is introduced. Native projection now follows [the complete static-set contract](native-static-lists.md).
+
+Native static lists preserve enforcement references across every declared scope.
+Receipts bind definitions, complete contents and lookup edges. Generation-bound
+listings can complete nft creation-echo element omissions only when creation
+handles agree and the reconstructed artifact exactly matches protected intent.
+Missing provenance or conflicting data remains denied. The journal repeats exact
+artifact verification; dynamic meter runtime contents retain their separate boundary.

@@ -53,12 +53,21 @@ internal static class NativeNft
         }
     }
 
-    internal static async Task<NftTableObservation?> TryObserveAsync(CancellationToken cancellation = default)
+    internal static async Task<NftTableObservation?> TryObserveAsync(CancellationToken cancellation = default) =>
+        (await TryObserveCompleteAsync(cancellation))?.Observation;
+
+    internal sealed record CompleteObservation(NftTableObservation Observation, IReadOnlyList<string> Snapshots);
+
+    internal static async Task<CompleteObservation?> TryObserveCompleteAsync(CancellationToken cancellation = default)
     {
         if (!OperatingSystem.IsLinux()) { return null; }
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        deadline.CancelAfter(TimeSpan.FromSeconds(10));
+        var snapshots = new List<string>();
         try
         {
-            return await CollectConsistentAsync(() => OperatingSystem.IsLinux() ? LinuxNftablesGeneration.Read(cancellation) : throw new PlatformNotSupportedException(), Collect, cancellation);
+            var observation = await CollectConsistentAsync(() => OperatingSystem.IsLinux() ? LinuxNftablesGeneration.Read(deadline.Token) : throw new PlatformNotSupportedException(), Collect, deadline.Token);
+            return observation is null ? null : new(observation, Array.AsReadOnly(snapshots.ToArray()));
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -72,34 +81,49 @@ internal static class NativeNft
 
         async Task<NftTableObservation?> Collect()
         {
-            var listed = await Run(["--terse", "--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
+            var listed = await CollectTable("inet", NftFilterCompiler.TableName, deadline.Token);
+            snapshots.Add(listed);
             var primary = NftTableObservation.Parse(listed).Observation;
             if (primary is null) { return null; }
-            var presence = await TryInspectAuxiliaryTablesAsync(primary.Identity, cancellation);
+            var presence = await TryInspectAuxiliaryTablesAsync(primary.Identity, deadline.Token);
             if (presence is null) { return null; }
             NftNatTableObservation? nat = null;
             NftBridgeTableObservation? bridge = null;
             NftAuxiliaryTableObservation? auxiliary = null;
             if (presence.NatExists && presence.NatOwned)
             {
-                var snapshot = await Run(["--terse", "--json", "list", "table", "inet", NftNatCompiler.TableName], "", cancellation);
+                var snapshot = await CollectTable("inet", NftNatCompiler.TableName, deadline.Token);
+                snapshots.Add(snapshot);
                 nat = NftNatTableObservation.Parse(snapshot).Observation;
                 if (nat is null) { return null; }
             }
             if (presence.BridgeExists && presence.BridgeOwned)
             {
-                var snapshot = await Run(["--terse", "--json", "list", "table", "bridge", NftBridgeCompiler.TableName], "", cancellation);
+                var snapshot = await CollectTable("bridge", NftBridgeCompiler.TableName, deadline.Token);
+                snapshots.Add(snapshot);
                 bridge = NftBridgeTableObservation.Parse(snapshot).Observation;
                 if (bridge is null) { return null; }
             }
             if (presence.AuxiliaryExists && presence.AuxiliaryOwned)
             {
-                var snapshot = await Run(["--terse", "--json", "list", "table", "inet", NftAuxiliaryTableObservation.TableName], "", cancellation);
+                var snapshot = await CollectTable("inet", NftAuxiliaryTableObservation.TableName, deadline.Token);
+                snapshots.Add(snapshot);
                 auxiliary = NftAuxiliaryTableObservation.Parse(snapshot);
                 if (auxiliary is null) { return null; }
             }
             return NftTableObservation.Combine(primary, nat, bridge, auxiliary);
         }
+    }
+
+    private static async Task<string> CollectTable(string family, string table, CancellationToken cancellation)
+    {
+        var terse = await Run(["--terse", "--json", "list", "table", family, table], "", cancellation);
+        var names = NftStaticSetCollection.Names(terse, family, table);
+        if (names.Count == 0) { return terse; }
+        var contents = new List<string>(names.Count);
+        foreach (var name in names)
+        { contents.Add(await Run(["--json", "list", "set", family, table, name], "", cancellation)); }
+        return NftStaticSetCollection.Complete(terse, family, table, contents);
     }
 
     // An outside writer must not make separate table/set listings appear to be one snapshot.

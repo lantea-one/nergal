@@ -90,7 +90,7 @@ connection states, original DNAT status, source MACs, negation and source/destin
 rate limits. Edits retain enabled state and existing list pins; up/down controls
 move the whole rule. Library attachment workflows support primary and auxiliary inet
 filter rules. Postrouting and bridge address/port lists have contextual selectors;
-Native named objects remain M3 work. Raw and MSS constructs
+New list attachments use [shared native static sets](native-static-lists.md). Raw and MSS constructs
 belong to the primary filter table and are rejected in auxiliary intent.
 
 Remove auxiliary rules individually before removing the empty table. Removing the
