@@ -40,7 +40,9 @@ internal static class RouterPolicySamples
         new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
             [new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001),
              new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001)]),
-        nat: new(1, [], [
+        nat: new(1, [
+            new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.1/32"), "198.51.100.2", TranslatedPort: 18080, OriginalPorts: [18080, 18082]),
+            new(IpFamily.IPv6, FilterProtocol.Tcp, new("2001:db8:1::1/128"), "2001:db8:2::2", TranslatedPort: 18080, OriginalPorts: [18080, 18082])], [
             new(IpFamily.IPv4, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("192.0.2.0/24"), new("198.51.100.0/24")], DestinationPrefixes: [new("203.0.113.10/32"), new("203.0.113.20/32")]),
             new(IpFamily.IPv6, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("2001:db8:1::/64"), new("2001:db8:3::/64")], DestinationPrefixes: [new("2001:db8:2::10/128"), new("2001:db8:2::20/128")])]),
         bridge: new(1, FilterVerdict.Accept,
@@ -159,7 +161,9 @@ internal static class RouterPolicySamples
         IEnumerable<BridgeFilterRule?> BridgeRules(IReadOnlyList<BridgeFilterRule?> rules) => rules.Select(r =>
             r is null || (r.DestinationPort is null && r.DestinationPorts is null) ? r : r with
             { DestinationPortObject = Reference(r.DestinationPort, r.DestinationPorts), DestinationPort = null, DestinationPorts = null });
-        var nat = bundle.Nat is not { } n ? null : new NatPolicy(n.SchemaVersion, n.DnatRules, n.SnatRules.Select(r =>
+        var nat = bundle.Nat is not { } n ? null : new NatPolicy(n.SchemaVersion, n.DnatRules.Select(r =>
+            r is null || (r.OriginalPort is null && r.OriginalPorts is null) ? r : r with
+            { OriginalPortObject = Reference(r.OriginalPort, r.OriginalPorts), OriginalPort = null, OriginalPorts = null }), n.SnatRules.Select(r =>
             r is null || (r.DestinationPort is null && r.DestinationPorts is null) ? r : r with
             { DestinationPortObject = Reference(r.DestinationPort, r.DestinationPorts), DestinationPort = null, DestinationPorts = null }));
         var bridge = bundle.Bridge is not { } b ? null : new BridgePolicy(b.SchemaVersion, b.DefaultVerdict, BridgeRules(b.Rules), b.Priority,

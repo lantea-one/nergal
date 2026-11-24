@@ -11,8 +11,13 @@ public static class TransportObjectResolver
     public static NatPolicy Resolve(NatPolicy policy, ICollection<PolicyObjectDiagnostic> diagnostics)
     {
         ArgumentNullException.ThrowIfNull(policy); ArgumentNullException.ThrowIfNull(diagnostics);
-        if (!policy.SnatRules.Any(r => r?.DestinationPortObject is not null || r?.SourceObject is not null || r?.DestinationObject is not null)) { return policy; }
-        return new(policy.SchemaVersion, policy.DnatRules, policy.SnatRules.Select((rule, i) =>
+        if (!policy.DnatRules.Any(r => r?.OriginalPortObject is not null) && !policy.SnatRules.Any(r => r?.DestinationPortObject is not null || r?.SourceObject is not null || r?.DestinationObject is not null)) { return policy; }
+        return new(policy.SchemaVersion, policy.DnatRules.Select((rule, i) =>
+        {
+            if (rule?.OriginalPortObject is not { } reference) { return rule; }
+            var ports = Ports(reference, rule.OriginalPort, rule.OriginalPorts, $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}].originalPortObject", diagnostics);
+            return rule with { OriginalPort = ports?.Length == 1 ? ports[0] : rule.OriginalPort, OriginalPorts = ports?.Length > 1 ? ports : rule.OriginalPorts, OriginalPortObject = null };
+        }), policy.SnatRules.Select((rule, i) =>
         {
             if (rule is null) { return rule; }
             var path = $"snatRules[{i.ToString(CultureInfo.InvariantCulture)}]";

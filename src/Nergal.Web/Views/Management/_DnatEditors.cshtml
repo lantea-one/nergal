@@ -1,0 +1,69 @@
+@model Nergal.Web.PolicyEditorViewModel
+@using Nergal.Core.Policy
+@if (Model.CanMutate && Model.Bundle?.Nat is { } nat)
+{
+    @for (var i = 0; i < nat.DnatRules.Count; i++)
+    {
+        if (nat.DnatRules[i] is not { } d) { continue; }
+        <details class="router-form-details" id="dnat-editor-@i">
+            <summary>Edit DNAT #@(i + 1) · @d.Family · @d.Protocol · @(d.Description ?? "No description")</summary>
+            <div class="router-form-body">
+                <form class="router-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/edit")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
+                    <input type="hidden" name="summary" value="@Model.Summary" />
+                    <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
+                    <input type="hidden" name="ruleIndex" value="@i" />
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="dnat-edit-@i-family">Family</label>
+                            <select name="family" id="dnat-edit-@i-family">
+                                <option value="ipv4" selected="@(d.Family == IpFamily.IPv4)">ipv4</option>
+                                <option value="ipv6" selected="@(d.Family == IpFamily.IPv6)">ipv6</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-protocol">Protocol</label>
+                            <select name="protocol" id="dnat-edit-@i-protocol">
+                                <option value="tcp" selected="@(d.Protocol == FilterProtocol.Tcp)">tcp</option>
+                                <option value="udp" selected="@(d.Protocol == FilterProtocol.Udp)">udp</option>
+                                <option value="any" selected="@(d.Protocol == FilterProtocol.Any)">any</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-originalDestination">Original destination CIDR</label>
+                            <input type="text" name="originalDestination" value="@d.OriginalDestination.Value" required id="dnat-edit-@i-originalDestination" />
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-translatedAddress">Translated IP</label>
+                            <input type="text" name="translatedAddress" value="@d.TranslatedAddress" required id="dnat-edit-@i-translatedAddress" />
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-originalPort">Original destination port(s)</label>
+                            <input type="text" name="@(d.OriginalPortObject is null ? "originalPorts" : null)" value="@(d.OriginalPortObject is { } pinnedPorts ? string.Join(", ", pinnedPorts.Content.Entries) : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } ports ? string.Join(", ", ports) : ""))" readonly="@(d.OriginalPortObject is not null)" id="dnat-edit-@i-originalPort" aria-describedby="dnat-edit-@i-originalPort-hint" />
+                            <span class="hint" id="dnat-edit-@i-originalPort-hint">One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. All use the same translated target. Pinned contents stay read-only.</span>
+                            @if (d.OriginalPortObject is { } pin) { <span class="hint">Pinned original-port list: @pin.Content.Name v@(pin.Version).</span> }
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-translatedPort">Translated port</label>
+                            <input type="number" name="translatedPort" value="@d.TranslatedPort" min="1" max="65535" id="dnat-edit-@i-translatedPort" />
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-inputInterface">Input iface</label>
+                            <input type="text" name="inputInterface" value="@d.InputInterface" maxlength="15" id="dnat-edit-@i-inputInterface" />
+                        </div>
+                        <div class="field">
+                            <label for="dnat-edit-@i-source">Source CIDR</label>
+                            <input type="text" name="source" value="@d.Source?.Value" id="dnat-edit-@i-source" />
+                        </div>
+                        <div class="field span-2">
+                            <label for="dnat-edit-@i-description">Description</label>
+                            <input type="text" name="description" value="@d.Description" maxlength="160" id="dnat-edit-@i-description" />
+                        </div>
+                    </div>
+                    <div class="mt-2"><button type="submit" class="btn btn-sm">Save DNAT #@(i + 1)</button></div>
+                </form>
+            </div>
+        </details>
+    }
+}

@@ -141,7 +141,7 @@ and broader UX/operations/database work remain separate product milestones.
 M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
 filtering. Table scope is explicit, existing API submissions remain primary-only,
 and saved usage paths include auxiliary references. Native named objects and
-native named objects and DNAT references remain open.
+native named objects and DNAT address references remain open.
 
 Postrouting NAT and bridge destination-port rules, including regular chains, can
 now pin immutable Port-list versions through contextual UI selectors. Ordinary
@@ -154,4 +154,10 @@ Bridge source/destination CIDR sets and immutable address-list versions now work
 in forwarding and regular chains. Guided forms preserve MAC restrictions, family,
 jump/return behavior, enabled state and pinned history. Complete native address-set
 receipts use v3 fingerprints; scalar/port-only receipts remain unchanged. Upgrade
-controller and agent together. Native named objects and DNAT references remain M3.
+controller and agent together. Native named objects and DNAT address references remain M3.
+
+DNAT original destination ports now support literal sets and immutable Port-list
+versions. Every matched original port uses one explicit translated target. Guided
+edits retain pinned history, negation and disabled state; native observation keeps
+all ports in complete v3 fingerprints. Older scalar fingerprints stay unchanged.
+DNAT address lists and native named objects remain M3 work.

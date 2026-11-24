@@ -20,7 +20,7 @@ public sealed partial class ManagementController
         PolicyObjectReference? reference = null;
         if (!ModelState.IsValid || form.Files.Count != 0 || form.Any(kv => kv.Value.Count != 1) ||
             form.Keys.Any(k => k is not ("bundleJson" or "summary" or "compareToRevision" or "ruleIndex" or "slot" or "selection" or "operation" or "scope" or "chain" or "__RequestVerificationToken")) ||
-            !form.ContainsKey("ruleIndex") || operation is not ("attach" or "remove" or "history") || (form.ContainsKey("scope") && scope is not ("primary" or "auxiliary" or "postrouting" or "bridge" or "bridgeChain"))) { errors = [new("object.formInvalid", "object")]; }
+            !form.ContainsKey("ruleIndex") || operation is not ("attach" or "remove" or "history") || (form.ContainsKey("scope") && scope is not ("primary" or "auxiliary" or "dnat" or "postrouting" or "bridge" or "bridgeChain"))) { errors = [new("object.formInvalid", "object")]; }
         else if (operation is "attach" or "history")
         {
             var parts = (selection ?? "").Split('/');
@@ -50,6 +50,7 @@ public sealed partial class ManagementController
             var rules = scope == "primary" ? bundle.Filter.Rules : bundle.AuxiliaryFilter?.Filter.Rules;
             return chain is null && (slot is "source" or "destination" or "ports") && rules is not null && index < rules.Count && rules[index] is not null;
         }
+        if (scope == "dnat") { return chain is null && slot == "ports" && bundle.Nat is { } dnat && index < dnat.DnatRules.Count && dnat.DnatRules[index] is not null; }
         if (scope == "postrouting") { return chain is null && (slot is "source" or "destination" or "ports") && bundle.Nat is { } nat && index < nat.SnatRules.Count && nat.SnatRules[index] is not null; }
         if (slot is not ("source" or "destination" or "ports") || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
         var bridgeRules = scope == "bridge" ? bundle.Bridge?.Rules : bundle.Bridge?.SubChains.FirstOrDefault(c => c.Name == chain)?.Rules;

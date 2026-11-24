@@ -35,7 +35,8 @@ internal sealed record VisualDnatRuleInput(
     int? TranslatedPort,
     string? InputInterface,
     string? Source,
-    string? Description = null);
+    string? Description = null,
+    string? OriginalPorts = null);
 
 internal sealed record VisualSnatRuleInput(
     string? Family,
@@ -616,16 +617,20 @@ internal static partial class PolicyAuthoringService
             return false;
         }
 
+        var portErrors = new List<PolicyDiagnostic>();
+        TryParsePortField(input.OriginalPorts, "nat.dnatRules.originalPorts", out var originalPort, out var originalPorts, portErrors);
+        if (input.OriginalPort.HasValue && (originalPort.HasValue || originalPorts is not null)) { portErrors.Add(new("set.conflictsWithScalar", "nat.dnatRules.originalPorts")); }
+        if (portErrors.Count != 0) { diagnostics = portErrors; return false; }
         var dnat = new DnatRule(
             family,
             protocol,
             origDst,
             (input.TranslatedAddress ?? "").Trim(),
-            input.OriginalPort,
+            input.OriginalPort ?? originalPort,
             input.TranslatedPort,
             string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
             src,
-            description);
+            description, OriginalPorts: originalPorts);
 
         var existingDnat = bundle.Nat?.DnatRules.ToList() ?? [];
         var existingSnat = bundle.Nat?.SnatRules.ToList() ?? [];
@@ -697,20 +702,24 @@ internal static partial class PolicyAuthoringService
             return false;
         }
 
+        var portErrors = new List<PolicyDiagnostic>();
+        TryParsePortField(input.OriginalPorts, "nat.dnatRules.originalPorts", out var originalPort, out var originalPorts, portErrors);
+        if (input.OriginalPort.HasValue && (originalPort.HasValue || originalPorts is not null)) { portErrors.Add(new("set.conflictsWithScalar", "nat.dnatRules.originalPorts")); }
+        if (portErrors.Count != 0) { diagnostics = portErrors; return false; }
         var dnat = new DnatRule(
             family,
             protocol,
             origDst,
             (input.TranslatedAddress ?? "").Trim(),
-            input.OriginalPort,
+            input.OriginalPort ?? originalPort,
             input.TranslatedPort,
             string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
             src,
-            description);
+            description, OriginalPorts: originalPorts);
 
         var dnats = bundle.Nat.DnatRules.ToList();
         var previous = bundle.Nat.DnatRules[ruleIndex]!;
-        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface };
+        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);

@@ -89,8 +89,8 @@ multiple addresses must satisfy the existing disjoint/non-adjacent prefix bounds
 Overlapping or adjacent entries may be stored in the library but are rejected when
 attached to a rule if native observation cannot round-trip them. Family/protocol
 mismatches, conflicting literals, unknown flags and missing/forged references fail
-explicitly. Native named sets/maps, dynamic lists, DNAT references,
-DNAT port references and semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
+explicitly. Native named sets/maps, dynamic lists, DNAT address references,
+DNAT translation-port lists and semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
 the primary policy, table priority, MAC restrictions, negation, rule order and
 enabled state. Omitting scope in existing API submissions continues to select
 primary filtering; query parameters cannot select an auxiliary target. Unknown,
@@ -216,7 +216,7 @@ scalar/port-only receipt fingerprints stay unchanged. Older controllers/agents
 reject the new JSON fields and cannot validate new receipts. Upgrade matching
 controller/agent builds together. No SQL schema upgrade is required; the native
 observation byte limit is unchanged. Native named sets/maps/dynamic objects,
-DNAT references remain unsupported.
+DNAT address references remain unsupported.
 
 ![Pinned postrouting addresses](../pages/assets/screenshots/postrouting-addresses-dark.jpg)
 
@@ -241,6 +241,31 @@ Native observation binds every address-set entry in a v3 bridge fingerprint,
 including handles and the complete chain graph. Scalar/port-only fingerprints
 remain unchanged. Deploy matching controller/agent builds; older codecs reject
 these fields. No SQL migration is required. Bridge IP negation, native named
-sets/maps/dynamic objects and DNAT references remain unsupported.
+sets/maps/dynamic objects and DNAT address references remain unsupported.
 
 ![Pinned bridge addresses](../pages/assets/screenshots/bridge-addresses-dark.jpg)
+
+## DNAT original-port lists
+
+DNAT rules accept one original destination port, 2–64 distinct comma-separated
+ports, or an immutable Port-list version. Matching happens before translation;
+all original ports map to the same explicit translated address and optional port.
+This does not map a list of original ports onto a list of translated ports.
+TCP or UDP is required. Scalar, literal-set and reference forms are exclusive;
+invalid disabled rules are rejected too.
+
+Use **DNAT original-port list references** to attach, browse history or remove a
+version. Guided edits show pinned entries read-only and retain source/destination
+restrictions, negation, ingress, translated target, order and disabled state.
+Removal clears only the original-port restriction and can broaden matching. Review
+the intent/native diff, save an immutable revision, then use confirmed apply.
+Saved usage includes `nat.dnatRules[n].originalPortObject`; later library edits
+cannot change a saved revision.
+
+Strict JSON retains `originalPorts` or `originalPortObject`. Native echo/list
+reconstruction preserves every original port; DNAT port sets use the complete v3
+NAT fingerprint, while preceding scalar fingerprints remain unchanged. Upgrade
+matching controller and agent builds together; no SQL migration is needed.
+Native named objects, DNAT address lists and translated-port lists remain unsupported.
+
+![Pinned original DNAT ports](../pages/assets/screenshots/dnat-port-references-dark.jpg)

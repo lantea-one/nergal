@@ -594,3 +594,20 @@ matcher excludes traffic. The eighth agent case, `bridge-set-drift`, changes set
 contents at the same native handle and requires recovery without overwriting drift.
 Distinct-UID Unix/mTLS web apply tests select bridge versions through actual UI
 endpoints before complete apply/confirm/rollback. No production firewall is used.
+
+### DNAT original-port sets and references
+
+Core tests cover singleton/set equivalence in both families, dormant validation,
+defensive snapshots, strict JSON, type/protocol/literal conflicts and complete
+native set fingerprints. Real-SQLite web tests retain translation/negation/state,
+usage and immutable history. HTTPS fixtures cover attachment/history/removal,
+read-only fields, ordinary edits, forged versions, CSRF/RBAC and malformed or
+duplicate numeric/form fields that must not fall back to unrestricted defaults.
+
+The three-namespace DNAT fixture sends both referenced original ports to one
+translated backend port and checks nonmember denial in both IP families, including
+explicit SNAT and `ct status dnat`. Auxiliary agent lifecycle carries referenced
+DNAT sets; the ninth recovery case, `dnat-port-drift`, replaces a set at the same
+handle and requires recovery without overwriting unexpected state. The distinct-UID
+web fixture selects the list through the real UI endpoint before Unix/mTLS
+apply/confirm/independent rollback. All addresses and namespaces are synthetic.

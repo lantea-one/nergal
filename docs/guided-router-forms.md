@@ -90,7 +90,7 @@ connection states, original DNAT status, source MACs, negation and source/destin
 rate limits. Edits retain enabled state and existing list pins; up/down controls
 move the whole rule. Library attachment workflows support primary and auxiliary inet
 filter rules. Postrouting and bridge address/port lists have contextual selectors;
-DNAT references and native named objects remain M3 work. Raw and MSS constructs
+DNAT address references and native named objects remain M3 work. Raw and MSS constructs
 belong to the primary filter table and are rejected in auxiliary intent.
 
 Remove auxiliary rules individually before removing the empty table. Removing the
@@ -165,3 +165,14 @@ address lists, choose the rule's IP family and attach a version in that chain's
 reusable-list selector. Pins show their exact contents read-only; ordinary edits
 preserve MAC restrictions, list versions, order and enabled state. Explicit removal
 clears only that IP matcher. Review the resulting access change before saving.
+
+DNAT's **Original destination port(s)** field accepts one port or a comma-separated
+set. Its reusable selector pins a Port-list version, displayed read-only during
+ordinary edits. Matching precedes translation; every listed port uses the same
+explicit translated target. Removing a pin clears only that original-port
+restriction. Invalid/duplicate/unknown form fields are denied instead of accepting
+binder defaults that could broaden a rule.
+
+DNAT edit forms expand beneath the rule table, keeping long pinned contents and
+contextual hints readable on desktop and mobile. Table edit links lead to the
+corresponding form; they do not save or apply changes.

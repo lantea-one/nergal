@@ -383,7 +383,8 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         int? translatedPort,
         string? inputInterface,
         string? source,
-        string? description = null)
+        string? description = null,
+        string? originalPorts = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -392,7 +393,10 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         }
 
         var raw = string.IsNullOrWhiteSpace(bundleJson) ? PolicyAuthoringService.DefaultStarterBundleJson : bundleJson;
-        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source, description);
+        if (!ModelState.IsValid || (Request.HasFormContentType && !ValidRouterForm(Request.Form,
+            ["ruleIndex", "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "translatedPort", "inputInterface", "source", "description"], [])))
+        { return ObjectDraftFailure(raw, summary, compareToRevision, [new("rule.dnatFormInvalid", "rule")]); }
+        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source, description, originalPorts);
         return ApplyDraftMutation(
             role,
             raw,
@@ -419,7 +423,8 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         int? translatedPort,
         string? inputInterface,
         string? source,
-        string? description = null)
+        string? description = null,
+        string? originalPorts = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role) ||
             role != NergalRoles.Administrator)
@@ -428,7 +433,10 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         }
 
         var raw = bundleJson ?? "";
-        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source, description);
+        if (!ModelState.IsValid || (Request.HasFormContentType && !ValidRouterForm(Request.Form,
+            ["ruleIndex", "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "translatedPort", "inputInterface", "source", "description"], [])))
+        { return ObjectDraftFailure(raw, summary, compareToRevision, [new("rule.dnatFormInvalid", "rule")]); }
+        var input = new VisualDnatRuleInput(family, protocol, originalDestination, translatedAddress, originalPort, translatedPort, inputInterface, source, description, originalPorts);
         return ApplyDraftMutation(
             role,
             raw,

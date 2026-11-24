@@ -6,7 +6,7 @@ public sealed record PolicyObjectBinding(string Path, PolicyObjectReference Refe
 /// <summary>Enumerates controller references without resolving them or altering policy intent.</summary>
 public static class PolicyObjectReferences
 {
-    /// <summary>Returns filter, postrouting and bridge references in stable rule/field order.</summary>
+    /// <summary>Returns filter, NAT and bridge references in stable rule/field order.</summary>
     public static IReadOnlyList<PolicyObjectBinding> Enumerate(FirewallPolicyBundle bundle)
     {
         ArgumentNullException.ThrowIfNull(bundle);
@@ -14,6 +14,8 @@ public static class PolicyObjectReferences
         Add(bundle.Filter, "filter"); if (bundle.AuxiliaryFilter is { } aux) { Add(aux.Filter, "auxiliaryFilter.filter"); }
         if (bundle.Nat is { } nat)
         {
+            for (var i = 0; i < nat.DnatRules.Count; i++)
+            { if (nat.DnatRules[i]?.OriginalPortObject is { } ports) { result.Add(new($"nat.dnatRules[{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}].originalPortObject", ports)); } }
             for (var i = 0; i < nat.SnatRules.Count; i++)
             {
                 if (nat.SnatRules[i] is not { } rule) { continue; }
