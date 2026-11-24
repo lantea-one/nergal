@@ -6,14 +6,19 @@ namespace Nergal.Core.Policy;
 /// <summary>A self-contained immutable controller object version, retained in policy JSON independently of future library edits.</summary>
 public sealed record PolicyObjectReference
 {
-    /// <summary>Creates a pinned reference from validated immutable content. No database lookup or native execution occurs.</summary>
+    /// <summary>Creates a legacy literal-projection reference, preserving the original constructor contract and existing artifacts.</summary>
     /// <exception cref="ArgumentException">Identity/version is outside the controller object contract.</exception>
     /// <exception cref="ArgumentNullException">Content is null.</exception>
-    public PolicyObjectReference(Guid id, int version, ReusableObjectContent content)
+    public PolicyObjectReference(Guid id, int version, ReusableObjectContent content) : this(id, version, content, false) { }
+
+    /// <summary>Creates a pinned reference with an explicit native-set projection choice. No database lookup or native execution occurs.</summary>
+    /// <exception cref="ArgumentException">Identity/version is outside the controller object contract.</exception>
+    /// <exception cref="ArgumentNullException">Content is null.</exception>
+    public PolicyObjectReference(Guid id, int version, ReusableObjectContent content, bool nativeSet)
     {
         ArgumentNullException.ThrowIfNull(content);
         if (id == Guid.Empty || version is < 1 or > 64) { throw new ArgumentException("object.referenceInvalid"); }
-        Id = id; Version = version; Content = content;
+        Id = id; Version = version; Content = content; NativeSet = nativeSet;
     }
     /// <summary>Gets the stable controller object identity.</summary>
     public Guid Id { get; }
@@ -21,10 +26,12 @@ public sealed record PolicyObjectReference
     public int Version { get; }
     /// <summary>Gets validated immutable embedded contents; compilation never fetches the latest library version.</summary>
     public ReusableObjectContent Content { get; }
+    /// <summary>Gets whether compilation retains this version as a shared native static set; false preserves legacy literal artifacts.</summary>
+    public bool NativeSet { get; }
     /// <inheritdoc />
-    public bool Equals(PolicyObjectReference? other) => other is not null && Id == other.Id && Version == other.Version && Content.Digest == other.Content.Digest;
+    public bool Equals(PolicyObjectReference? other) => other is not null && Id == other.Id && Version == other.Version && NativeSet == other.NativeSet && Content.Digest == other.Content.Digest;
     /// <inheritdoc />
-    public override int GetHashCode() => HashCode.Combine(Id, Version, Content.Digest);
+    public override int GetHashCode() => HashCode.Combine(Id, Version, Content.Digest, NativeSet);
 }
 
 /// <summary>A stable controller-reference validation failure at a matcher path.</summary>

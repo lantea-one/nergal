@@ -389,6 +389,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
             parser = DraftParser(); parser.feed(body)
             require(parser.value is not None, 'Pinned draft did not retain JSON')
             reference = json.loads(parser.value)['filter']['rules'][index]['sourceObject']
+            require(reference['nativeSet'] is True, 'New UI attachment lost native shared-set projection')
             require(reference['id'] == object_id and reference['version'] == 1, 'Pinned object identity lost')
             return parser.value
 

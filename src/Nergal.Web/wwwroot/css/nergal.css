@@ -429,6 +429,14 @@ pre {
   white-space: nowrap;
 }
 
+/* Full artifact digests must wrap inside narrow candidate/review cards. */
+.badge.mono {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .badge-primary { background: var(--primary-soft); color: var(--primary); }
 .badge-success { background: var(--success-soft); color: var(--success); }
 .badge-warning { background: var(--warning-soft); color: var(--warning); }

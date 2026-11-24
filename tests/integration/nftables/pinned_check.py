@@ -22,7 +22,7 @@ def main():
     text = Path(candidate).read_text()
     run(['nft', '--check', '-f', '-'], text)
     Path(echo).write_text(run(['nft', '--echo', '--handle', '--json', '-f', '-'], text))
-    Path(listing).write_text(run(['nft', '--terse', '--json', 'list', 'table', 'inet', 'nergal_filter']))
+    Path(listing).write_text(run(['nft', '--json', 'list', 'table', 'inet', 'nergal_filter']))
     for family, prefix in [(socket.AF_INET, '127.0.0.'), (socket.AF_INET6, '2001:db8::')]:
         for source, destination, port, permitted in [(2, 1, 19001, True), (4, 1, 19003, True),
                 (3, 1, 19001, False), (2, 5, 19001, False), (2, 1, 19002, False)]:

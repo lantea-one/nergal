@@ -74,7 +74,7 @@ public static class NftPolicyBundleCompiler
                 {
                     // Replacement is confined to compiler-owned identifier and priority tokens.
                     auxiliaryResult = new(candidate.Replace("inet nergal_filter", "inet nergal_aux", StringComparison.Ordinal)
-                        .Replace("priority 0;", "priority " + auxiliary.Priority.ToString(System.Globalization.CultureInfo.InvariantCulture) + ";", StringComparison.Ordinal), []);
+                        .Replace("priority 0;", "priority " + auxiliary.Priority.ToString(System.Globalization.CultureInfo.InvariantCulture) + ";", StringComparison.Ordinal), [], result.ObservationBudget);
                 }
             }
         }
@@ -147,6 +147,13 @@ public static class NftPolicyBundleCompiler
         }
 
         if (auxiliaryResult is not null) { text.Append(auxiliaryResult.Candidate); }
+        var components = new[] { filterResult, natResult, bridgeResult, auxiliaryResult }.Where(r => r is not null).Select(r => r!).ToArray();
+        if (components.Any(r => r.ObservationBudget > 0))
+        {
+            var budget = components.Sum(r => r.ObservationBudget > 0 ? r.ObservationBudget : NftStaticSetPlan.Estimate(r.Candidate!));
+            if (budget > 65536) { return new(null, [new("object.nativeObservationTooLarge", "objects")]); }
+            return new(text.ToString(), [], budget);
+        }
         return new(text.ToString(), []);
     }
 

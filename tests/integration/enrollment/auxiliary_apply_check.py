@@ -21,6 +21,9 @@ def require(condition, message):
 
 require(len(sys.argv) == 6, 'Invoke through the guarded launcher')
 agent, compiler, scenario, parent_user, parent_net = sys.argv[1:]
+named = scenario.startswith('named-')
+if named:
+    scenario = scenario[6:]
 require(os.readlink('/proc/self/ns/user') != parent_user, 'User isolation missing')
 require(os.readlink('/proc/self/ns/net') != parent_net, 'Network isolation missing')
 require(os.getuid() == 0, 'Namespace root required')
@@ -187,13 +190,13 @@ run('ip', 'link', 'set', 'lo', 'up')
 for family, hook, port in [('inet', 'input', 19000), ('bridge', 'forward', 18081)]:
     nft(f'create table {family} foreign_probe\nadd chain {family} foreign_probe probe {{ type filter hook {hook} priority -4; policy accept; }}\nadd rule {family} foreign_probe probe {"udp" if family == "inet" else "tcp"} dport {port} counter\n')
 foreign = {f: run('nft', '--stateless', 'list', 'table', f, 'foreign_probe') for f in ('inet', 'bridge')}
-blocked = json.loads(run('dotnet', compiler, 'auxiliary-acceptance-json'))
-opened = json.loads(run('dotnet', compiler, 'auxiliary-open-json'))
+blocked = json.loads(run('dotnet', compiler, 'native-static-sets-json' if named else 'auxiliary-acceptance-json'))
+opened = json.loads(run('dotnet', compiler, 'native-static-open-json' if named else 'auxiliary-open-json'))
 children = topology() if scenario in ('native', 'lifecycle') else []
 process = None
 try:
     if scenario == 'native':
-        artifact = run('dotnet', compiler, 'auxiliary-acceptance-native')
+        artifact = run('dotnet', compiler, 'native-static-sets' if named else 'auxiliary-acceptance-native')
         run('nft', '--check', '-f', '-', text=artifact)
         nft(artifact)
         for family in (socket.AF_INET, socket.AF_INET6):
@@ -303,6 +306,26 @@ try:
                         nft('delete table inet nergal_aux\n' + table)
                     elif scenario == 'missing-table':
                         nft('delete table inet nergal_aux\n')
+                    elif named and scenario in ('lookup-drift', 'content-drift', 'handle-drift'):
+                        listed = json.loads(run('nft', '--json', 'list', 'table', 'inet', 'nergal_filter'))
+                        definition = next(item['set'] for item in listed['nftables'] if 'set' in item)
+                        name = definition['name']
+                        handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['expr'][0]['match']['right'] == 'ipv4')
+                        if scenario == 'lookup-drift':
+                            # A literal with identical values must not stand in for the pinned native lookup.
+                            nft(f'replace rule inet nergal_filter input handle {handle} meta nfproto ipv4 udp dport 19001 drop\n')
+                        else:
+                            # Bound constant sets refuse element edits. Unbind in one transaction, then retain or recreate the set.
+                            rules = [item['rule'] for item in listed['nftables'] if 'rule' in item]
+                            change = ''.join(f'delete rule inet nergal_filter input handle {rule["handle"]}\n' for rule in rules)
+                            nft(change)
+                            change = ''
+                            if scenario == 'handle-drift':
+                                change += f'delete set inet nergal_filter {name}\nadd set inet nergal_filter {name} {{ type inet_service; flags constant; elements = {{ 19001 }}; }}\n'
+                            else:
+                                change += f'add element inet nergal_filter {name} {{ 19003 }}\n'
+                            change += ''.join(f'add rule inet nergal_filter input meta nfproto {family} udp dport @{name} drop\n' for family in ('ipv4', 'ipv6'))
+                            nft(change)
                     elif scenario == 'nat-set-drift':
                         listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'inet', 'nergal_nat'))
                         handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'postrouting')
@@ -331,7 +354,7 @@ try:
                     require(snapshot() == before, 'Recovery overwrote drifted, recreated, missing or unknown native state')
     for family, expected in foreign.items():
         require(run('nft', '--stateless', 'list', 'table', family, 'foreign_probe') == expected, 'Foreign probe semantics changed')
-    print('PASS: auxiliary acceptance ' + scenario, flush=True)
+    print('PASS: auxiliary acceptance ' + ('named-' if named else '') + scenario, flush=True)
 finally:
     if process is not None:
         process.terminate()

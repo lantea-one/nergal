@@ -31,8 +31,8 @@ def check_policy_objects(browser, directory):
     bundle = json.loads(parsed.value)
     reference = bundle["filter"]["rules"][0]["sourceObject"]
     assert reference["id"] == object_id and reference["version"] == 2
-    assert reference["entries"] == ["203.0.113.10/32"]
-    assert "trusted_clients v2" in html and "ip saddr 203.0.113.10/32" in html
+    assert reference["entries"] == ["203.0.113.10/32"] and reference["nativeSet"] is True
+    assert "trusted_clients v2" in html and "ip saddr @nergal_obj_" in html and "203.0.113.10/32" in html
     browser.request("/manage/policies/save", 302, {"bundleJson": parsed.value, "summary": "Pinned synthetic list",
                     "__RequestVerificationToken": browser.token("/manage/policies")})
     usage = browser.request("/manage/objects?objectId=" + object_id, 200)
@@ -44,7 +44,7 @@ def check_policy_objects(browser, directory):
         saved = json.loads(db.execute("SELECT policy_json FROM policy_revisions WHERE revision=1").fetchone()[0])
         assert saved["filter"]["rules"][0]["sourceObject"] == reference
     preview = browser.request("/manage/policies?revision=1", 200)
-    assert "trusted_clients v2" in preview and "ip saddr 203.0.113.10/32" in preview
+    assert "trusted_clients v2" in preview and "ip saddr @nergal_obj_" in preview and "203.0.113.10/32" in preview
     forged = json.loads(parsed.value); forged["filter"]["rules"][0]["sourceObject"]["version"] = 1
     denied = browser.request("/manage/policies/save", 400, {"bundleJson": json.dumps(forged),
         "__RequestVerificationToken": browser.token("/manage/policies")})

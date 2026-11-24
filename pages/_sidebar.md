@@ -12,6 +12,7 @@
 - [Native Source Library](native-source-library.md)
 
 - [Sets & IP Lists](reusable-object-library.md)
+- [Native Static List References](native-static-lists.md)
 
 - [Milestones to Product Code-Complete](milestones.md)
 

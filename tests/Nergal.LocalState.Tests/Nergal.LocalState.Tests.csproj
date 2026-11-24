@@ -26,5 +26,5 @@
     <ProjectReference Include="..\..\src\Nergal.Identity\Nergal.Identity.csproj" />
   </ItemGroup>
 
-  <ItemGroup><EmbeddedResource Include="../Shared/NativeRouter/bundle-echo.json" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="../Shared/NativeRouter/bundle-echo.json" /><EmbeddedResource Include="../Shared/NativeRouter/native-static-echo.json" /></ItemGroup>
 </Project>

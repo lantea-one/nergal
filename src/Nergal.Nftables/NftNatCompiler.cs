@@ -29,11 +29,13 @@ public static class NftNatCompiler
     private static CompilationResult CompileCore(NatPolicy policy, NftTableIdentity? identity)
     {
         ArgumentNullException.ThrowIfNull(policy);
+        var intent = policy;
         var referenceErrors = new List<PolicyObjectDiagnostic>();
         policy = TransportObjectResolver.Resolve(policy, referenceErrors);
         if (referenceErrors.Count != 0) { return new(null, referenceErrors.Select(d => new PolicyDiagnostic(d.Code, d.Path)).ToArray()); }
 
         var errors = new List<PolicyDiagnostic>();
+        var sets = new NftStaticSetPlan(intent.DnatRules.SelectMany(NftStaticSetPlan.References).Concat(intent.SnatRules.SelectMany(NftStaticSetPlan.References)), errors);
         if (policy.SchemaVersion != NatPolicy.CurrentSchemaVersion)
         {
             errors.Add(new("schema.unsupported", "schemaVersion"));
@@ -188,7 +190,8 @@ public static class NftNatCompiler
         text.Append("add chain inet " + TableName + " prerouting { type nat hook prerouting priority dstnat; policy accept; }\n");
         text.Append("add chain inet " + TableName + " postrouting { type nat hook postrouting priority srcnat; policy accept; }\n");
 
-        foreach (var (rule, addr) in normalizedDnat.Where(r => r.Rule.Enabled))
+        sets.Append(text, "inet", TableName);
+        foreach (var (rule, addr) in normalizedDnat.Select((r, i) => (Rule: NftStaticSetPlan.Attach(r.Rule, intent.DnatRules[i]!), r.NormalizedAddr)).Where(r => r.Rule.Enabled))
         {
             var familyToken = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
             text.Append("add rule inet " + TableName + " prerouting meta nfproto ")
@@ -199,7 +202,9 @@ public static class NftNatCompiler
                 text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
             }
 
-            if (rule.Source is not null)
+            if (rule.SourceObject is { NativeSet: true } sourceSet)
+            { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
+            else if (rule.Source is not null)
             {
                 text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' ');
             }
@@ -207,18 +212,20 @@ public static class NftNatCompiler
             else if (rule.SourcePrefixes is { } sources)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append("{ ").Append(string.Join(", ", sources.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
             text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "");
-            if (rule.OriginalDestination is { } original) { text.Append(original.Value).Append(' '); }
+            if (rule.DestinationObject is { NativeSet: true } destinationSet) { text.Append('@').Append(NftStaticSetPlan.Name(destinationSet)).Append(' '); }
+            else if (rule.OriginalDestination is { } original) { text.Append(original.Value).Append(' '); }
             else { text.Append("{ ").Append(string.Join(", ", rule.DestinationPrefixes!.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
 
             if (rule.Protocol != FilterProtocol.Any)
             {
                 var proto = rule.Protocol == FilterProtocol.Tcp ? "tcp" : "udp";
                 text.Append("meta l4proto ").Append(proto).Append(' ');
-                if (rule.OriginalPort.HasValue)
+                if (rule.OriginalPortObject is { NativeSet: true } portSet) { text.Append(proto).Append(" dport @").Append(NftStaticSetPlan.Name(portSet)).Append(' '); }
+                else if (rule.OriginalPort.HasValue)
                 {
                     text.Append(proto).Append(" dport ").Append(rule.OriginalPort.Value.ToString(CultureInfo.InvariantCulture)).Append(' ');
                 }
-                if (rule.OriginalPorts is { } ports) { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
+                else if (rule.OriginalPorts is { } ports) { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
             }
 
             text.Append("dnat ").Append(familyToken).Append(" to ");
@@ -241,7 +248,7 @@ public static class NftNatCompiler
             text.Append('\n');
         }
 
-        foreach (var (rule, addr) in normalizedSnat.Where(r => r.Rule.Enabled))
+        foreach (var (rule, addr) in normalizedSnat.Select((r, i) => (Rule: NftStaticSetPlan.Attach(r.Rule, intent.SnatRules[i]!), r.NormalizedAddr)).Where(r => r.Rule.Enabled))
         {
             var familyToken = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
             text.Append("add rule inet " + TableName + " postrouting meta nfproto ")
@@ -254,12 +261,16 @@ public static class NftNatCompiler
                 text.Append("oifname ").Append(rule.NegateOutputInterface ? "!= " : "").Append("\"").Append(rule.OutputInterface).Append("\" ");
             }
 
-            if (rule.Source is not null)
+            if (rule.SourceObject is { NativeSet: true } sourceSet)
+            { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
+            else if (rule.Source is not null)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' '); }
             else if (rule.SourcePrefixes is { } sources)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append("{ ").Append(string.Join(", ", sources.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
 
-            if (rule.Destination is not null)
+            if (rule.DestinationObject is { NativeSet: true } destinationSet)
+            { text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(destinationSet)).Append(' '); }
+            else if (rule.Destination is not null)
             {
                 text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.Destination.Value).Append(' ');
             }
@@ -271,8 +282,9 @@ public static class NftNatCompiler
             {
                 var proto = rule.Protocol == FilterProtocol.Tcp ? "tcp" : "udp";
                 text.Append("meta l4proto ").Append(proto).Append(' ');
-                if (rule.DestinationPort is { } port) { text.Append(proto).Append(" dport ").Append(port.ToString(CultureInfo.InvariantCulture)).Append(' '); }
-                if (rule.DestinationPorts is { } ports)
+                if (rule.DestinationPortObject is { NativeSet: true } portSet) { text.Append(proto).Append(" dport @").Append(NftStaticSetPlan.Name(portSet)).Append(' '); }
+                else if (rule.DestinationPort is { } port) { text.Append(proto).Append(" dport ").Append(port.ToString(CultureInfo.InvariantCulture)).Append(' '); }
+                else if (rule.DestinationPorts is { } ports)
                 { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order().Select(p => p.ToString(CultureInfo.InvariantCulture)))).Append(" } "); }
             }
             if (rule.Action == NatPostroutingAction.Snat) { text.Append("snat ").Append(familyToken).Append(" to ").Append(addr); }
@@ -280,6 +292,6 @@ public static class NftNatCompiler
             text.Append('\n');
         }
 
-        return new(text.ToString(), []);
+        return sets.Finish(text.ToString());
     }
 }

@@ -8,9 +8,10 @@ namespace Nergal.Nftables;
 // Agent replacement must bind their complete native observation and local rollback receipt.
 internal static class RouterBridgeCompiler
 {
-    internal static CompilationResult Compile(BridgePolicy p, NftTableIdentity? identity)
+    internal static CompilationResult Compile(BridgePolicy p, NftTableIdentity? identity, BridgePolicy intent)
     {
         var errors = new List<PolicyDiagnostic>();
+        var sets = new NftStaticSetPlan(intent.Rules.Concat(intent.SubChains.SelectMany(c => c.Rules)).SelectMany(NftStaticSetPlan.References), errors);
         if (p.SchemaVersion != 1) { errors.Add(new("schema.unsupported", "schemaVersion")); }
         if (p.Priority is < -300 or > 300) { errors.Add(new("priority.outOfRange", "priority")); }
         if (p.DefaultVerdict is not (FilterVerdict.Accept or FilterVerdict.Drop)) { errors.Add(new("verdict.unknown", "defaultVerdict")); }
@@ -71,11 +72,14 @@ internal static class RouterBridgeCompiler
         text.Append('\n').Append("add chain bridge " + NftBridgeCompiler.TableName + " forward { type filter hook forward priority ")
             .Append(p.Priority.ToString(CultureInfo.InvariantCulture)).Append("; policy ").Append(p.DefaultVerdict == FilterVerdict.Accept ? "accept" : "drop").Append("; }\n");
         foreach (var c in p.SubChains) { text.Append("add chain bridge " + NftBridgeCompiler.TableName + ' ').Append(c.Name).Append('\n'); }
+        sets.Append(text, "bridge", NftBridgeCompiler.TableName);
         foreach (var (name, rules) in chains)
         {
-            foreach (var draft in rules)
+            for (var index = 0; index < rules.Count; index++)
             {
-                var r = draft!;
+                var draft = rules[index];
+                var originalRules = name == "forward" ? intent.Rules : intent.SubChains.Single(c => c.Name == name).Rules;
+                var r = NftStaticSetPlan.Attach(draft!, originalRules[index]!);
                 if (!r.Enabled) { continue; }
                 text.Append("add rule bridge " + NftBridgeCompiler.TableName + ' ').Append(name).Append(' ');
                 if (r.InputInterface is not null) { text.Append("iifname \"").Append(r.InputInterface).Append("\" "); }
@@ -86,21 +90,24 @@ internal static class RouterBridgeCompiler
                 var type = r.Family is { } f ? f == IpFamily.IPv4 ? BridgeEtherType.IPv4 : BridgeEtherType.IPv6 : r.EtherType;
                 if (type != BridgeEtherType.Any) { text.Append("ether type ").Append(type == BridgeEtherType.IPv4 ? "ip" : type == BridgeEtherType.IPv6 ? "ip6" : "arp").Append(' '); }
                 var family = r.Family == IpFamily.IPv4 ? "ip" : "ip6";
-                if (r.Source is not null) { text.Append(family).Append(" saddr ").Append(r.Source.Value).Append(' '); }
+                if (r.SourceObject is { NativeSet: true } sourceSet) { text.Append(family).Append(" saddr @").Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
+                else if (r.Source is not null) { text.Append(family).Append(" saddr ").Append(r.Source.Value).Append(' '); }
                 else if (r.SourcePrefixes is { } sources) { text.Append(family).Append(" saddr { ").Append(string.Join(", ", sources.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
-                if (r.Destination is not null) { text.Append(family).Append(" daddr ").Append(r.Destination.Value).Append(' '); }
+                if (r.DestinationObject is { NativeSet: true } destinationSet) { text.Append(family).Append(" daddr @").Append(NftStaticSetPlan.Name(destinationSet)).Append(' '); }
+                else if (r.Destination is not null) { text.Append(family).Append(" daddr ").Append(r.Destination.Value).Append(' '); }
                 else if (r.DestinationPrefixes is { } destinations) { text.Append(family).Append(" daddr { ").Append(string.Join(", ", destinations.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
                 if (r.Protocol != FilterProtocol.Any)
                 {
                     var protocol = r.Protocol == FilterProtocol.Tcp ? "tcp" : "udp";
                     text.Append("meta l4proto ").Append(protocol).Append(' ');
-                    if (r.DestinationPort is { } port) { text.Append(protocol).Append(" dport ").Append(port.ToString(CultureInfo.InvariantCulture)).Append(' '); }
-                    if (r.DestinationPorts is { } ports) { text.Append(protocol).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
+                    if (r.DestinationPortObject is { NativeSet: true } portSet) { text.Append(protocol).Append(" dport @").Append(NftStaticSetPlan.Name(portSet)).Append(' '); }
+                    else if (r.DestinationPort is { } port) { text.Append(protocol).Append(" dport ").Append(port.ToString(CultureInfo.InvariantCulture)).Append(' '); }
+                    else if (r.DestinationPorts is { } ports) { text.Append(protocol).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
                 }
                 text.Append(r.JumpTarget is not null ? "jump " + r.JumpTarget : r.Return ? "return" : r.Verdict == FilterVerdict.Accept ? "accept" : "drop").Append('\n');
             }
         }
-        return new(text.ToString(), []);
+        return sets.Finish(text.ToString());
     }
 
     private static bool ValidName(string? name) => name is { Length: >= 1 and <= 32 } &&

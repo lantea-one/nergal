@@ -205,7 +205,7 @@ immutable IPv4/IPv6/port-list versions under controller schema 3 (ADR 0039). Lib
 edits require Administrator authorization, CSRF and exact expected-version checks,
 with transactional audit. Auditors can inspect history. Pinned references under ADR 0040 embed immutable object versions in saved inet
 filter rules. Compilation projects those snapshots onto existing matchers; no
-latest-version lookup occurs during apply and native named sets remain unsupported.
+latest-version lookup occurs during apply. [Native static references](native-static-lists.md) now add shared definitions under ADR 0048 while older references retain this projection.
 Saved policies cannot change as a side effect of editing a library object.
 
 [Rule enabled state](rule-enabled-state.md) remains in canonical revision intent
@@ -250,14 +250,14 @@ DNAT original destination-port lists use embedded immutable snapshots, resolved
 without database lookup into scalar/set matchers before one explicit translation.
 Complete native observations retain every port and bind set policies with v3 NAT
 fingerprints. This preserves the existing receipt/watchdog boundary; no new agent
-command or SQL schema is introduced. Native named objects remain separate work.
+command or SQL schema is introduced. Native projection now follows [the complete static-set contract](native-static-lists.md).
 
 DNAT source/original-destination address snapshots use the same self-contained
 reference contract. Compilation projects scalars/sets without database lookups,
 retains whole-set negation and one explicit translation, and rejects missing
 original-destination restrictions. Complete native v3 observations bind all address
 entries; older scalar/port-only fingerprints remain unchanged. No new privileged
-command or SQL migration is introduced. Native named objects remain separate.
+command or SQL migration is introduced. Native projection now follows [the complete static-set contract](native-static-lists.md).
 
 Native observations now bracket complete table collection with bounded read-only
 kernel transaction-generation queries ([ADR 0047](decisions/0047-generation-consistent-native-observations.md)).
@@ -265,4 +265,11 @@ A changed generation, denied query or malformed reply makes the observation
 unavailable rather than combining state from different transactions. This covers
 outside writers during collection; it does not close the later observation-to-write
 race. Transactions in unrelated tables can conservatively invalidate collection.
-Native named-set elements still need separate complete collection and remain unsupported.
+Static elements now use complete per-set collection, matching creation handles and exact protected-artifact verification under [ADR 0048](native-static-lists.md).
+
+Native static lists preserve enforcement references across every declared scope.
+Receipts bind definitions, complete contents and lookup edges. Generation-bound
+listings can complete nft creation-echo element omissions only when creation
+handles agree and the reconstructed artifact exactly matches protected intent.
+Missing provenance or conflicting data remains denied. The journal repeats exact
+artifact verification; dynamic meter runtime contents retain their separate boundary.

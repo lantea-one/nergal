@@ -5,6 +5,10 @@ using Nergal.Linux;
 
 // Only synthetic documentation addresses; this program emits text or verifies snapshots without host mutations.
 var mode = args.Length > 0 ? args[0] : "schema1";
+var nativeProjection = mode.StartsWith("named-", StringComparison.Ordinal);
+if (nativeProjection) { mode = mode[6..]; }
+FilterPolicy FilterProjection(FilterPolicy p) => nativeProjection ? RouterPolicySamples.WithNativeSetReferences(new(1, p)).Filter : p;
+NatPolicy NatProjection(NatPolicy p) => nativeProjection ? RouterPolicySamples.WithNativeSetReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), p)).Nat! : p;
 if (mode is "generation" or "generation-denied")
 {
     if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
@@ -20,6 +24,50 @@ if (mode is "generation" or "generation-denied")
 var routerIdentity = new NftTableIdentity(
     Guid.Parse("00000000-0000-0000-0000-000000000010"),
     Guid.Parse("00000000-0000-0000-0000-000000000020"));
+
+if (mode == "native-low-ipv6" && args.Length == 2)
+{
+    Console.Write(NftFilterCompiler.Compile(LowIpv6(args[1]), routerIdentity).Candidate); return 0;
+}
+if (mode == "verify-native-low-ipv6" && args.Length == 4)
+{
+    var expected = NftFilterCompiler.Compile(LowIpv6(args[3]), routerIdentity).Candidate!;
+    var listing = File.ReadAllText(args[2]);
+    var completed = NftStaticSetCreationEvidence.Complete(File.ReadAllText(args[1]), [listing], expected);
+    var echo = NftTableObservation.ParseReplacementEcho(completed);
+    var listed = NftTableObservation.Parse(listing);
+    if (!echo.IsSuccess || !listed.IsSuccess || echo.Observation!.StateDigest != listed.Observation!.StateDigest || NftFilterCompiler.Compile(listed.Observation.Policy, routerIdentity).Candidate != expected)
+    { throw new InvalidOperationException("Low IPv6 creation evidence failed."); }
+    return 0;
+}
+static FilterPolicy LowIpv6(string kind) => new(2, FilterVerdict.Drop, FilterVerdict.Accept, FilterVerdict.Accept,
+    [new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Accept, DestinationPort: 19001,
+        SourceObject: new(Guid.Parse("00000000-0000-0000-0000-000000000031"), 1,
+            new("low_ipv6", Nergal.Core.Controller.ReusableObjectKind.Ipv6, "", [kind == "prefix" ? "::/64" : "::1/128"]), true))]);
+
+if (mode is "native-static-sets" or "native-static-sets-json" or "native-static-open-json")
+{
+    var bundle = NativeStaticBundle(mode != "native-static-open-json");
+    if (mode.EndsWith("-json", StringComparison.Ordinal)) { Console.Write(PolicyBundleJsonCodec.EncodeBundle(bundle)); }
+    else { var result = NftPolicyBundleCompiler.Compile(bundle, routerIdentity); if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); } Console.Write(result.Candidate); }
+    return 0;
+}
+if (mode == "verify-native-static-sets" && args.Length == 6)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[1]), routerIdentity, true, true, true);
+    if (!echo.IsSuccess) { throw new InvalidOperationException("Native set echo failed: " + echo.ErrorCode); }
+    var primary = NftTableObservation.Parse(File.ReadAllText(args[2])).Observation;
+    var nat = NftNatTableObservation.Parse(File.ReadAllText(args[3])).Observation;
+    var bridge = NftBridgeTableObservation.Parse(File.ReadAllText(args[4])).Observation;
+    var auxiliary = NftAuxiliaryTableObservation.Parse(File.ReadAllText(args[5]));
+    if (primary is null || nat is null || bridge is null || auxiliary is null) { throw new InvalidOperationException("Native set listing failed."); }
+    var listed = NftTableObservation.Combine(primary, nat, bridge, auxiliary);
+    if (echo.Observation!.StateDigest != listed.StateDigest || NftPolicyBundleCompiler.Compile(listed.Bundle, routerIdentity).Candidate != NftPolicyBundleCompiler.Compile(NativeStaticBundle(), routerIdentity).Candidate)
+    { throw new InvalidOperationException("Native static set identity/contents/lookups did not round-trip."); }
+    return 0;
+}
+static FirewallPolicyBundle NativeStaticBundle(bool blocked = true) => RouterPolicySamples.WithNativeSetReferences(
+    RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(RouterPolicySamples.WithBridgeAddressReferences(RouterPolicySamples.WithDnatAddressReferences(RouterPolicySamples.AuxiliaryAcceptance(blocked))))));
 
 if (mode is "auxiliary-acceptance-json" or "auxiliary-open-json" or "auxiliary-acceptance-native")
 {
@@ -145,7 +193,7 @@ if (mode == "schema1")
 
 if (mode == "router")
 {
-    var policy = BuildRouterPolicy();
+    var policy = FilterProjection(BuildRouterPolicy());
     var result = NftFilterCompiler.Compile(policy, routerIdentity);
     if (!result.IsSuccess)
     {
@@ -158,7 +206,7 @@ if (mode == "router")
 
 if (mode == "verify-router" && args.Length is 3 or 4)
 {
-    var expected = NftFilterCompiler.Compile(BuildRouterPolicy(), routerIdentity).Candidate!;
+    var expected = NftFilterCompiler.Compile(FilterProjection(BuildRouterPolicy()), routerIdentity).Candidate!;
     var echoJson = File.ReadAllText(args[1]);
     var listJson = File.ReadAllText(args[2]);
     var echoed = NftTableObservation.ParseReplacementEcho(echoJson);
@@ -180,7 +228,18 @@ if (mode == "verify-router" && args.Length is 3 or 4)
 
     if (args.Length == 4)
     {
-        var terse = NftTableObservation.Parse(File.ReadAllText(args[3]));
+        var terseJson = File.ReadAllText(args[3]);
+        if (nativeProjection)
+        {
+            if (NftTableObservation.Parse(terseJson).IsSuccess) { throw new InvalidOperationException("Incomplete static set listing was accepted."); }
+            var root = System.Text.Json.Nodes.JsonNode.Parse(listJson)!;
+            var meta = root["nftables"]![0]!;
+            var names = NftStaticSetCollection.Names(terseJson, "inet", "nergal_filter");
+            var replies = root["nftables"]!.AsArray().Where(i => i?["set"] is { } set && names.Contains(set["name"]!.GetValue<string>()))
+                .Select(i => new System.Text.Json.Nodes.JsonObject { ["nftables"] = new System.Text.Json.Nodes.JsonArray(meta.DeepClone(), i!.DeepClone()) }.ToJsonString());
+            terseJson = NftStaticSetCollection.Complete(terseJson, "inet", "nergal_filter", replies);
+        }
+        var terse = NftTableObservation.Parse(terseJson);
         if (!terse.IsSuccess)
         {
             throw new InvalidOperationException("Router terse listing failed: " + terse.ErrorCode);
@@ -203,7 +262,7 @@ if (mode == "verify-router" && args.Length is 3 or 4)
 
 if (mode == "nat-filter")
 {
-    var result = NftFilterCompiler.Compile(BuildNatFilterPolicy(), routerIdentity);
+    var result = NftFilterCompiler.Compile(FilterProjection(BuildNatFilterPolicy()), routerIdentity);
     if (!result.IsSuccess)
     {
         throw new InvalidOperationException("NAT filter policy failed: " + string.Join(", ", result.Diagnostics));
@@ -231,7 +290,7 @@ if (mode is "state-accept-on" or "state-accept-off" or "state-drop-on" or "state
 
 if (mode is "sets" or "pinned")
 {
-    var result = NftFilterCompiler.Compile(mode == "pinned" ? BuildPinnedPolicy() : BuildSetsPolicy(), routerIdentity);
+    var result = NftFilterCompiler.Compile(FilterProjection(mode == "pinned" ? BuildPinnedPolicy() : BuildSetsPolicy()), routerIdentity);
     if (!result.IsSuccess)
     {
         throw new InvalidOperationException("Sets policy failed: " + string.Join(", ", result.Diagnostics));
@@ -243,7 +302,7 @@ if (mode is "sets" or "pinned")
 
 if (mode is "verify-sets" or "verify-pinned" && args.Length == 3)
 {
-    var expected = NftFilterCompiler.Compile(mode == "verify-pinned" ? BuildPinnedPolicy() : BuildSetsPolicy(), routerIdentity).Candidate!;
+    var expected = NftFilterCompiler.Compile(FilterProjection(mode == "verify-pinned" ? BuildPinnedPolicy() : BuildSetsPolicy()), routerIdentity).Candidate!;
     var echoed = NftTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
     if (!echoed.IsSuccess)
     {
@@ -272,7 +331,7 @@ if (mode is "verify-sets" or "verify-pinned" && args.Length == 3)
 
 if (mode is "nat" or "nat-negated")
 {
-    var result = NftNatCompiler.Compile(BuildNatPolicy(mode == "nat-negated"), routerIdentity);
+    var result = NftNatCompiler.Compile(NatProjection(BuildNatPolicy(mode == "nat-negated")), routerIdentity);
     if (!result.IsSuccess)
     {
         throw new InvalidOperationException("NAT policy failed: " + string.Join(", ", result.Diagnostics));
@@ -287,15 +346,15 @@ if (mode == "verify-nat-negated" && args.Length == 3)
     var echo = NftNatTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
     var listed = NftNatTableObservation.Parse(File.ReadAllText(args[2]));
     if (!echo.IsSuccess || !listed.IsSuccess || echo.Observation!.StateDigest != listed.Observation!.StateDigest ||
-        NftNatCompiler.Compile(listed.Observation.Policy, routerIdentity).Candidate != NftNatCompiler.Compile(BuildNatPolicy(true), routerIdentity).Candidate)
+        NftNatCompiler.Compile(listed.Observation.Policy, routerIdentity).Candidate != NftNatCompiler.Compile(NatProjection(BuildNatPolicy(true)), routerIdentity).Candidate)
     { throw new InvalidOperationException("Complete negated DNAT address sets failed native round-trip."); }
     return 0;
 }
 
 if (mode == "verify-nat" && args.Length == 5)
 {
-    var expectedFilter = NftFilterCompiler.Compile(BuildNatFilterPolicy(), routerIdentity).Candidate!;
-    var expectedNat = NftNatCompiler.Compile(BuildNatPolicy(), routerIdentity).Candidate!;
+    var expectedFilter = NftFilterCompiler.Compile(FilterProjection(BuildNatFilterPolicy()), routerIdentity).Candidate!;
+    var expectedNat = NftNatCompiler.Compile(NatProjection(BuildNatPolicy()), routerIdentity).Candidate!;
 
     var filterEcho = NftTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
     var filterList = NftTableObservation.Parse(File.ReadAllText(args[2]));
@@ -491,8 +550,11 @@ static FilterPolicy BuildSetsPolicy() => new(
 
 static FilterPolicy BuildPinnedPolicy()
 {
-    PolicyObjectReference Ref(string name, Nergal.Core.Controller.ReusableObjectKind kind, params string[] entries) =>
-        new(Guid.Parse("11111111-1111-4111-8111-111111111111"), 1, new(name, kind, "", entries));
+    PolicyObjectReference Ref(string name, Nergal.Core.Controller.ReusableObjectKind kind, params string[] entries)
+    {
+        var content = new Nergal.Core.Controller.ReusableObjectContent(name, kind, "", entries);
+        return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content);
+    }
     var rules = new List<FilterRule?>();
     foreach (var family in new[] { IpFamily.IPv4, IpFamily.IPv6 })
     {

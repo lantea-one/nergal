@@ -10,12 +10,15 @@ public sealed record PolicyDiagnostic(string Code, string Path);
 /// <summary>Either a complete candidate or diagnostics, never a partial candidate.</summary>
 public sealed class CompilationResult
 {
-    internal CompilationResult(string? candidate, IEnumerable<PolicyDiagnostic> diagnostics)
+    internal CompilationResult(string? candidate, IEnumerable<PolicyDiagnostic> diagnostics, long observationBudget = 0)
     {
+        ObservationBudget = observationBudget;
         Candidate = candidate;
         Digest = candidate is null ? null : CandidateDigest.FromText(candidate);
         Diagnostics = Array.AsReadOnly(diagnostics.ToArray());
     }
+
+    internal long ObservationBudget { get; }
 
     /// <summary>Gets native text for create-only provisioning; null when validation failed.</summary>
     public string? Candidate { get; }

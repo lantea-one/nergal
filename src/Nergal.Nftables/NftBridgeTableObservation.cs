@@ -29,7 +29,7 @@ public sealed class NftBridgeObservationResult
 public sealed partial class NftBridgeTableObservation
 {
     private NftBridgeTableObservation(NftTableIdentity identity, ulong tableHandle, ulong chainHandle,
-        BridgePolicy policy, IReadOnlyList<(string Name, ulong Handle)> chains, IReadOnlyList<(string Chain, ulong Handle, BridgeFilterRule Rule)> rules)
+        BridgePolicy policy, IReadOnlyList<(string Name, ulong Handle)> chains, IReadOnlyList<(string Chain, ulong Handle, BridgeFilterRule Rule)> rules, NftStaticSetSnapshot? named = null)
     {
         Identity = identity; TableHandle = tableHandle; ForwardChainHandle = chainHandle; Policy = policy;
         var addressSets = policy.Rules.Concat(policy.SubChains.SelectMany(c => c.Rules)).Any(r => r?.SourcePrefixes is not null || r?.DestinationPrefixes is not null);
@@ -55,6 +55,13 @@ public sealed partial class NftBridgeTableObservation
             projection.Append('\n').Append(NftBridgeCompiler.Compile(policy, identity).Candidate);
         }
         StateDigest = CandidateDigest.FromText(projection.ToString());
+        if (named is { IsEmpty: false })
+        {
+            Policy = new(policy.SchemaVersion, policy.DefaultVerdict,
+                rules.Where(r => r.Chain == "forward").Select(r => named.Restore(r.Handle, r.Rule)), policy.Priority,
+                policy.SubChains.Select(c => new BridgeSubChain(c.Name, rules.Where(r => r.Chain == c.Name).Select(r => named.Restore(r.Handle, r.Rule)))));
+            StateDigest = named.Bind(StateDigest);
+        }
     }
     /// <summary>Gets the native owner/resource marker.</summary>
     public NftTableIdentity Identity { get; }
@@ -80,7 +87,9 @@ public sealed partial class NftBridgeTableObservation
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
             if (NftJsonHelpers.HasDuplicateProperties(doc.RootElement)) { return Deny("observation.duplicateProperty"); }
             if (!NftJsonHelpers.Properties(doc.RootElement, "nftables") || doc.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { return Deny("observation.shape"); }
-            var items = doc.RootElement.GetProperty("nftables").EnumerateArray().ToArray();
+            var named = NftStaticSetSnapshot.Expand(json, "bridge", NftBridgeCompiler.TableName, echo);
+            using var expanded = named.IsEmpty ? null : JsonDocument.Parse(named.Json);
+            var items = (expanded?.RootElement ?? doc.RootElement).GetProperty("nftables").EnumerateArray().ToArray();
             if (!echo && !NftJsonHelpers.TryReadMetaHeader(items)) { return Deny("observation.schema"); }
             var offset = echo ? 0 : 1;
             if (items.Length < offset + 2) { return Deny("observation.unsupportedObjects"); }
@@ -130,7 +139,7 @@ public sealed partial class NftBridgeTableObservation
                 rules.Where(r => r.Chain == "forward").Select(r => r.Rule), priority,
                 chains.Skip(1).Select(c => new BridgeSubChain(c.Name, rules.Where(r => r.Chain == c.Name).Select(r => r.Rule))));
             if (!NftBridgeCompiler.Compile(policy).IsSuccess) { return Deny("observation.rule"); }
-            return new(new(identity, tableHandle, chainHandle, policy, chains, rules), null);
+            return new(new(identity, tableHandle, chainHandle, policy, chains, rules, named), null);
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException or ArgumentException)
         { return Deny("observation.invalidJson"); }

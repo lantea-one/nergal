@@ -29,3 +29,7 @@ This does not add address-list matching to NAT/bridge, DNAT port translation lis
 native named sets/maps or dynamic objects. Those require their own complete typed
 contracts, native observation and packet acceptance; no rule expansion or lossy
 approximation is introduced here.
+
+[ADR 0048](0048-native-static-list-references.md) adds complete native static-set
+projection while retaining the legacy projection specified here for old revisions.
+See [the current library guide](../reusable-object-library.md) for all supported slots.

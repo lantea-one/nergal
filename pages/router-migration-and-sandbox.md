@@ -169,16 +169,14 @@ The [Sets & IP lists library](reusable-object-library.md) now supports creating,
 editing and searching typed IPv4/IPv6 address/CIDR and port lists, with immutable
 version history and stale-edit protection. Primary inet filter rules can pin list
 versions; library detail shows saved revision references. Library edits do not change
-a saved policy or a firewall. Native named sets remain
-unsupported.
-Native set scope, flags and dynamic behavior require explicit supported semantics.
+a saved policy or a firewall. [Native static list references](native-static-lists.md) now preserve generated named definitions and complete receipt bindings. Dynamic objects and maps retain explicit support limits.
 
 The product roadmap also includes `nftables.conf` file import and export through
 the UI. Import retains the original source, reports semantic mapping and gaps, and
 separates review from revision creation and confirmed apply. Export will download
 the selected managed revision with its resolved objects and explicit scope; original
 source download is a separate operation. Round-trip and isolated packet acceptance
-must precede equivalence claims. Native named sets, semantic conversion
+must precede equivalence claims. Semantic conversion
 and generated policy export remain planned.
 Database source ingestion and exact original downloads are implemented; lexical
 reviews do not establish policy equivalence.

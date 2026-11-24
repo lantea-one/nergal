@@ -27,7 +27,7 @@ public sealed partial class ManagementController
             if (parts.Length != 2 || !Guid.TryParseExact(parts[0], "D", out var id) || !int.TryParse(parts[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var version))
             { errors = [new("object.selectionInvalid", "selection")]; }
             else if (store.ReadReusableObject(id, version) is not { } selected) { errors = [new("object.referenceNotFound", "selection")]; }
-            else { reference = new(selected.Id, selected.Version, selected.Content); }
+            else { reference = new(selected.Id, selected.Version, selected.Content, nativeSet: true); }
         }
         if (errors.Count != 0) { return ObjectDraftFailure(raw, summary, compareToRevision, errors); }
         if (operation == "history")

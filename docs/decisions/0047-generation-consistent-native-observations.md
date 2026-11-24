@@ -52,5 +52,5 @@ cancellation. The real namespace fixture verifies stable reads, same-handle stat
 set-element mutation, dynamic meter packet traffic and capability denial. Existing
 agent lifecycle/drift scenarios and the mapped-identity Unix/mTLS/web workflow pass
 with the guard enabled, including explicit and independent timeout rollback.
-No production rules were read or changed. No new UI is introduced by this guard;
+No production kernel state was observed or modified. No new UI is introduced by this guard;
 existing screenshots remain applicable.

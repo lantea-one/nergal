@@ -415,10 +415,12 @@ public sealed class ResourceReceiptStoreTests
     }
 
     /// <summary>Complete auxiliary intent is checked at binding and confirmation; identical primary policy cannot hide auxiliary drift.</summary>
-    [Fact]
-    public void CompleteBundle_RejectsMissingBaselineAndChangedAuxiliaryCandidate()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompleteBundle_RejectsMissingBaselineAndChangedAuxiliaryCandidate(bool native)
     {
-        var json = CompleteBundleJson();
+        var json = CompleteBundleJson(native);
         NftTableObservation Parse(string text) => NftTableObservation.ParseBundleReplacementEcho(text, new(Owner, Resource), true, true, true).Observation!;
         var baseline = Parse(json);
         var artifact = NftPolicyBundleCompiler.Compile(baseline.Bundle, baseline.Identity).Candidate!;
@@ -483,10 +485,12 @@ public sealed class ResourceReceiptStoreTests
     }
 
     /// <summary>New-boot reconciliation requires complete auxiliary intent and preserves the old receipt after rejected reconstruction.</summary>
-    [Fact]
-    public void CompleteBundle_NewBootRejectsAuxiliaryOnlyMismatch()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompleteBundle_NewBootRejectsAuxiliaryOnlyMismatch(bool native)
     {
-        var json = CompleteBundleJson();
+        var json = CompleteBundleJson(native);
         NftTableObservation Parse(string text) => NftTableObservation.ParseBundleReplacementEcho(text, new(Owner, Resource), true, true, true).Observation!;
         var baseline = Parse(json);
         var artifact = NftPolicyBundleCompiler.Compile(baseline.Bundle, baseline.Identity).Candidate!;
@@ -505,10 +509,10 @@ public sealed class ResourceReceiptStoreTests
         Assert.True(fixture.Store.VerifyExpectedResource(baseline, 43).IsMatch);
     }
 
-    private static string CompleteBundleJson()
+    private static string CompleteBundleJson(bool native = false)
     {
         var assembly = typeof(ResourceReceiptStoreTests).Assembly;
-        using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(n => n.EndsWith("bundle-echo.json", StringComparison.Ordinal)))!;
+        using var stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(n => n.EndsWith(native ? "native-static-echo.json" : "bundle-echo.json", StringComparison.Ordinal)))!;
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd().Replace(new NftTableIdentity(
             Guid.Parse("00000000-0000-0000-0000-000000000010"), Guid.Parse("00000000-0000-0000-0000-000000000020")).Comment,

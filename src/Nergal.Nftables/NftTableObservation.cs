@@ -27,7 +27,7 @@ public sealed partial class NftTableObservation
         List<ObservedRateLimitSet> sets,
         ulong rpHandle = 0,
         IReadOnlyList<ulong>? rpRuleHandles = null,
-        ulong mssHandle = 0)
+        ulong mssHandle = 0, NftStaticSetSnapshot? named = null)
     {
         Identity = identity;
         TableHandle = tableHandle;
@@ -134,6 +134,12 @@ public sealed partial class NftTableObservation
             }
 
             StateDigest = CandidateDigest.FromText(projection.ToString());
+        }
+        if (named is { IsEmpty: false })
+        {
+            Policy = new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict,
+                rules.Select(r => named.Restore(r.Handle, r.Rule)), policy.RpFilter, policy.ForwardTcpMssClamp, policy.ForwardTcpMssClampEnabled);
+            StateDigest = named.Bind(StateDigest);
         }
     }
 
@@ -271,7 +277,7 @@ public sealed partial class NftTableObservation
             errorCode = null;
             return true;
         }
-        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
+        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException or ArgumentException or KeyNotFoundException)
         {
             errorCode = "observation.invalidJson";
             return false;
@@ -353,7 +359,9 @@ public sealed partial class NftTableObservation
                 return Deny("observation.shape");
             }
 
-            var items = root.GetProperty("nftables").EnumerateArray().ToArray();
+            var named = NftStaticSetSnapshot.Expand(json, "inet", NftFilterCompiler.TableName, mode != EchoMode.None);
+            using var expanded = named.IsEmpty ? null : JsonDocument.Parse(named.Json);
+            var items = (expanded?.RootElement ?? root).GetProperty("nftables").EnumerateArray().ToArray();
             JsonElement table, chain;
             int chainStartIndex;
             if (mode == EchoMode.Enrollment)
@@ -575,9 +583,9 @@ public sealed partial class NftTableObservation
             var policy = isSchema2
                 ? new FilterPolicy(2, inputVerdict, forwardVerdict, outputVerdict, rules.Select(entry => entry.Rule), rpHandle == 0 ? null : new(rpVerdict, rpRules), mss)
                 : new FilterPolicy(1, inputVerdict, rules.Select(entry => entry.Rule));
-            return new(new(identity, tableHandle, inputHandle, forwardHandle, outputHandle, policy, rules, sets, rpHandle, rpRuleHandles, mssHandle), null);
+            return new(new(identity, tableHandle, inputHandle, forwardHandle, outputHandle, policy, rules, sets, rpHandle, rpRuleHandles, mssHandle, named), null);
         }
-        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException)
+        catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException or ArgumentException or KeyNotFoundException)
         {
             return Deny("observation.invalidJson");
         }
