@@ -17,6 +17,31 @@ or ambiguous digest. This replaces the previous unreleased staging-digest select
 [Generated policy exports](policy-exports.md) are separate downloads from saved
 database revisions. Semantic native source conversion remains future work.
 
+## One viewer and import workflow
+
+Source viewing, review and later semantic import use the same analysis pipeline,
+not separate parsers. Upload or select one immutable source here, inspect its exact
+contents and diagnostics, and retain that identity for mapping/conversion review.
+The frontend tokenizes once and retains exact UTF-16 offsets, physical line/column
+positions, comments, BOM, CRLF/CR/LF, quoted values, references and continuations.
+The displayed inventory and downloadable report derive from those same tokens.
+Unknown tokens remain present for explicit semantic accounting; values inside
+quotes and references cannot masquerade as review keywords.
+
+Tokenization is bounded to 512 KiB of strict UTF-8, 65,536 non-trivia/non-newline
+tokens and 131,072 total tokens including trivia. Invalid encoding, unsupported
+control characters, unterminated quoted chunks or exhausted bounds return stable
+diagnostics without partial tokens or copied source values. Only ASCII space/tab
+are horizontal trivia; unfamiliar Unicode whitespace is retained as unknown input.
+Success is lexical accounting, not native syntax validation or semantic conversion.
+The original remains downloadable even when analysis fails. Include paths are
+retained as source text and never opened by the viewer/import frontend.
+
+The existing review always reports conversion blocked. Semantic parsing, persisted
+mapping/gap plans and reviewed revision creation will extend this same workflow;
+there is no separate converter with different validation. See
+[ADR 0050](decisions/0050-lossless-native-source-tokenization.md).
+
 ## Storage and authorization
 
 Source bytes, SHA-256, importing actor and UTC time live in `controller.db`. Only

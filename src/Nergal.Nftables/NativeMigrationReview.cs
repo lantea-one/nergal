@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace Nergal.Nftables;
 
@@ -35,8 +34,6 @@ public sealed record NativeMigrationReview(bool InventoryComplete, string? Diagn
 /// No private identifiers or literal values are copied into the report.</remarks>
 public static class NativeMigrationReviewer
 {
-    private const int MaxBytes = 524_288;
-    private const int MaxTokens = 65_536;
     private sealed record Token(string Text, int Line, bool Word);
     private sealed record Topic(string Code, string Description, MigrationSignalKind Kind, string[] Pattern);
     private static readonly Topic[] Topics =
@@ -66,53 +63,19 @@ public static class NativeMigrationReviewer
 
     /// <summary>Returns a deterministic, immutable review with bounded work and no host access.</summary>
     /// <exception cref="ArgumentNullException">Source is null.</exception>
-    public static NativeMigrationReview Review(string source)
+    public static NativeMigrationReview Review(string source) => NativeSourceAnalyzer.Analyze(source).Review;
+
+    internal static NativeMigrationReview Review(NativeSourceLexingResult lexical)
     {
-        ArgumentNullException.ThrowIfNull(source);
-        try
-        {
-            if (new UTF8Encoding(false, true).GetByteCount(source) > MaxBytes) { return Incomplete("source.tooLarge"); }
-        }
-        catch (EncoderFallbackException) { return Incomplete("source.invalidEncoding"); }
+        if (lexical.Document is not { } document) { return Incomplete(lexical.Diagnostic!.Code); }
         var tokens = new List<Token>();
-        var line = 1;
-        for (var i = 0; i < source.Length;)
+        for (var i = 0; i < document.Tokens.Count; i++)
         {
-            var c = source[i];
-            if (c == '\n') { line++; i++; continue; }
-            if (char.IsWhiteSpace(c)) { i++; continue; }
-            if (c == '#') { while (i < source.Length && source[i] != '\n') { i++; } continue; }
-            if (c is '"' or '\'')
-            {
-                var quote = c;
-                var startLine = line;
-                var closed = false;
-                i++;
-                while (i < source.Length)
-                {
-                    c = source[i++];
-                    if (c == '\n') { line++; }
-                    if (c == quote) { closed = true; break; }
-                    if (c == '\\' && i < source.Length) { if (source[i] == '\n') { line++; } i++; }
-                }
-                if (!closed) { return Incomplete("source.unterminatedString"); }
-                tokens.Add(new("", startLine, false));
-            }
-            else if (c == '$')
-            {
-                var startLine = line;
-                i++;
-                while (i < source.Length && IsWord(source[i])) { i++; }
-                tokens.Add(new("", startLine, false));
-            }
-            else if (IsWord(c))
-            {
-                var start = i++;
-                while (i < source.Length && IsWord(source[i])) { i++; }
-                tokens.Add(new(source[start..i], line, true));
-            }
-            else { tokens.Add(new(c.ToString(), line, false)); i++; }
-            if (tokens.Count > MaxTokens) { return Incomplete("source.tooManyTokens"); }
+            var token = document.Tokens[i];
+            if (token.IsTrivia || token.Kind == NativeSourceTokenKind.NewLine) { continue; }
+            // Keep private quoted/reference values opaque even though the frontend retains their spans.
+            var text = token.Kind is NativeSourceTokenKind.Bare or NativeSourceTokenKind.Symbol ? document.GetText(i) : "";
+            tokens.Add(new(text, token.Span.Line, token.Kind == NativeSourceTokenKind.Bare && text.All(IsWord)));
         }
         var tables = 0;
         var chains = 0;

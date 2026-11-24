@@ -17,6 +17,20 @@ namespace Nergal.Web.Tests;
 [SupportedOSPlatform("linux")]
 public sealed class RouterAuthoringAndSourcesTests
 {
+    /// <summary>Combined source viewing/import retains one immutable analysis and does not format private contents into logs.</summary>
+    [Fact]
+    public void NativeSource_SharesAnalysisAcrossViewerAndReview()
+    {
+        const string text = "# private-source-value\r\nether \\\r\n saddr 02:00:00:00:00:01 accept\n";
+        var content = new NativeSourceContent("private-source-name", text);
+        var source = new NativePolicySource(content.Name, content.Text, content.Digest);
+        Assert.Same(source.Analysis.Review, source.Review);
+        Assert.Equal(text, source.Analysis.Lexical.Document!.Source);
+        Assert.Equal(new[] { 2 }, Assert.Single(source.Review.Signals).Lines);
+        Assert.False(source.Review.CanConvert);
+        Assert.DoesNotContain("private-source", source.ToString(), StringComparison.Ordinal);
+    }
+
     /// <summary>Adding a simple rule cannot silently remove rpfilter, MSS, or an auxiliary table.</summary>
     [Fact]
     public void VisualEdit_PreservesExtendedPolicyAndPinnedMatchers()
