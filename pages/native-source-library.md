@@ -31,6 +31,31 @@ original remains available even when analysis fails. Future semantic mapping and
 revision creation will extend this same workflow; conversion remains blocked.
 See [ADR 0050](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0050-lossless-native-source-tokenization.md).
 
+## Shared source structure
+
+The shared analysis groups braces, brackets and parentheses over the original
+tokens, retaining unknown input, comments and line endings. Optional **Source
+structure and diagnostic details** shows group/depth metadata; failures show a
+code and physical line/column beside the original. Quoted values/comments cannot
+introduce delimiters. Nesting is limited to 64 groups. No partial tree or topic
+inventory is used when grouping fails, and the exact original remains downloadable.
+
+Current review downloads use **schema 2**, retaining the name/digest and masked
+review plus a value-free `structure` summary: completion, token/group counts,
+maximum depth and an optional code/span diagnostic. Counts are zero on failure;
+source values, tokens and the tree are excluded. Positions use UTF-16 units and
+physical source lines; tabs count as one column. Structural completion is not
+native syntax validation or semantic conversion. See
+[ADR 0052](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0052-bounded-native-source-structure.md).
+
+The following captures use staged synthetic sources in a separate controller.
+Complete grouping retains semantic gaps; failed grouping identifies the exact
+position without partial counts. The mobile light view has no page overflow.
+
+![Shared source structure in dark mode](assets/screenshots/source-structure-dark.jpg)
+
+![Source mismatch position in light mode on mobile](assets/screenshots/source-structure-mobile-light.jpg)
+
 ## Persistence and limits
 
 Source bytes and metadata live in `controller.db`; listing loads metadata only.

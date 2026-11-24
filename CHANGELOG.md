@@ -2,6 +2,11 @@
 
 ## Unreleased — router authoring and settings review
 
+- Parse bounded native source structure over the shared lossless token document.
+  Retain unknown/trivia tokens and exact group spans, reject mismatched/missing
+  delimiters or nesting beyond 64 without partial trees/inventories, and expose
+  the same value-free schema-2 summary/positions in source viewing and reports.
+  Semantic conversion remains blocked (ADR 0052).
 - Make native nftables on Linux the sole firewall/platform target. Remove the
   future-adapter roadmap, retain explicit native support limits and framework-free
   policy contracts, and align application/Pages guidance and agent rules (ADR 0051).

@@ -60,3 +60,8 @@ immutable collections, stable value-free failures and independent byte/token
 bounds. Reviewer regressions ensure masked values cannot become keywords, line
 references remain accurate and every review remains blocked for conversion.
 These tests establish lexical contracts only, not native syntax or packet behavior.
+
+[ADR 0052](0052-bounded-native-source-structure.md) subsequently adds the shared
+bounded delimiter tree and schema-2 structural summary, replacing the inventory's
+separate brace scan. The lexer remains lossless and the conversion boundary remains
+blocked pending semantic mapping.

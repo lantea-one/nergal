@@ -84,8 +84,9 @@ M4 remains open for semantic source conversion. Deterministic native and complet
 intent exports from explicitly selected saved revisions are implemented, with
 saved artifact verification and Administrator-only downloads. See [policy exports](policy-exports.md).
 The source viewer/import workflow shares one lossless bounded tokenization and
-review pipeline. Semantic parsing, explicit include mappings and persisted gap
-plans remain open; lexical success grants no conversion authority.
+structural parsing/review pipeline, with exact nested spans, bounded depth and
+value-free schema-2 diagnostics. Semantic parsing, explicit include mappings and
+persisted gap plans remain open; structural success grants no conversion authority.
 Maps, concatenations, arbitrary native object types, standalone unused declarations
 and native dynamic-list options are not claimed by M3. Their treatment must be
 explicit in the supported import grammar and gap reports.

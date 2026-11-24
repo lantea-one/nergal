@@ -2,6 +2,15 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased native source structure
+
+The combined source viewer/import analysis now builds a bounded delimiter tree
+over the exact token document. Missing/mismatched delimiters and nesting beyond
+64 groups produce value-free source positions without partial trees/inventories.
+Schema-2 reports and viewer diagnostics share the same summary. Unknown input and
+exact originals remain intact; semantic conversion is still blocked. See
+[the source workflow](native-source-library.md).
+
 ## Unreleased native-only product scope
 
 Native nftables on Linux is now the sole firewall target. Other firewall adapters

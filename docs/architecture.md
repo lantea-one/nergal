@@ -12,6 +12,12 @@ subsequent semantic mapping must consume the same document. No independent viewe
 grammar or server include resolution is introduced. See
 [ADR 0050](decisions/0050-lossless-native-source-tokenization.md).
 
+The shared analysis also builds one bounded delimiter tree over that same original
+document before producing an inventory. No partial tree/inventory survives failure;
+schema-2 reports expose only counts and value-free positions, never private tokens.
+This is structural accounting, not the complete native grammar or semantic mapper.
+See [ADR 0052](decisions/0052-bounded-native-source-structure.md).
+
 The first milestone is an independently implemented, native nftables management
 application, not a new packet-filtering engine. The kernel continues to enforce
 policy when the web console or identity provider is unavailable.
