@@ -2,6 +2,11 @@
 
 ## Unreleased — router authoring and settings review
 
+- Share one source-analysis pipeline across native viewing/review and import.
+  Retain exact token spans, physical source positions, quoted/reference values and
+  unknown syntax; handle continuations and CRLF/CR/LF without lossy normalization.
+  Bound bytes and both significant/total tokens, reject controls without partial
+  output, and keep conversion blocked pending semantic mapping (ADR 0050).
 - Add Administrator-only exports of selected saved revisions: exact create-only
   native candidates and separate canonical complete intent. Verify every saved
   candidate digest before either download; retain dormant rules and pinned

@@ -2,6 +2,14 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased shared source analysis
+
+Native source viewing/review and import now share one bounded, lossless analysis
+pipeline with exact token spans and physical positions. It retains unknown input
+and opaque values, handles continuations/CRLF/CR/LF, and rejects controls or capacity
+exhaustion without a partial document. Conversion remains blocked until semantic
+mapping is complete. See [the source workflow](native-source-library.md).
+
 ## Unreleased saved revision exports
 
 Administrators can download deterministic native and complete intent files from a

@@ -5,6 +5,13 @@ Selected saved revisions support deterministic native and complete intent
 These read-only derived artifacts carry no ownership/apply authority or runtime
 observations. See [ADR 0049](decisions/0049-saved-revision-exports.md).
 
+The native source viewer and import workflow share `NativeSourceAnalyzer`: one
+bounded, lossless token document supplies exact source positions and the masked
+migration inventory. The legacy review facade delegates to this entry point;
+subsequent semantic mapping must consume the same document. No independent viewer
+grammar or server include resolution is introduced. See
+[ADR 0050](decisions/0050-lossless-native-source-tokenization.md).
+
 The first milestone is an independently implemented, nftables-first management
 application, not a new packet-filtering engine. The kernel continues to enforce
 policy when the web console or identity provider is unavailable.

@@ -8,6 +8,18 @@ anonymous/Auditor denial and unchanged database/audit contents. These download
 checks do not establish native source conversion equivalence. See
 [policy exports](policy-exports.md) and ADR 0049.
 
+Native source frontend tests reconstruct every original UTF-16 code unit from
+immutable token spans, verify CRLF/CR/LF and continuation positions, retain opaque
+quoted/reference values and unknown input, reject hidden controls and independent
+UTF-8/significant/total token limits, and ensure diagnostics/formatting omit private
+values. Viewer and review tests use the shared analyzer and preserve blocked
+conversion. These are lexical contracts, not native syntax or packet equivalence.
+See [the source workflow](native-source-library.md) and ADR 0050.
+The real HTTPS fixture also imports a source with a hidden control character and
+a separate continued CRLF/CR source. Viewer and report agree on blocked/complete
+inventory, source-line references and exact SHA-256; original downloads retain all
+bytes even when analysis fails. No partial topic inventory is returned on failure.
+
 Tests are production code: keep them standardized, reusable, documented,
 deterministic and efficient. Explain why a safety property matters. Use synthetic
 RFC documentation addresses and avoid real credentials or exported host state.

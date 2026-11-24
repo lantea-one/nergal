@@ -242,6 +242,8 @@ def exercise(temp):
         with sqlite3.connect(ctrl_state / "controller.db") as db:
             assert db.execute("SELECT count(*) FROM native_sources").fetchone() == (2,)
             assert db.execute("SELECT count(*) FROM audit_log WHERE action='source.import'").fetchone() == (2,)
+        from source_analysis import check_source_analysis
+        check_source_analysis(browser, upload)
         from objects import check_objects
         object_path = check_objects(browser, ctrl_state)
         from policy_objects import check_policy_objects

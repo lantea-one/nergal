@@ -14,6 +14,23 @@ as `nftables.conf`. The JSON review download uses the stored source identity.
 Semantic conversion remains unfinished. [Saved revision exports](policy-exports.md)
 provide separate native and complete intent files from selected database revisions.
 
+## Shared viewer and import analysis
+
+Viewing and import use one workflow and the same source-analysis entry point.
+Exact token spans retain physical positions, comments, BOM, CRLF/CR/LF, opaque
+quoted values, variable/set references and continuations. The displayed inventory
+and downloaded report derive from those same tokens. Unknown input remains present
+for semantic accounting, and values cannot masquerade as review keywords.
+
+The lexical frontend does not execute source, open include paths, validate native
+syntax or produce policy. It has independent 512-KiB UTF-8, 65,536 significant-token
+and 131,072 total-token bounds; comments, whitespace and line endings count toward
+the total. Controls, invalid encoding, unterminated chunks and capacity exhaustion
+yield stable diagnostics with no partial document or private values. The exact
+original remains available even when analysis fails. Future semantic mapping and
+revision creation will extend this same workflow; conversion remains blocked.
+See [ADR 0050](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0050-lossless-native-source-tokenization.md).
+
 ## Persistence and limits
 
 Source bytes and metadata live in `controller.db`; listing loads metadata only.

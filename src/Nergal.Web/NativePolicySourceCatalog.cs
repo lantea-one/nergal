@@ -7,13 +7,34 @@ using Nergal.Nftables;
 namespace Nergal.Web;
 
 /// <summary>A private, read-only source snapshot. Import does not grant execution or management authority.</summary>
-/// <param name="Name">Local operator-assigned source name.</param>
-/// <param name="Text">Exact native source, retained for inspection without lossy translation.</param>
-/// <param name="Digest">SHA-256 of the original UTF-8 bytes.</param>
-public sealed record NativePolicySource(string Name, string Text, string Digest)
+public sealed class NativePolicySource
 {
-    /// <summary>Gets the read-only lexical review of this immutable source snapshot.</summary>
-    public NativeMigrationReview Review { get; } = NativeMigrationReviewer.Review(Text);
+    /// <summary>Snapshots exact source and its shared viewer/import analysis; callers supply a verified content digest.</summary>
+    /// <param name="name">Local operator-assigned source name.</param>
+    /// <param name="text">Exact native source, retained without lossy translation.</param>
+    /// <param name="digest">SHA-256 of original UTF-8 bytes, verified by database ingestion or staging.</param>
+    /// <exception cref="ArgumentNullException">A required value is null.</exception>
+    public NativePolicySource(string name, string text, string digest)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(digest);
+        Name = name; Text = text; Digest = digest;
+        Analysis = NativeSourceAnalyzer.Analyze(text);
+    }
+
+    /// <summary>Gets the operator-assigned private display name.</summary>
+    public string Name { get; }
+    /// <summary>Gets the exact private source text.</summary>
+    public string Text { get; }
+    /// <summary>Gets the previously verified original UTF-8 digest.</summary>
+    public string Digest { get; }
+    /// <summary>Gets the one analysis used by source viewing and future semantic import from this snapshot.</summary>
+    public NativeSourceAnalysis Analysis { get; }
+    /// <summary>Gets the value-masked review from the shared source analysis.</summary>
+    public NativeMigrationReview Review => Analysis.Review;
+    /// <summary>Returns a type description without private source names or values.</summary>
+    public override string ToString() => "Native policy source snapshot";
 }
 
 /// <summary>A private downloadable review bound to the exact source bytes; it contains no executable candidate.</summary>
