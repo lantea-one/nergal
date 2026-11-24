@@ -578,3 +578,19 @@ explicit/independent watchdog rollback, removal/restoration and restart. The new
 without overwriting unexpected state. The mapped-identity HTTPS fixture selects
 address versions through the real UI before Unix/mTLS apply/confirm/rollback checks.
 These remain synthetic isolated fixtures, not real-server conversion acceptance.
+
+### Bridge address sets and references
+
+`BridgeAddressTests` covers both families/chains, singleton/set snapshot equivalence,
+defensive collections, malformed strict JSON, family/conflict/overlap denial and
+complete native fingerprints. Web tests use real SQLite history and saved usage;
+HTTPS checks attach all eight scoped address pins, retain MAC/graph/state through
+guided edits, reject forged versions and preserve previous revision bytes.
+
+The auxiliary namespace fixture carries referenced sets in forwarding jumps and
+regular returns. Real dual-stack TCP checks verify permitted traffic, source and
+destination misses, MAC denial, and the unchanged default verdict when a base
+matcher excludes traffic. The eighth agent case, `bridge-set-drift`, changes set
+contents at the same native handle and requires recovery without overwriting drift.
+Distinct-UID Unix/mTLS web apply tests select bridge versions through actual UI
+endpoints before complete apply/confirm/rollback. No production firewall is used.

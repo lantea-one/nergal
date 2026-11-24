@@ -237,3 +237,11 @@ scalar/port-only fingerprints remain unchanged. Guided/legacy edits preserve pin
 and explicit removal cannot erase a required SNAT source. No new host operation
 or controller database lookup during apply is introduced. See
 [ADR 0043](decisions/0043-postrouting-address-sets-and-references.md) and the reusable library.
+
+Bridge address-list snapshots are embedded in immutable policy intent for both
+forwarding and regular chains. Compilation resolves same-family snapshots without
+a database lookup and retains every prefix through native reconstruction. Complete
+address-set graphs use a v3 fingerprint; preceding scalar/port-only fingerprints
+stay unchanged. MAC restrictions, explicit family, bridge master and jump/return
+control flow remain conjunctive. Invalid dormant rules are denied too. See
+[ADR 0044](decisions/0044-bridge-address-sets-and-references.md).

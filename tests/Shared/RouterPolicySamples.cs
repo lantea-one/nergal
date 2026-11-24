@@ -45,15 +45,21 @@ internal static class RouterPolicySamples
             new(IpFamily.IPv6, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("2001:db8:1::/64"), new("2001:db8:3::/64")], DestinationPrefixes: [new("2001:db8:2::10/128"), new("2001:db8:2::20/128")])]),
         bridge: new(1, FilterVerdict.Accept,
             [new(BridgeEtherType.Any, FilterVerdict.Drop, InputInterface: "lan0", OutputInterface: "lan1", BridgeName: "br0",
-                DestinationMac: new("02:00:00:00:00:02"), Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081], JumpTarget: "service"),
+                DestinationMac: new("02:00:00:00:00:02"), Family: IpFamily.IPv4, Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081], JumpTarget: "service",
+                SourcePrefixes: [new("192.0.2.2/32"), new("192.0.2.4/32")], DestinationPrefixes: [new("192.0.2.3/32"), new("192.0.2.5/32")]),
+             new(BridgeEtherType.Any, FilterVerdict.Drop, InputInterface: "lan0", OutputInterface: "lan1", BridgeName: "br0",
+                DestinationMac: new("02:00:00:00:00:02"), Family: IpFamily.IPv6, Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081], JumpTarget: "service",
+                SourcePrefixes: [new("2001:db8:1::2/128"), new("2001:db8:1::4/128")], DestinationPrefixes: [new("2001:db8:1::3/128"), new("2001:db8:1::5/128")]),
              new(BridgeEtherType.Any, FilterVerdict.Drop, BridgeName: "br0", DestinationMac: new("02:00:00:00:00:02"),
                 NegateDestinationMac: true, Protocol: FilterProtocol.Tcp, DestinationPorts: [18080, 18081])], -5,
             [new("service",
                 [new(BridgeEtherType.Any, FilterVerdict.Drop, SourceMac: new("02:00:00:00:00:01"), NegateSourceMac: true),
                  new(BridgeEtherType.Any, FilterVerdict.Drop, SourceMac: new("02:00:00:00:00:01"), Family: IpFamily.IPv4,
-                    Source: new("192.0.2.2/32"), Protocol: FilterProtocol.Tcp, DestinationPort: 18080, Return: true),
+                    Protocol: FilterProtocol.Tcp, DestinationPort: 18080, Return: true,
+                    SourcePrefixes: [new("192.0.2.2/32"), new("192.0.2.90/32")], DestinationPrefixes: [new("192.0.2.3/32"), new("192.0.2.99/32")]),
                  new(BridgeEtherType.Any, FilterVerdict.Drop, SourceMac: new("02:00:00:00:00:01"), Family: IpFamily.IPv6,
-                    Source: new("2001:db8:1::2/128"), Protocol: FilterProtocol.Tcp, DestinationPort: 18080, Return: true),
+                    Protocol: FilterProtocol.Tcp, DestinationPort: 18080, Return: true,
+                    SourcePrefixes: [new("2001:db8:1::2/128"), new("2001:db8:1::90/128")], DestinationPrefixes: [new("2001:db8:1::3/128"), new("2001:db8:1::99/128")]),
                  new(BridgeEtherType.Any, FilterVerdict.Drop)])]),
         auxiliaryFilter: new(-5, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept,
             [new(IpFamily.IPv4, FilterProtocol.Udp, blocked ? FilterVerdict.Drop : FilterVerdict.Accept, DestinationPort: 19000),
@@ -117,6 +123,28 @@ internal static class RouterPolicySamples
             DestinationPrefixes = null
         }));
         return new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter);
+    }
+
+    internal static FirewallPolicyBundle WithBridgeAddressReferences(FirewallPolicyBundle bundle)
+    {
+        PolicyObjectReference Reference(IpFamily family, NetworkPrefix? scalar, IReadOnlyList<NetworkPrefix>? prefixes)
+        {
+            var content = new Nergal.Core.Controller.ReusableObjectContent("bridge_networks", family == IpFamily.IPv4 ? Nergal.Core.Controller.ReusableObjectKind.Ipv4 : Nergal.Core.Controller.ReusableObjectKind.Ipv6,
+                "Synthetic immutable bridge addresses", (prefixes ?? [scalar!]).Select(p => p.Value));
+            return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content);
+        }
+        IEnumerable<BridgeFilterRule?> Rules(IReadOnlyList<BridgeFilterRule?> rules) => rules.Select(r => r is null ? null : r with
+        {
+            SourceObject = r.Source is not null || r.SourcePrefixes is not null ? Reference(r.Family!.Value, r.Source, r.SourcePrefixes) : r.SourceObject,
+            DestinationObject = r.Destination is not null || r.DestinationPrefixes is not null ? Reference(r.Family!.Value, r.Destination, r.DestinationPrefixes) : r.DestinationObject,
+            Source = null,
+            SourcePrefixes = null,
+            Destination = null,
+            DestinationPrefixes = null
+        });
+        var bridge = bundle.Bridge is not { } b ? null : new BridgePolicy(b.SchemaVersion, b.DefaultVerdict, Rules(b.Rules), b.Priority,
+            b.SubChains.Select(c => new BridgeSubChain(c.Name, Rules(c.Rules))));
+        return new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bridge, bundle.AuxiliaryFilter);
     }
 
     // Agent fixtures carry self-contained snapshots, never a controller database lookup.

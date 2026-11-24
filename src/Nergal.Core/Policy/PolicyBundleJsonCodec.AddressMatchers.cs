@@ -4,7 +4,7 @@ namespace Nergal.Core.Policy;
 
 public static partial class PolicyBundleJsonCodec
 {
-    private static bool TryReadPostroutingAddresses(JsonElement item, out IReadOnlyList<NetworkPrefix>? source,
+    private static bool TryReadAddressObjectsAndSets(JsonElement item, out IReadOnlyList<NetworkPrefix>? source,
         out IReadOnlyList<NetworkPrefix>? destination, out PolicyObjectReference? sourceObject, out PolicyObjectReference? destinationObject)
     {
         source = null; destination = null; sourceObject = null; destinationObject = null;
@@ -15,16 +15,17 @@ public static partial class PolicyBundleJsonCodec
 
     private static void WritePostroutingAddresses(Utf8JsonWriter writer, SnatRule rule)
     {
-        WritePrefixes("sourcePrefixes", rule.SourcePrefixes);
-        WritePrefixes("destinationPrefixes", rule.DestinationPrefixes);
+        WritePrefixSet(writer, "sourcePrefixes", rule.SourcePrefixes);
+        WritePrefixSet(writer, "destinationPrefixes", rule.DestinationPrefixes);
         WriteObjectReference(writer, "sourceObject", rule.SourceObject);
         WriteObjectReference(writer, "destinationObject", rule.DestinationObject);
-        void WritePrefixes(string name, IReadOnlyList<NetworkPrefix>? prefixes)
-        {
-            if (prefixes is null) { return; }
-            writer.WriteStartArray(name);
-            foreach (var prefix in prefixes) { writer.WriteStringValue(prefix.Value); }
-            writer.WriteEndArray();
-        }
+    }
+
+    private static void WritePrefixSet(Utf8JsonWriter writer, string name, IReadOnlyList<NetworkPrefix>? prefixes)
+    {
+        if (prefixes is null) { return; }
+        writer.WriteStartArray(name);
+        foreach (var prefix in prefixes) { writer.WriteStringValue(prefix.Value); }
+        writer.WriteEndArray();
     }
 }

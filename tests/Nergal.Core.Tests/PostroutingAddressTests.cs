@@ -85,7 +85,7 @@ public sealed class PostroutingAddressTests
 
     /// <summary>Strict fields cannot be forged, ignored in another scope, or normalized from null into a missing restriction.</summary>
     [Fact]
-    public void Codec_RejectsMalformedAddressFieldsAndUnimplementedBridgeScope()
+    public void Codec_RejectsMalformedAddressFieldsAndUnimplementedDnatScope()
     {
         var rule = new SnatRule(IpFamily.IPv4, null, null, Action: NatPostroutingAction.Masquerade,
             SourceObject: Reference("sources", IpFamily.IPv4, Sources(IpFamily.IPv4)));
@@ -104,9 +104,10 @@ public sealed class PostroutingAddressTests
             changed["nat"]!["snatRules"]![0]!["sourceObject"]![field] = JsonValue.Create("forged");
             Assert.False(PolicyBundleJsonCodec.DecodeBundle(changed.ToJsonString()).IsSuccess);
         }
-        var bridge = JsonNode.Parse(PolicyBundleJsonCodec.EncodeBundle(new(1, Bundle(rule).Filter, bridge: new(1, FilterVerdict.Drop, [new(BridgeEtherType.Any, FilterVerdict.Drop)]))))!;
-        bridge["bridge"]!["rules"]![0]!["sourceObject"] = original["nat"]!["snatRules"]![0]!["sourceObject"]!.DeepClone();
-        Assert.False(PolicyBundleJsonCodec.DecodeBundle(bridge.ToJsonString()).IsSuccess);
+        var dnat = JsonNode.Parse(PolicyBundleJsonCodec.EncodeBundle(new(1, Bundle(rule).Filter, new(1,
+            [new(IpFamily.IPv4, FilterProtocol.Tcp, new("198.51.100.1/32"), "192.0.2.1")], []))))!;
+        dnat["nat"]!["dnatRules"]![0]!["sourceObject"] = original["nat"]!["snatRules"]![0]!["sourceObject"]!.DeepClone();
+        Assert.False(PolicyBundleJsonCodec.DecodeBundle(dnat.ToJsonString()).IsSuccess);
     }
 
     /// <summary>Every observed set is retained and fingerprinted; adding a restriction to an otherwise unrestricted masquerade must change its receipt.</summary>

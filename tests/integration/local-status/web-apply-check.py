@@ -457,6 +457,11 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         transport = json.loads(rev3_bundle_json)
         transport['nat']['snatRules'][0]['protocol'] = 'tcp'
         transport['bridge']['rules'][0]['protocol'] = 'tcp'
+        transport['bridge']['rules'][0]['family'] = 'ipv4'
+        transport['bridge']['rules'][0]['sourceMac'] = '02:00:00:00:00:01'
+        transport['bridge']['rules'][0]['destinationMac'] = '02:00:00:00:00:02'
+        transport['bridge']['subChains'][0]['rules'][0]['family'] = 'ipv4'
+        transport['bridge']['subChains'][0]['rules'][0]['sourceMac'] = '02:00:00:00:00:01'
         transport['bridge']['subChains'][0]['rules'][0]['protocol'] = 'tcp'
         rev3_bundle_json = json.dumps(transport)
         for scope in ('postrouting', 'bridge', 'bridgeChain'):
@@ -475,17 +480,22 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
                 '__RequestVerificationToken': admin.token('/manage/objects'),
             }, expected_location_contains='/manage/objects?objectId=')
             object_id = location.split('objectId=')[1]
-            body, _ = admin.request('/manage/policies/objects', 200, form={
-                'bundleJson': rev3_bundle_json, 'scope': 'postrouting', 'slot': slot, 'ruleIndex': '0',
-                'selection': object_id + '/1', 'operation': 'attach', '__RequestVerificationToken': admin.token('/manage/policies'),
-            })
-            parser = DraftParser(); parser.feed(body)
-            require(parser.value is not None, 'NAT address selection lost draft intent')
-            rev3_bundle_json = parser.value
+            for scope in ('postrouting', 'bridge', 'bridgeChain'):
+                fields = {'bundleJson': rev3_bundle_json, 'scope': scope, 'slot': slot, 'ruleIndex': '0',
+                          'selection': object_id + '/1', 'operation': 'attach', '__RequestVerificationToken': admin.token('/manage/policies')}
+                if scope == 'bridgeChain':
+                    fields['chain'] = 'service'
+                body, _ = admin.request('/manage/policies/objects', 200, form=fields)
+                parser = DraftParser(); parser.feed(body)
+                require(parser.value is not None, 'NAT/bridge address selection lost draft intent')
+                rev3_bundle_json = parser.value
         pinned = json.loads(rev3_bundle_json)
         require(len(pinned['nat']['snatRules'][0]['sourceObject']['entries']) == 2 and
                 len(pinned['nat']['snatRules'][0]['destinationObject']['entries']) == 2,
                 'Complete address snapshots were not retained for native apply')
+        for rule in (pinned['bridge']['rules'][0], pinned['bridge']['subChains'][0]['rules'][0]):
+            require(len(rule['sourceObject']['entries']) == 2 and len(rule['destinationObject']['entries']) == 2 and
+                    rule['sourceMac'] == '02:00:00:00:00:01', 'Complete bridge MAC/address snapshots lost before native apply')
         require(pinned['nat']['snatRules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['rules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['subChains'][0]['rules'][0]['destinationPortObject']['id'] == port_id,

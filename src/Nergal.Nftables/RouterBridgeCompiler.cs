@@ -41,6 +41,14 @@ internal static class RouterBridgeCompiler
                 RouterFilterValidation.Require(r.NegateDestinationMac, r.DestinationMac is not null, path + ".negateDestinationMac", errors);
                 if (r.Family is { } family && (!Enum.IsDefined(family) || (r.EtherType != BridgeEtherType.Any && r.EtherType != (family == IpFamily.IPv4 ? BridgeEtherType.IPv4 : BridgeEtherType.IPv6))))
                 { errors.Add(new("bridge.familyMismatch", path)); }
+                if ((r.SourcePrefixes is not null || r.DestinationPrefixes is not null) && !r.Family.HasValue) { errors.Add(new("bridge.familyRequired", path + ".family")); }
+                if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
+                if (r.Destination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
+                if (r.Family is { } setFamily)
+                {
+                    NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, setFamily, path + ".sourcePrefixes", errors);
+                    NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, setFamily, path + ".destinationPrefixes", errors);
+                }
                 if ((r.Source is not null && r.Source.Family != r.Family) || (r.Destination is not null && r.Destination.Family != r.Family))
                 { errors.Add(new("network.familyMismatch", path)); }
                 if (r.Protocol is not (FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp)) { errors.Add(new("protocol.unknown", path)); }
@@ -79,7 +87,9 @@ internal static class RouterBridgeCompiler
                 if (type != BridgeEtherType.Any) { text.Append("ether type ").Append(type == BridgeEtherType.IPv4 ? "ip" : type == BridgeEtherType.IPv6 ? "ip6" : "arp").Append(' '); }
                 var family = r.Family == IpFamily.IPv4 ? "ip" : "ip6";
                 if (r.Source is not null) { text.Append(family).Append(" saddr ").Append(r.Source.Value).Append(' '); }
+                else if (r.SourcePrefixes is { } sources) { text.Append(family).Append(" saddr { ").Append(string.Join(", ", sources.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
                 if (r.Destination is not null) { text.Append(family).Append(" daddr ").Append(r.Destination.Value).Append(' '); }
+                else if (r.DestinationPrefixes is { } destinations) { text.Append(family).Append(" daddr { ").Append(string.Join(", ", destinations.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
                 if (r.Protocol != FilterProtocol.Any)
                 {
                     var protocol = r.Protocol == FilterProtocol.Tcp ? "tcp" : "udp";

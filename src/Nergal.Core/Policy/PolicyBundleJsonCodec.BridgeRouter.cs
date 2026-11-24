@@ -8,7 +8,8 @@ public static partial class PolicyBundleJsonCodec
     private static bool TryReadBridgeRouterRule(JsonElement el, BridgeFilterRule initial, out BridgeFilterRule rule)
     {
         rule = initial;
-        if (!TryReadOptionalString(el, "bridgeName", out var bridge) || !TryReadOptionalString(el, "sourceMac", out var sm) ||
+        if (!TryReadAddressObjectsAndSets(el, out var sourcePrefixes, out var destinationPrefixes, out var sourceObject, out var destinationObject) ||
+            !TryReadOptionalString(el, "bridgeName", out var bridge) || !TryReadOptionalString(el, "sourceMac", out var sm) ||
             !TryReadOptionalString(el, "destinationMac", out var dm) || !TryReadBool(el, "negateSourceMac", out var ns) ||
             !TryReadBool(el, "negateDestinationMac", out var nd) || !TryReadOptionalString(el, "source", out var source) ||
             !TryReadOptionalString(el, "destination", out var destination) || !TryReadOptionalInt(el, "destinationPort", out var port) ||
@@ -36,6 +37,10 @@ public static partial class PolicyBundleJsonCodec
                 DestinationPort = port,
                 DestinationPorts = ports,
                 DestinationPortObject = portObject,
+                SourcePrefixes = sourcePrefixes,
+                DestinationPrefixes = destinationPrefixes,
+                SourceObject = sourceObject,
+                DestinationObject = destinationObject,
                 JumpTarget = target,
                 Return = ret
             };
@@ -72,6 +77,10 @@ public static partial class PolicyBundleJsonCodec
         if (r.NegateSourceMac) { w.WriteBoolean("negateSourceMac", true); }
         if (r.NegateDestinationMac) { w.WriteBoolean("negateDestinationMac", true); }
         if (r.Family is { } f) { w.WriteString("family", f == IpFamily.IPv4 ? "ipv4" : "ipv6"); }
+        WritePrefixSet(w, "sourcePrefixes", r.SourcePrefixes);
+        WritePrefixSet(w, "destinationPrefixes", r.DestinationPrefixes);
+        WriteObjectReference(w, "sourceObject", r.SourceObject);
+        WriteObjectReference(w, "destinationObject", r.DestinationObject);
         if (r.Source is not null) { w.WriteString("source", r.Source.Value); }
         if (r.Destination is not null) { w.WriteString("destination", r.Destination.Value); }
         if (r.Protocol != FilterProtocol.Any) { w.WriteString("protocol", ProtocolName(r.Protocol)); }

@@ -33,7 +33,13 @@ public static class PolicyObjectReferences
         void AddBridge(IReadOnlyList<BridgeFilterRule?> rules, string path)
         {
             for (var i = 0; i < rules.Count; i++)
-            { if (rules[i]?.DestinationPortObject is { } reference) { result.Add(new($"{path}[{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}].destinationPortObject", reference)); } }
+            {
+                if (rules[i] is not { } rule) { continue; }
+                var rulePath = $"{path}[{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}]";
+                if (rule.SourceObject is { } source) { result.Add(new(rulePath + ".sourceObject", source)); }
+                if (rule.DestinationObject is { } destination) { result.Add(new(rulePath + ".destinationObject", destination)); }
+                if (rule.DestinationPortObject is { } ports) { result.Add(new(rulePath + ".destinationPortObject", ports)); }
+            }
         }
         void Add(FilterPolicy policy, string prefix)
         {

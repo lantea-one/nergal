@@ -1,27 +1,25 @@
 @model Nergal.Web.TransportReferenceFormModel
-@using Nergal.Core.Controller
 @{
     var postrouting = Model.Scope == "postrouting";
     var retained = Model.Editor.ObjectBrowseSelection is { } browse && browse.Scope == Model.Scope && browse.Chain == Model.Chain ? browse : null;
     var prefix = "reference-" + Model.Scope + "-" + (Model.Chain ?? "base");
-    var label = Model.Scope == "postrouting" ? "Postrouting NAT list references" : "Bridge " + (Model.Chain ?? "forward") + " port references";
+    var label = Model.Scope == "postrouting" ? "Postrouting NAT list references" : "Bridge " + (Model.Chain ?? "forward") + " list references";
 }
 @if (Model.Editor.CanMutate && Model.Rules.Count > 0)
 {
     <h3 id="@(prefix)-heading">@label</h3>
-    @if (Model.Editor.ObjectBrowseSelection is { } history && Model.Editor.LibraryObjects.Any(o => o.Id == history.ObjectId && (postrouting || o.Content.Kind == ReusableObjectKind.Port)))
+    @if (Model.Editor.ObjectBrowseSelection is { } history && Model.Editor.LibraryObjects.Any(o => o.Id == history.ObjectId))
     { <p class="hint">Saved versions loaded for @Model.Editor.LibraryObjects.First(o => o.Id == history.ObjectId).Content.Name; browsing left this draft unchanged.</p> }
     <form method="post" action="@Url.Content("~/manage/policies/objects")" aria-describedby="@(prefix)-hint">
         @Html.AntiForgeryToken()
-        <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" /><input type="hidden" name="summary" value="@Model.Editor.Summary" /><input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" /><input type="hidden" name="scope" value="@Model.Scope" />@if (!postrouting) { <input type="hidden" name="slot" value="ports" /> }
+        <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" /><input type="hidden" name="summary" value="@Model.Editor.Summary" /><input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" /><input type="hidden" name="scope" value="@Model.Scope" />
         @if (Model.Chain is not null) { <input type="hidden" name="chain" value="@Model.Chain" /> }
         <div class="form-grid">
-            <div class="field"><label for="@(prefix)-rule">@(postrouting ? "Postrouting rule" : "Destination-port rule")</label><select id="@(prefix)-rule" name="ruleIndex">@foreach (var rule in Model.Rules) { <option value="@rule.Index" selected="@(retained?.RuleIndex == rule.Index)">@rule.Label</option> }</select></div>
-            @if (postrouting)
-            { <div class="field"><label for="@(prefix)-slot">Matcher to change</label><select id="@(prefix)-slot" name="slot"><option value="ports" selected="@(retained is null || retained.Slot == "ports")">Destination ports</option><option value="source" selected="@(retained?.Slot == "source")">Source address</option><option value="destination" selected="@(retained?.Slot == "destination")">Destination address</option></select></div> }
-            <div class="field"><label for="@(prefix)-selection">@(postrouting ? "List version" : "Port-list version")</label><select id="@(prefix)-selection" name="selection"><option value="">Choose a list for attachment</option>@foreach (var item in Model.Editor.LibraryObjects.Where(o => postrouting || o.Content.Kind == ReusableObjectKind.Port)) { <option value="@item.Id/@item.Version" selected="@(retained?.ObjectId == item.Id && retained.Version == item.Version)">@item.Content.Name · v@(item.Version) · @string.Join(", ", item.Content.Entries)</option> }</select></div>
+            <div class="field"><label for="@(prefix)-rule">@(postrouting ? "Postrouting rule" : "Bridge rule")</label><select id="@(prefix)-rule" name="ruleIndex">@foreach (var rule in Model.Rules) { <option value="@rule.Index" selected="@(retained?.RuleIndex == rule.Index)">@rule.Label</option> }</select></div>
+            <div class="field"><label for="@(prefix)-slot">Matcher to change</label><select id="@(prefix)-slot" name="slot"><option value="ports" selected="@(retained is null || retained.Slot == "ports")">Destination ports</option><option value="source" selected="@(retained?.Slot == "source")">Source address</option><option value="destination" selected="@(retained?.Slot == "destination")">Destination address</option></select></div>
+            <div class="field"><label for="@(prefix)-selection">List version</label><select id="@(prefix)-selection" name="selection"><option value="">Choose a list for attachment</option>@foreach (var item in Model.Editor.LibraryObjects) { <option value="@item.Id/@item.Version" selected="@(retained?.ObjectId == item.Id && retained.Version == item.Version)">@item.Content.Name · v@(item.Version) · @string.Join(", ", item.Content.Entries)</option> }</select></div>
         </div>
-        <p id="@(prefix)-hint" class="hint">Browse a selected list to show older versions. Only one history is loaded at a time. Attachment pins the displayed version, replacing literals or the prior reference. Address lists must match the NAT family; ports require TCP or UDP. Bridge references support ports only. Removal clears the selected restriction and its address negation, which may broaden matching; explicit SNAT still requires a source restriction. Other matchers, action, enabled state and order remain. Review the draft, save a revision, then use confirmed apply.</p>
-        <div class="btn-group"><button type="submit" name="operation" value="history" class="btn btn-secondary">Browse selected list history</button><button type="submit" name="operation" value="attach">@(postrouting ? "Attach list to draft" : "Attach port list to draft")</button><button type="submit" name="operation" value="remove" class="btn btn-secondary">@(postrouting ? "Remove list reference from draft" : "Remove port reference from draft")</button></div>
+        <p id="@(prefix)-hint" class="hint">Browse a selected list to show older versions. Only one history is loaded at a time. Attachment pins the displayed version, replacing literals or the prior reference. Address lists must match the NAT family; ports require TCP or UDP. Bridge address lists require an explicit IP family. Removal clears the selected restriction (and NAT address negation), which may broaden matching; explicit SNAT still requires a source restriction. Other matchers, action, enabled state and order remain. Review the draft, save a revision, then use confirmed apply.</p>
+        <div class="btn-group"><button type="submit" name="operation" value="history" class="btn btn-secondary">Browse selected list history</button><button type="submit" name="operation" value="attach">Attach list to draft</button><button type="submit" name="operation" value="remove" class="btn btn-secondary">Remove list reference from draft</button></div>
     </form>
 }

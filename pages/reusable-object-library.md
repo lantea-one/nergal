@@ -36,7 +36,7 @@ editing and reordering preserve references. Metadata-only changes remain visible
 in the reference summary even if native text is unchanged.
 
 Compilation projects each immutable snapshot onto the existing scalar/anonymous-set
-matcher contract. **Native named sets, DNAT/bridge address references, DNAT port references, maps, dynamic flags,
+matcher contract. **Native named sets, DNAT references, maps, dynamic flags,
 timeouts and native named-object import remain unsupported.** Family/protocol and
 literal conflicts, missing/forged snapshots and unsupported overlap/adjacency fail
 explicitly. Single-element lists use scalar matching. The UI selectors edit primary and auxiliary inet filter rules through separate
@@ -71,7 +71,7 @@ references; these screenshots do not establish native named-set support.
 
 Auxiliary selection uses the existing database schema and immutable reference
 contract. Usage paths include `auxiliaryFilter.filter.rules[n]`. Native named sets,
-DNAT/bridge address references and dynamic objects remain separate M3 work.
+DNAT references and dynamic objects remain separate M3 work.
 
 ![Pinned auxiliary list selection](assets/screenshots/auxiliary-references-dark.jpg)
 
@@ -89,7 +89,7 @@ References remain embedded in immutable revisions and verified against database
 history. Library edits do not update saved policies. Usage paths include postrouting,
 bridge forward and regular chains. Compilation projects a singleton to a scalar
 and larger lists to existing anonymous port sets. This adds no native named objects,
-DNAT/bridge address-list matching or rule expansion. Use updated controller and agent builds;
+DNAT address-list matching or rule expansion. Use updated controller and agent builds;
 older codecs reject unknown reference fields. No SQL schema change is required.
 
 ![Pinned bridge port list](assets/screenshots/transport-references-dark.jpg)
@@ -172,6 +172,31 @@ scalar/port-only receipt fingerprints stay unchanged. Older controllers/agents
 reject the new JSON fields and cannot validate new receipts. Upgrade matching
 controller/agent builds together. No SQL schema upgrade is required; the native
 observation byte limit is unchanged. Native named sets/maps/dynamic objects,
-DNAT references and bridge address lists remain unsupported.
+DNAT references remain unsupported.
 
 ![Pinned postrouting addresses](assets/screenshots/postrouting-addresses-dark.jpg)
+
+## Bridge address sets and pinned lists
+
+Bridge forwarding and regular-chain rules support literal source/destination CIDR
+sets and immutable IPv4/IPv6 library versions. Choose an explicit matching IP
+family before attaching an address list. One entry compiles as a scalar; multiple
+entries must meet the existing 2–64 distinct, same-family, disjoint/non-adjacent
+prefix contract. Addresses remain conjunctive with MAC, EtherType, bridge-master,
+interface and transport restrictions. A jump still calls its declared local chain;
+a return still resumes its caller. Rule order and disabled state are retained.
+
+Use each chain's reusable-list selector to attach, browse history or explicitly
+remove a source/destination version. Guided edits keep pinned fields read-only;
+removal clears only that selected IP restriction and may broaden access. Review
+the complete intent/native diff and save a new revision before confirmed apply.
+Saved usage includes both `bridge.rules[n]` and `bridge.subChains[n].rules[n]`
+address paths. Later library edits cannot change saved snapshots.
+
+Native observation binds every address-set entry in a v3 bridge fingerprint,
+including handles and the complete chain graph. Scalar/port-only fingerprints
+remain unchanged. Deploy matching controller/agent builds; older codecs reject
+these fields. No SQL migration is required. Bridge IP negation, native named
+sets/maps/dynamic objects and DNAT references remain unsupported.
+
+![Pinned bridge addresses](assets/screenshots/bridge-addresses-dark.jpg)

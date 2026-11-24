@@ -10,7 +10,7 @@ var routerIdentity = new NftTableIdentity(
 
 if (mode is "auxiliary-acceptance-json" or "auxiliary-open-json" or "auxiliary-acceptance-native")
 {
-    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json")));
+    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(RouterPolicySamples.WithBridgeAddressReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json"))));
     if (mode.EndsWith("-json", StringComparison.Ordinal)) { Console.Write(PolicyBundleJsonCodec.EncodeBundle(bundle)); }
     else
     {

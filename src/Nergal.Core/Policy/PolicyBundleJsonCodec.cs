@@ -448,7 +448,7 @@ public static partial class PolicyBundleJsonCodec
                         : NatPostroutingAction.Snat;
                     var protocol = item.TryGetProperty("protocol", out var protoEl) ? ParseProtocol(protoEl) : FilterProtocol.Any;
                     IReadOnlyList<int>? ports = null;
-                    if (!TryReadPostroutingAddresses(item, out var sourcePrefixes, out var destinationPrefixes, out var sourceObject, out var destinationObject) ||
+                    if (!TryReadAddressObjectsAndSets(item, out var sourcePrefixes, out var destinationPrefixes, out var sourceObject, out var destinationObject) ||
                         !TryReadObjectReference(item, "destinationPortObject", out var portObject) || action is null || protocol is null ||
                         (item.TryGetProperty("destinationPorts", out var portsEl) && portsEl.ValueKind != JsonValueKind.Null && !TryParsePortList(portsEl, out ports)))
                     { return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]); }
@@ -491,7 +491,7 @@ public static partial class PolicyBundleJsonCodec
         foreach (var item in rulesEl.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object ||
-                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "family", "source", "destination", "protocol", "destinationPort", "destinationPorts", "jumpTarget", "return", "enabled", "destinationPortObject") || !TryReadEnabled(item, out var enabled) ||
+                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "family", "source", "destination", "protocol", "destinationPort", "destinationPorts", "jumpTarget", "return", "enabled", "destinationPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject") || !TryReadEnabled(item, out var enabled) ||
                 !item.TryGetProperty("etherType", out var etEl) || etEl.ValueKind != JsonValueKind.String ||
                 !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
             {

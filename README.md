@@ -166,4 +166,4 @@ unfinished. See [source library](docs/native-source-library.md) and [migration s
 
 See the [remaining product code-complete milestones](docs/milestones.md) for completion gates and dependencies.
 
-Guided [router condition and postrouting forms](docs/guided-router-forms.md) cover the supported M2 constructs, including postrouting address sets and pinned lists. Broader administration UX remains M5.
+Guided [router condition and postrouting forms](docs/guided-router-forms.md) cover the supported M2 constructs, including postrouting and bridge address sets and pinned lists. Broader administration UX remains M5.

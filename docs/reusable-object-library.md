@@ -89,7 +89,7 @@ multiple addresses must satisfy the existing disjoint/non-adjacent prefix bounds
 Overlapping or adjacent entries may be stored in the library but are rejected when
 attached to a rule if native observation cannot round-trip them. Family/protocol
 mismatches, conflicting literals, unknown flags and missing/forged references fail
-explicitly. Native named sets/maps, dynamic lists, DNAT/bridge address references,
+explicitly. Native named sets/maps, dynamic lists, DNAT references,
 DNAT port references and semantic native import remain unsupported. Primary and auxiliary forms select their own rules; auxiliary attachment preserves
 the primary policy, table priority, MAC restrictions, negation, rule order and
 enabled state. Omitting scope in existing API submissions continues to select
@@ -132,7 +132,7 @@ matchers; exact artifacts and complete ownership receipts still gate apply and
 rollback. Use updated controller and agent builds; older strict codecs reject the
 new fields. No controller database schema upgrade is needed.
 
-This does not implement native named sets or DNAT/bridge address lists and does not
+This does not implement native named sets or DNAT address lists and does not
 expand rules or approximate unsupported translation-list semantics. See
 [ADR 0042](decisions/0042-transport-port-list-references.md).
 
@@ -216,6 +216,31 @@ scalar/port-only receipt fingerprints stay unchanged. Older controllers/agents
 reject the new JSON fields and cannot validate new receipts. Upgrade matching
 controller/agent builds together. No SQL schema upgrade is required; the native
 observation byte limit is unchanged. Native named sets/maps/dynamic objects,
-DNAT references and bridge address lists remain unsupported.
+DNAT references remain unsupported.
 
 ![Pinned postrouting addresses](../pages/assets/screenshots/postrouting-addresses-dark.jpg)
+
+## Bridge address sets and pinned lists
+
+Bridge forwarding and regular-chain rules support literal source/destination CIDR
+sets and immutable IPv4/IPv6 library versions. Choose an explicit matching IP
+family before attaching an address list. One entry compiles as a scalar; multiple
+entries must meet the existing 2–64 distinct, same-family, disjoint/non-adjacent
+prefix contract. Addresses remain conjunctive with MAC, EtherType, bridge-master,
+interface and transport restrictions. A jump still calls its declared local chain;
+a return still resumes its caller. Rule order and disabled state are retained.
+
+Use each chain's reusable-list selector to attach, browse history or explicitly
+remove a source/destination version. Guided edits keep pinned fields read-only;
+removal clears only that selected IP restriction and may broaden access. Review
+the complete intent/native diff and save a new revision before confirmed apply.
+Saved usage includes both `bridge.rules[n]` and `bridge.subChains[n].rules[n]`
+address paths. Later library edits cannot change saved snapshots.
+
+Native observation binds every address-set entry in a v3 bridge fingerprint,
+including handles and the complete chain graph. Scalar/port-only fingerprints
+remain unchanged. Deploy matching controller/agent builds; older codecs reject
+these fields. No SQL migration is required. Bridge IP negation, native named
+sets/maps/dynamic objects and DNAT references remain unsupported.
+
+![Pinned bridge addresses](../pages/assets/screenshots/bridge-addresses-dark.jpg)
