@@ -617,7 +617,7 @@
                                     <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@(d.NegateDestination ? "!= " : "")@d.OriginalDestination.Value</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
-                                    <td><code>@(d.OriginalPort?.ToString() ?? "any") → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
+                                    <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : "any")) → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
                                     <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.Source?.Value ?? "any")</code></td>
 
                                     <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
@@ -626,64 +626,7 @@
                                         <td>
                                             <div class="btn-group">
                                                 @await Html.PartialAsync("_NatRuleMove", new Nergal.Web.NatRuleMoveModel(Model, "dnat", i, bundle.Nat.DnatRules.Count))
-                                                <details class="inline-edit-details">
-                                                    <summary class="btn btn-secondary btn-sm">Edit</summary>
-                                                    <div class="inline-edit-popover">
-                                                        <form method="post" action="@Url.Content("~/manage/policies/nat/dnat/edit")">
-                                                            @Html.AntiForgeryToken()
-                                                            <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
-                                                            <input type="hidden" name="summary" value="@Model.Summary" />
-                                                            <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                                                            <input type="hidden" name="ruleIndex" value="@i" />
-                                                            <div class="form-grid">
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-family">Family</label>
-                                                                    <select name="family" id="dnat-edit-@i-family">
-                                                                        <option value="ipv4" selected="@(d.Family == IpFamily.IPv4)">ipv4</option>
-                                                                        <option value="ipv6" selected="@(d.Family == IpFamily.IPv6)">ipv6</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-protocol">Protocol</label>
-                                                                    <select name="protocol" id="dnat-edit-@i-protocol">
-                                                                        <option value="tcp" selected="@(d.Protocol == FilterProtocol.Tcp)">tcp</option>
-                                                                        <option value="udp" selected="@(d.Protocol == FilterProtocol.Udp)">udp</option>
-                                                                        <option value="any" selected="@(d.Protocol == FilterProtocol.Any)">any</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-originalDestination">Original destination CIDR</label>
-                                                                    <input type="text" name="originalDestination" value="@d.OriginalDestination.Value" required id="dnat-edit-@i-originalDestination" />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-translatedAddress">Translated IP</label>
-                                                                    <input type="text" name="translatedAddress" value="@d.TranslatedAddress" required id="dnat-edit-@i-translatedAddress" />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-originalPort">Original port</label>
-                                                                    <input type="number" name="originalPort" value="@d.OriginalPort" min="1" max="65535" id="dnat-edit-@i-originalPort" />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-translatedPort">Translated port</label>
-                                                                    <input type="number" name="translatedPort" value="@d.TranslatedPort" min="1" max="65535" id="dnat-edit-@i-translatedPort" />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-inputInterface">Input iface</label>
-                                                                    <input type="text" name="inputInterface" value="@d.InputInterface" maxlength="15" id="dnat-edit-@i-inputInterface" />
-                                                                </div>
-                                                                <div class="field">
-                                                                    <label for="dnat-edit-@i-source">Source CIDR</label>
-                                                                    <input type="text" name="source" value="@d.Source?.Value" id="dnat-edit-@i-source" />
-                                                                </div>
-                                                                <div class="field span-2">
-                                                                    <label for="dnat-edit-@i-description">Description</label>
-                                                                    <input type="text" name="description" value="@d.Description" maxlength="160" id="dnat-edit-@i-description" />
-                                                                </div>
-                                                            </div>
-                                                            <div class="mt-2"><button type="submit" class="btn btn-sm">Save DNAT #@(i + 1)</button></div>
-                                                        </form>
-                                                    </div>
-                                                </details>
+                                                <a class="btn btn-secondary btn-sm" href="#dnat-editor-@i">Edit DNAT #@(i + 1)</a>
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/remove")">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
@@ -702,10 +645,12 @@
                 </div>
             }
 
+            @await Html.PartialAsync("_DnatEditors", Model)
+
             @if (Model.CanMutate)
             {
                 <h3 class="mt-2">Add DNAT rule</h3>
-                <form method="post" action="@Url.Content("~/manage/policies/nat/dnat/add")">
+                <form class="router-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/add")">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
                     <input type="hidden" name="summary" value="@Model.Summary" />
@@ -728,8 +673,9 @@
                             <input type="text" name="translatedAddress" placeholder="198.51.100.2" required id="dnat-new-translatedAddress" />
                         </div>
                         <div class="field">
-                            <label for="dnat-new-originalPort">Original port (optional)</label>
-                            <input type="number" name="originalPort" min="1" max="65535" placeholder="443" id="dnat-new-originalPort" />
+                            <label for="dnat-new-originalPort">Original destination port(s) (optional)</label>
+                            <input type="text" name="originalPorts" placeholder="80,443" id="dnat-new-originalPort" aria-describedby="dnat-new-originalPort-hint" />
+                            <span class="hint" id="dnat-new-originalPort-hint">One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. Every original port maps to the same target; leave blank for any.</span>
                         </div>
                         <div class="field">
                             <label for="dnat-new-translatedPort">Translated port (optional)</label>
@@ -752,6 +698,9 @@
                 </form>
             }
         </section>
+
+        @if (bundle?.Nat is { } dnatPolicy)
+        { @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model, "dnat", null, dnatPolicy.DnatRules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, "Rule " + (i + 1) + " · " + r?.Family + " · " + r?.Protocol)).ToArray())) }
 
         @await Html.PartialAsync("_DnatConditions", Model)
 

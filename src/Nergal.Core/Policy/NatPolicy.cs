@@ -14,6 +14,8 @@ namespace Nergal.Core.Policy;
 /// <param name="NegateDestination">Negate the destination restriction.</param>
 /// <param name="NegateInputInterface">Negate the ingress restriction; requires an interface.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
+/// <param name="OriginalPorts">Optional bounded original destination-port set, exclusive with scalar/reference.</param>
+/// <param name="OriginalPortObject">Optional immutable Port-list version, exclusive with literals; never a translation-port list.</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -27,7 +29,9 @@ public sealed record DnatRule(
     bool NegateSource = false,
     bool NegateDestination = false,
     bool NegateInputInterface = false,
-    bool Enabled = true);
+    bool Enabled = true,
+    IReadOnlyList<int>? OriginalPorts = null,
+    PolicyObjectReference? OriginalPortObject = null);
 
 /// <summary>Postrouting action; exemptions return before later NAT rules.</summary>
 public enum NatPostroutingAction
@@ -101,7 +105,7 @@ public sealed class NatPolicy
         ArgumentNullException.ThrowIfNull(dnatRules);
         ArgumentNullException.ThrowIfNull(snatRules);
         SchemaVersion = schemaVersion;
-        DnatRules = Array.AsReadOnly(dnatRules.ToArray());
+        DnatRules = Array.AsReadOnly(dnatRules.Select(r => r is null ? null : r with { OriginalPorts = r.OriginalPorts is null ? null : Array.AsReadOnly(r.OriginalPorts.ToArray()) }).ToArray());
         SnatRules = Array.AsReadOnly(snatRules.Select(r => r is null ? null : r with
         {
             DestinationPorts = r.DestinationPorts is null ? null : Array.AsReadOnly(r.DestinationPorts.ToArray()),

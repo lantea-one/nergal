@@ -214,6 +214,7 @@ public static class NftNatCompiler
                 {
                     text.Append(proto).Append(" dport ").Append(rule.OriginalPort.Value.ToString(CultureInfo.InvariantCulture)).Append(' ');
                 }
+                if (rule.OriginalPorts is { } ports) { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
             }
 
             text.Append("dnat ").Append(familyToken).Append(" to ");

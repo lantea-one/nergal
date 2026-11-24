@@ -429,7 +429,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
             },
             'nat': {
                 'schemaVersion': 1,
-                'dnatRules': [],
+                'dnatRules': [{'family': 'ipv4', 'protocol': 'tcp', 'originalDestination': '192.0.2.1/32', 'translatedAddress': '198.51.100.2', 'translatedPort': 8443}],
                 'snatRules': [
                     {'family': 'ipv4', 'source': '192.0.2.0/24', 'translatedAddress': '198.51.100.2', 'outputInterface': 'wan0'},
                 ],
@@ -464,7 +464,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         transport['bridge']['subChains'][0]['rules'][0]['sourceMac'] = '02:00:00:00:00:01'
         transport['bridge']['subChains'][0]['rules'][0]['protocol'] = 'tcp'
         rev3_bundle_json = json.dumps(transport)
-        for scope in ('postrouting', 'bridge', 'bridgeChain'):
+        for scope in ('dnat', 'postrouting', 'bridge', 'bridgeChain'):
             fields = {'bundleJson': rev3_bundle_json, 'scope': scope, 'slot': 'ports', 'ruleIndex': '0',
                       'selection': port_id + '/1', 'operation': 'attach', '__RequestVerificationToken': admin.token('/manage/policies')}
             if scope == 'bridgeChain':
@@ -496,7 +496,8 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         for rule in (pinned['bridge']['rules'][0], pinned['bridge']['subChains'][0]['rules'][0]):
             require(len(rule['sourceObject']['entries']) == 2 and len(rule['destinationObject']['entries']) == 2 and
                     rule['sourceMac'] == '02:00:00:00:00:01', 'Complete bridge MAC/address snapshots lost before native apply')
-        require(pinned['nat']['snatRules'][0]['destinationPortObject']['id'] == port_id and
+        require(pinned['nat']['dnatRules'][0]['originalPortObject']['id'] == port_id and
+                pinned['nat']['snatRules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['rules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['subChains'][0]['rules'][0]['destinationPortObject']['id'] == port_id,
                 'Transport port identity was not retained across all selected scopes')

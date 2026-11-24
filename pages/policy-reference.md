@@ -116,7 +116,7 @@ the rule family. Single-entry references resolve to scalars. Negation applies to
 the complete matcher. Explicit SNAT requires a source restriction and target IP.
 Complete native v3 address-set observations preserve all entries and handles;
 old scalar/port-only fingerprints remain unchanged. Guided forms author literals
-and choose list versions without JSON. Native named sets/maps, DNAT references
+and choose list versions without JSON. Native named sets/maps, DNAT address references
 remain unsupported. See [the library](reusable-object-library.md).
 
 Bridge rules in forwarding and regular chains accept `sourcePrefixes` and
@@ -126,3 +126,9 @@ MAC/interface/transport constraints and jump/return behavior are preserved. Mult
 prefixes use the existing bounded disjoint/non-adjacent contract. Native observation
 retains every entry and binds complete address-set graphs with v3 fingerprints.
 Bridge IP negation and native named objects remain unsupported.
+
+DNAT `originalPorts` and `originalPortObject` are exclusive with `originalPort`.
+Port sets contain 2–64 distinct valid ports and require TCP/UDP; singleton references
+project to scalars. These match before translation and never replace the single
+explicit `translatedAddress`/`translatedPort`. Guided selectors preserve immutable
+versions; native observation retains complete sets with v3 NAT fingerprints.

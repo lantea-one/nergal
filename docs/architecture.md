@@ -245,3 +245,9 @@ address-set graphs use a v3 fingerprint; preceding scalar/port-only fingerprints
 stay unchanged. MAC restrictions, explicit family, bridge master and jump/return
 control flow remain conjunctive. Invalid dormant rules are denied too. See
 [ADR 0044](decisions/0044-bridge-address-sets-and-references.md).
+
+DNAT original destination-port lists use embedded immutable snapshots, resolved
+without database lookup into scalar/set matchers before one explicit translation.
+Complete native observations retain every port and bind set policies with v3 NAT
+fingerprints. This preserves the existing receipt/watchdog boundary; no new agent
+command or SQL schema is introduced. DNAT address lists remain separate work.

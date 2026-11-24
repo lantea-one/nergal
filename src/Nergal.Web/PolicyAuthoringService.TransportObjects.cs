@@ -12,7 +12,15 @@ internal static partial class PolicyObjectAuthoring
         diagnostics = [new("object.matcherInvalid", "object")];
         if (slot is not ("source" or "destination" or "ports") || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
         FirewallPolicyBundle next;
-        if (scope == "postrouting")
+        if (scope == "dnat")
+        {
+            if (slot != "ports" || bundle.Nat is not { } nat || index < 0 || index >= nat.DnatRules.Count || nat.DnatRules[index] is not { } rule) { return false; }
+            if (reference is null && rule.OriginalPortObject is null) { diagnostics = [new("object.referenceMissing", "nat.dnatRules")]; return false; }
+            var rules = nat.DnatRules.ToArray();
+            rules[index] = rule with { OriginalPort = null, OriginalPorts = null, OriginalPortObject = reference };
+            next = new(bundle.SchemaVersion, bundle.Filter, new(nat.SchemaVersion, rules, nat.SnatRules), bundle.Bridge, bundle.AuxiliaryFilter);
+        }
+        else if (scope == "postrouting")
         {
             if (bundle.Nat is not { } nat || index < 0 || index >= nat.SnatRules.Count || nat.SnatRules[index] is not { } rule) { return false; }
             var existing = slot switch { "source" => rule.SourceObject, "destination" => rule.DestinationObject, _ => rule.DestinationPortObject };

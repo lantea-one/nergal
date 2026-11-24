@@ -344,7 +344,7 @@ public static partial class PolicyBundleJsonCodec
             foreach (var item in dnatEl.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object ||
-                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "translatedPort", "inputInterface", "source", "description", "negateSource", "negateDestination", "negateInputInterface", "enabled") || !TryReadEnabled(item, out var enabled) ||
+                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "originalPortObject", "translatedPort", "inputInterface", "source", "description", "negateSource", "negateDestination", "negateInputInterface", "enabled") || !TryReadEnabled(item, out var enabled) ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                     !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
                     !item.TryGetProperty("originalDestination", out var odEl) || odEl.ValueKind != JsonValueKind.String ||
@@ -364,6 +364,10 @@ public static partial class PolicyBundleJsonCodec
                     origPort = op;
                 }
 
+                IReadOnlyList<int>? originalPorts = null;
+                if (!TryReadObjectReference(item, "originalPortObject", out var originalPortObject) ||
+                    (item.TryGetProperty("originalPorts", out var originalPortsElement) && (originalPortsElement.ValueKind == JsonValueKind.Null || !TryParsePortList(originalPortsElement, out originalPorts))))
+                { return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]); }
                 int? transPort = null;
                 if (item.TryGetProperty("translatedPort", out var tpEl) && tpEl.ValueKind != JsonValueKind.Null)
                 {
@@ -392,7 +396,7 @@ public static partial class PolicyBundleJsonCodec
                         : null;
                     if (!TryReadBool(item, "negateSource", out var ns) || !TryReadBool(item, "negateDestination", out var nd) ||
                         !TryReadBool(item, "negateInputInterface", out var ni)) { return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]); }
-                    dnatRules.Add(new DnatRule(family, protocol, new NetworkPrefix(odEl.GetString()!), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription, ns, nd, ni, enabled));
+                    dnatRules.Add(new DnatRule(family, protocol, new NetworkPrefix(odEl.GetString()!), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription, ns, nd, ni, enabled, originalPorts, originalPortObject));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -689,6 +693,8 @@ public static partial class PolicyBundleJsonCodec
             writer.WriteString("originalDestination", r.OriginalDestination.Value);
             writer.WriteString("translatedAddress", r.TranslatedAddress);
             if (r.OriginalPort.HasValue) { writer.WriteNumber("originalPort", r.OriginalPort.Value); }
+            if (r.OriginalPorts is { } originalPorts) { writer.WriteStartArray("originalPorts"); foreach (var port in originalPorts) { writer.WriteNumberValue(port); } writer.WriteEndArray(); }
+            WriteObjectReference(writer, "originalPortObject", r.OriginalPortObject);
             if (r.TranslatedPort.HasValue) { writer.WriteNumber("translatedPort", r.TranslatedPort.Value); }
             if (r.InputInterface is not null) { writer.WriteString("inputInterface", r.InputInterface); }
             if (r.Source is not null) { writer.WriteString("source", r.Source.Value); }

@@ -9,7 +9,7 @@ internal static partial class PolicyObjectAuthoring
     {
         updated = null;
         if (!PolicyAuthoringService.TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
-        if (scope is "postrouting" or "bridge" or "bridgeChain")
+        if (scope is "dnat" or "postrouting" or "bridge" or "bridgeChain")
         { return TrySetTransport(bundle, index, slot, reference, scope, chain, out updated, out diagnostics); }
         if (chain is not null) { diagnostics = [new("object.scopeInvalid", "chain")]; return false; }
         if (scope is not ("primary" or "auxiliary")) { diagnostics = [new("object.scopeInvalid", "scope")]; return false; }

@@ -391,15 +391,20 @@ static FilterPolicy BuildNatFilterPolicy()
     return new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, rules);
 }
 
-static NatPolicy BuildNatPolicy() => new(1,
+static NatPolicy BuildNatPolicy()
+{
+    var literal = new NatPolicy(1,
     [
-        new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.1/32"), "198.51.100.2", 18446, 18447, "r_cli"),
-        new(IpFamily.IPv6, FilterProtocol.Tcp, new("2001:db8:1::1/128"), "2001:db8:2::2", 18446, 18447, "r_cli"),
+        new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.1/32"), "198.51.100.2", null, 18447, "r_cli", OriginalPorts: [18446, 18448]),
+        new(IpFamily.IPv6, FilterProtocol.Tcp, new("2001:db8:1::1/128"), "2001:db8:2::2", null, 18447, "r_cli", OriginalPorts: [18446, 18448]),
     ],
     [
         new(IpFamily.IPv4, new("192.0.2.0/24"), "198.51.100.1", new("198.51.100.0/24"), "r_srv"),
         new(IpFamily.IPv6, new("2001:db8:1::/64"), "2001:db8:2::1", new("2001:db8:2::/64"), "r_srv"),
     ]);
+
+    return RouterPolicySamples.WithTransportReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), literal)).Nat!;
+}
 
 static FilterPolicy BuildRouterPolicy()
 {

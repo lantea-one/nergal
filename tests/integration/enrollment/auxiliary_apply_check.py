@@ -311,6 +311,10 @@ try:
                         listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'bridge', 'nergal_bridge'))
                         handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'service' and any('return' in expr for expr in item['rule']['expr']))
                         nft(f'replace rule bridge nergal_bridge service handle {handle} ether saddr 02:00:00:00:00:01 ether type ip ip saddr {{ 192.0.2.2, 192.0.2.90 }} ip daddr {{ 192.0.2.30, 192.0.2.99 }} tcp dport 18080 return\n')
+                    elif scenario == 'dnat-port-drift':
+                        listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'inet', 'nergal_nat'))
+                        handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'prerouting')
+                        nft(f'replace rule inet nergal_nat prerouting handle {handle} ip daddr 192.0.2.1 tcp dport {{ 18080, 18084 }} dnat ip to 198.51.100.2:18080\n')
                     elif scenario == 'unknown-expression':
                         nft('add rule inet nergal_aux input counter\n')
                     else:

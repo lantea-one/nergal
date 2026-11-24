@@ -94,3 +94,9 @@ fields, actual MAC-plus-IP/set packet outcomes, complete native reconstruction,
 Unix/mTLS apply/confirm/rollback and same-handle set drift preservation. The agent
 auxiliary launcher now runs eight recovery scenarios. Fixtures remain synthetic
 and isolated; this does not establish private-source import equivalence.
+
+DNAT original-port list checks cover immutable SQL pins/usage, strict JSON and
+HTTPS forms, dual-stack members/nonmembers reaching one translated target, complete
+native echo/list fingerprints and same-handle port-set drift preservation. All nine
+auxiliary agent recovery scenarios and distinct-UID Unix/mTLS web apply/confirm/
+rollback are verified in isolated synthetic fixtures.

@@ -11,6 +11,13 @@ internal static class RouterNatValidation
         {
             if (policy.DnatRules[i] is not { } r) { continue; }
             var path = $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
+            if (r.OriginalPorts is { } ports)
+            {
+                if (r.OriginalPort.HasValue) { errors.Add(new("set.conflictsWithScalar", path + ".originalPorts")); }
+                if (ports.Count is < 2 or > 64 || ports.Any(p => p is < 1 or > 65535) || ports.Distinct().Count() != ports.Count)
+                { errors.Add(new("nat.portSetInvalid", path + ".originalPorts")); }
+                if (r.Protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp)) { errors.Add(new("port.requiresTransport", path + ".originalPorts")); }
+            }
             RouterFilterValidation.Require(r.NegateSource, r.Source is not null, path + ".negateSource", errors);
             RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null, path + ".negateInputInterface", errors);
         }

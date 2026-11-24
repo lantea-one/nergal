@@ -166,6 +166,11 @@ try:
     check_nat_tcp(client_proc.pid, server_proc.pid, socket.AF_INET6, '2001:db8:2::2', '2001:db8:1::1', '2001:db8:1::2', 18447, 18446, '2001:db8:2::1', True)
     check_nat_tcp(client_proc.pid, server_proc.pid, socket.AF_INET6, '2001:db8:2::2', '2001:db8:2::2', '2001:db8:1::2', 18447, 18447, '2001:db8:2::1', False)
 
+    for family, server, target, client, translated in ((socket.AF_INET, '198.51.100.2', '192.0.2.1', '192.0.2.2', '198.51.100.1'),
+                                                       (socket.AF_INET6, '2001:db8:2::2', '2001:db8:1::1', '2001:db8:1::2', '2001:db8:2::1')):
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, target, client, 18447, 18448, translated, True)
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, target, client, 18447, 18449, translated, False)
+    print('PASS: both referenced original DNAT ports reach one translated target; nonmembers fail in both families')
     print('PASS: multi-namespace dual-stack DNAT, explicit SNAT (without server default route), and ct status dnat enforcement')
 finally:
     for proc in (client_proc, server_proc):

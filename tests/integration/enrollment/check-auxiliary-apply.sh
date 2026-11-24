@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../../.."
 [[ $# -le 1 ]] || { printf 'Usage: %s [--agent]\n' "$0" >&2; exit 2; }
 case ${1:-} in
     '') cases=(native) ;;
-    --agent) cases=(lifecycle explicit-drift timeout-recreated missing-table foreign-collision unknown-expression nat-set-drift bridge-set-drift) ;;
+    --agent) cases=(lifecycle explicit-drift timeout-recreated missing-table foreign-collision unknown-expression nat-set-drift bridge-set-drift dnat-port-drift) ;;
     *) printf 'Usage: %s [--agent]\n' "$0" >&2; exit 2 ;;
 esac
 for scenario in "${cases[@]}"; do
