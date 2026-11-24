@@ -44,7 +44,7 @@ public sealed class NftNatTableObservation
         PostroutingChainHandle = postroutingChainHandle;
         Policy = policy;
 
-        var completeSets = dnatRules.Any(e => e.Rule.OriginalPorts is not null) || snatRules.Any(e => e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null);
+        var completeSets = dnatRules.Any(e => e.Rule.OriginalPorts is not null || e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null) || snatRules.Any(e => e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null);
         var extended = completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
             snatRules.Any(e => e.Rule.Action != NatPostroutingAction.Snat || e.Rule.NegateSource || e.Rule.NegateDestination ||
                 e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any);
@@ -62,7 +62,7 @@ public sealed class NftNatTableObservation
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4 " : "ipv6 ")
                 .Append(rule.InputInterface ?? "-").Append(' ')
                 .Append(rule.Source?.Value ?? "-").Append(' ')
-                .Append(rule.OriginalDestination.Value).Append(' ')
+                .Append(rule.OriginalDestination?.Value ?? "-").Append(' ')
                 .Append(rule.Protocol).Append(' ')
                 .Append(rule.OriginalPort?.ToString(CultureInfo.InvariantCulture) ?? "-").Append(' ')
                 .Append(rule.TranslatedAddress).Append(' ')
@@ -353,6 +353,7 @@ public sealed class NftNatTableObservation
         string? inputInterface = null;
         NetworkPrefix? source = null;
         NetworkPrefix? originalDestination = null;
+        IReadOnlyList<NetworkPrefix>? sourcePrefixes = null, destinationPrefixes = null;
         var protocol = FilterProtocol.Any;
         int? originalPort = null;
         IReadOnlyList<int>? originalPorts = null;
@@ -421,9 +422,19 @@ public sealed class NftNatTableObservation
                     var nextStage = pField == "saddr" ? 1 : 2;
                     var expectedProto = targetFamily == IpFamily.IPv4 ? "ip" : "ip6";
                     if (stage >= nextStage || pProto != expectedProto) { return null; }
-                    var prefix = NftJsonHelpers.ParseNetworkPrefix(right, targetFamily.Value);
-                    if (prefix is null) { return null; }
-                    if (nextStage == 1) { source = prefix; ns = negate; } else { originalDestination = prefix; nd = negate; }
+                    if (NftJsonHelpers.Properties(right, "set"))
+                    {
+                        var prefixes = NftTableObservation.ParseNetworkPrefixSet(right.GetProperty("set"), targetFamily.Value);
+                        if (prefixes is null) { return null; }
+                        if (nextStage == 1) { sourcePrefixes = prefixes; } else { destinationPrefixes = prefixes; }
+                    }
+                    else
+                    {
+                        var prefix = NftJsonHelpers.ParseNetworkPrefix(right, targetFamily.Value);
+                        if (prefix is null) { return null; }
+                        if (nextStage == 1) { source = prefix; } else { originalDestination = prefix; }
+                    }
+                    if (nextStage == 1) { ns = negate; } else { nd = negate; }
                     stage = nextStage;
                     continue;
                 }
@@ -450,7 +461,7 @@ public sealed class NftNatTableObservation
             return null;
         }
 
-        if (originalDestination is null)
+        if (originalDestination is null && destinationPrefixes is null)
         {
             return null;
         }
@@ -461,7 +472,7 @@ public sealed class NftNatTableObservation
             return null;
         }
 
-        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni, OriginalPorts: originalPorts);
+        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni, OriginalPorts: originalPorts, SourcePrefixes: sourcePrefixes, DestinationPrefixes: destinationPrefixes);
     }
 
     private static SnatRule? ParseSnatRule(JsonElement expressions)

@@ -85,7 +85,7 @@ public sealed class PostroutingAddressTests
 
     /// <summary>Strict fields cannot be forged, ignored in another scope, or normalized from null into a missing restriction.</summary>
     [Fact]
-    public void Codec_RejectsMalformedAddressFieldsAndUnimplementedDnatScope()
+    public void Codec_RejectsMalformedAddressFieldsAndUnknownDnatMaps()
     {
         var rule = new SnatRule(IpFamily.IPv4, null, null, Action: NatPostroutingAction.Masquerade,
             SourceObject: Reference("sources", IpFamily.IPv4, Sources(IpFamily.IPv4)));
@@ -106,7 +106,7 @@ public sealed class PostroutingAddressTests
         }
         var dnat = JsonNode.Parse(PolicyBundleJsonCodec.EncodeBundle(new(1, Bundle(rule).Filter, new(1,
             [new(IpFamily.IPv4, FilterProtocol.Tcp, new("198.51.100.1/32"), "192.0.2.1")], []))))!;
-        dnat["nat"]!["dnatRules"]![0]!["sourceObject"] = original["nat"]!["snatRules"]![0]!["sourceObject"]!.DeepClone();
+        dnat["nat"]!["dnatRules"]![0]!["sourceMap"] = original["nat"]!["snatRules"]![0]!["sourceObject"]!.DeepClone();
         Assert.False(PolicyBundleJsonCodec.DecodeBundle(dnat.ToJsonString()).IsSuccess);
     }
 

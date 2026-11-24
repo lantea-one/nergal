@@ -169,7 +169,7 @@ The [Sets & IP lists library](reusable-object-library.md) now supports creating,
 editing and searching typed IPv4/IPv6 address/CIDR and port lists, with immutable
 version history and stale-edit protection. Primary inet filter rules can pin list
 versions; library detail shows saved revision references. Library edits do not change
-a saved policy or a firewall. Native named sets and DNAT address references remain
+a saved policy or a firewall. Native named sets remain
 unsupported.
 Native set scope, flags and dynamic behavior require explicit supported semantics.
 

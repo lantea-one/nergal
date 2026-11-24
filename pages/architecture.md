@@ -90,4 +90,11 @@ DNAT original destination-port lists use embedded immutable snapshots, resolved
 without database lookup into scalar/set matchers before one explicit translation.
 Complete native observations retain every port and bind set policies with v3 NAT
 fingerprints. This preserves the existing receipt/watchdog boundary; no new agent
-command or SQL schema is introduced. DNAT address lists remain separate work.
+command or SQL schema is introduced. Native named objects remain separate work.
+
+DNAT source/original-destination address snapshots use the same self-contained
+reference contract. Compilation projects scalars/sets without database lookups,
+retains whole-set negation and one explicit translation, and rejects missing
+original-destination restrictions. Complete native v3 observations bind all address
+entries; older scalar/port-only fingerprints remain unchanged. No new privileged
+command or SQL migration is introduced. Native named objects remain separate.

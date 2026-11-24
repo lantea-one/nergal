@@ -31,8 +31,10 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-originalDestination">Original destination CIDR</label>
-                            <input type="text" name="originalDestination" value="@d.OriginalDestination.Value" required id="dnat-edit-@i-originalDestination" />
+                            <label for="dnat-edit-@i-originalDestination">Original destination CIDR(s)</label>
+                            <input type="text" name="@(d.DestinationObject is null ? "originalDestination" : null)" value="@(d.DestinationObject is { } destinationPin ? string.Join(", ", destinationPin.Content.Entries) : d.OriginalDestination?.Value ?? (d.DestinationPrefixes is { } destinations ? string.Join(", ", destinations.Select(p => p.Value)) : ""))" readonly="@(d.DestinationObject is not null)" required="@(d.DestinationObject is null)" aria-describedby="dnat-edit-@i-destination-hint" id="dnat-edit-@i-originalDestination" />
+                            <span class="hint" id="dnat-edit-@i-destination-hint">Required matcher before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Pinned contents are read-only.</span>
+                            @if (d.DestinationObject is { } destinationObject) { <span class="hint">Pinned destination list: @destinationObject.Content.Name v@(destinationObject.Version).</span> }
                         </div>
                         <div class="field">
                             <label for="dnat-edit-@i-translatedAddress">Translated IP</label>
@@ -53,8 +55,10 @@
                             <input type="text" name="inputInterface" value="@d.InputInterface" maxlength="15" id="dnat-edit-@i-inputInterface" />
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-source">Source CIDR</label>
-                            <input type="text" name="source" value="@d.Source?.Value" id="dnat-edit-@i-source" />
+                            <label for="dnat-edit-@i-source">Source CIDR(s)</label>
+                            <input type="text" name="@(d.SourceObject is null ? "source" : null)" value="@(d.SourceObject is { } sourcePin ? string.Join(", ", sourcePin.Content.Entries) : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : ""))" readonly="@(d.SourceObject is not null)" aria-describedby="dnat-edit-@i-source-hint" id="dnat-edit-@i-source" />
+                            <span class="hint" id="dnat-edit-@i-source-hint">Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Ordinary edits retain pinned contents and negation.</span>
+                            @if (d.SourceObject is { } sourceObject) { <span class="hint">Pinned source list: @sourceObject.Content.Name v@(sourceObject.Version).</span> }
                         </div>
                         <div class="field span-2">
                             <label for="dnat-edit-@i-description">Description</label>

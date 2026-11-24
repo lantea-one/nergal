@@ -344,10 +344,10 @@ public static partial class PolicyBundleJsonCodec
             foreach (var item in dnatEl.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object ||
-                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "originalPortObject", "translatedPort", "inputInterface", "source", "description", "negateSource", "negateDestination", "negateInputInterface", "enabled") || !TryReadEnabled(item, out var enabled) ||
+                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "originalPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "translatedPort", "inputInterface", "source", "description", "negateSource", "negateDestination", "negateInputInterface", "enabled") || !TryReadEnabled(item, out var enabled) ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                     !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
-                    !item.TryGetProperty("originalDestination", out var odEl) || odEl.ValueKind != JsonValueKind.String ||
+                    !TryReadOptionalString(item, "originalDestination", out var originalDestination) ||
                     !item.TryGetProperty("translatedAddress", out var taEl) || taEl.ValueKind != JsonValueKind.String)
                 {
                     return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]);
@@ -365,8 +365,11 @@ public static partial class PolicyBundleJsonCodec
                 }
 
                 IReadOnlyList<int>? originalPorts = null;
-                if (!TryReadObjectReference(item, "originalPortObject", out var originalPortObject) ||
+                if (!TryReadAddressObjectsAndSets(item, out var sourcePrefixes, out var destinationPrefixes, out var sourceObject, out var destinationObject) ||
+                    !TryReadObjectReference(item, "originalPortObject", out var originalPortObject) ||
                     (item.TryGetProperty("originalPorts", out var originalPortsElement) && (originalPortsElement.ValueKind == JsonValueKind.Null || !TryParsePortList(originalPortsElement, out originalPorts))))
+                { return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]); }
+                if (originalDestination is null && destinationPrefixes is null && destinationObject is null)
                 { return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]); }
                 int? transPort = null;
                 if (item.TryGetProperty("translatedPort", out var tpEl) && tpEl.ValueKind != JsonValueKind.Null)
@@ -396,7 +399,7 @@ public static partial class PolicyBundleJsonCodec
                         : null;
                     if (!TryReadBool(item, "negateSource", out var ns) || !TryReadBool(item, "negateDestination", out var nd) ||
                         !TryReadBool(item, "negateInputInterface", out var ni)) { return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]); }
-                    dnatRules.Add(new DnatRule(family, protocol, new NetworkPrefix(odEl.GetString()!), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription, ns, nd, ni, enabled, originalPorts, originalPortObject));
+                    dnatRules.Add(new DnatRule(family, protocol, originalDestination is null ? null : new NetworkPrefix(originalDestination), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription, ns, nd, ni, enabled, originalPorts, originalPortObject, sourcePrefixes, destinationPrefixes, sourceObject, destinationObject));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -690,7 +693,9 @@ public static partial class PolicyBundleJsonCodec
             if (!r.Enabled) { writer.WriteBoolean("enabled", false); }
             writer.WriteString("family", r.Family == IpFamily.IPv4 ? "ipv4" : "ipv6");
             writer.WriteString("protocol", ProtocolName(r.Protocol));
-            writer.WriteString("originalDestination", r.OriginalDestination.Value);
+            if (r.OriginalDestination is not null) { writer.WriteString("originalDestination", r.OriginalDestination.Value); }
+            WritePrefixSet(writer, "sourcePrefixes", r.SourcePrefixes); WritePrefixSet(writer, "destinationPrefixes", r.DestinationPrefixes);
+            WriteObjectReference(writer, "sourceObject", r.SourceObject); WriteObjectReference(writer, "destinationObject", r.DestinationObject);
             writer.WriteString("translatedAddress", r.TranslatedAddress);
             if (r.OriginalPort.HasValue) { writer.WriteNumber("originalPort", r.OriginalPort.Value); }
             if (r.OriginalPorts is { } originalPorts) { writer.WriteStartArray("originalPorts"); foreach (var port in originalPorts) { writer.WriteNumberValue(port); } writer.WriteEndArray(); }

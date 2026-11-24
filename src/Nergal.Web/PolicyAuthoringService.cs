@@ -595,21 +595,10 @@ internal static partial class PolicyAuthoringService
             return false;
         }
 
-        NetworkPrefix origDst;
-        NetworkPrefix? src = null;
-        try
-        {
-            origDst = new NetworkPrefix((input.OriginalDestination ?? "").Trim());
-            if (!string.IsNullOrWhiteSpace(input.Source))
-            {
-                src = new NetworkPrefix(input.Source.Trim());
-            }
-        }
-        catch (Exception ex) when (ex is ArgumentException or FormatException)
-        {
-            diagnostics = [new("network.invalid", "nat.dnatRules")];
-            return false;
-        }
+        var addressErrors = new List<PolicyDiagnostic>();
+        TryParsePrefixField(input.OriginalDestination, "nat.dnatRules.originalDestination", out var origDst, out var destinations, addressErrors);
+        TryParsePrefixField(input.Source, "nat.dnatRules.source", out var src, out var sources, addressErrors);
+        if (addressErrors.Count != 0) { diagnostics = addressErrors; return false; }
 
         if (!TryNormalizeDescription(input.Description, out var description))
         {
@@ -630,7 +619,7 @@ internal static partial class PolicyAuthoringService
             input.TranslatedPort,
             string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
             src,
-            description, OriginalPorts: originalPorts);
+            description, OriginalPorts: originalPorts, SourcePrefixes: sources, DestinationPrefixes: destinations);
 
         var existingDnat = bundle.Nat?.DnatRules.ToList() ?? [];
         var existingSnat = bundle.Nat?.SnatRules.ToList() ?? [];
@@ -686,21 +675,10 @@ internal static partial class PolicyAuthoringService
             return false;
         }
 
-        NetworkPrefix origDst;
-        NetworkPrefix? src = null;
-        try
-        {
-            origDst = new NetworkPrefix((input.OriginalDestination ?? "").Trim());
-            if (!string.IsNullOrWhiteSpace(input.Source))
-            {
-                src = new NetworkPrefix(input.Source.Trim());
-            }
-        }
-        catch (Exception ex) when (ex is ArgumentException or FormatException)
-        {
-            diagnostics = [new("network.invalid", "nat.dnatRules")];
-            return false;
-        }
+        var addressErrors = new List<PolicyDiagnostic>();
+        TryParsePrefixField(input.OriginalDestination, "nat.dnatRules.originalDestination", out var origDst, out var destinations, addressErrors);
+        TryParsePrefixField(input.Source, "nat.dnatRules.source", out var src, out var sources, addressErrors);
+        if (addressErrors.Count != 0) { diagnostics = addressErrors; return false; }
 
         var portErrors = new List<PolicyDiagnostic>();
         TryParsePortField(input.OriginalPorts, "nat.dnatRules.originalPorts", out var originalPort, out var originalPorts, portErrors);
@@ -715,11 +693,11 @@ internal static partial class PolicyAuthoringService
             input.TranslatedPort,
             string.IsNullOrWhiteSpace(input.InputInterface) ? null : input.InputInterface.Trim(),
             src,
-            description, OriginalPorts: originalPorts);
+            description, OriginalPorts: originalPorts, SourcePrefixes: sources, DestinationPrefixes: destinations);
 
         var dnats = bundle.Nat.DnatRules.ToList();
         var previous = bundle.Nat.DnatRules[ruleIndex]!;
-        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject };
+        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);

@@ -66,11 +66,11 @@ public static class NftNatCompiler
                 errors.Add(new("nat.protocolUnsupported", path + ".protocol"));
             }
 
-            if (rule.OriginalDestination is null)
+            if (rule.OriginalDestination is null && rule.DestinationPrefixes is null)
             {
                 errors.Add(new("nat.originalDestinationRequired", path + ".originalDestination"));
             }
-            else if (rule.OriginalDestination.Family != rule.Family)
+            else if (rule.OriginalDestination is { } originalDestination && originalDestination.Family != rule.Family)
             {
                 errors.Add(new("network.familyMismatch", path + ".originalDestination"));
             }
@@ -204,7 +204,11 @@ public static class NftNatCompiler
                 text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append(rule.Source.Value).Append(' ');
             }
 
-            text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "").Append(rule.OriginalDestination!.Value).Append(' ');
+            else if (rule.SourcePrefixes is { } sources)
+            { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append("{ ").Append(string.Join(", ", sources.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
+            text.Append(familyToken).Append(" daddr ").Append(rule.NegateDestination ? "!= " : "");
+            if (rule.OriginalDestination is { } original) { text.Append(original.Value).Append(' '); }
+            else { text.Append("{ ").Append(string.Join(", ", rule.DestinationPrefixes!.Select(p => p.Value).Order(StringComparer.Ordinal))).Append(" } "); }
 
             if (rule.Protocol != FilterProtocol.Any)
             {

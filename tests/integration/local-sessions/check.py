@@ -264,6 +264,8 @@ def exercise(temp):
         check_bridge_addresses(browser, ctrl_state)
         from dnat_ports import check_dnat_ports
         check_dnat_ports(browser, ctrl_state)
+        from dnat_addresses import check_dnat_addresses
+        check_dnat_addresses(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)

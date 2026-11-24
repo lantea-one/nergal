@@ -81,7 +81,7 @@ public sealed class DnatPortReferenceTests
             {"match":{"op":"==","left":{"payload":{"protocol":"tcp","field":"dport"}},"right":{"set":[443,8443]}}},
             {"dnat":{"family":"$proto","addr":"$target","port":8080}}]}}]}
             """.Replace("$comment", Identity.Comment, StringComparison.Ordinal).Replace("$proto", proto, StringComparison.Ordinal)
-            .Replace("$destination", rule.OriginalDestination.Value.Split('/')[0], StringComparison.Ordinal).Replace("$target", rule.TranslatedAddress, StringComparison.Ordinal))!;
+            .Replace("$destination", rule.OriginalDestination!.Value.Split('/')[0], StringComparison.Ordinal).Replace("$target", rule.TranslatedAddress, StringComparison.Ordinal))!;
         var observed = NftNatTableObservation.Parse(json.ToJsonString()); Assert.True(observed.IsSuccess, observed.ErrorCode);
         Assert.Equal(NftNatCompiler.Compile(Bundle(rule).Nat!, Identity).Candidate, NftNatCompiler.Compile(observed.Observation!.Policy, Identity).Candidate);
         var echo = new JsonObject { ["nftables"] = new JsonArray(json["nftables"]!.AsArray().Skip(1).Select(n => (JsonNode)new JsonObject { [n!.AsObject().ContainsKey("table") ? "create" : "add"] = n.DeepClone() }).ToArray()) };

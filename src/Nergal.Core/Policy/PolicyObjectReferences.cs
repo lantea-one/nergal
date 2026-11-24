@@ -15,7 +15,13 @@ public static class PolicyObjectReferences
         if (bundle.Nat is { } nat)
         {
             for (var i = 0; i < nat.DnatRules.Count; i++)
-            { if (nat.DnatRules[i]?.OriginalPortObject is { } ports) { result.Add(new($"nat.dnatRules[{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}].originalPortObject", ports)); } }
+            {
+                if (nat.DnatRules[i] is not { } rule) { continue; }
+                var path = $"nat.dnatRules[{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}]";
+                if (rule.SourceObject is { } source) { result.Add(new(path + ".sourceObject", source)); }
+                if (rule.DestinationObject is { } destination) { result.Add(new(path + ".destinationObject", destination)); }
+                if (rule.OriginalPortObject is { } ports) { result.Add(new(path + ".originalPortObject", ports)); }
+            }
             for (var i = 0; i < nat.SnatRules.Count; i++)
             {
                 if (nat.SnatRules[i] is not { } rule) { continue; }

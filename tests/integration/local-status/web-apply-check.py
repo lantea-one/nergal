@@ -480,7 +480,7 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
                 '__RequestVerificationToken': admin.token('/manage/objects'),
             }, expected_location_contains='/manage/objects?objectId=')
             object_id = location.split('objectId=')[1]
-            for scope in ('postrouting', 'bridge', 'bridgeChain'):
+            for scope in ('dnat', 'postrouting', 'bridge', 'bridgeChain'):
                 fields = {'bundleJson': rev3_bundle_json, 'scope': scope, 'slot': slot, 'ruleIndex': '0',
                           'selection': object_id + '/1', 'operation': 'attach', '__RequestVerificationToken': admin.token('/manage/policies')}
                 if scope == 'bridgeChain':
@@ -496,6 +496,9 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
         for rule in (pinned['bridge']['rules'][0], pinned['bridge']['subChains'][0]['rules'][0]):
             require(len(rule['sourceObject']['entries']) == 2 and len(rule['destinationObject']['entries']) == 2 and
                     rule['sourceMac'] == '02:00:00:00:00:01', 'Complete bridge MAC/address snapshots lost before native apply')
+        require(len(pinned['nat']['dnatRules'][0]['sourceObject']['entries']) == 2 and
+                len(pinned['nat']['dnatRules'][0]['destinationObject']['entries']) == 2,
+                'Complete DNAT address snapshots lost before native apply')
         require(pinned['nat']['dnatRules'][0]['originalPortObject']['id'] == port_id and
                 pinned['nat']['snatRules'][0]['destinationPortObject']['id'] == port_id and
                 pinned['bridge']['rules'][0]['destinationPortObject']['id'] == port_id and

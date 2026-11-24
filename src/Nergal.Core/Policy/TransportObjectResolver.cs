@@ -11,12 +11,26 @@ public static class TransportObjectResolver
     public static NatPolicy Resolve(NatPolicy policy, ICollection<PolicyObjectDiagnostic> diagnostics)
     {
         ArgumentNullException.ThrowIfNull(policy); ArgumentNullException.ThrowIfNull(diagnostics);
-        if (!policy.DnatRules.Any(r => r?.OriginalPortObject is not null) && !policy.SnatRules.Any(r => r?.DestinationPortObject is not null || r?.SourceObject is not null || r?.DestinationObject is not null)) { return policy; }
+        if (!policy.DnatRules.Any(r => r?.OriginalPortObject is not null || r?.SourceObject is not null || r?.DestinationObject is not null) && !policy.SnatRules.Any(r => r?.DestinationPortObject is not null || r?.SourceObject is not null || r?.DestinationObject is not null)) { return policy; }
         return new(policy.SchemaVersion, policy.DnatRules.Select((rule, i) =>
         {
-            if (rule?.OriginalPortObject is not { } reference) { return rule; }
-            var ports = Ports(reference, rule.OriginalPort, rule.OriginalPorts, $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}].originalPortObject", diagnostics);
-            return rule with { OriginalPort = ports?.Length == 1 ? ports[0] : rule.OriginalPort, OriginalPorts = ports?.Length > 1 ? ports : rule.OriginalPorts, OriginalPortObject = null };
+            if (rule is null) { return rule; }
+            var path = $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
+            var source = Prefixes(rule.SourceObject, rule.Source is not null || rule.SourcePrefixes is not null, rule.Family, path + ".sourceObject", diagnostics);
+            var destination = Prefixes(rule.DestinationObject, rule.OriginalDestination is not null || rule.DestinationPrefixes is not null, rule.Family, path + ".destinationObject", diagnostics);
+            var ports = rule.OriginalPortObject is { } reference ? Ports(reference, rule.OriginalPort, rule.OriginalPorts, path + ".originalPortObject", diagnostics) : null;
+            return rule with
+            {
+                OriginalPort = ports?.Length == 1 ? ports[0] : rule.OriginalPort,
+                OriginalPorts = ports?.Length > 1 ? ports : rule.OriginalPorts,
+                OriginalPortObject = null,
+                Source = source?.Length == 1 ? source[0] : rule.Source,
+                SourcePrefixes = source?.Length > 1 ? source : rule.SourcePrefixes,
+                SourceObject = null,
+                OriginalDestination = destination?.Length == 1 ? destination[0] : rule.OriginalDestination,
+                DestinationPrefixes = destination?.Length > 1 ? destination : rule.DestinationPrefixes,
+                DestinationObject = null
+            };
         }), policy.SnatRules.Select((rule, i) =>
         {
             if (rule is null) { return rule; }

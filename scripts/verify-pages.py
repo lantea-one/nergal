@@ -51,6 +51,7 @@ REQUIRED_FILES = [
     "assets/screenshots/postrouting-addresses-dark.jpg",
     "assets/screenshots/bridge-addresses-dark.jpg",
     "assets/screenshots/dnat-port-references-dark.jpg",
+    "assets/screenshots/dnat-address-references-dark.jpg",
     "assets/screenshots/bridge-forms-dark.jpg",
     "assets/screenshots/bridge-forms-mobile.jpg",
     "assets/screenshots/mss-clamp-light.jpg",

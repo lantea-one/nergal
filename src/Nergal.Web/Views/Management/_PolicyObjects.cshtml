@@ -4,7 +4,7 @@
 {
     <section class="card" aria-labelledby="policy-objects-heading">
         <h2 id="policy-objects-heading">Reusable list references</h2>
-        <p class="hint">Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary and auxiliary inet filter source, destination and destination-port matchers. Postrouting NAT and bridge source, destination and port selectors are beside their rule editors; DNAT original-port lists have a separate selector. Native named sets and DNAT address references remain unsupported.</p>
+        <p class="hint">Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary and auxiliary inet filter source, destination and destination-port matchers. Postrouting NAT and bridge source, destination and port selectors are beside their rule editors; DNAT source, original-destination and original-port lists have a separate selector. Native named sets remain unsupported.</p>
         @if (PolicyObjectReferences.Enumerate(bundle) is { Count: > 0 } bindings)
         { <ul>@foreach (var binding in bindings) { <li><strong>@binding.Reference.Content.Name v@(binding.Reference.Version)</strong> · <code>@binding.Path</code> · @string.Join(", ", binding.Reference.Content.Entries) · <a href="@Url.Action("Objects", new { objectId = binding.Reference.Id, compareToVersion = binding.Reference.Version })" target="_blank" rel="noopener">Compare current library version with this pin (opens a new tab)</a></li> }</ul> }
         else { <p class="muted">No pinned list references in this draft.</p> }

@@ -611,3 +611,22 @@ DNAT sets; the ninth recovery case, `dnat-port-drift`, replaces a set at the sam
 handle and requires recovery without overwriting unexpected state. The distinct-UID
 web fixture selects the list through the real UI endpoint before Unix/mTLS
 apply/confirm/independent rollback. All addresses and namespaces are synthetic.
+
+### DNAT address sets and references
+
+Core checks cover both families, singleton/set references, dormant validation,
+defensive snapshots, missing/conflicting/wrong-family/overlapping restrictions,
+strict JSON and complete native echo/list fingerprints including negation. Real
+SQLite and HTTPS checks retain all three pins, translation, rule state and immutable
+usage/history; forged versions, literal injection and required-destination removal
+are denied. Explicit source removal also clears its negation.
+
+The three-namespace NAT fixture checks both source/destination set members,
+independent misses and negated sets with positive controls in both IP families.
+It verifies complete echo/list round-trips before and after negation. Auxiliary
+agent lifecycle carries referenced DNAT addresses and ports through confirmation,
+restart and rollback. The tenth recovery case, `dnat-address-drift`, changes only
+an address-set entry at the same handle and requires recovery without overwriting
+unexpected state; the port-drift case now preserves all address matchers too.
+Mapped-UID web apply selects source/destination versions through real endpoints
+before complete Unix/mTLS apply/confirm/rollback. Fixtures remain synthetic.
