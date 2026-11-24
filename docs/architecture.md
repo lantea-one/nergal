@@ -12,7 +12,7 @@ subsequent semantic mapping must consume the same document. No independent viewe
 grammar or server include resolution is introduced. See
 [ADR 0050](decisions/0050-lossless-native-source-tokenization.md).
 
-The first milestone is an independently implemented, nftables-first management
+The first milestone is an independently implemented, native nftables management
 application, not a new packet-filtering engine. The kernel continues to enforce
 policy when the web console or identity provider is unavailable.
 
@@ -116,12 +116,14 @@ configuration concerns. A deployment can select AD-backed Keycloak roles, but
 basic installations must not require that infrastructure. Unsupported or unknown
 policy semantics must fail closed. Raw shell execution is not an extension API.
 
-## Future adapters
+## Firewall and platform scope
 
-A backend interface is a boundary, not a commitment to multiple implementations.
-Only native nftables is selected. A firewalld adapter would require its own
-semantic conformance suite and an accepted decision record before implementation.
-Do not edit firewalld-owned tables from a native adapter.
+Native nftables on Linux is the sole firewall target. No other firewall adapter or
+Windows-native service deployment is planned. Pure policy contracts and capability
+checks preserve testability and explicit native support limits; they do not promise
+multiple firewall implementations. Do not edit another manager's tables. Browser
+clients are separate from the Linux service/platform boundary. See
+[ADR 0051](decisions/0051-nftables-only-linux-product.md).
 
 ## Next milestone
 

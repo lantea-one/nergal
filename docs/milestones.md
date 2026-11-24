@@ -7,6 +7,11 @@ all declared v1 workflows are implemented, integrated, documented and verified,
 with unsupported semantics rejected explicitly and release-blocking gaps closed.
 No percentage or completion date is asserted without a measured estimate.
 
+These milestones target native nftables on Linux exclusively. Other firewall
+engines and Windows-native service deployments are outside scope; no adapter work
+is required for code-complete. Independent topologies and all three agreed SQL
+engines remain targets. See [ADR 0051](decisions/0051-nftables-only-linux-product.md).
+
 ## Verified foundation
 
 Native typed filter/NAT/bridge/early-inet compilation; complete native ownership
@@ -25,7 +30,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Open | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
-| M5 | Everyday administration UX | Open | Navigation/setup workflows, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
+| M5 | Everyday administration UX | Open | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
@@ -83,3 +88,30 @@ remain open. Lexical success still grants no conversion authority.
 Maps, concatenations, arbitrary native object types, standalone unused declarations
 and native dynamic-list options are not claimed by M3. Their treatment must be
 explicit in the supported import grammar and gap reports.
+
+### M5 usability acceptance
+
+The current UI overwhelms a first-time operator and does not make the starting
+point clear. Treat this as a core completion gap. The redesign belongs to M5;
+scope/guidance changes before that do not establish usability completion.
+
+- Give a new installation one clear starting path and an obvious next action based
+  on actual setup state. Explain missing prerequisites and empty states plainly.
+- Organize navigation around tasks: connect a host, create or import a policy,
+  review changes, apply/confirm, inspect health, manage people and settings.
+- Keep source viewing and import in one workflow with shared diagnostics and
+  mapping logic. Preserve exact originals and show actionable unsupported-content
+  gaps where they occur.
+- Reveal advanced settings, native tables, schema details, JSON and complete
+  native diffs when requested. Routine work must be possible through guided forms
+  and plain-language summaries. Do not present firewall-engine choices.
+- Show draft, saved, pending confirmation, applied, observed and recovery states
+  clearly. Use charts after there is meaningful observed data; explain missing data.
+- Verify the first-use and everyday tasks with synthetic installations in light,
+  dark, keyboard and mobile workflows. The operator must be able to identify where
+  to start and the next step without reading raw policy code.
+
+Retain the complete native detail for expert review. Simplifying the default view
+must preserve explicit change review, authorization, ownership and confirmed-apply
+safety. M7 still owns installation/trust-bootstrap integration; M5 must guide the
+operator through that boundary without exposing host privileges to the browser.

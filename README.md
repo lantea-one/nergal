@@ -1,7 +1,8 @@
 # nergal
 
 Self-hosted Linux firewall management, built with .NET 10, ASP.NET Core MVC,
-Blazor, and reusable C# POCOs. Native nftables is the first backend.
+Blazor, and reusable C# POCOs. Native nftables on Linux is the sole firewall target
+([ADR 0051](docs/decisions/0051-nftables-only-linux-product.md)).
 
 Nergal is a general-purpose FOSS firewall manager in development. The initial
 private deployment supplies migration and acceptance cases; the product is designed
@@ -153,9 +154,9 @@ append-only audit attribution, protected kernel-resource ownership verification,
 native `nft --check` validation, atomic single-table (`inet nergal_filter`)
 apply, and independent local timed rollback are implemented and verified in
 disposable namespaces for release `2026.11.21`. Complete multi-table agent apply, including extended bridge and early inet filtering,
-is verified in disposable namespaces under ADR 0036. Future secondary backends
-remain separate work; every backend must reject unsupported semantics explicitly
-rather than silently weakening policy (`firewalld` is excluded per ADR 0001).
+is verified in disposable namespaces under ADR 0036. Other firewall engines and
+Windows-native deployments are outside the product scope. Native capability and
+validation checks reject unsupported semantics explicitly rather than weakening policy.
 
 ## Contributing and license
 

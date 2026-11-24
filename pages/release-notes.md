@@ -2,6 +2,14 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased native-only product scope
+
+Native nftables on Linux is now the sole firewall target. Other firewall adapters
+and Windows-native service deployments are outside scope. Existing pure contracts,
+native capability validation, owned-table safety and rollback remain required.
+This narrows firewall/platform scope; independent deployments and the three SQL
+engine targets remain. See [architecture](architecture.md).
+
 ## Unreleased shared source analysis
 
 Native source viewing/review and import now share one bounded, lossless analysis

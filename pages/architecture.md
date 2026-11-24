@@ -1,5 +1,12 @@
 # Architecture & Trust Boundaries
 
+Native nftables on Linux is the sole firewall/platform target. Other firewall
+engines and Windows-native service deployments are outside scope. The pure policy
+contracts, explicit native capabilities and controller/agent separation remain;
+they do not imply a future-adapter roadmap. Browser clients are separate from the
+Linux service deployment boundary. See
+[ADR 0051](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0051-nftables-only-linux-product.md).
+
 nergal separates policy authoring, compilation, identity/session handling, and kernel firewall enforcement into explicit assemblies and OS processes.
 
 ## Solution Layering
