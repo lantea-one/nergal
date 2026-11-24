@@ -100,3 +100,9 @@ HTTPS forms, dual-stack members/nonmembers reaching one translated target, compl
 native echo/list fingerprints and same-handle port-set drift preservation. All nine
 auxiliary agent recovery scenarios and distinct-UID Unix/mTLS web apply/confirm/
 rollback are verified in isolated synthetic fixtures.
+
+DNAT address-list checks cover both families/slots, immutable SQL history and usage,
+strict forms and required-destination removal denial, complete native fingerprints,
+actual set members/independent misses/whole-set negation, and ten agent recovery
+scenarios including same-handle DNAT address drift. Distinct-UID Unix/mTLS web apply
+selects complete snapshots through actual UI endpoints. No production apply occurs.

@@ -12,7 +12,7 @@ def require(condition, message):
         raise AssertionError(message)
 
 
-require(len(sys.argv) == 9, "Invoke through check.sh with NAT inputs, output paths, and namespace guards")
+require(len(sys.argv) == 10, "Invoke through check.sh with NAT inputs, output paths, and namespace guards")
 require(os.readlink('/proc/self/ns/net') != sys.argv[7], "Router network namespace was not isolated")
 require(os.readlink('/proc/self/ns/user') != sys.argv[8], "Router user namespace was not isolated")
 require(os.getuid() == 0, "Expected namespace-local root")
@@ -147,6 +147,13 @@ try:
     run_in(server_proc.pid, 'ip', 'addr', 'add', '198.51.100.2/24', 'dev', 'veth_s')
     run_in(server_proc.pid, 'ip', '-6', 'addr', 'add', '2001:db8:2::2/64', 'dev', 'veth_s', 'nodad')
 
+    for suffix in ('9', '10', '11'):
+        run('ip', 'addr', 'add', f'192.0.2.{suffix}/24', 'dev', 'r_cli')
+        run('ip', '-6', 'addr', 'add', f'2001:db8:1::{suffix}/64', 'dev', 'r_cli', 'nodad')
+    for suffix in ('3', '50', '90'):
+        run_in(client_proc.pid, 'ip', 'addr', 'add', f'192.0.2.{suffix}/24', 'dev', 'veth_c')
+        run_in(client_proc.pid, 'ip', '-6', 'addr', 'add', f'2001:db8:1::{suffix}/64', 'dev', 'veth_c', 'nodad')
+
     filter_batch = Path(sys.argv[1]).read_text()
     nat_batch = Path(sys.argv[2]).read_text()
     Path(sys.argv[3]).write_text(nft(filter_batch, '--echo', '--handle', '--json'))
@@ -170,6 +177,23 @@ try:
                                                        (socket.AF_INET6, '2001:db8:2::2', '2001:db8:1::1', '2001:db8:1::2', '2001:db8:2::1')):
         check_nat_tcp(client_proc.pid, server_proc.pid, family, server, target, client, 18447, 18448, translated, True)
         check_nat_tcp(client_proc.pid, server_proc.pid, family, server, target, client, 18447, 18449, translated, False)
+    for family, server, prefix, translated in ((socket.AF_INET, '198.51.100.2', '192.0.2.', '198.51.100.1'),
+                                                (socket.AF_INET6, '2001:db8:2::2', '2001:db8:1::', '2001:db8:2::1')):
+        for source in ('2', '90'):
+            for destination in ('1', '9'):
+                check_nat_tcp(client_proc.pid, server_proc.pid, family, server, prefix + destination, prefix + source, 18447, 18446, translated, True)
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, prefix + '1', prefix + '3', 18447, 18446, translated, False)
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, prefix + '10', prefix + '2', 18447, 18446, translated, False)
+    # Replace only this disposable fixture's owned NAT table; the filter/foreign tables remain intact.
+    Path(sys.argv[5] + '.negated').write_text(nft('delete table inet nergal_nat\n' + Path(sys.argv[9]).read_text(), '--echo', '--handle', '--json'))
+    Path(sys.argv[6] + '.negated').write_text(run('nft', '--json', 'list', 'table', 'inet', 'nergal_nat'))
+    for family, server, prefix, translated in ((socket.AF_INET, '198.51.100.2', '192.0.2.', '198.51.100.1'),
+                                                (socket.AF_INET6, '2001:db8:2::2', '2001:db8:1::', '2001:db8:2::1')):
+        # Both previously absent source/destination now pass; independently excluded addresses still fail.
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, prefix + '10', prefix + '3', 18447, 18446, translated, True)
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, prefix + '1', prefix + '90', 18447, 18446, translated, False)
+        check_nat_tcp(client_proc.pid, server_proc.pid, family, server, prefix + '11', prefix + '2', 18447, 18446, translated, False)
+    print('PASS: dual-stack DNAT source/destination membership, independent misses and complete-set negation')
     print('PASS: both referenced original DNAT ports reach one translated target; nonmembers fail in both families')
     print('PASS: multi-namespace dual-stack DNAT, explicit SNAT (without server default route), and ct status dnat enforcement')
 finally:

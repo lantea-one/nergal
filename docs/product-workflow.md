@@ -150,7 +150,7 @@ editing, where offered, uses the actual code editor and authoritative server val
 
 The [typed list library](reusable-object-library.md) now supports create/edit/search
 and immutable history. Pinned primary inet filter references and saved revision impact visibility are
-implemented. Native named sets, DNAT address references and generated export remain
+implemented. Native named sets and generated export remain
 planned capabilities.
 
 ## Code editor delivery

@@ -25,16 +25,21 @@ dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- nat-filter > "$fixture/nat-filter.nft"
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- nat > "$fixture/nat.nft"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- nat-negated > "$fixture/nat-negated.nft"
 unshare --user --map-root-user --net \
     python3 tests/integration/nftables/nat_check.py \
     "$fixture/nat-filter.nft" "$fixture/nat.nft" \
     "$fixture/nat-filter-echo.json" "$fixture/nat-filter-list.json" \
     "$fixture/nat-echo.json" "$fixture/nat-list.json" \
-    "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+    "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)" "$fixture/nat-negated.nft"
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- verify-nat \
     "$fixture/nat-filter-echo.json" "$fixture/nat-filter-list.json" \
     "$fixture/nat-echo.json" "$fixture/nat-list.json"
+dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
+    --configuration Release --no-build --no-restore -- verify-nat-negated \
+    "$fixture/nat-echo.json.negated" "$fixture/nat-list.json.negated"
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \
     --configuration Release --no-build --no-restore -- bundle-create > "$fixture/bundle-v1.nft"
 dotnet run --project tests/integration/nftables/Nergal.Nftables.Fixture.csproj \

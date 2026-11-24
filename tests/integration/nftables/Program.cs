@@ -10,7 +10,7 @@ var routerIdentity = new NftTableIdentity(
 
 if (mode is "auxiliary-acceptance-json" or "auxiliary-open-json" or "auxiliary-acceptance-native")
 {
-    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(RouterPolicySamples.WithBridgeAddressReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json"))));
+    var bundle = RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithPostroutingAddressReferences(RouterPolicySamples.WithBridgeAddressReferences(RouterPolicySamples.WithDnatAddressReferences(RouterPolicySamples.AuxiliaryAcceptance(mode != "auxiliary-open-json")))));
     if (mode.EndsWith("-json", StringComparison.Ordinal)) { Console.Write(PolicyBundleJsonCodec.EncodeBundle(bundle)); }
     else
     {
@@ -257,15 +257,25 @@ if (mode is "verify-sets" or "verify-pinned" && args.Length == 3)
     return 0;
 }
 
-if (mode == "nat")
+if (mode is "nat" or "nat-negated")
 {
-    var result = NftNatCompiler.Compile(BuildNatPolicy(), routerIdentity);
+    var result = NftNatCompiler.Compile(BuildNatPolicy(mode == "nat-negated"), routerIdentity);
     if (!result.IsSuccess)
     {
         throw new InvalidOperationException("NAT policy failed: " + string.Join(", ", result.Diagnostics));
     }
 
     Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "verify-nat-negated" && args.Length == 3)
+{
+    var echo = NftNatTableObservation.ParseReplacementEcho(File.ReadAllText(args[1]));
+    var listed = NftNatTableObservation.Parse(File.ReadAllText(args[2]));
+    if (!echo.IsSuccess || !listed.IsSuccess || echo.Observation!.StateDigest != listed.Observation!.StateDigest ||
+        NftNatCompiler.Compile(listed.Observation.Policy, routerIdentity).Candidate != NftNatCompiler.Compile(BuildNatPolicy(true), routerIdentity).Candidate)
+    { throw new InvalidOperationException("Complete negated DNAT address sets failed native round-trip."); }
     return 0;
 }
 
@@ -391,19 +401,21 @@ static FilterPolicy BuildNatFilterPolicy()
     return new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop, rules);
 }
 
-static NatPolicy BuildNatPolicy()
+static NatPolicy BuildNatPolicy(bool negate = false)
 {
     var literal = new NatPolicy(1,
     [
-        new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.1/32"), "198.51.100.2", null, 18447, "r_cli", OriginalPorts: [18446, 18448]),
-        new(IpFamily.IPv6, FilterProtocol.Tcp, new("2001:db8:1::1/128"), "2001:db8:2::2", null, 18447, "r_cli", OriginalPorts: [18446, 18448]),
+        new(IpFamily.IPv4, FilterProtocol.Tcp, null, "198.51.100.2", null, 18447, "r_cli", OriginalPorts: [18446, 18448], NegateSource: negate, NegateDestination: negate,
+            SourcePrefixes: [new(negate ? "192.0.2.50/32" : "192.0.2.2/32"), new("192.0.2.90/32")], DestinationPrefixes: [new(negate ? "192.0.2.11/32" : "192.0.2.1/32"), new(negate ? "192.0.2.90/32" : "192.0.2.9/32")]),
+        new(IpFamily.IPv6, FilterProtocol.Tcp, null, "2001:db8:2::2", null, 18447, "r_cli", OriginalPorts: [18446, 18448], NegateSource: negate, NegateDestination: negate,
+            SourcePrefixes: [new(negate ? "2001:db8:1::50/128" : "2001:db8:1::2/128"), new("2001:db8:1::90/128")], DestinationPrefixes: [new(negate ? "2001:db8:1::11/128" : "2001:db8:1::1/128"), new(negate ? "2001:db8:1::90/128" : "2001:db8:1::9/128")]),
     ],
     [
         new(IpFamily.IPv4, new("192.0.2.0/24"), "198.51.100.1", new("198.51.100.0/24"), "r_srv"),
         new(IpFamily.IPv6, new("2001:db8:1::/64"), "2001:db8:2::1", new("2001:db8:2::/64"), "r_srv"),
     ]);
 
-    return RouterPolicySamples.WithTransportReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), literal)).Nat!;
+    return RouterPolicySamples.WithTransportReferences(RouterPolicySamples.WithDnatAddressReferences(new(1, new(2, FilterVerdict.Accept, FilterVerdict.Accept, FilterVerdict.Accept, []), literal))).Nat!;
 }
 
 static FilterPolicy BuildRouterPolicy()

@@ -141,23 +141,29 @@ and broader UX/operations/database work remain separate product milestones.
 M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
 filtering. Table scope is explicit, existing API submissions remain primary-only,
 and saved usage paths include auxiliary references. Native named objects and
-native named objects and DNAT address references remain open.
+native named objects remain open.
 
 Postrouting NAT and bridge destination-port rules, including regular chains, can
 now pin immutable Port-list versions through contextual UI selectors. Ordinary
 edits retain pinned versions and all unrelated intent. JSON/database usage covers
 all new scopes; type conflicts, invalid protocols and forged versions remain denied.
 Native packet and agent receipt/rollback fixtures use referenced snapshots.
-Native named objects and DNAT address lists remain M3 work.
+Native named objects remain M3 work.
 
 Bridge source/destination CIDR sets and immutable address-list versions now work
 in forwarding and regular chains. Guided forms preserve MAC restrictions, family,
 jump/return behavior, enabled state and pinned history. Complete native address-set
 receipts use v3 fingerprints; scalar/port-only receipts remain unchanged. Upgrade
-controller and agent together. Native named objects and DNAT address references remain M3.
+controller and agent together. Native named objects remain M3.
 
 DNAT original destination ports now support literal sets and immutable Port-list
 versions. Every matched original port uses one explicit translated target. Guided
 edits retain pinned history, negation and disabled state; native observation keeps
 all ports in complete v3 fingerprints. Older scalar fingerprints stay unchanged.
-DNAT address lists and native named objects remain M3 work.
+Native named objects remain M3 work.
+
+DNAT source/original-destination sets and immutable address-list versions now work
+alongside original-port pins. Guided edits retain all restrictions, translation and
+dormant state. Source removal clears its negation; sole-destination removal is
+denied. Native observations retain complete sets in v3 fingerprints; older scalar/
+port-only fingerprints remain unchanged. Native named objects remain M3 work.

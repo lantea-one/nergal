@@ -615,10 +615,10 @@
                                     <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Dnat, i, null, d.Enabled, "Dnat rule " + (i + 1))))</td>
                                     <td><code>@d.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
-                                    <td><code>@(d.NegateDestination ? "!= " : "")@d.OriginalDestination.Value</code></td>
+                                    <td><code>@(d.NegateDestination ? "!= " : "")@(d.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : d.OriginalDestination?.Value ?? string.Join(", ", d.DestinationPrefixes!.Select(p => p.Value)))</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
                                     <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : "any")) → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
-                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.Source?.Value ?? "any")</code></td>
+                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
 
                                     <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
                                     @if (Model.CanMutate)
@@ -665,8 +665,8 @@
                             <select name="protocol" id="dnat-new-protocol"><option value="tcp">tcp</option><option value="udp">udp</option><option value="any">any</option></select>
                         </div>
                         <div class="field">
-                            <label for="dnat-new-originalDestination">Original destination CIDR</label>
-                            <input type="text" name="originalDestination" placeholder="192.0.2.1/32" required id="dnat-new-originalDestination" />
+                            <label for="dnat-new-originalDestination">Original destination CIDR(s)</label>
+                            <input type="text" name="originalDestination" placeholder="192.0.2.1/32" required id="dnat-new-originalDestination" aria-describedby="dnat-new-originalDestination-hint" /><span class="hint" id="dnat-new-originalDestination-hint">Required before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family; every match uses the same translated target.</span>
                         </div>
                         <div class="field">
                             <label for="dnat-new-translatedAddress">Translated IP address</label>
@@ -686,8 +686,8 @@
                             <input type="text" name="inputInterface" placeholder="wan0" maxlength="15" id="dnat-new-inputInterface" />
                         </div>
                         <div class="field">
-                            <label for="dnat-new-source">Source CIDR (optional)</label>
-                            <input type="text" name="source" placeholder="203.0.113.0/24" id="dnat-new-source" />
+                            <label for="dnat-new-source">Source CIDR(s) (optional)</label>
+                            <input type="text" name="source" placeholder="203.0.113.0/24" id="dnat-new-source" aria-describedby="dnat-new-source-hint" /><span class="hint" id="dnat-new-source-hint">Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family.</span>
                         </div>
                         <div class="field span-2">
                             <label for="dnat-new-description">Description (optional)</label>

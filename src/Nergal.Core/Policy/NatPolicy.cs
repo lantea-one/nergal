@@ -3,7 +3,7 @@ namespace Nergal.Core.Policy;
 /// <summary>An immutable destination NAT rule evaluated in the inet prerouting hook.</summary>
 /// <param name="Family">The explicit IP family.</param>
 /// <param name="Protocol">Protocol to match (<see cref="FilterProtocol.Any"/>, <see cref="FilterProtocol.Tcp"/>, or <see cref="FilterProtocol.Udp"/>).</param>
-/// <param name="OriginalDestination">Canonical destination network matched prior to translation.</param>
+/// <param name="OriginalDestination">Canonical destination network matched prior to translation, exclusive with a destination set/reference. Some original-destination restriction is required.</param>
 /// <param name="TranslatedAddress">Single canonical translated destination IP address matching <paramref name="Family"/>.</param>
 /// <param name="OriginalPort">Optional original TCP/UDP destination port in 1–65535.</param>
 /// <param name="TranslatedPort">Optional translated TCP/UDP destination port in 1–65535; requires TCP or UDP.</param>
@@ -16,10 +16,14 @@ namespace Nergal.Core.Policy;
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 /// <param name="OriginalPorts">Optional bounded original destination-port set, exclusive with scalar/reference.</param>
 /// <param name="OriginalPortObject">Optional immutable Port-list version, exclusive with literals; never a translation-port list.</param>
+/// <param name="SourcePrefixes">Optional bounded source set, exclusive with source scalar/reference.</param>
+/// <param name="DestinationPrefixes">Optional bounded original-destination set, exclusive with original-destination scalar/reference; never translated targets.</param>
+/// <param name="SourceObject">Optional immutable same-family source address-list version.</param>
+/// <param name="DestinationObject">Optional immutable same-family original-destination address-list version; never translated targets.</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
-    NetworkPrefix OriginalDestination,
+    NetworkPrefix? OriginalDestination,
     string TranslatedAddress,
     int? OriginalPort = null,
     int? TranslatedPort = null,
@@ -31,7 +35,11 @@ public sealed record DnatRule(
     bool NegateInputInterface = false,
     bool Enabled = true,
     IReadOnlyList<int>? OriginalPorts = null,
-    PolicyObjectReference? OriginalPortObject = null);
+    PolicyObjectReference? OriginalPortObject = null,
+    IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
+    IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
+    PolicyObjectReference? SourceObject = null,
+    PolicyObjectReference? DestinationObject = null);
 
 /// <summary>Postrouting action; exemptions return before later NAT rules.</summary>
 public enum NatPostroutingAction
@@ -105,7 +113,12 @@ public sealed class NatPolicy
         ArgumentNullException.ThrowIfNull(dnatRules);
         ArgumentNullException.ThrowIfNull(snatRules);
         SchemaVersion = schemaVersion;
-        DnatRules = Array.AsReadOnly(dnatRules.Select(r => r is null ? null : r with { OriginalPorts = r.OriginalPorts is null ? null : Array.AsReadOnly(r.OriginalPorts.ToArray()) }).ToArray());
+        DnatRules = Array.AsReadOnly(dnatRules.Select(r => r is null ? null : r with
+        {
+            OriginalPorts = r.OriginalPorts is null ? null : Array.AsReadOnly(r.OriginalPorts.ToArray()),
+            SourcePrefixes = r.SourcePrefixes is null ? null : Array.AsReadOnly(r.SourcePrefixes.ToArray()),
+            DestinationPrefixes = r.DestinationPrefixes is null ? null : Array.AsReadOnly(r.DestinationPrefixes.ToArray())
+        }).ToArray());
         SnatRules = Array.AsReadOnly(snatRules.Select(r => r is null ? null : r with
         {
             DestinationPorts = r.DestinationPorts is null ? null : Array.AsReadOnly(r.DestinationPorts.ToArray()),

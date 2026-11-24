@@ -41,8 +41,8 @@ internal static class RouterPolicySamples
             [new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001),
              new(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 19001)]),
         nat: new(1, [
-            new(IpFamily.IPv4, FilterProtocol.Tcp, new("192.0.2.1/32"), "198.51.100.2", TranslatedPort: 18080, OriginalPorts: [18080, 18082]),
-            new(IpFamily.IPv6, FilterProtocol.Tcp, new("2001:db8:1::1/128"), "2001:db8:2::2", TranslatedPort: 18080, OriginalPorts: [18080, 18082])], [
+            new(IpFamily.IPv4, FilterProtocol.Tcp, null, "198.51.100.2", TranslatedPort: 18080, OriginalPorts: [18080, 18082], SourcePrefixes: [new("192.0.2.2/32"), new("192.0.2.90/32")], DestinationPrefixes: [new("192.0.2.1/32"), new("192.0.2.9/32")]),
+            new(IpFamily.IPv6, FilterProtocol.Tcp, null, "2001:db8:2::2", TranslatedPort: 18080, OriginalPorts: [18080, 18082], SourcePrefixes: [new("2001:db8:1::2/128"), new("2001:db8:1::90/128")], DestinationPrefixes: [new("2001:db8:1::1/128"), new("2001:db8:1::9/128")])], [
             new(IpFamily.IPv4, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("192.0.2.0/24"), new("198.51.100.0/24")], DestinationPrefixes: [new("203.0.113.10/32"), new("203.0.113.20/32")]),
             new(IpFamily.IPv6, null, null, Action: NatPostroutingAction.Return, SourcePrefixes: [new("2001:db8:1::/64"), new("2001:db8:3::/64")], DestinationPrefixes: [new("2001:db8:2::10/128"), new("2001:db8:2::20/128")])]),
         bridge: new(1, FilterVerdict.Accept,
@@ -124,6 +124,26 @@ internal static class RouterPolicySamples
             Destination = null,
             DestinationPrefixes = null
         }));
+        return new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter);
+    }
+
+    internal static FirewallPolicyBundle WithDnatAddressReferences(FirewallPolicyBundle bundle)
+    {
+        PolicyObjectReference Reference(IpFamily family, NetworkPrefix? scalar, IReadOnlyList<NetworkPrefix>? prefixes)
+        {
+            var content = new Nergal.Core.Controller.ReusableObjectContent("dnat_networks", family == IpFamily.IPv4 ? Nergal.Core.Controller.ReusableObjectKind.Ipv4 : Nergal.Core.Controller.ReusableObjectKind.Ipv6,
+                "Synthetic immutable DNAT addresses", (prefixes ?? [scalar!]).Select(p => p.Value));
+            return new(Guid.ParseExact(content.Digest[..32], "N"), 1, content);
+        }
+        var nat = bundle.Nat is not { } n ? null : new NatPolicy(n.SchemaVersion, n.DnatRules.Select(r => r is null ? null : r with
+        {
+            SourceObject = r.Source is not null || r.SourcePrefixes is not null ? Reference(r.Family, r.Source, r.SourcePrefixes) : r.SourceObject,
+            DestinationObject = r.OriginalDestination is not null || r.DestinationPrefixes is not null ? Reference(r.Family, r.OriginalDestination, r.DestinationPrefixes) : r.DestinationObject,
+            Source = null,
+            SourcePrefixes = null,
+            OriginalDestination = null,
+            DestinationPrefixes = null
+        }), n.SnatRules);
         return new(bundle.SchemaVersion, bundle.Filter, nat, bundle.Bridge, bundle.AuxiliaryFilter);
     }
 

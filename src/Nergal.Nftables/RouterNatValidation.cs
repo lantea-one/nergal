@@ -11,6 +11,10 @@ internal static class RouterNatValidation
         {
             if (policy.DnatRules[i] is not { } r) { continue; }
             var path = $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
+            if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
+            if (r.OriginalDestination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
+            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors);
+            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors);
             if (r.OriginalPorts is { } ports)
             {
                 if (r.OriginalPort.HasValue) { errors.Add(new("set.conflictsWithScalar", path + ".originalPorts")); }
@@ -18,7 +22,7 @@ internal static class RouterNatValidation
                 { errors.Add(new("nat.portSetInvalid", path + ".originalPorts")); }
                 if (r.Protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp)) { errors.Add(new("port.requiresTransport", path + ".originalPorts")); }
             }
-            RouterFilterValidation.Require(r.NegateSource, r.Source is not null, path + ".negateSource", errors);
+            RouterFilterValidation.Require(r.NegateSource, r.Source is not null || r.SourcePrefixes is not null, path + ".negateSource", errors);
             RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null, path + ".negateInputInterface", errors);
         }
         for (var i = 0; i < policy.SnatRules.Count; i++)

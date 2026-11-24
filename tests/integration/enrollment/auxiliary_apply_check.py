@@ -314,7 +314,11 @@ try:
                     elif scenario == 'dnat-port-drift':
                         listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'inet', 'nergal_nat'))
                         handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'prerouting')
-                        nft(f'replace rule inet nergal_nat prerouting handle {handle} ip daddr 192.0.2.1 tcp dport {{ 18080, 18084 }} dnat ip to 198.51.100.2:18080\n')
+                        nft(f'replace rule inet nergal_nat prerouting handle {handle} ip saddr {{ 192.0.2.2, 192.0.2.90 }} ip daddr {{ 192.0.2.1, 192.0.2.9 }} tcp dport {{ 18080, 18084 }} dnat ip to 198.51.100.2:18080\n')
+                    elif scenario == 'dnat-address-drift':
+                        listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'inet', 'nergal_nat'))
+                        handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'prerouting')
+                        nft(f'replace rule inet nergal_nat prerouting handle {handle} ip saddr {{ 192.0.2.2, 192.0.2.90 }} ip daddr {{ 192.0.2.1, 192.0.2.11 }} tcp dport {{ 18080, 18082 }} dnat ip to 198.51.100.2:18080\n')
                     elif scenario == 'unknown-expression':
                         nft('add rule inet nergal_aux input counter\n')
                     else:
