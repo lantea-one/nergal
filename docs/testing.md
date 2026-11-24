@@ -358,6 +358,16 @@ and early inet tables together; packet-specific acceptance runs separately below
 
 ### Documentation appearance
 
+CI and Pages use shared organization runners with dedicated `-ci` labels,
+currently pinned to verified `asgard-ci`; `heimdall-ci` is also approved. Private
+infrastructure runners and generic fallback labels are prohibited. `vidar-ci` is
+limited to small, short jobs, never the full build/integration/package workflow.
+Run `python3 -B scripts/test-ci-runner-policy.py` to verify literal reviewed labels
+and workload restrictions. This offline check cannot establish runner registration
+scope; verify organization ownership and no repository binding in Forgejo as well.
+Historical queued runs retain their selections and must be cancelled if disallowed.
+See [the runner guide](../pages/deployment-and-packaging.md).
+
 The Pages portal imports byte-identical copies of the application's stylesheet
 and early theme initialization. `python3 scripts/verify-pages.py` rejects styling
 asset drift as well as broken links and missing screenshots. Run

@@ -22,6 +22,10 @@ of ASP.NET, database and host dependencies. Prefer small, explicit components.
   repository, logs and test fixtures. Do not copy FWCloud code or branding.
 - Use temporary Git identity settings. Public publishing and live operations
   are separate actions and require the applicable authorization.
+- CI jobs must use shared organization runners with dedicated labels ending in
+  `-ci`, never private infrastructure runners or generic label fallbacks. Verify
+  organization scope as well as the label. `vidar-ci` is for small, short-running
+  tasks only; never use it for the full build, integration suite or packaging.
 
 ## Scope
 

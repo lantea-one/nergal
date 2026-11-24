@@ -43,3 +43,23 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+## Shared organization CI runners
+
+Build verification and Pages publication use the shared organization CI pool,
+currently pinned to `asgard-ci`. `heimdall-ci` is also an approved shared runner.
+Labels must end in `-ci`, and registration must be organization-owned without a
+repository binding. A suffix alone does not prove shared scope. Private
+infrastructure runners and generic label fallbacks are prohibited.
+
+`vidar-ci` may run small, short tasks such as documentation validation/publication
+when available in the shared organization pool. Never assign it the full .NET
+build, integration suite or release packaging. The offline runner-policy check
+guards reviewed labels and prevents that heavy-workflow assignment; operators
+must verify registration scope separately when maintaining the pool.
+
+Forks must select their own verified shared organization CI runners and update the
+reviewed workflow policy. Changes to labels require review; arbitrary repository
+variable values cannot redirect these workflows to infrastructure. The existing
+Pages token and publication destination are unchanged. Previously queued runs
+retain their original selections and must be cancelled if disallowed.
