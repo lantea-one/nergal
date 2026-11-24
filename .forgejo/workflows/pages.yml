@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: heimdall-ci
+    runs-on: ${{ vars.PAGES_RUNNER_LABEL || vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - uses: https://github.com/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

@@ -38,3 +38,13 @@ See [Router Migration & Local Sandbox](router-migration-and-sandbox.md) for the
 current support matrix, supported apply scope and recovery limits, saved-settings/runtime distinction,
 private source inspection, container isolation, verification limits, and screenshots.
 This local development work is not a published release.
+
+## Documentation publishing runner
+
+The Pages workflow uses repository variable `PAGES_RUNNER_LABEL` when set,
+otherwise `CI_RUNNER_LABEL` (the normal verification runner setting), otherwise
+`ubuntu-latest`. Configure an available, trusted runner with network access to the
+publication service. A separate Pages runner is optional; no site-specific runner
+label is required by the repository. Workflow validation and the existing Pages
+token/publication destination are unchanged. A previously queued run retains its
+original runner selection; new runs use the updated workflow after merge.

@@ -358,6 +358,13 @@ and early inet tables together; packet-specific acceptance runs separately below
 
 ### Documentation appearance
 
+Documentation publishing selects `PAGES_RUNNER_LABEL`, then the existing
+`CI_RUNNER_LABEL`, then `ubuntu-latest`. This avoids a hard-coded private runner
+dependency while allowing an explicit trusted publishing runner. The selected
+runner must reach the Pages publication service; portal validation still runs
+before publication. Queued runs retain the workflow version with which they were
+created. See [the Pages deployment guide](../pages/deployment-and-packaging.md).
+
 The Pages portal imports byte-identical copies of the application's stylesheet
 and early theme initialization. `python3 scripts/verify-pages.py` rejects styling
 asset drift as well as broken links and missing screenshots. Run
