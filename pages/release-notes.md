@@ -167,3 +167,11 @@ alongside original-port pins. Guided edits retain all restrictions, translation 
 dormant state. Source removal clears its negation; sole-destination removal is
 denied. Native observations retain complete sets in v3 fingerprints; older scalar/
 port-only fingerprints remain unchanged. Native named objects remain M3 work.
+
+Agent observations now require a stable kernel transaction generation across the
+complete filter/NAT/bridge/auxiliary collection. Denied, malformed or changing
+generation queries make collection unavailable. Isolated tests cover same-handle
+set-element drift, actual dynamic-meter packets and capability denial. This guards
+collection consistency; competing privileged writers remain unsupported and native
+named-set compilation/import is still M3 work. No UI or screenshot changes accompany
+this internal observation boundary.

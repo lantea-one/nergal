@@ -7,14 +7,18 @@
   postrouting masquerade/return with extended matchers.
 - Preserve extended semantics through canonical JSON, filter/NAT observation, and
   structured draft edits; test real dual-stack packet outcomes in disposable namespaces.
-- Add priority-table and extended bridge jump/return compiler previews with explicit
-  agent-apply denial pending complete ownership/rollback conformance.
+- Add priority-table and extended bridge jump/return authoring with complete native
+  ownership receipts and verified confirmed apply/rollback (ADR 0036).
 - Review settings corruption handling and distinguish saved intent from runtime
   services. Refresh management light/dark appearance using Lantea.One's palette.
 - Add private administrator-only source inspection and a loopback containerized
   development stack with separate check-only native source workers.
 - Refresh documentation and the repository Pages site with local test screenshots.
 
+- Require stable kernel transaction generations across complete agent observations;
+  reject mixed snapshots and unavailable/unknown netlink replies (ADR 0047). Verify
+  same-handle set-element drift, stable meter traffic and capability denial in
+  disposable namespaces. Native named-set support remains outstanding.
 
 ## [2026.11.21.1] - 2026-11-21
 

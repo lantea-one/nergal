@@ -253,3 +253,10 @@ builds; no SQL migration is required. Native named objects and translated-target
 lists remain unsupported. Source ingestion is still separate from semantic import.
 
 ![Pinned original DNAT addresses](assets/screenshots/dnat-address-references-dark.jpg)
+
+Before native named objects can be supported, agent collection must bind their
+complete contents to the same configuration as table/rule observations. The agent
+now rejects collections spanning different kernel transaction generations; isolated
+tests cover static-set element changes and stable dynamic meter traffic. Complete
+static-set collection and receipts remain outstanding, so native named-set authoring
+and import are not yet available. Existing UI screenshots above remain current.

@@ -630,3 +630,23 @@ an address-set entry at the same handle and requires recovery without overwritin
 unexpected state; the port-drift case now preserves all address matchers too.
 Mapped-UID web apply selects source/destination versions through real endpoints
 before complete Unix/mTLS apply/confirm/rollback. Fixtures remain synthetic.
+
+## Native observation generation consistency
+
+After the Release solution build, run:
+
+```sh
+bash tests/integration/nftables/check-generation.sh
+```
+
+This opt-in Linux fixture requires `dotnet`, `unshare`, `nft`, `ip`, `ping`, Python 3
+and `capsh`. It refuses matching parent user/network namespaces. Fixed synthetic
+objects exist only inside the disposable namespaces. Real generation reads must
+stay stable across queries and dynamic meter packet traffic, change on table
+creation/deletion and same-handle static-set element updates, and fail without
+`CAP_NET_ADMIN`. It adds no support for compiling named sets. Unit tests separately
+reject malformed, unknown, truncated and uncorrelated replies, mixed-generation
+collections, query failure and cancellation. Existing agent and mapped-identity
+apply/confirm/watchdog suites exercise the guard on complete receipt collection.
+See [ADR 0047](decisions/0047-generation-consistent-native-observations.md) for the
+remaining observation-to-transaction race and conservative foreign-write denial.

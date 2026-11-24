@@ -54,3 +54,12 @@ bridge filtering, atomic multi-table commit, and foreign table preservation);
 authenticated agent transport, controller persistence, RBAC, and web-driven confirmed
 apply belong to Milestones C–D.
 This fixture is opt-in and not run by the default CI job.
+
+## Transaction-generation consistency
+
+`bash tests/integration/nftables/check-generation.sh` verifies the production Linux
+read-only generation helper in fresh user/network namespaces. It requires `capsh`
+in addition to the ordinary fixture tools. Same-handle static-set mutations change
+the generation; real dynamic meter packets do not. Capability denial cannot return
+a generation. This is groundwork for complete named-set observation, not support
+for named objects in Nergal policy. See [ADR 0047](../../../docs/decisions/0047-generation-consistent-native-observations.md).

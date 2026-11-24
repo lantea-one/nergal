@@ -5,6 +5,9 @@
       "nergal.core": {
         "type": "Project"
       },
+      "nergal.linux": {
+        "type": "Project"
+      },
       "nergal.nftables": {
         "type": "Project",
         "dependencies": {
