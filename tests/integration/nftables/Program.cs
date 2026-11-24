@@ -1,9 +1,22 @@
 using Nergal.Core.Policy;
 using Nergal.Nftables;
 using Nergal.Testing;
+using Nergal.Linux;
 
 // Only synthetic documentation addresses; this program emits text or verifies snapshots without host mutations.
 var mode = args.Length > 0 ? args[0] : "schema1";
+if (mode is "generation" or "generation-denied")
+{
+    if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
+    try
+    {
+        var generation = LinuxNftablesGeneration.Read();
+        if (mode == "generation-denied") { throw new InvalidOperationException("Generation query unexpectedly authorized."); }
+        Console.Write(generation);
+    }
+    catch (IOException) when (mode == "generation-denied") { Console.Write("denied"); }
+    return 0;
+}
 var routerIdentity = new NftTableIdentity(
     Guid.Parse("00000000-0000-0000-0000-000000000010"),
     Guid.Parse("00000000-0000-0000-0000-000000000020"));

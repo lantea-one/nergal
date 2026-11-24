@@ -105,3 +105,9 @@ intent through guided edits and complete native observations. Required-destinati
 removal is denied; source removal clears its negation. Dual-stack members, independent
 misses and whole-set negation, ten agent recovery scenarios and Unix/mTLS web apply
 are verified in synthetic namespaces. Native named objects remain before M3 closes.
+
+M3 native named-set prerequisite: agent observations now require one stable kernel
+transaction generation across complete table collection (ADR 0047). Isolated tests
+cover same-handle static-set element changes, capability denial and stable dynamic
+meter traffic. This adds observation consistency, not native named-set authoring
+or import; complete element collection and receipts remain next.

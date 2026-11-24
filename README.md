@@ -81,7 +81,8 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.LocalState`: Linux SQLite journal with explicit bootstrap assertions,
   serialized transitions, exact artifact/revision persistence, protected resource
   receipts, explicit offline schema upgrade and effective-UID/type/mode/link checks. No kernel operations.
-- `Nergal.Linux`: shared no-follow metadata and local kernel identity inspection.
+- `Nergal.Linux`: shared no-follow metadata, local kernel identity inspection and
+  bounded read-only nftables transaction-generation queries (ADR 0047).
 - `Nergal.LocalTransport`: bounded status-only (`UnixStatusServer`/`UnixStatusClient`) and
   control (`UnixControlServer`/`UnixControlClient`) Unix socket listeners/clients with
   explicit kernel peer-UID checks in both directions. No firewall executor, database or browser access.

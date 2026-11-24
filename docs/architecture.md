@@ -258,3 +258,11 @@ retains whole-set negation and one explicit translation, and rejects missing
 original-destination restrictions. Complete native v3 observations bind all address
 entries; older scalar/port-only fingerprints remain unchanged. No new privileged
 command or SQL migration is introduced. Native named objects remain separate.
+
+Native observations now bracket complete table collection with bounded read-only
+kernel transaction-generation queries ([ADR 0047](decisions/0047-generation-consistent-native-observations.md)).
+A changed generation, denied query or malformed reply makes the observation
+unavailable rather than combining state from different transactions. This covers
+outside writers during collection; it does not close the later observation-to-write
+race. Transactions in unrelated tables can conservatively invalidate collection.
+Native named-set elements still need separate complete collection and remain unsupported.

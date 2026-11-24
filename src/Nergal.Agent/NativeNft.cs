@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using Nergal.Nftables;
+using Nergal.Linux;
 
 namespace Nergal.Agent;
 
@@ -54,7 +55,22 @@ internal static class NativeNft
 
     internal static async Task<NftTableObservation?> TryObserveAsync(CancellationToken cancellation = default)
     {
+        if (!OperatingSystem.IsLinux()) { return null; }
         try
+        {
+            return await CollectConsistentAsync(() => OperatingSystem.IsLinux() ? LinuxNftablesGeneration.Read(cancellation) : throw new PlatformNotSupportedException(), Collect, cancellation);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or
+            OperationCanceledException or DecoderFallbackException or ArgumentException)
+        {
+            return null;
+        }
+
+        async Task<NftTableObservation?> Collect()
         {
             var listed = await Run(["--terse", "--json", "list", "table", "inet", NftFilterCompiler.TableName], "", cancellation);
             var primary = NftTableObservation.Parse(listed).Observation;
@@ -84,15 +100,18 @@ internal static class NativeNft
             }
             return NftTableObservation.Combine(primary, nat, bridge, auxiliary);
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or
-            OperationCanceledException or DecoderFallbackException or ArgumentException)
-        {
-            return null;
-        }
+    }
+
+    // An outside writer must not make separate table/set listings appear to be one snapshot.
+    internal static async Task<NftTableObservation?> CollectConsistentAsync(
+        Func<uint> readGeneration, Func<Task<NftTableObservation?>> collect, CancellationToken cancellation = default)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        var before = readGeneration();
+        var observation = await collect();
+        cancellation.ThrowIfCancellationRequested();
+        if (observation is null) { return null; }
+        return readGeneration() == before ? observation : null;
     }
 
     internal static async Task<AuxiliaryTablePresence?> TryInspectAuxiliaryTablesAsync(

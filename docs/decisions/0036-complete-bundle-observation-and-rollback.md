@@ -93,3 +93,8 @@ crashes when handle-only deletion and rule-bearing recreation use JSON echo.
 A separate observer cannot close the final observation-to-transaction race against
 an unrelated privileged writer. Such concurrent modification is unsupported;
 receipt checks detect subsequent drift but cannot provide kernel compare-and-swap.
+
+[ADR 0047](0047-generation-consistent-native-observations.md) additionally binds
+complete collection to one stable kernel transaction generation. It detects
+configuration transactions during the separate listings but retains the final
+observation-to-transaction race described above.
