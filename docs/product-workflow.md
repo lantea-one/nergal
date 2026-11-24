@@ -12,6 +12,12 @@ acceptance; it does not define the limits of the product or its policy model.
 Features must remain useful to independent operators with different hosts,
 interfaces, identity providers, services and network layouts.
 
+The firewall target is exclusively native nftables on Linux. Other firewall
+adapters and Windows-native service deployments are outside the product scope.
+Build native semantics and conformance directly; general-purpose refers to useful
+deployments and workflows across independent networks. See
+[ADR 0051](decisions/0051-nftables-only-linux-product.md).
+
 - Support a basic single-host installation and optional multi-host management.
 - Keep site names, addresses, service ports and identity/group mappings in optional
   deployment configuration and private migration data.
@@ -46,6 +52,15 @@ and maintain policies through the UI without importing an existing ruleset.
    accessibility and light/dark consistency. Keep documentation and screenshots current.
 
 ## Interaction requirements
+
+M5 must address the current first-use overload: the landing experience needs one
+clear starting path, an obvious next action and plain-language setup/empty states.
+Use task-based navigation and progressive disclosure instead of presenting all
+tables, schemas, settings and diagnostics at once. Native nftables is fixed; there
+is no firewall-engine selection. Keep advanced code/JSON details available on
+request, while ordinary create/import/review/apply tasks work through guided UI.
+Source viewing and import are one workflow backed by the same analysis and mapping
+logic. These are M5 acceptance requirements, not claims about the current screens.
 
 - Guided tasks explain source, destination, service, interfaces, identity restrictions,
   ordering, and expected effects without requiring nftables syntax knowledge.

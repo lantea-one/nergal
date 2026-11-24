@@ -2,6 +2,9 @@
 
 ## Unreleased — router authoring and settings review
 
+- Make native nftables on Linux the sole firewall/platform target. Remove the
+  future-adapter roadmap, retain explicit native support limits and framework-free
+  policy contracts, and align application/Pages guidance and agent rules (ADR 0051).
 - Share one source-analysis pipeline across native viewing/review and import.
   Retain exact token spans, physical source positions, quoted/reference values and
   unknown syntax; handle continuations and CRLF/CR/LF without lossy normalization.

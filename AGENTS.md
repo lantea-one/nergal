@@ -10,8 +10,8 @@ of ASP.NET, database and host dependencies. Prefer small, explicit components.
 - Add meaningful unit tests with each behavior change; test failures and denied
   operations, not only successful cases. Do not replace packet-level checks with mocks.
 - Run dotnet test and the relevant integration checks. Report unverified behavior.
-- Native nftables is the first backend. Do not add a partial firewalld adapter or
-  silently translate away unsupported semantics.
+- Native nftables on Linux is the sole firewall target. Do not add other firewall
+  adapters or Windows-native deployment support. Never silently translate away unsupported semantics.
 - Never modify production firewalls while developing or testing this repository.
   Integration fixtures use disposable network namespaces and synthetic addresses.
 - Never flush a host ruleset or change foreign tables. Explicit ownership,

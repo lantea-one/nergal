@@ -19,17 +19,17 @@
 <main class="container">
     <div class="page-header">
         <div>
-            <h1>Native nftables first</h1>
-            <p class="page-subtitle">Architectural rationale for targeting native Linux <code>nftables</code> without partial translation adapters.</p>
+            <h1>Native nftables on Linux</h1>
+            <p class="page-subtitle">Native <code>nftables</code> is Nergal’s sole firewall engine. Controller and agent services target Linux.</p>
         </div>
-        <span class="badge badge-primary">ADR 0001</span>
+        <span class="badge badge-primary">ADR 0051</span>
     </div>
 
     <div class="card">
         <h2>Backend design &amp; guarantees</h2>
         <p class="muted">
             nergal compiles typed policy bundles directly into owned <code>inet nergal_filter</code>,
-            <code>inet nergal_nat</code>, and <code>bridge nergal_bridge</code> tables with atomic candidate validation
+            <code>inet nergal_nat</code>, <code>bridge nergal_bridge</code>, and early <code>inet nergal_aux</code> tables with atomic candidate validation
             and independent local watchdog rollback. Foreign tables are never flushed or modified.
         </p>
         <div class="btn-group mt-2">

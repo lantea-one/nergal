@@ -2,6 +2,11 @@
 
 nergal is designed for Linux hosts running `systemd` and `nftables` with strict privilege separation between `nergal-agent` and `nergal-web`.
 
+Native nftables is the sole firewall engine. Windows-native service deployments
+and other firewall adapters are outside scope. Browser clients do not run the
+controller or agent services. See
+[the platform decision](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0051-nftables-only-linux-product.md).
+
 ## Systemd Units & Provisioning
 
 Repository artifacts under `deploy/systemd/`:

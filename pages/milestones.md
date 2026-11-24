@@ -7,6 +7,12 @@ all declared v1 workflows are implemented, integrated, documented and verified,
 with unsupported semantics rejected explicitly and release-blocking gaps closed.
 No percentage or completion date is asserted without a measured estimate.
 
+These milestones target native nftables on Linux exclusively. Other firewall
+engines and Windows-native service deployments are outside scope; no adapter work
+is required for code-complete. Independent topologies and all three agreed SQL
+engines remain targets. See
+[ADR 0051](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0051-nftables-only-linux-product.md).
+
 ## Verified foundation
 
 Native typed filter/NAT/bridge/early-inet compilation; complete native ownership
@@ -25,7 +31,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Open | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
-| M5 | Everyday administration UX | Open | Navigation/setup workflows, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
+| M5 | Everyday administration UX | Open | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
@@ -83,3 +89,21 @@ plans remain open; lexical success grants no conversion authority.
 Maps, concatenations, arbitrary native object types, standalone unused declarations
 and native dynamic-list options are not claimed by M3. Their treatment must be
 explicit in the supported import grammar and gap reports.
+
+### M5 usability acceptance
+
+The current UI overwhelms a first-time operator and does not explain where to
+start. M5 must provide one clear starting path, an obvious next action and
+plain-language setup/empty states. Use task-based navigation and reveal advanced
+settings, native table/schema details and JSON only when requested. Routine
+create/import/review/apply tasks must work without raw policy code; source viewing
+and import must share one workflow and analysis/mapping logic. There is no
+firewall-engine choice.
+
+Verify first-use and everyday tasks with synthetic installations in light, dark,
+keyboard and mobile workflows. Retain clear draft/saved/pending/applied/observed/
+recovery states and expert detail without weakening authorization, change review
+or confirmed apply. Charts need measured data or explicit missing-data states.
+M7 retains installation/trust-bootstrap integration; the UI must guide that boundary
+without exposing host privileges to the browser. These are planned acceptance
+requirements, not a claim that the current screens are already simplified.
