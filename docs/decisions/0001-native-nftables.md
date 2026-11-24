@@ -3,6 +3,10 @@
 - Status: accepted
 - Date: November 18, 2026
 
+The original decision and research below are retained as history. Future-backend
+scope is superseded by [ADR 0051](0051-nftables-only-linux-product.md): native
+nftables on Linux is now the sole firewall/platform target.
+
 ## Decision
 
 Implement a native nftables backend first. Do not implement a firewalld adapter

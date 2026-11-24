@@ -13,6 +13,11 @@ service. Migration is optional: operators must also be able to author new polici
 through the UI. This is the product direction, not a claim that every planned
 workflow is complete.
 
+Native nftables on Linux is the sole firewall target. Other firewall engines and
+Windows-native service deployments are outside scope; browser clients remain
+separate from that deployment boundary. See
+[ADR 0051](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0051-nftables-only-linux-product.md).
+
 The [native source library](native-source-library.md) accepts `nftables.conf` uploads
 into immutable database history and downloads exact originals. The [typed sets/IP lists
 library](reusable-object-library.md) supports creation, edits, search and immutable
@@ -29,7 +34,7 @@ history; additional SQL backend migrations follow logical schema stabilization. 
 
 ## Core Design Principles
 
-- **Native `nftables` first**: Compiles directly to canonical `inet nergal_filter`, `inet nergal_nat`, and `bridge nergal_bridge` tables without shelling out untrusted strings or flushing foreign tables.
+- **Native `nftables` on Linux**: The sole firewall engine compiles directly to owned Nergal tables, including early inet filtering, without shelling out untrusted strings or flushing foreign tables.
 - **Explicit process & privilege separation**: The unprivileged `Nergal.Web` controller (ASP.NET Core MVC + Blazor) holds zero `CAP_NET_ADMIN` privileges and never touches the kernel directly.
 - **Two-phase confirmed apply**: Every live change arms an independent local watchdog (`nergal-agent watch`) before replacing rulesets; missed confirmation triggers autonomous kernel rollback.
 - **Fail-closed verification**: Ownership comments (`nergal:v1:<owner>:<resource>`), boot/namespace-bound receipts, auxiliary table presence checks, and `SO_PEERCRED` / pinned TLS 1.3 mTLS authentication reject ambiguity rather than guessing.

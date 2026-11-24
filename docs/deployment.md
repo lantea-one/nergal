@@ -123,7 +123,8 @@ On remote managed hosts:
 
 ## Operational boundaries in release 2026.11.21
 
-- Native `nftables` is the supported backend (`firewalld` is excluded per ADR 0001).
+- Native `nftables` on Linux is the sole firewall target. Other firewall adapters
+  and Windows-native service deployments are outside scope (ADR 0051).
 - Two-phase agent control (`prepare-apply`, `confirm`, `rollback`) supports the owned filter, NAT, bridge and early inet bundle slice under [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md), with complete native receipt verification and coordinated rollback. Unsupported native semantics still fail closed; imported source text is not an agent payload.
 - Run `nergal-agent reconcile /var/lib/nergal/agent` manually or from a pre-start dependency after host reboots when explicit new-boot reconciliation of owned tables is required.
 
