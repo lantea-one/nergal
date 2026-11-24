@@ -32,8 +32,9 @@ public sealed partial class NftBridgeTableObservation
         BridgePolicy policy, IReadOnlyList<(string Name, ulong Handle)> chains, IReadOnlyList<(string Chain, ulong Handle, BridgeFilterRule Rule)> rules)
     {
         Identity = identity; TableHandle = tableHandle; ForwardChainHandle = chainHandle; Policy = policy;
+        var addressSets = policy.Rules.Concat(policy.SubChains.SelectMany(c => c.Rules)).Any(r => r?.SourcePrefixes is not null || r?.DestinationPrefixes is not null);
         var projection = new StringBuilder(string.Join('\n',
-            policy.HasExtendedRules ? "nergal-bridge-observation-v2" : "nergal-bridge-observation-v1", identity.Comment,
+            addressSets ? "nergal-bridge-observation-v3" : policy.HasExtendedRules ? "nergal-bridge-observation-v2" : "nergal-bridge-observation-v1", identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture),
             string.Join(' ', chainHandle.ToString(CultureInfo.InvariantCulture), "bridge", NftBridgeCompiler.TableName,
                 "forward", "filter", "forward", policy.Priority.ToString(CultureInfo.InvariantCulture), policy.DefaultVerdict == FilterVerdict.Accept ? "accept" : "drop")));

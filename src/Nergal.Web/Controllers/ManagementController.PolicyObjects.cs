@@ -51,7 +51,7 @@ public sealed partial class ManagementController
             return chain is null && (slot is "source" or "destination" or "ports") && rules is not null && index < rules.Count && rules[index] is not null;
         }
         if (scope == "postrouting") { return chain is null && (slot is "source" or "destination" or "ports") && bundle.Nat is { } nat && index < nat.SnatRules.Count && nat.SnatRules[index] is not null; }
-        if (slot != "ports" || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
+        if (slot is not ("source" or "destination" or "ports") || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
         var bridgeRules = scope == "bridge" ? bundle.Bridge?.Rules : bundle.Bridge?.SubChains.FirstOrDefault(c => c.Name == chain)?.Rules;
         return bridgeRules is not null && index < bridgeRules.Count && bridgeRules[index] is not null;
     }

@@ -125,11 +125,11 @@ Guided raw-chain forms now cover FIB reverse-path matching, UDP source ports,
 source/interface negation, defaults and ordered exceptions. MSS configuration
 preserves disabled state on resize and has explicit removal. DNAT negation and
 whole-rule NAT reordering are available without editing JSON. Auxiliary and
-extended bridge/sub-chain forms remain before M2 is complete.
+extended bridge/sub-chain forms are also implemented; broader UX remains M5.
 
 Auxiliary inet table priority/defaults and complete ordered filter-rule forms are
 now available. They preserve dormant state and other policy sections and require
-explicit empty-table removal. Extended bridge/sub-chain forms remain in M2.
+explicit empty-table removal. Extended bridge/sub-chain forms are now implemented.
 
 Complete bridge forms expose priority, bridge-master/MAC/IP/transport matching,
 local regular chains, explicit jump/return, ordering and per-rule enabled state.
@@ -141,11 +141,17 @@ and broader UX/operations/database work remain separate product milestones.
 M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
 filtering. Table scope is explicit, existing API submissions remain primary-only,
 and saved usage paths include auxiliary references. Native named objects and
-NAT/bridge reference expansion remain open.
+native named objects and DNAT references remain open.
 
 Postrouting NAT and bridge destination-port rules, including regular chains, can
 now pin immutable Port-list versions through contextual UI selectors. Ordinary
 edits retain pinned versions and all unrelated intent. JSON/database usage covers
 all new scopes; type conflicts, invalid protocols and forged versions remain denied.
 Native packet and agent receipt/rollback fixtures use referenced snapshots.
-Native named objects and DNAT/bridge address lists remain M3 work.
+Native named objects and DNAT address lists remain M3 work.
+
+Bridge source/destination CIDR sets and immutable address-list versions now work
+in forwarding and regular chains. Guided forms preserve MAC restrictions, family,
+jump/return behavior, enabled state and pinned history. Complete native address-set
+receipts use v3 fingerprints; scalar/port-only receipts remain unchanged. Upgrade
+controller and agent together. Native named objects and DNAT references remain M3.

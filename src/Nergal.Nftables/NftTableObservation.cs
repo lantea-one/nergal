@@ -1257,7 +1257,7 @@ public sealed partial class NftTableObservation
             NegateDestination: negateDestination, SourceMac: sourceMac, SourceMacs: sourceMacs, NegateSourceMac: negateMac);
     }
 
-    private static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
+    internal static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
     {
         if (setArray.ValueKind != JsonValueKind.Array || setArray.GetArrayLength() is < 2 or > 64)
         {

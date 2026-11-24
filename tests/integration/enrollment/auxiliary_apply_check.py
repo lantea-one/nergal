@@ -82,8 +82,8 @@ def counter(family):
     return sum(expr['counter']['packets'] for item in objects if 'rule' in item for expr in item['rule']['expr'] if 'counter' in expr)
 
 
-def tcp(client, server, family, port=18080, allowed=True, wrong_source=False):
-    target = '192.0.2.3' if family == socket.AF_INET else '2001:db8:1::3'
+def tcp(client, server, family, port=18080, allowed=True, wrong_source=False, destination=3):
+    target = f'192.0.2.{destination}' if family == socket.AF_INET else f'2001:db8:1::{destination}'
     source = ('192.0.2.4' if wrong_source else '192.0.2.2') if family == socket.AF_INET else ('2001:db8:1::4' if wrong_source else '2001:db8:1::2')
     with network(server):
         listener = socket.socket(family, socket.SOCK_STREAM)
@@ -116,6 +116,8 @@ def bridge_packets(children):
         tcp(client, server, family)
         tcp(client, server, family, port=18081, allowed=False)
         tcp(client, server, family, wrong_source=True, allowed=False)
+        tcp(client, server, family, destination=5, allowed=False)  # Jump matches; destination misses regular-chain return.
+        tcp(client, server, family, destination=6)  # Base destination misses jump; existing default accept is preserved.
         tcp(client, server, family, port=18082, wrong_source=True)
         tcp(client, server, family, port=18082)
     require(counter('bridge') == 0, 'Bridge priority -5 drop reached the later -4 hook')
@@ -168,6 +170,11 @@ def topology():
             inside(children[1], 'ip', 'neigh', 'replace', address, 'lladdr', '02:00:00:00:00:01', 'nud', 'permanent', 'dev', 'eth0')
         inside(children[0], 'ip', 'addr', 'add', '192.0.2.4/24', 'dev', 'eth0')
         inside(children[0], 'ip', '-6', 'addr', 'add', '2001:db8:1::4/64', 'dev', 'eth0', 'nodad')
+        for target in (5, 6):
+            inside(children[1], 'ip', 'addr', 'add', f'192.0.2.{target}/24', 'dev', 'eth0')
+            inside(children[1], 'ip', '-6', 'addr', 'add', f'2001:db8:1::{target}/64', 'dev', 'eth0', 'nodad')
+            for address in (f'192.0.2.{target}', f'2001:db8:1::{target}'):
+                inside(children[0], 'ip', 'neigh', 'replace', address, 'lladdr', '02:00:00:00:00:02', 'nud', 'permanent', 'dev', 'eth0')
         return children
     except BaseException:
         for process in children:
@@ -300,6 +307,10 @@ try:
                         listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'inet', 'nergal_nat'))
                         handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'postrouting')
                         nft(f'replace rule inet nergal_nat postrouting handle {handle} meta nfproto ipv4 ip saddr {{ 192.0.2.0/24, 198.51.100.0/24 }} ip daddr {{ 203.0.113.30, 203.0.113.40 }} return\n')
+                    elif scenario == 'bridge-set-drift':
+                        listed = json.loads(run('nft', '--handle', '--json', 'list', 'table', 'bridge', 'nergal_bridge'))
+                        handle = next(item['rule']['handle'] for item in listed['nftables'] if 'rule' in item and item['rule']['chain'] == 'service' and any('return' in expr for expr in item['rule']['expr']))
+                        nft(f'replace rule bridge nergal_bridge service handle {handle} ether saddr 02:00:00:00:00:01 ether type ip ip saddr {{ 192.0.2.2, 192.0.2.90 }} ip daddr {{ 192.0.2.30, 192.0.2.99 }} tcp dport 18080 return\n')
                     elif scenario == 'unknown-expression':
                         nft('add rule inet nergal_aux input counter\n')
                     else:

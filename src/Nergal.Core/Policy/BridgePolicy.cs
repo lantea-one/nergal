@@ -34,6 +34,10 @@ public enum BridgeEtherType
 /// <param name="Return">Return to the caller, only inside regular chains. When true, or when JumpTarget is set, Verdict must be Drop as a neutral draft value.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
 /// <param name="DestinationPortObject">Optional immutable port-list version; mutually exclusive with literal destination ports. Compilation validates its type and every existing matcher constraint.</param>
+/// <param name="SourcePrefixes">Optional bounded same-family source set, exclusive with scalar/reference; requires Family.</param>
+/// <param name="DestinationPrefixes">Optional bounded same-family destination set, exclusive with scalar/reference; requires Family.</param>
+/// <param name="SourceObject">Optional immutable same-family source-list snapshot, exclusive with literals; requires Family.</param>
+/// <param name="DestinationObject">Optional immutable same-family destination-list snapshot, exclusive with literals; requires Family.</param>
 public sealed record BridgeFilterRule(
     BridgeEtherType EtherType,
     FilterVerdict Verdict,
@@ -54,7 +58,11 @@ public sealed record BridgeFilterRule(
     string? JumpTarget = null,
     bool Return = false,
     bool Enabled = true,
-    PolicyObjectReference? DestinationPortObject = null);
+    PolicyObjectReference? DestinationPortObject = null,
+    IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
+    IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
+    PolicyObjectReference? SourceObject = null,
+    PolicyObjectReference? DestinationObject = null);
 
 /// <summary>A named, non-base bridge chain. Only local declared jump targets are permitted.</summary>
 public sealed class BridgeSubChain
@@ -107,7 +115,7 @@ public sealed class BridgePolicy
     /// <summary>Gets whether the policy uses extended bridge matching or regular-chain control flow.</summary>
     public bool HasExtendedRules => Priority != -200 || SubChains.Count > 0 || Rules.Any(r => r is not null &&
         (r.BridgeName is not null || r.SourceMac is not null || r.DestinationMac is not null || r.NegateSourceMac || r.NegateDestinationMac ||
-         r.Family is not null || r.Source is not null || r.Destination is not null || r.Protocol != FilterProtocol.Any ||
+         r.Family is not null || r.Source is not null || r.Destination is not null || r.SourcePrefixes is not null || r.DestinationPrefixes is not null || r.SourceObject is not null || r.DestinationObject is not null || r.Protocol != FilterProtocol.Any ||
          r.DestinationPort is not null || r.DestinationPorts is not null || r.DestinationPortObject is not null || r.JumpTarget is not null || r.Return));
 
     /// <summary>Gets the forward base-chain priority (-300..300).</summary>
@@ -117,7 +125,11 @@ public sealed class BridgePolicy
 
     internal static IReadOnlyList<BridgeFilterRule?> SnapshotRules(IEnumerable<BridgeFilterRule?> rules) =>
         Array.AsReadOnly(rules.Select(r => r is null ? null : r with
-        { DestinationPorts = r.DestinationPorts is null ? null : Array.AsReadOnly(r.DestinationPorts.ToArray()) }).ToArray());
+        {
+            DestinationPorts = r.DestinationPorts is null ? null : Array.AsReadOnly(r.DestinationPorts.ToArray()),
+            SourcePrefixes = r.SourcePrefixes is null ? null : Array.AsReadOnly(r.SourcePrefixes.ToArray()),
+            DestinationPrefixes = r.DestinationPrefixes is null ? null : Array.AsReadOnly(r.DestinationPrefixes.ToArray())
+        }).ToArray());
 
     /// <summary>Computes the semantic backend features required by this bridge policy.</summary>
     public IReadOnlySet<FirewallFeature> GetRequiredFeatures()

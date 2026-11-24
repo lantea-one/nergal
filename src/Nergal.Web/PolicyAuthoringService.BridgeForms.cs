@@ -74,7 +74,7 @@ internal static partial class PolicyAuthoringService
         else
         {
             if (!TryParseExtendedBridgeRule(input, out var rule, out diagnostics)) { return false; }
-            if (index is { } existing) { rules[existing] = rule! with { Enabled = rules[existing]!.Enabled, DestinationPortObject = rules[existing]!.DestinationPortObject }; }
+            if (index is { } existing) { rules[existing] = rule! with { Enabled = rules[existing]!.Enabled, DestinationPortObject = rules[existing]!.DestinationPortObject, SourceObject = rules[existing]!.SourceObject, DestinationObject = rules[existing]!.DestinationObject }; }
             else { rules.Add(rule); }
         }
         var chains = bridge.SubChains.Select(c => c.Name == chain ? new BridgeSubChain(c.Name, rules) : c).ToArray();
@@ -98,13 +98,8 @@ internal static partial class PolicyAuthoringService
         MacAddress? sourceMac = null, destinationMac = null;
         if (EmptyToNull(input.SourceMac) is { } sm && !MacAddress.TryParse(sm, out sourceMac)) { errors.Add(new("mac.invalid", "rule.sourceMac")); }
         if (EmptyToNull(input.DestinationMac) is { } dm && !MacAddress.TryParse(dm, out destinationMac)) { errors.Add(new("mac.invalid", "rule.destinationMac")); }
-        NetworkPrefix? source = null, destination = null;
-        try
-        {
-            if (EmptyToNull(input.Source) is { } s) { source = new(s); }
-            if (EmptyToNull(input.Destination) is { } d) { destination = new(d); }
-        }
-        catch (ArgumentException) { errors.Add(new("network.invalid", "rule")); }
+        TryParsePrefixField(input.Source, "rule.source", out var source, out var sourcePrefixes, errors);
+        TryParsePrefixField(input.Destination, "rule.destination", out var destination, out var destinationPrefixes, errors);
         TryParsePortField(input.DestinationPorts, "rule.destinationPorts", out var port, out var ports, errors);
         if (!TryNormalizeDescription(input.Description, out var description)) { errors.Add(new("rule.descriptionInvalid", "rule.description")); }
         if (errors.Count != 0) { diagnostics = errors; return false; }
@@ -112,6 +107,7 @@ internal static partial class PolicyAuthoringService
             description, EmptyToNull(input.BridgeName), sourceMac, destinationMac, input.NegateSourceMac, input.NegateDestinationMac,
             family, source, destination, protocol, port, ports, target, input.Action == "return");
         diagnostics = [];
+        rule = rule with { SourcePrefixes = sourcePrefixes, DestinationPrefixes = destinationPrefixes };
         return true;
     }
 }

@@ -58,10 +58,12 @@ public sealed partial class NftBridgeTableObservation
             var proto = payload.GetProperty("protocol").GetString(); var field = payload.GetProperty("field").GetString();
             if (proto == "ether" && field is "saddr" or "daddr")
             {
-                var rank = field == "saddr" ? 3 : 4;
-                if (stage >= rank || right.ValueKind != JsonValueKind.String || !MacAddress.TryParse(right.GetString(), out var mac)) { return null; }
+                // nft can order adjacent Ethernet payloads by wire offset (daddr before saddr).
+                // Accept each MAC predicate once within this stage; never discard duplicate constraints.
+                if (stage > 4 || (field == "saddr" ? r.SourceMac is not null : r.DestinationMac is not null) ||
+                    right.ValueKind != JsonValueKind.String || !MacAddress.TryParse(right.GetString(), out var mac)) { return null; }
                 r = field == "saddr" ? r with { SourceMac = mac, NegateSourceMac = op == "!=" } : r with { DestinationMac = mac, NegateDestinationMac = op == "!=" };
-                stage = rank; continue;
+                stage = 4; continue;
             }
             if (op != "==") { return null; }
             if (proto == "ether" && field == "type")
@@ -76,9 +78,18 @@ public sealed partial class NftBridgeTableObservation
                 var rank = field == "saddr" ? 6 : 7;
                 var family = proto == "ip" ? IpFamily.IPv4 : IpFamily.IPv6;
                 if (stage >= rank || (r.Family.HasValue && r.Family != family)) { return null; }
-                var prefix = ParseNetworkPrefix(right, family);
-                if (prefix is null) { return null; }
-                r = field == "saddr" ? r with { Family = family, Source = prefix } : r with { Family = family, Destination = prefix };
+                if (Properties(right, "set"))
+                {
+                    var prefixes = NftTableObservation.ParseNetworkPrefixSet(right.GetProperty("set"), family);
+                    if (prefixes is null) { return null; }
+                    r = field == "saddr" ? r with { Family = family, SourcePrefixes = prefixes } : r with { Family = family, DestinationPrefixes = prefixes };
+                }
+                else
+                {
+                    var prefix = ParseNetworkPrefix(right, family);
+                    if (prefix is null) { return null; }
+                    r = field == "saddr" ? r with { Family = family, Source = prefix } : r with { Family = family, Destination = prefix };
+                }
                 stage = rank; continue;
             }
             if (proto is "tcp" or "udp" && field == "dport")

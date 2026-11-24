@@ -87,3 +87,10 @@ explicit/independent watchdog rollback, removal/restoration and restart. The new
 without overwriting unexpected state. The mapped-identity HTTPS fixture selects
 address versions through the real UI before Unix/mTLS apply/confirm/rollback checks.
 These remain synthetic isolated fixtures, not real-server conversion acceptance.
+
+Bridge address references are checked in both chain scopes and both IP families:
+strict JSON, immutable SQLite usage/history, HTTPS selectors and read-only pinned
+fields, actual MAC-plus-IP/set packet outcomes, complete native reconstruction,
+Unix/mTLS apply/confirm/rollback and same-handle set drift preservation. The agent
+auxiliary launcher now runs eight recovery scenarios. Fixtures remain synthetic
+and isolated; this does not establish private-source import equivalence.

@@ -77,3 +77,11 @@ both complete sets; address-set receipts use an explicit v3 fingerprint while ol
 scalar/port-only fingerprints remain unchanged. Guided/legacy edits preserve pins
 and explicit removal cannot erase a required SNAT source. No new host operation
 or controller database lookup during apply is introduced. See the reusable library.
+
+Bridge address-list snapshots are embedded in immutable policy intent for both
+forwarding and regular chains. Compilation resolves same-family snapshots without
+a database lookup and retains every prefix through native reconstruction. Complete
+address-set graphs use a v3 fingerprint; preceding scalar/port-only fingerprints
+stay unchanged. MAC restrictions, explicit family, bridge master and jump/return
+control flow remain conjunctive. Invalid dormant rules are denied too. See
+[the list workflow](reusable-object-library.md).

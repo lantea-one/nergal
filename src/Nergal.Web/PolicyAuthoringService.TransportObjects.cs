@@ -10,7 +10,7 @@ internal static partial class PolicyObjectAuthoring
     {
         updated = null;
         diagnostics = [new("object.matcherInvalid", "object")];
-        if ((scope == "postrouting" ? slot is not ("source" or "destination" or "ports") : slot != "ports") || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
+        if (slot is not ("source" or "destination" or "ports") || (scope == "bridgeChain" ? string.IsNullOrEmpty(chain) : chain is not null)) { return false; }
         FirewallPolicyBundle next;
         if (scope == "postrouting")
         {
@@ -33,8 +33,14 @@ internal static partial class PolicyObjectAuthoring
             if (scope == "bridgeChain" && matches.Length != 1) { return false; }
             var rules = (scope == "bridge" ? bridge.Rules : matches[0].Rules).ToArray();
             if (index < 0 || index >= rules.Length || rules[index] is not { } rule) { return false; }
-            if (reference is null && rule.DestinationPortObject is null) { diagnostics = [new("object.referenceMissing", "bridge")]; return false; }
-            rules[index] = rule with { DestinationPort = null, DestinationPorts = null, DestinationPortObject = reference };
+            var existing = slot switch { "source" => rule.SourceObject, "destination" => rule.DestinationObject, _ => rule.DestinationPortObject };
+            if (reference is null && existing is null) { diagnostics = [new("object.referenceMissing", "bridge")]; return false; }
+            rules[index] = slot switch
+            {
+                "source" => rule with { Source = null, SourcePrefixes = null, SourceObject = reference },
+                "destination" => rule with { Destination = null, DestinationPrefixes = null, DestinationObject = reference },
+                _ => rule with { DestinationPort = null, DestinationPorts = null, DestinationPortObject = reference }
+            };
             var chains = bridge.SubChains.Select(c => scope == "bridgeChain" && c.Name == chain ? new BridgeSubChain(c.Name, rules) : c);
             var changed = new BridgePolicy(bridge.SchemaVersion, bridge.DefaultVerdict, scope == "bridge" ? rules : bridge.Rules, bridge.Priority, chains);
             next = new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, changed, bundle.AuxiliaryFilter);
