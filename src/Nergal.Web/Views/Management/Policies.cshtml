@@ -50,7 +50,7 @@
 
     <details class="disclosure mb-0 mt-2">
         <summary>Router constructs and apply readiness</summary>
-        <p>Use the JSON editor for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation,
+        <p>Use the guided forms for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation,
             destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return.
             The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits.</p>
         <p>Independent priority tables and extended bridge jump/return chains support confirmed apply with complete bundle receipts.
@@ -802,6 +802,33 @@
 
     <!-- TAB 4: CANDIDATE & DIFF -->
     <div class="tab-panel" data-tab-panel="tab-preview">
+        @if (Model.CanMutate && Model.Revisions.Count > 0)
+        {
+            <section class="card" aria-labelledby="export-heading">
+                <h2 id="export-heading">Export a saved revision</h2>
+                <p id="export-help" class="hint">Select a saved database revision. Unsaved draft changes are excluded. The native file contains active policy only;
+                    the intent file also retains disabled rules, descriptions and pinned lists. These downloads describe desired configuration, not current host state.</p>
+                <form method="get" action="@Url.Content("~/manage/policies/export/native")" class="form-grid">
+                    <div class="field">
+                        <label for="export-revision">Saved revision</label>
+                        <select id="export-revision" name="revision" aria-describedby="export-help">
+                            @foreach (var saved in Model.Revisions)
+                            {
+                                <option value="@saved.Revision" selected="@(Model.SelectedRevision == saved.Revision)">Revision @saved.Revision · @(saved.Summary ?? saved.CandidateDigest[..12])</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field">
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-secondary">Download nftables.conf</button>
+                            <button type="submit" class="btn btn-secondary" formaction="@Url.Content("~/manage/policies/export/intent")">Download policy intent</button>
+                        </div>
+                    </div>
+                </form>
+                <p class="hint">The native file creates reserved Nergal tables and fails if they already exist. Managed updates use confirmed apply.
+                    Keep the intent file to preserve authored settings; it is not a backup of library history, accounts or agent ownership.</p>
+            </section>
+        }
         @if (bundle is not null)
         {
             <component type="typeof(Nergal.Web.Components.PolicyBundleSummary)" render-mode="Static" param-Bundle="bundle" />

@@ -45,7 +45,8 @@ The development version includes [typed router constructs and explicit support l
 a Lantea.One-inspired light/dark management UI, validated audited settings intent,
 a [versioned typed list library with pinned policy references](docs/reusable-object-library.md),
 [shared native static sets with complete receipt verification](docs/native-static-lists.md),
-and an administrator-only [database-backed native source library](docs/native-source-library.md). Independent early inet tables and
+an administrator-only [database-backed native source library](docs/native-source-library.md),
+and [deterministic saved revision exports](docs/policy-exports.md). Independent early inet tables and
 extended bridge jump/return support confirmed apply after complete native verification. Supported router constructs have [guided forms](docs/guided-router-forms.md);
 **Advanced JSON & Revisions** remains available in a locally bundled CodeMirror editor.
 Rules also have [versioned inline enable/disable controls](docs/rule-enabled-state.md).
@@ -163,8 +164,10 @@ is licensed under MIT. No FWCloud implementation or assets are included.
 
 The native source library supports bounded file uploads, immutable database
 snapshots, source-bound reviews and exact original-file downloads. These are source
-ingestion/review workflows; semantic conversion and generated policy export remain
-unfinished. See [source library](docs/native-source-library.md) and [migration status](docs/router-constructs.md).
+ingestion/review workflows; semantic conversion remains unfinished. Generated
+native and complete intent exports are available for selected saved revisions.
+See [source library](docs/native-source-library.md), [policy exports](docs/policy-exports.md)
+and [migration status](docs/router-constructs.md).
 
 See the [remaining product code-complete milestones](docs/milestones.md) for completion gates and dependencies.
 

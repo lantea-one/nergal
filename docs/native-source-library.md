@@ -14,7 +14,8 @@ content, digest and non-exhaustive lexical migration review. **Download original
 returns its exact UTF-8 bytes, including BOM and line endings, as an attachment
 named `nftables.conf`. Reports select a stored source by identity, not a server path
 or ambiguous digest. This replaces the previous unreleased staging-digest selector.
-Generated policy export and semantic conversion remain separate future work.
+[Generated policy exports](policy-exports.md) are separate downloads from saved
+database revisions. Semantic native source conversion remains future work.
 
 ## Storage and authorization
 

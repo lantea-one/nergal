@@ -11,7 +11,8 @@ viewer's browser timezone, named in the page footer; the tooltip retains UTC. Re
 snapshots. Select **Review** for one source's exact text and non-exhaustive migration
 review. **Download original** returns its exact bytes, including BOM and line endings,
 as `nftables.conf`. The JSON review download uses the stored source identity.
-Semantic conversion and generated policy export remain unfinished.
+Semantic conversion remains unfinished. [Saved revision exports](policy-exports.md)
+provide separate native and complete intent files from selected database revisions.
 
 ## Persistence and limits
 

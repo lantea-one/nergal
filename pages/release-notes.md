@@ -2,6 +2,13 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased saved revision exports
+
+Administrators can download deterministic native and complete intent files from a
+selected saved database revision. Both downloads recompile and verify the saved
+artifact digest; dormant rules and pinned reference metadata remain in intent.
+Exports carry no host ownership or apply authority. See [policy exports](policy-exports.md).
+
 ## Unreleased native static list references
 
 New UI attachments now share constant native IPv4/IPv6/port sets in each owned
@@ -14,7 +21,7 @@ projections before mutation. No SQL migration is added. Upgrade controller and
 agent together. See [native static lists](native-static-lists.md).
 
 M3 is complete for the declared static-list slice. Semantic source conversion and
-generated revision export remain M4; charts/profiles/local account UI remain M5.
+persisted mappings/gaps and semantic round-trip acceptance remain M4; charts/profiles/local account UI remain M5.
 
 ## `2026.11.21.1` (Milestone E)
 
@@ -83,8 +90,8 @@ schema-2 records, review one source, download its exact original bytes and obtai
 source-bound lexical report. Optional file-directory snapshots are staging only.
 Imports and their audit records are atomic; no configuration is executed or
 converted. Existing controllers require an explicit offline `controller upgrade`.
-Additional SQL providers and semantic/generated-policy import/export remain future
-work. See [the source library guide](native-source-library.md).
+Additional SQL providers and semantic native conversion remain future work.
+Saved revision exports are now available as described above. See [the source library guide](native-source-library.md).
 
 ## Local timestamp display (unreleased)
 

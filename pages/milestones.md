@@ -55,7 +55,7 @@ their trust boundary.
 M7/M8 are product-wide integration gates, not a rewrite of already verified slices.
 No production apply, deployment or account change follows from passing tests.
 Update this table when a completion gate is actually satisfied, with evidence in
-[testing](testing-and-conformance.md), relevant ADRs and the [product workflow](index.md).
+[testing](testing-and-conformance.md), relevant ADRs and the [product workflow](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/product-workflow.md).
 
 M2 progress: primary filter MAC matching/negation, source/destination meter keys,
 explicit reject, and complete postrouting SNAT/masquerade/return forms are
@@ -74,7 +74,9 @@ low IPv6 echo omissions, real dual-stack/routed/bridge packets, dynamic-meter
 coexistence, lookup/content/handle drift denial and Unix/mTLS/web confirmation and
 independent rollback. See [native static lists](native-static-lists.md).
 
-M4 remains open for semantic source conversion and generated revision export.
+M4 remains open for semantic source conversion. Deterministic native and complete
+intent exports from explicitly selected saved revisions are implemented, with
+saved artifact verification and Administrator-only downloads. See [policy exports](policy-exports.md).
 Maps, concatenations, arbitrary native object types, standalone unused declarations
 and native dynamic-list options are not claimed by M3. Their treatment must be
 explicit in the supported import grammar and gap reports.

@@ -86,8 +86,9 @@ projection adds no SQL migration. Additional SQL engines remain M6 work.
 Native named objects now have complete definition/content/handle/lookup receipts,
 generation-consistent collection and confirmed apply/rollback. Dynamic meters remain
 separate; maps, concatenations, named MAC sets, standalone unused declarations and
-native dynamic-list options are unsupported. Semantic `nftables.conf` conversion and
-generated revision export remain M4. Original-source download is already available.
+native dynamic-list options are unsupported. Semantic `nftables.conf` conversion remains M4.
+[Saved revision exports](policy-exports.md) and exact original-source downloads
+are available as distinct workflows.
 
 ## Screenshots
 

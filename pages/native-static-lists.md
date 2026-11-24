@@ -74,8 +74,9 @@ This slice supports generated static IPv4/IPv6/port objects referenced by suppor
 rules. Standalone unused declarations, arbitrary native identifiers/types, maps,
 concatenations, dynamic flags/timeouts and named MAC sets are not added. Existing
 MAC literals/anonymous sets and dynamic rate-limit meters retain their own support.
-Semantic source conversion and generated policy export remain M4. Native support
-does not turn source inspection or original-file download into semantic import/export.
+Semantic source conversion remains M4. [Saved revision exports](policy-exports.md)
+provide native candidates and complete intent as separate files. Native support
+does not turn source inspection or original-file download into semantic conversion.
 
 Upgrade the controller and agent together. Older codecs reject the new `nativeSet`
 reference flag. Policies without it retain legacy projection and fingerprints;

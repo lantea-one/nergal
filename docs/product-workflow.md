@@ -149,9 +149,10 @@ or comments must not be claimed as losslessly preserved unless verified. Raw cod
 editing, where offered, uses the actual code editor and authoritative server validation.
 
 The [typed list library](reusable-object-library.md) now supports create/edit/search
-and immutable history. Pinned primary inet filter references and saved revision impact visibility are
-implemented. Native named sets and generated export remain
-planned capabilities.
+and immutable history. Pinned references across the declared scopes and saved revision impact visibility
+are implemented. [Native static sets](native-static-lists.md) and
+[saved revision exports](policy-exports.md) are available. Semantic native source
+conversion and its mapping/gap workflow remain M4.
 
 ## Code editor delivery
 
