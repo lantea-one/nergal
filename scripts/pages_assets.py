@@ -8,6 +8,7 @@ ASSETS = {
     'src/Nergal.Web/wwwroot/css/nergal.css': 'pages/assets/application.css',
     'src/Nergal.Web/wwwroot/js/theme.js': 'pages/assets/theme.js',
     'src/Nergal.Web/wwwroot/brand/guardian.png': 'pages/brand/guardian.png',
+    'src/Nergal.Web/wwwroot/brand/guardian.svg': 'pages/brand/guardian.svg',
 }
 
 

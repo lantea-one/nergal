@@ -17,6 +17,7 @@ REQUIRED_FILES = [
     "assets/nergal-theme.css",
     "assets/application.css",
     "brand/guardian.png",
+    "brand/guardian.svg",
     "assets/theme.js",
     "assets/portal.js",
     "architecture.md",

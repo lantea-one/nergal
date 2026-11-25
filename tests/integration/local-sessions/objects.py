@@ -14,7 +14,7 @@ class VersionedAssets(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
         url = attributes.get("src") if tag == "script" else attributes.get("href") if tag == "link" else None
-        if url and url.startswith(("/js/", "/css/")):
+        if url and (url.startswith(("/js/", "/css/")) or urlsplit(url).path == "/brand/guardian.svg"):
             assert "asp-append-version" not in attributes
             self.urls.append(url)
 
@@ -22,7 +22,7 @@ class VersionedAssets(HTMLParser):
 def check_versioned_assets(browser):
     assets = VersionedAssets()
     assets.feed(browser.request("/manage/policies", 200))
-    assert {urlsplit(url).path for url in assets.urls} >= {"/js/theme.js", "/js/nergal.js", "/js/local-time.js", "/js/code-editor.bundle.js", "/css/nergal.css"}
+    assert {urlsplit(url).path for url in assets.urls} >= {"/js/theme.js", "/js/nergal.js", "/js/local-time.js", "/js/code-editor.bundle.js", "/css/nergal.css", "/brand/guardian.svg"}
     for url in assets.urls:
         version = parse_qs(urlsplit(url).query).get("v", [])
         assert len(version) == 1 and len(version[0]) == 43, f"asset URL is not content-versioned: {url}"

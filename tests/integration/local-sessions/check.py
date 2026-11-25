@@ -181,6 +181,9 @@ def exercise(temp):
         assert browser.location == "/login"
         browser.request("/login", 400, plain=True, headers={"X-Forwarded-Proto": "https"})
         browser.request("/session", 401)
+        # The browser must load the local favicon before authentication.
+        assert '<svg' in browser.request("/brand/guardian.svg", 200)
+        assert browser.last_headers["content-type"].startswith("image/svg+xml")
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 200)
         fields = {"username": "fixture-admin", "password": PASSWORD, "__RequestVerificationToken": browser.token("/login")}
         browser.request("/login", 400, [*fields.items(), ("username", "fixture-admin")])
