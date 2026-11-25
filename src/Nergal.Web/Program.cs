@@ -12,22 +12,12 @@ if (enabled && !OperatingSystem.IsLinux()) { throw new PlatformNotSupportedExcep
 using var keys = enabled && OperatingSystem.IsLinux() ? LocalSessionHost.Configure(builder.Services, sessions) : null;
 if (!enabled) { builder.Services.AddDataProtection().SetApplicationName("nergal").UseEphemeralDataProtectionProvider(); }
 
-// MVC registers a framework key-ring preloader independently of the selected
-// IDataProtectionProvider. Both of our modes own their provider lifecycle.
-// Omit only Data Protection's hosted service so it cannot open a profile ring.
-foreach (var service in builder.Services.Where(service => service.ServiceType == typeof(IHostedService) &&
-    service.ImplementationType?.FullName == "Microsoft.AspNetCore.DataProtection.Internal.DataProtectionHostedService" &&
-    service.ImplementationType.Assembly == typeof(EphemeralDataProtectionProvider).Assembly).ToArray())
-{
-    builder.Services.Remove(service);
-}
-
-var oidc = builder.Configuration.GetSection("Oidc");
-var oidcEnabled = oidc.GetValue<bool>("Enabled");
+var oidcEnabled = enabled;
 if (oidcEnabled)
 {
+    if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("OIDC requires Linux."); }
     if (keys is null) { throw new InvalidOperationException("OIDC requires the protected local session host."); }
-    FederatedLogin.Configure(builder.Services, oidc, keys);
+    FederatedLogin.Configure(builder.Services, builder.Configuration.GetSection("Oidc"), keys);
 }
 if (enabled && OperatingSystem.IsLinux())
 {
@@ -52,6 +42,16 @@ if (builder.Configuration["NativeSources:Directory"] is { Length: > 0 } sourceDi
     if (!OperatingSystem.IsLinux() || !controllerStateEnabled) { throw new InvalidOperationException("Native source inspection requires an authenticated Linux controller."); }
     builder.Services.AddSingleton(new NativePolicySourceCatalog(sourceDirectory));
 }
+// MVC registers a framework key-ring preloader independently of the selected
+// IDataProtectionProvider. Both of our modes own their provider lifecycle.
+// Omit only Data Protection's hosted service so it cannot open a profile ring.
+foreach (var service in builder.Services.Where(service => service.ServiceType == typeof(IHostedService) &&
+    service.ImplementationType?.FullName == "Microsoft.AspNetCore.DataProtection.Internal.DataProtectionHostedService" &&
+    service.ImplementationType.Assembly == typeof(EphemeralDataProtectionProvider).Assembly).ToArray())
+{
+    builder.Services.Remove(service);
+}
+
 var app = builder.Build();
 app.UseStatusCodePages(BrowserResponses.StatusPageAsync);
 app.UseExceptionHandler(handler => handler.Run(context =>

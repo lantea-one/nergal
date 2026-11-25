@@ -15,7 +15,7 @@ Application accounts are not Linux users: no host account/group changes occur.
 A trusted operator must first provision an existing nonsymlink service-owned 0700
 local directory. `LocalAccountOptions` requires its explicit absolute NUL-free path;
 it creates nothing. `LocalAccountDatabase.InitializeAsync` creates only a **new**
-0600 `accounts.db`, schema 3 and application ID `0x4e524741`. Any existing database
+0600 `accounts.db`, schema 4 and application ID `0x4e524741`. Any existing database
 or sidecar is refused. It creates no administrator and never adopts, upgrades or
 repairs existing/partial state. A canceled/failed initialization can leave an
 incomplete new file; subsequent access fails closed pending explicit offline repair.
@@ -122,6 +122,6 @@ Optional [federated login](federated-login.md) uses separate issuer/subject iden
 Authenticated Administrators now manage additional local accounts through
 [Local users](local-users-and-profiles.md). Offline provisioning remains a
 one-time bootstrap and cannot add or replace an existing account. Fresh account
-schema 3 removes the singleton constraint and requires explicit role claims,
+The current schema removes the singleton constraint and requires explicit role claims,
 per-account state and atomic identity audit. Prior unreleased account stores are
 not supported by the web host; it never auto-migrates or resets them.

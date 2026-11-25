@@ -343,7 +343,7 @@ A dedicated reader Hosts page retains existing Administrator/CSRF mutation route
 Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.
 
 
-Account schema 3 separates local security state, personal metadata and identity
+Account schema 4 separates local security state, personal metadata and identity
 history inside the protected credential store. Expected-version mutations recheck
 local actor authority inside serialized transactions, protect the last enabled
 local Administrator and rotate affected security stamps with transactional audit.
@@ -356,3 +356,9 @@ defaults independently from personal overrides and authority. Only the completed
 protocol handler can refresh them from verified signed claims; no UserInfo request,
 raw token persistence, role overlay, account linking or email verification follows.
 Administrator mapping edits and observations commit audit in the identity store.
+
+UI-managed OIDC trust and encrypted secrets live in account schema 4. Immutable
+request snapshots and bounded generation-keyed framework options prevent concurrent
+trust changes from mutating active handlers. Challenges and cookies bind a generation;
+callback completion checks current persisted trust. Local sign-in remains independent.
+See [OIDC connection](oidc-connection.md) and ADR 0060.

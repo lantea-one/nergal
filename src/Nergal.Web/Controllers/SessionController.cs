@@ -33,7 +33,7 @@ public sealed class SessionController(LocalAdministratorAccounts accounts, IConf
         if (names.Count != 1 || passwords.Count != 1 || form.Count != 3) { return BadRequest(); }
         if (!await accounts.SignInAsync(names[0]!, passwords[0]!, HttpContext.RequestAborted))
         { Response.StatusCode = StatusCodes.Status401Unauthorized; return View("Login", false); }
-        if (HttpContext.RequestServices.GetService<FederatedSessions>() is not null)
+        if (HttpContext.RequestServices.GetService<FederatedSessions>() is not null && Request.Cookies.ContainsKey(FederatedLogin.Cookie))
         { await HttpContext.SignOutAsync(FederatedLogin.Session); }
         return LocalRedirect(SignedInDestination);
     }

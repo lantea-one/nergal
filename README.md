@@ -56,7 +56,8 @@ See [the ordered product workflow](docs/product-workflow.md) for the remaining w
 [Local user management and personal profiles](docs/local-users-and-profiles.md)
 provide explicit roles, last-administrator protection, revocation and atomic
 identity-store audit. [Signed OIDC profile defaults](docs/oidc-profile-defaults.md)
-and per-field local overrides are implemented; runtime provider setup, LDAP/OAuth
+and per-field local overrides are implemented. [UI-managed OIDC connections](docs/oidc-connection.md)
+provide versioned live settings and encrypted write-only secrets; LDAP/OAuth
 adapters and local MFA remain M5 work.
 
 For a persistent, isolated local controller and check-only source containers, see
@@ -69,8 +70,8 @@ synthetic data. This work has not been published as a release.
 Install the .NET 10 SDK version pinned in `global.json`, then:
 
 ```sh
-dotnet restore Nergal.sln
-dotnet test Nergal.sln --configuration Release
+dotnet restore Nergal.slnx
+dotnet test Nergal.slnx --configuration Release
 dotnet run --project src/Nergal.Web --urls http://127.0.0.1:5191
 ```
 
@@ -78,6 +79,9 @@ Open `http://127.0.0.1:5191/` for the MVC page, `/backend-decision` for the
 Blazor page, and `/healthz` for application health. The current health endpoint
 only establishes application availability, not firewall or agent health.
 Bind this development build to loopback; it is not a secured administration endpoint.
+
+The solution uses `Nergal.slnx`: application projects are at the solution root;
+all unit tests and integration fixture projects are in the `Tests` solution folder.
 
 ## Design
 

@@ -145,7 +145,8 @@
                 <h2>OpenID Connect / OAuth 2.0</h2>
                 <span class="badge @(s.Oidc.Enabled ? "badge-success" : "badge-neutral")">@(s.Oidc.Enabled ? "Enabled" : "Disabled")</span>
             </div>
-            <p class="muted">Client secrets are managed externally via environment variables or protected secret files and are never persisted in SQLite.</p>
+            <p><a href="@Url.Content("~/manage/identity/connection")">Configure active OIDC connection</a></p>
+            <p class="muted">These general settings are saved intent. Configure the active connection and its encrypted secret on the dedicated provider screen.</p>
             <div class="form-grid">
                 <div class="field">
                     <span class="switch-field-label">OIDC / OAuth 2.0 sign-in</span>

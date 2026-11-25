@@ -26,3 +26,5 @@
 - [Local Users & Profiles](local-users-and-profiles.md)
 
 - [OIDC Profile Defaults](oidc-profile-defaults.md)
+
+- [OIDC connection](oidc-connection.md)

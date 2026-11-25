@@ -23,6 +23,7 @@ internal sealed class LocalAccountContext : IdentityUserContext<LocalAdministrat
         builder.Entity<IdentityAudit>().HasKey(entry => entry.Sequence);
         builder.Entity<OidcProfileMap>().HasKey(mapping => mapping.Issuer);
         builder.Entity<OidcProfileObservation>().HasKey(observation => observation.ActorId);
+        builder.Entity<OidcConnection>().HasKey(connection => connection.Id);
     }
 }
 
@@ -53,8 +54,10 @@ internal sealed class AccountConnectionPolicy(LocalAccountOptions options, bool 
     }
     internal static void RequireSchema(DbConnection connection, DbTransaction? transaction = null)
     {
-        if (Scalar(connection, "PRAGMA application_id", transaction) != ApplicationId || Scalar(connection, "PRAGMA user_version", transaction) != 3 ||
+        if (Scalar(connection, "PRAGMA application_id", transaction) != ApplicationId || Scalar(connection, "PRAGMA user_version", transaction) != 4 ||
             Text(connection, "PRAGMA quick_check", transaction) != "ok" || Value(connection, "PRAGMA foreign_key_check", transaction) is not null)
+        { throw new AccountStoreException("account.schemaOrIntegrity"); }
+        if (Scalar(connection, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='OidcConnection'", transaction) != 1)
         { throw new AccountStoreException("account.schemaOrIntegrity"); }
         if (Scalar(connection, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('OidcProfileMap','OidcProfileObservation')", transaction) != 2 ||
             Scalar(connection, "SELECT count(*) FROM pragma_table_info('LocalProfile') WHERE name IN ('GivenName','FamilyName','Email')", transaction) != 3)

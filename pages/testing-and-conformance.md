@@ -169,3 +169,12 @@ registration/removal, CSRF and anonymous/Auditor restrictions. Browser QA verifi
 draft JSON/change-note/unfinished-field retention across local sidebar sections,
 arrow-key tabs, actual CodeMirror, mobile Menu/Escape and empty/populated light/dark
 layouts. These checks add no packet semantics; no privileged boundary changes.
+
+## OIDC connection configuration and solution
+
+Real loopback HTTPS checks cover UI-only provider setup, encrypted write-only
+secret retention, current local authority, retired challenges before code redemption,
+cookie retirement, disabled sign-in, audit rollback and restart persistence.
+The solution is `Nergal.slnx`; application projects are at root and all nine
+unit/integration fixture projects are in `Tests`. New connection-screen dark desktop
+and keyboard checks were performed; light/mobile captures remain unverified.

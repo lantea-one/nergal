@@ -1,0 +1,39 @@
+@model Nergal.Web.OidcConnectionPageModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Identity provider connection";
+    ViewData["ActiveNav"] = "settings";
+    var saved = Model.Connection;
+    var s = saved?.Settings;
+    var local = User.FindFirst(Nergal.Core.Identity.ControllerActorIdentity.ActorClaimType)?.Value.StartsWith("local:", StringComparison.Ordinal) == true;
+}
+<main id="main-content" tabindex="-1" class="container">
+    <div class="page-header"><div><h1>Identity provider connection</h1><p class="muted">Configure one OpenID Connect provider. Local sign-in remains available.</p></div></div>
+    <p><a href="@Url.Content("~/manage/settings#auth")">Back to settings</a> · <a href="@Url.Content("~/manage/identity/profiles")">Profile field mappings</a></p>
+    @if (Model.Error is not null) { <div class="alert alert-danger" role="alert">@Model.Error</div> }
+    @if (!local) { <div class="alert alert-warning" role="status">Sign in as a local Administrator to change provider trust or credentials.</div> }
+    <section class="card">
+        <h2>Connection settings</h2>
+        <p class="muted">@(saved is null ? "No UI-managed connection has been saved. Protected startup configuration may supply an initial connection." : "Saved connection settings take effect on the next request.")</p>
+        @if (saved is not null) { <p class="muted">Updated <time datetime="@saved.UpdatedUtc.ToString("O")" data-local-time>@saved.UpdatedUtc.ToString("O")</time> · Version @saved.Version</p> }
+        <form method="post" action="@Url.Content("~/manage/identity/connection/save")" class="form-stack">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="version" value="@(saved?.Version ?? 0)" />
+            <div class="form-grid">
+                <div class="field"><span class="switch-field-label">Provider sign-in</span>@await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", s?.Enabled ?? false, "Enable OpenID Connect sign-in", Disabled: !local))<small class="muted">Enable after entering the provider details. Disabling retains them.</small></div>
+                <div class="field span-2"><label for="provider-issuer">Issuer URL</label><input id="provider-issuer" type="url" name="issuer" value="@s?.Issuer" placeholder="https://identity.example.test/realms/example" maxlength="512" required disabled="@(!local)" /><small class="muted">Exact HTTPS issuer from provider discovery; no query or fragment.</small></div>
+                <div class="field"><label for="provider-client">Client ID</label><input id="provider-client" name="clientId" value="@s?.ClientId" maxlength="256" required disabled="@(!local)" /></div>
+                <div class="field span-2"><label for="provider-callback">Registered callback URL</label><input id="provider-callback" name="callbackUri" type="url" value="@s?.CallbackUri" placeholder="https://firewall.example.test/signin-oidc" maxlength="512" required disabled="@(!local)" /><small class="muted">Register this exact HTTPS URL at the provider. The path must be /signin-oidc.</small></div>
+                <div class="field span-2"><label for="provider-secret">@(saved?.HasSecret == true ? "Replacement client secret (optional)" : "Client secret")</label><input id="provider-secret" type="password" name="clientSecret" autocomplete="new-password" maxlength="4096" disabled="@(!local)" /><small class="muted">@(saved?.HasSecret == true ? "A secret is stored. Leave blank to retain it for the same issuer and client ID." : "Enter the confidential client's secret. It is encrypted at rest and never shown again.") Changing issuer or client ID requires a new secret.</small></div>
+            </div>
+            <h3>Access groups</h3><p class="muted">Group membership must come from the signed ID token. Values match exactly, including case. Supply at least one role group.</p>
+            <div class="form-grid">
+                <div class="field"><label for="provider-claim">Groups claim</label><input id="provider-claim" name="groupClaim" value="@(s?.GroupClaim ?? "groups")" maxlength="128" required disabled="@(!local)" /><small class="muted">Literal top-level claim name; expressions and nested lookups are unsupported.</small></div>
+                <div class="field span-2"><label for="provider-admins">Administrator groups</label><textarea id="provider-admins" name="administratorGroups" rows="3" maxlength="8224" disabled="@(!local)">@string.Join("\n", s?.AdministratorGroups ?? [])</textarea><small class="muted">One exact group per line, up to 32. No wildcards.</small></div>
+                <div class="field"><label for="provider-auditors">Auditor groups</label><textarea id="provider-auditors" name="auditorGroups" rows="3" maxlength="8224" disabled="@(!local)">@string.Join("\n", s?.AuditorGroups ?? [])</textarea><small class="muted">One per line. A group cannot appear in both roles.</small></div>
+            </div>
+            <div class="alert alert-warning">Saving replaces the active connection settings, invalidates existing provider sessions and cancels in-flight provider sign-ins. Local sessions remain available. No provider request is made until sign-in.</div>
+            <div><button type="submit" name="confirm" value="replace-trust" disabled="@(!local)">Save and replace provider settings</button></div>
+        </form>
+    </section>
+</main>

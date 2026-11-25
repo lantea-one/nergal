@@ -78,5 +78,8 @@ The [appliance-style administration console](appliance-console.md) now provides 
 [Local users and profiles](local-users-and-profiles.md) now provide explicit
 Administrator/Auditor access controls, last-administrator protection, revocation,
 atomic identity audit and personal metadata/password changes. Configurable external
-runtime provider setup, LDAP/OAuth profile adapters, email/TOTP MFA and charts remain M5 work. Signed [OIDC profile defaults](oidc-profile-defaults.md) and per-field overrides are implemented. New account
+LDAP/OAuth profile adapters, email/TOTP MFA and charts remain M5 work; live OIDC connections are UI-managed. Signed [OIDC profile defaults](oidc-profile-defaults.md) and per-field overrides are implemented. New account
 schemas target fresh pre-release installations; no legacy upgrade path is shipped.
+
+[Configure an OIDC connection](oidc-connection.md) through a versioned dedicated
+form with encrypted write-only secrets and trust-generation retirement.

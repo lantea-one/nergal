@@ -71,6 +71,7 @@ internal static class LocalSessionHost
         using (var scope = app.Services.CreateScope())
         {
             await scope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>().RequireProvisionedAsync();
+            await scope.ServiceProvider.GetRequiredService<OidcRequestConnection>().LoadAsync();
             // Exercise first-key persistence and historical decryption before listening.
             var protector = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>().CreateProtector("startup-readiness");
             if (protector.Unprotect(protector.Protect("ready")) != "ready")
@@ -89,8 +90,9 @@ internal static class LocalSessionHost
                 : context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
                            context.Request.Path.StartsWithSegments("/controller/policies", StringComparison.OrdinalIgnoreCase)
                 ? 524_288L
-                : context.Request.Path.StartsWithSegments("/manage/settings", StringComparison.OrdinalIgnoreCase)
-                    ? 16_384L
+                : context.Request.Path.StartsWithSegments("/manage/settings", StringComparison.OrdinalIgnoreCase) ||
+                           context.Request.Path.StartsWithSegments("/manage/identity/connection", StringComparison.OrdinalIgnoreCase)
+                    ? 32_768L
                     : 8192L;
             if (context.Request.ContentLength > maxBytes) { context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge; return; }
             if (context.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
@@ -98,6 +100,15 @@ internal static class LocalSessionHost
             await next();
         });
         app.UseRouting();
+        app.Use(async (context, next) =>
+        {
+            var connection = context.RequestServices.GetRequiredService<OidcRequestConnection>();
+            await connection.LoadAsync();
+            // Reject disabled challenges before the framework can perform discovery.
+            if (!connection.Enabled && context.Request.Path == "/login/oidc")
+            { context.Response.StatusCode = 404; return; }
+            await next();
+        });
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseRateLimiter();
@@ -108,6 +119,8 @@ internal static class LocalSessionHost
         app.MapControllerRoute("local-users", "manage/users", new { controller = "Users", action = "Index" });
         foreach (var action in new[] { "Create", "Update", "Revoke" })
         { app.MapControllerRoute("local-users-" + action, "manage/users/" + action.ToLowerInvariant(), new { controller = "Users", action }); }
+        app.MapControllerRoute("identity-connection", "manage/identity/connection", new { controller = "IdentityConnection", action = "Index" });
+        app.MapControllerRoute("identity-connection-save", "manage/identity/connection/save", new { controller = "IdentityConnection", action = "Save" });
         app.MapControllerRoute("profile-mappings", "manage/identity/profiles", new { controller = "IdentityProfiles", action = "Index" });
         app.MapControllerRoute("profile-mappings-save", "manage/identity/profiles/save", new { controller = "IdentityProfiles", action = "Save" });
         app.MapControllerRoute("user-profile", "profile", new { controller = "Profile", action = "Index" });

@@ -9,7 +9,7 @@ individual fields. Up to 16 exact-issuer mappings are supported.
 
 These controls map descriptive metadata. They do not activate sign-in or change
 the protected issuer, client, callback, group or role configuration. LDAP and
-generic OAuth profile adapters, runtime provider management and local MFA remain
+generic OAuth profile adapters and local MFA remain
 M5 work. Providers must include selected claims in the signed ID token. Nergal
 requests `openid profile email`; it does not call UserInfo or fetch remote images.
 
@@ -53,7 +53,7 @@ also supplies `email_verified`.
 
 ## Persistence and verification
 
-Account schema 3 stores current typed mappings, exact-actor provider observations,
+Account schema 4 stores current typed mappings, exact-actor provider observations,
 personal overrides and append-only identity audit in the protected identity store.
 Mapping and observation mutations commit their audit atomically. UTC instants are
 displayed in the browser's local timezone. Ordinary application startup refuses
@@ -82,3 +82,5 @@ provider credentials, account data or private topology.
 [mobile form](assets/screenshots/oidc-profile-mapping-mobile.jpg) share the same
 controls. [Personal overrides](assets/screenshots/m5-profile-light.jpg) are
 separate from provider defaults.
+
+Configure live provider trust and credentials on the separate [OIDC connection](oidc-connection.md) screen.

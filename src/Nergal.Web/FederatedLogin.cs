@@ -19,24 +19,15 @@ internal static class FederatedLogin
     internal const string Session = "nergal.federated-session";
     internal const string Browser = "nergal.browser-session";
     private static readonly object VerifiedProfilePayload = new();
-    private const string Cookie = "__Host-nergal-federated";
+    internal const string Cookie = "__Host-nergal-federated";
 
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     internal static void Configure(IServiceCollection services, IConfigurationSection config, IDataProtectionProvider keys)
     {
-        var adminGroups = config.GetSection("AdministratorGroups").GetChildren().Select(entry => entry.Value ?? "").ToArray();
-        if (adminGroups.Length == 0)
-        {
-            adminGroups = config.GetSection("AllowedGroups").GetChildren().Select(entry => entry.Value ?? "").ToArray();
-        }
-        var auditorGroups = config.GetSection("AuditorGroups").GetChildren().Select(entry => entry.Value ?? "").ToArray();
-        var policy = new FederatedAdministratorPolicy(config["Issuer"] ?? "", config["ClientId"] ?? "", config["GroupClaim"] ?? "",
-            adminGroups, auditorGroups);
-        if (!Uri.TryCreate(config["CallbackUri"], UriKind.Absolute, out var callback) || callback.Scheme != "https" ||
-            callback.UserInfo.Length != 0 || callback.PathAndQuery != "/signin-oidc" || callback.Fragment.Length != 0)
-        { throw new InvalidOperationException("A fixed direct HTTPS callback at /signin-oidc is required."); }
-        var secret = config["ClientSecret"];
-        if (string.IsNullOrWhiteSpace(secret) || secret.Length > 4096) { throw new InvalidOperationException("An OIDC client secret is required."); }
-        var issuer = new Uri(policy.Issuer);
+        services.AddSingleton(new OidcBootstrapConnection(config));
+        services.AddScoped<OidcRequestConnection>();
+        services.AddSingleton<OidcGenerationCache>();
+        services.AddScoped<Microsoft.Extensions.Options.IOptionsMonitor<OpenIdConnectOptions>, OidcRequestOptions>();
         services.AddSingleton(new FederatedSessions(TimeProvider.System));
         var auth = services.AddAuthentication(options => options.DefaultScheme = Browser);
         auth.AddPolicyScheme(Browser, null, options => options.ForwardDefaultSelector =
@@ -54,7 +45,9 @@ internal static class FederatedLogin
             cookie.Events.OnValidatePrincipal = context =>
             {
                 var principal = context.Principal;
-                if (!Registry(context.HttpContext).IsCurrent(principal?.FindFirstValue("sid"),
+                var connection = context.HttpContext.RequestServices.GetRequiredService<OidcRequestConnection>();
+                if (!connection.Enabled || principal?.FindFirstValue("nergal.oidc-generation") != connection.Generation ||
+                    !Registry(context.HttpContext).IsCurrent(principal?.FindFirstValue("sid"),
                     principal?.FindFirstValue("iss"), principal?.FindFirstValue("sub"), principal?.FindFirstValue(ClaimTypes.Role)))
                 { context.RejectPrincipal(); }
                 return Task.CompletedTask;
@@ -67,8 +60,18 @@ internal static class FederatedLogin
             cookie.Events.OnRedirectToLogin = BrowserResponses.LoginChallenge;
             cookie.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
         });
-        auth.AddOpenIdConnect(Protocol, options =>
+        auth.AddOpenIdConnect(Protocol, _ => { });
+        services.AddOptions<OpenIdConnectOptions>(Protocol).Configure<OidcRequestConnection>((options, connection) =>
         {
+            var generation = connection.Generation;
+            var runtime = connection.Runtime;
+            var settings = runtime?.Snapshot.Settings ?? new Nergal.Core.Identity.OidcConnectionSettings(false,
+                "https://disabled.invalid", "disabled", "https://disabled.invalid/signin-oidc", "groups", ["disabled"], []);
+            var policy = new FederatedAdministratorPolicy(settings.Issuer, settings.ClientId, settings.GroupClaim,
+                settings.AdministratorGroups, settings.AuditorGroups);
+            var callback = new Uri(settings.CallbackUri);
+            var issuer = new Uri(settings.Issuer);
+            var secret = runtime?.ClientSecret ?? "disabled";
             options.Authority = policy.Issuer;
             options.ClientId = policy.ClientId;
             options.ClientSecret = secret;
@@ -108,6 +111,8 @@ internal static class FederatedLogin
             };
             options.Events.OnRedirectToIdentityProvider = async context =>
             {
+                if (!settings.Enabled) { context.HandleResponse(); context.Response.StatusCode = 404; return; }
+                context.Properties.Items["nergal.oidc-generation"] = generation;
                 if (context.Request.PathBase.HasValue ||
                     !string.Equals(context.Request.Host.ToUriComponent(), callback.Authority, StringComparison.OrdinalIgnoreCase))
                 {
@@ -123,7 +128,7 @@ internal static class FederatedLogin
             options.Events.OnMessageReceived = async context =>
             {
                 var request = context.Request;
-                if (request.Method != HttpMethods.Post || request.QueryString.HasValue || !string.Equals(request.ContentType?.Split(';')[0].Trim(), "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase) ||
+                if (!settings.Enabled || request.Method != HttpMethods.Post || request.QueryString.HasValue || !string.Equals(request.ContentType?.Split(';')[0].Trim(), "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase) ||
                     !string.Equals(request.Host.ToUriComponent(), callback.Authority, StringComparison.OrdinalIgnoreCase) ||
                     request.PathBase.HasValue || request.Path != callback.AbsolutePath)
                 { context.Fail("Invalid callback."); return; }
@@ -136,6 +141,15 @@ internal static class FederatedLogin
                 // form submit controls). Never forward one to a protocol decision.
                 foreach (var key in context.ProtocolMessage.Parameters.Keys.Where(key => key is not ("code" or "state" or "iss" or "session_state")).ToArray())
                 { context.ProtocolMessage.RemoveParameter(key); }
+            };
+            options.Events.OnAuthorizationCodeReceived = async context =>
+            {
+                // Reject retired state before sending its authorization code to
+                // any token endpoint selected by a newer connection generation.
+                if (context.Properties is null || !context.Properties.Items.TryGetValue("nergal.oidc-generation", out var challengeGeneration) ||
+                    challengeGeneration != generation ||
+                    !await context.HttpContext.RequestServices.GetRequiredService<OidcRequestConnection>().IsCurrentAsync(generation))
+                { context.Fail("Retired federated connection."); }
             };
             options.Events.OnTokenValidated = context =>
             {
@@ -163,7 +177,11 @@ internal static class FederatedLogin
             options.Events.OnTicketReceived = async context =>
             {
                 if (!OperatingSystem.IsLinux()) { context.Fail("Federated profile unavailable."); return; }
+                if (context.Properties is null || !context.Properties.Items.TryGetValue("nergal.oidc-generation", out var challengeGeneration) || challengeGeneration != generation ||
+                    !await context.HttpContext.RequestServices.GetRequiredService<OidcRequestConnection>().IsCurrentAsync(generation))
+                { context.Fail("Retired federated connection."); return; }
                 var principal = context.Principal!;
+                ((ClaimsIdentity)principal.Identity!).AddClaim(new("nergal.oidc-generation", generation));
                 var role = principal.FindFirstValue(ClaimTypes.Role);
                 var issuer = principal.FindFirstValue("iss");
                 var subject = principal.FindFirstValue("sub");

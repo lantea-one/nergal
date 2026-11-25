@@ -232,6 +232,60 @@ public sealed class LocalUserManagementTests
             f.Run(a => a.VerifyAsync("fixture-admin", Password)))).Code);
     }
 
+    /// <summary>Secret storage is purpose-bound, write-only, versioned, and cannot be replaced by stale or nonlocal actors.</summary>
+    [Fact]
+    public async Task OidcConnection_EncryptsSecretsAndRequiresCurrentLocalAuthority()
+    {
+        await using var f = await Fixture.Create();
+        var admin = await f.SignIn("fixture-admin");
+        var keys = new EphemeralDataProtectionProvider();
+        var settings = new OidcConnectionSettings(true, "https://identity.example.test", "client", "https://firewall.example.test/signin-oidc", "groups", ["admins"], ["auditors"]);
+        Assert.Null(await f.Run(a => a.ReadOidcConnectionAsync(admin)));
+        Assert.Equal(["provider.secretRequired"], (await f.Run(a => a.SaveOidcConnectionAsync(admin, 0, settings, "", keys))).ErrorCodes);
+        const string secret = "synthetic-client-secret-0001";
+        Assert.True((await f.Run(a => a.SaveOidcConnectionAsync(admin, 0, settings, secret, keys))).Succeeded);
+        var snapshot = (await f.Run(a => a.ReadOidcConnectionAsync(admin)))!;
+        Assert.Equal(1, snapshot.Version); Assert.True(snapshot.HasSecret);
+        Assert.DoesNotContain(secret, (string)f.Scalar("SELECT ProtectedSecret FROM OidcConnection")!);
+        Assert.Equal(secret, (await f.Run(a => a.ReadOidcRuntimeAsync(keys)))!.ClientSecret);
+        Assert.Equal("provider.secretUnavailable", (await Assert.ThrowsAsync<AccountStoreException>(() => f.Run(a => a.ReadOidcRuntimeAsync(new EphemeralDataProtectionProvider())))).Code);
+        Assert.Equal(["provider.stale"], (await f.Run(a => a.SaveOidcConnectionAsync(admin, 0, settings, secret, keys))).ErrorCodes);
+        Assert.True((await f.Run(a => a.SaveOidcConnectionAsync(admin, 1, settings, "", keys))).Succeeded);
+        Assert.Equal(secret, (await f.Run(a => a.ReadOidcRuntimeAsync(keys)))!.ClientSecret);
+        var other = new OidcConnectionSettings(true, "https://other.example.test", "client", settings.CallbackUri, "groups", ["admins"], []);
+        Assert.Equal(["provider.secretRequired"], (await f.Run(a => a.SaveOidcConnectionAsync(admin, 2, other, "", keys))).ErrorCodes);
+        await Denied(() => f.Run(a => a.ReadOidcConnectionAsync(External(settings.Issuer, "auditor"))));
+        var external = External(settings.Issuer, "administrator");
+        ((ClaimsIdentity)external.Identity!).RemoveClaim(external.FindFirst(ClaimTypes.Role)!);
+        ((ClaimsIdentity)external.Identity!).AddClaim(new(ClaimTypes.Role, NergalRoles.Administrator));
+        Assert.Equal(["provider.localAdministratorRequired"], (await f.Run(a => a.SaveOidcConnectionAsync(external, 2, settings, secret, keys))).ErrorCodes);
+        var user = Assert.Single(await f.Run(a => a.ListUsersAsync(admin)));
+        Assert.True((await f.Run(a => a.RevokeUserAsync(admin, user.Id, user.Version))).Succeeded);
+        await Denied(() => f.Run(a => a.SaveOidcConnectionAsync(admin, 2, settings, secret, keys)));
+    }
+
+    /// <summary>Audit failure cannot partially replace trust; missing rows or tampered ciphertext never restore bootstrap trust.</summary>
+    [Fact]
+    public async Task OidcConnection_AuditFailureAndStoredCorruptionFailClosed()
+    {
+        await using var f = await Fixture.Create();
+        var admin = await f.SignIn("fixture-admin");
+        var keys = new EphemeralDataProtectionProvider();
+        var settings = new OidcConnectionSettings(true, "https://identity.example.test", "client", "https://firewall.example.test/signin-oidc", "groups", ["admins"], []);
+        Assert.True((await f.Run(a => a.SaveOidcConnectionAsync(admin, 0, settings, "synthetic-secret", keys))).Succeeded);
+        var events = f.Count("IdentityAudit");
+        f.Sql("CREATE TRIGGER fixture_connection_audit_failure BEFORE INSERT ON IdentityAudit BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END");
+        await Assert.ThrowsAsync<AccountStoreException>(() => f.Run(a => a.SaveOidcConnectionAsync(admin, 1, settings, "replacement-secret", keys)));
+        Assert.Equal(events, f.Count("IdentityAudit"));
+        Assert.Equal(1, (await f.Run(a => a.ReadOidcConnectionAsync(admin)))!.Version);
+        Assert.Equal("synthetic-secret", (await f.Run(a => a.ReadOidcRuntimeAsync(keys)))!.ClientSecret);
+        f.Sql("DROP TRIGGER fixture_connection_audit_failure");
+        f.Sql("UPDATE OidcConnection SET ProtectedSecret='tampered'");
+        Assert.Equal("provider.secretUnavailable", (await Assert.ThrowsAsync<AccountStoreException>(() => f.Run(a => a.ReadOidcRuntimeAsync(keys)))).Code);
+        f.Sql("DELETE FROM OidcConnection");
+        Assert.Equal("account.corrupt", (await Assert.ThrowsAsync<AccountStoreException>(() => f.Run(a => a.ReadOidcRuntimeAsync(keys)))).Code);
+    }
+
     private static ClaimsPrincipal External(string issuer, string subject) => new(new ClaimsIdentity([
         new("iss", issuer), new("sub", subject), new(ClaimTypes.Name, "same-name"), new(ClaimTypes.Email, "same@example.test"),
         new(ClaimTypes.Role, NergalRoles.Auditor), new(ControllerActorIdentity.ActorClaimType, ControllerActorIdentity.FromFederatedAccount(issuer, subject)),

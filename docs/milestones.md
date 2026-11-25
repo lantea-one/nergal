@@ -136,8 +136,8 @@ TOTP/authenticator MFA, administrator email-delivery screens, optional enrollmen
 and a requirement policy for Administrators/all/neither. Federated bypass must be
 explicit per provider, optionally requiring a configured MFA assurance claim.
 LDAP sign-in follows local MFA requirements. Signed OIDC profile mapping and
-per-field local overrides are implemented and verified; runtime provider setup,
-generic OAuth/LDAP mapping and local MFA remain open.
+per-field local overrides and UI-managed live OIDC connection settings are
+implemented and verified; generic OAuth/LDAP mapping and local MFA remain open.
 
 This project has not been released publicly. New schema work targets fresh
 installations; do not add legacy account upgrade paths or compatibility shims.

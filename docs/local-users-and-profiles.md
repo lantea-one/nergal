@@ -54,7 +54,7 @@ Passwords never enter view models or audit events.
 
 ## Storage and audit
 
-The private credential database uses account schema 3 with explicit role claims,
+The private credential database uses account schema 4 with explicit role claims,
 per-account state, personal profiles and append-only identity audit. Mappings and provider observations remain separate from local metadata overrides. The former
 singleton slot is removed. Missing roles fail closed; there is no implicit
 Administrator default. Initialization creates no user; offline provisioning remains

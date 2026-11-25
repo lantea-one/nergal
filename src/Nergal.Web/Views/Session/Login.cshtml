@@ -30,7 +30,8 @@
             <button type="submit" style="width: 100%;">Sign in</button>
         </form>
 
-        @if (Url.RouteUrl("federated-login", new { controller = "Session", action = "Federated" }) is string federatedUrl)
+        @if (Context.RequestServices.GetService<Nergal.Web.OidcRequestConnection>()?.Enabled == true &&
+            Url.RouteUrl("federated-login", new { controller = "Session", action = "Federated" }) is string federatedUrl)
         {
             <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.25rem 0;" />
             <form method="post" action="@federatedUrl">
