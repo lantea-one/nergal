@@ -26,6 +26,20 @@
                 { <p>Source structure is complete: @structure.GroupCount delimiter groups, maximum nesting @structure.MaximumDepth.</p> }
                 else
                 { <p>Source structure is incomplete. No partial tree or topic inventory is used.</p> }
+                @if (source.Analysis.RuleParsing is { IsAvailable: true } parsing)
+                {
+                    <p>@parsing.ParsedRules of @parsing.TotalRules rule statements parsed by the current expression grammar.
+                        Parsed rules still require scope, ownership and complete semantic mapping.</p>
+                    @if (parsing.Diagnostics.Count > 0)
+                    {
+                        <ul>
+                        @foreach (var failure in parsing.Diagnostics.Take(20))
+                        { <li><code>@failure.Code</code>: line @failure.Span.Line, column @failure.Span.Column. The entire rule remains unmapped.</li> }
+                        </ul>
+                        @if (parsing.Diagnostics.Count > 20)
+                        { <p>Additional rule diagnostics are available in the review download.</p> }
+                    }
+                }
                 <p>These checks retain source structure for mapping; they do not validate native rule semantics or resolve includes. Conversion remains blocked.</p>
             </details>
             @if (source.Review.Signals.Count > 0)

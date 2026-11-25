@@ -65,7 +65,7 @@ public static class NativeMigrationReviewer
     /// <exception cref="ArgumentNullException">Source is null.</exception>
     public static NativeMigrationReview Review(string source) => NativeSourceAnalyzer.Analyze(source).Review;
 
-    internal static NativeMigrationReview Review(NativeSourceStructureResult structure, NativeSourceDeclarations? declarations)
+    internal static NativeMigrationReview Review(NativeSourceStructureResult structure, NativeSourceDeclarations? declarations, NativeRuleCatalog? rules)
     {
         if (structure.Tree is not { } tree) { return Incomplete(structure.Summary.Diagnostic!.Code); }
         ArgumentNullException.ThrowIfNull(declarations);
@@ -93,6 +93,11 @@ public static class NativeMigrationReviewer
         {
             signals.Add(new("source.unclassifiedStatements", "Map unclassified source statements explicitly; none may be discarded.",
                 MigrationSignalKind.SourceResolution, Array.AsReadOnly(declarations.Diagnostics.Select(d => d.Span.Line).Distinct().ToArray())));
+        }
+        if (rules is { Summary.Diagnostics.Count: > 0 })
+        {
+            signals.Add(new("source.unparsedRules", "Resolve every unparsed rule expression; no partial rule may be converted.",
+                MigrationSignalKind.SourceResolution, Array.AsReadOnly(rules.Summary.Diagnostics.Select(d => d.Span.Line).Distinct().ToArray())));
         }
         return new(true, null, declarations.TableCount, declarations.ChainCount, signals.AsReadOnly());
     }

@@ -14,7 +14,7 @@ grammar or server include resolution is introduced. See
 
 The shared analysis also builds one bounded delimiter tree over that same original
 document before producing an inventory. No partial tree/inventory survives failure;
-schema-2 reports expose only counts and value-free positions, never private tokens.
+schema-3 reports expose only counts and value-free positions, never private tokens.
 This is structural accounting, not the complete native grammar or semantic mapper.
 See [ADR 0052](decisions/0052-bounded-native-source-structure.md).
 
@@ -23,6 +23,13 @@ root table and table-local chain headers contribute to declaration counts. Raw
 expressions, object bodies and native commands remain private source data; unknown
 heads produce explicit masked review gaps. This is head classification, not typed
 conversion. See [ADR 0053](decisions/0053-native-source-declaration-partition.md).
+
+The same declaration catalog now supplies whole-rule expression results for a
+bounded literal grammar. Every considered rule has one complete private typed
+result or one positioned diagnostic; no successful prefix survives failure.
+Schema-3 reports serialize only rule counts/failures. Context, definitions, object
+resolution and complete policy mapping remain unresolved; conversion stays blocked.
+See [ADR 0054](decisions/0054-native-rule-expression-slice.md).
 
 The first milestone is an independently implemented, native nftables management
 application, not a new packet-filtering engine. The kernel continues to enforce

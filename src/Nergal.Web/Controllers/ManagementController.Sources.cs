@@ -76,7 +76,7 @@ public sealed partial class ManagementController
         var snapshot = store.ReadNativeSource(sourceId);
         if (snapshot is null) { return NotFound(); }
         var source = new NativePolicySource(snapshot.Content.Name, snapshot.Content.Text, snapshot.Content.Digest);
-        var report = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review, source.Analysis.Structure.Summary);
+        var report = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review, source.Analysis.Structure.Summary, source.Analysis.RuleParsing);
         return File(JsonSerializer.SerializeToUtf8Bytes(report, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

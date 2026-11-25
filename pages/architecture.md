@@ -12,12 +12,14 @@ nergal separates policy authoring, compilation, identity/session handling, and k
 ## Solution Layering
 
 Native source viewing/import shares one bounded analysis pipeline: a lossless
-token document, immutable delimiter tree and masked inventory. Schema-2 reports
+token document, immutable delimiter tree and masked inventory. Schema-3 reports
 expose counts and diagnostic positions, without private tokens or partial results.
 An ordered contextual statement partition retains every original node and raw
 expression; unknown heads produce masked review gaps. Table/chain counts require
 proper declaration scope. This head classification does not parse rule semantics.
-Structural completion does not grant conversion authority; semantic mapping and
+A bounded literal expression parser now consumes complete rules or records a
+positioned failure without a partial typed result. Schema-3 reports expose only
+its counts/diagnostics. Structural completion does not grant conversion authority; semantic mapping and
 explicit include resolution remain M4 work. See [the source workflow](native-source-library.md).
 
 - **`Nergal.Core`**: Framework-independent domain POCOs (`FilterPolicy`, `NatPolicy`, `BridgePolicy`, `FirewallPolicyBundle`, `PolicyBundleJsonCodec`, `AgentControlRequest`/`Reply`, `ApplySession`). No ASP.NET, SQLite, or shell dependencies.

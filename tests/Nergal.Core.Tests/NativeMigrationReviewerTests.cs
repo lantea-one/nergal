@@ -45,7 +45,8 @@ public sealed class NativeMigrationReviewerTests
             } }
             """);
         Assert.True(review.InventoryComplete);
-        Assert.Empty(review.Signals);
+        Assert.Equal("source.unparsedRules", Assert.Single(review.Signals).Code);
+        Assert.DoesNotContain(review.Signals, s => s.Code is "gap.counters" or "gap.notrack" or "gap.maps" or "source.includes");
         Assert.Equal(1, review.TableDeclarations);
         Assert.False(review.CanConvert);
     }

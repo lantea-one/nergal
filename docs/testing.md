@@ -1,5 +1,15 @@
 # Testing standards
 
+Whole-rule expression tests cover typed literal/direction/family retention,
+repeated predicate order, negation, complete consumption, exact diagnostics,
+unresolved references, ambiguous/invalid values and inclusive predicate/set bounds.
+No partial rule survives failure. Schema-3 HTTPS checks verify value-free summaries,
+viewer positions and unchanged source bytes; structural failure makes rule parsing
+unavailable. These checks do not establish native semantic or packet equivalence
+(ADR 0054). Representative inet and bridge literal examples were also checked
+with `nft --check` in disposable Docker network namespaces using synthetic inputs;
+this checks syntax/kernel acceptance without applying rules or testing packets.
+
 Declaration partition regressions cover every original node in scope/order, named
 blocks versus anonymous expressions, directive/command retention, continued
 headers, unknown head positions, immutable collections and maximum-width input.
@@ -10,9 +20,9 @@ packet equivalence (ADR 0053).
 Native structure regressions cover exact ordered token coverage, nested spans,
 opaque quoted/comment contents, unknown input, immutable nodes, inclusive 64-group
 depth and value-free missing/mismatched delimiter positions. The shared review
-returns no partial inventory on structural failure. HTTPS checks verify schema-2
+returns no partial inventory on structural failure. HTTPS checks verify schema-3
 source-bound reports, matching viewer positions and exact original downloads after
-failure. The legacy report constructor remains schema 1. These checks establish
+failure. Legacy report constructors retain schemas 1/2. These checks establish
 structural contracts, not complete nft syntax or packet equivalence (ADR 0052).
 
 Saved revision export regressions cover exact native digests, every table scope,
