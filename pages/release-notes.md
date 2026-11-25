@@ -253,3 +253,12 @@ set-element drift, actual dynamic-meter packets and capability denial. This guar
 collection consistency; competing privileged writers remain unsupported and native
 static references are now implemented; semantic import remains M4. No UI or screenshot changes accompany
 this internal observation boundary.
+
+## Appliance navigation and focused overview (M5 in progress)
+
+Add a persistent appliance-style sidebar, focused host connection management and
+state-based overview guidance. Put rule tables and Add actions before expandable
+advanced sections. Preserve unsaved draft fields during local firewall navigation,
+provide accessible keyboard tabs/mobile Menu, and retain authorization, pinned
+references and confirmed-apply boundaries. Shared application/Pages styling stays
+identical. See the [console guide](appliance-console.md); local people/profiles and observation-backed charts remain M5 work.

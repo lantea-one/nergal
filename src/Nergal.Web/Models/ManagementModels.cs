@@ -25,6 +25,12 @@ public sealed class HostHealthSummary
 /// <summary>View model for the controller overview and host fleet dashboard.</summary>
 public sealed class FleetDashboardViewModel
 {
+    /// <summary>Gets whether the explicitly configured agent control workflow is available.</summary>
+    public bool ControlEnabled { get; init; }
+
+    /// <summary>Gets a state-derived navigation suggestion without issuing an agent operation.</summary>
+    public DashboardNextAction NextAction => DashboardGuidance.Describe(CanMutate, ControlEnabled, LatestRevision is not null, Hosts.Count, HostHealth);
+
     /// <summary>Gets canonical authenticated actor identifier.</summary>
     public required string ActorId { get; init; }
 
@@ -87,6 +93,9 @@ public sealed class SystemSettingsViewModel
 /// <summary>View model for the typed policy bundle editor, compatibility report, and diff preview.</summary>
 public sealed class PolicyEditorViewModel
 {
+    /// <summary>Gets an explicitly requested, allowlisted firewall subsection; null retains normal tab selection.</summary>
+    public string? InitialSection { get; init; }
+
     /// <summary>Gets authenticated controller RBAC role.</summary>
     public required string ActorRole { get; init; }
 

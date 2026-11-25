@@ -85,3 +85,12 @@
 
 ### Verification
 - Verified across deterministic xUnit unit suites (`Nergal.Core.Tests`, `Nergal.LocalState.Tests`, `Nergal.Web.Tests`) and unprivileged disposable user/network namespace kernel integration suites enforcing real dual-stack packet filtering, NAT/bridge compilation, cross-UID isolation, watchdog crash recovery, OIDC/HTTPS sessions, and end-to-end unprivileged Kestrel -> `nergal-agent` packet rollback.
+
+## Appliance navigation and focused overview (M5 in progress)
+
+Add a persistent appliance-style sidebar, focused host connection management and
+state-based overview guidance. Put rule tables and Add actions before expandable
+advanced sections. Preserve unsaved draft fields during local firewall navigation,
+provide accessible keyboard tabs/mobile Menu, and retain authorization, pinned
+references and confirmed-apply boundaries. Shared application/Pages styling stays
+identical. See the [console guide](docs/appliance-console.md); local people/profiles and observation-backed charts remain M5 work.

@@ -136,3 +136,9 @@ linked revision plus pinned lists. Apply remains a separate agent workflow.
 Native meter update/add expiry is explicit intent and native operation-only drift
 is detected. See the [conversion guide](native-source-library.md) for supported
 grammar, offline upgrades and independent packet/rollback evidence.
+
+The first M5 [appliance-console](appliance-console.md) slice separates presentation
+from privilege. Pure state-based guidance only chooses navigation; pending/recovery
+states outrank setup, and unknown observations never imply healthy/applied state.
+A dedicated reader Hosts page retains existing Administrator/CSRF mutation routes.
+Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.

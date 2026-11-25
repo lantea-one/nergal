@@ -781,3 +781,15 @@ agent confirm, explicit rollback, independent timed rollback, restart, collision
 drift-denial scenarios, including named sets. These fixtures use synthetic data and
 isolated namespaces. They establish the declared conversion slice, not arbitrary
 nft language support, private-server migration completeness or production authority.
+
+## Appliance navigation and overview guidance
+
+`DashboardGuidanceTests` verifies pending/recovery priority, Auditor inspection,
+missing/unknown observations and the distinction between matched baseline and
+latest saved intent. Management tests cover dedicated Hosts access and allowlisted
+section routing. The real HTTPS fixture checks empty-installation guidance, no
+configuration writes on navigation, unknown/duplicate section denial, host
+registration/removal, CSRF and anonymous/Auditor restrictions. Browser QA verifies
+draft JSON/change-note/unfinished-field retention across local sidebar sections,
+arrow-key tabs, actual CodeMirror, mobile Menu/Escape and empty/populated light/dark
+layouts. These checks add no packet semantics; no privileged boundary changes.

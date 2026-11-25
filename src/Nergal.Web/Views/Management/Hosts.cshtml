@@ -1,0 +1,141 @@
+@model Nergal.Web.FleetDashboardViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Hosts";
+    ViewData["ActiveNav"] = "hosts";
+    ViewData["ActorRole"] = Model.ActorRole;
+    ViewData["ShowManageNav"] = true;
+}
+<main class="container" id="main-content" tabindex="-1">
+    <div class="page-header"><div><p class="eyebrow">System / Connections</p><h1>Hosts</h1>
+        <p class="page-subtitle">Manage connections to enrolled firewall agents. Registering a connection does not apply a policy.</p></div></div>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    { <p class="alert alert-danger" role="alert">@Model.ErrorMessage</p> }
+    @if (!Model.ControlEnabled)
+    { <p class="alert alert-info">Live agent control is not configured on this controller. Connections can be registered, but their current firewall state has not been checked.</p> }
+    <section class="card">
+        <div class="card-header">
+            <h2>Managed hosts (@Model.Hosts.Count)</h2>
+            @if (Model.Hosts.Count > 0)
+            {
+                <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/apply")">Inspect live agent status</a>
+            }
+        </div>
+        @if (Model.Hosts.Count == 0)
+        {
+            <p class="muted mb-0">No managed hosts registered yet. Connect an already enrolled agent below. Its local operator establishes the trust boundary before registration.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Host Name</th>
+                            <th>Live Status</th>
+                            <th>Transport</th>
+                            <th>Connection details</th>
+                            <th>Revision</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var health in Model.HostHealth)
+                        {
+                            var host = health.Host;
+                            var statusBadge = health.StateLabel switch
+                            {
+                                "matched" or "online" => "badge-success",
+                                "pending" => "badge-primary",
+                                "drift" or "missing" => "badge-warning",
+                                "unavailable" => "badge-danger",
+                                _ => "badge-neutral",
+                            };
+                            <tr>
+                                <td><strong>@host.Name</strong></td>
+                                <td>
+                                    <span class="badge @statusBadge">@health.StateLabel</span>
+                                    @if (!string.IsNullOrEmpty(health.ErrorCode))
+                                    {
+                                        <span class="muted">(@health.ErrorCode)</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @(host.TransportKind == Nergal.Core.Controller.AgentTransportKind.Tls ? "badge-primary" : "badge-neutral")">
+                                        @host.TransportKind
+                                    </span>
+                                </td>
+                                <td><details class="disclosure"><summary>Connection and identity</summary>
+                                    <p><code>@host.Endpoint</code></p><p>Expected peer: <code>@(host.PinnedServerThumbprint ?? $"uid={host.ExpectedServerUserId?.ToString() ?? "-"}")</code></p>
+                                    @if (host.SocketGroupId is { } group) { <p>Socket group: <code>@group</code></p> }
+                                </details></td>
+                                <td><span class="badge badge-neutral">@(health.Reachable ? "Reported" : "Last recorded") revision @(health.ReportedRevision ?? host.LastKnownRevision)</span></td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/apply?hostId={host.Id:D}")">Apply / Status</a>
+                                        @if (Model.CanMutate)
+                                        {
+                                            <form class="inline-form" method="post" action="@Url.Content("~/manage/hosts/delete")">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@host.Id.ToString("D")" />
+                                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @if (Model.CanMutate)
+    {
+        <section class="card">
+            <div class="card-header">
+                <h2>Register agent host</h2>
+                <span class="badge badge-neutral">Administrator</span>
+            </div>
+            <p class="hint">Choose a remote pinned mTLS agent or a local Unix socket. Obtain the exact endpoint and expected identity from the agent's local operator; this page cannot enroll a host or create its credentials.</p>
+            <form method="post" action="@Url.Content("~/manage/hosts/add")">
+                @Html.AntiForgeryToken()
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="host-name">Host name</label>
+                        <input id="host-name" aria-describedby="host-name-help" type="text" name="name" placeholder="edge-gw-01" required maxlength="128" />
+                        <p id="host-name-help" class="hint">Use letters, digits, dots, underscores or hyphens; no spaces.</p>
+                    </div>
+                    <div class="field">
+                        <label for="host-transport">Transport</label>
+                        <select id="host-transport" name="transportKind" data-transport-select>
+                            <option value="tls">tls (Pinned TLS 1.3 mTLS)</option>
+                            <option value="unix">unix (Local SO_PEERCRED socket)</option>
+                        </select>
+                    </div>
+                    <div class="field span-2">
+                        <label for="host-endpoint">Endpoint</label>
+                        <input id="host-endpoint" type="text" name="endpoint" placeholder="192.0.2.10:8443 or /run/nergal/control.sock" required maxlength="512" />
+                    </div>
+                    <div class="field span-2" data-transport-only="tls">
+                        <label for="host-pin">Pinned Server SHA-256 Thumbprint (64 hex chars)</label>
+                        <input id="host-pin" type="text" name="pinnedServerThumbprint" placeholder="64 lowercase hex characters" maxlength="64" />
+                    </div>
+                    <div class="field" data-transport-only="unix">
+                        <label for="host-uid">Expected Server UID</label>
+                        <input id="host-uid" type="text" name="expectedServerUserId" placeholder="0" />
+                    </div>
+                    <div class="field" data-transport-only="unix">
+                        <label for="host-gid">Socket Group ID (optional)</label>
+                        <input id="host-gid" type="text" name="socketGroupId" placeholder="nergal-ctl GID" />
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <button type="submit">Register host</button>
+                </div>
+            </form>
+        </section>
+    }
+
+</main>

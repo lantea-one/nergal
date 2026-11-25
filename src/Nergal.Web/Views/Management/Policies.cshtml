@@ -4,21 +4,22 @@
 @using Nergal.Core.Policy
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = "Policy builder & diff";
+    ViewData["Title"] = "Firewall";
     ViewData["ActiveNav"] = "policies";
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
+    ViewData["PolicySection"] = Model.InitialSection ?? "filter";
     var bundle = Model.Bundle;
     var filterCount = bundle?.Filter.Rules.Count ?? 0;
     var natCount = (bundle?.Nat?.DnatRules.Count ?? 0) + (bundle?.Nat?.SnatRules.Count ?? 0);
     var bridgeCount = bundle?.Bridge?.Rules.Count ?? 0;
 }
-<main class="container" data-tab-scope="policies" data-initial-tab="@(bundle is null ? "tab-json" : "")">
+<main id="main-content" tabindex="-1" class="container" data-tab-scope="policies" data-initial-tab="@(bundle is null ? "tab-json" : Model.InitialSection is { } selectedSection ? "tab-" + selectedSection : "")">
     <div class="page-header">
         <div>
-            <h1>Policy bundle builder &amp; candidate diff</h1>
+            <p class="eyebrow">Firewall / Configuration</p><h1>Firewall</h1>
             <p class="page-subtitle">
-                Build dual-stack Filter, NAT, and L2 Bridge policies visually, preview native <code>nftables</code> diffs, and save immutable revisions.
+                Manage rules, NAT and bridge filtering. Edits remain drafts until you review and save a revision.
             </p>
         </div>
         <div class="btn-group">
@@ -102,18 +103,18 @@
 
     <!-- Section Tabs -->
     <div class="tabs" role="tablist" aria-label="Policy bundle sections">
-        <button type="button" class="tab-btn active" role="tab" data-tab-target="tab-filter">Filter (@filterCount)</button>
+        <button type="button" class="tab-btn active" role="tab" data-tab-target="tab-filter">Rules (@filterCount)</button>
         <button type="button" class="tab-btn" role="tab" data-tab-target="tab-nat">NAT (@natCount)</button>
         <button type="button" class="tab-btn" role="tab" data-tab-target="tab-bridge">Bridge (@bridgeCount)</button>
-        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-preview">Candidate &amp; Diff</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-preview">Review &amp; export</button>
         <button type="button" class="tab-btn" role="tab" data-tab-target="tab-json">Advanced JSON &amp; Revisions</button>
     </div>
 
     <!-- TAB 1: FILTER -->
-    <div class="tab-panel" data-tab-panel="tab-filter">
+    <div class="tab-panel" id="tab-filter" tabindex="-1" data-tab-panel="tab-filter">
         @if (Model.CanMutate && bundle is not null)
         {
-            <section class="card">
+            <details class="card settings-disclosure"><summary>Default actions and policy version</summary>
                 <div class="card-header">
                     <h2>Filter chain defaults (<code>inet nergal_filter</code>)</h2>
                     <span class="badge badge-primary">Schema v@(bundle.Filter.SchemaVersion)</span>
@@ -157,12 +158,13 @@
                         </div>
                     </div>
                 </form>
-            </section>
+            </details>
         }
 
         <section class="card">
             <div class="card-header">
                 <h2>Filter rules (@filterCount)</h2>
+                @if (Model.CanMutate) { <a class="btn btn-secondary btn-sm" href="#new-filter-rule" data-open-details>Add rule</a> }
             </div>
             @if (bundle is null || bundle.Filter.Rules.Count == 0)
             {
@@ -174,17 +176,13 @@
                     <table class="policy-rules-table rule-state-table">
                         <thead>
                             <tr>
-                                <th>#</th><th>Enabled state</th>
-                                <th>Chain</th>
-                                <th>Family</th>
-                                <th>Protocol</th>
+                                <th>#</th><th>Enabled state</th><th>Verdict</th>
+                                <th>Chain / interfaces</th>
+                                <th>Family / protocol</th>
                                 <th>Source</th>
                                 <th>Destination</th>
                                 <th>Ports</th>
-                                <th>Interfaces</th>
-                                <th>States / Rate</th>
-                                <th>Verdict</th>
-                                <th>Description</th>
+                                <th>Conditions / description</th>
                                 @if (Model.CanMutate)
                                 {
                                     <th>Order / Edit / Remove</th>
@@ -218,44 +216,36 @@
                                 <tr>
                                     <td>@(idx + 1)</td>
                                     <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Filter, idx, null, r.Enabled, "Filter rule " + (idx + 1))))</td>
-                                    <td><code>@r.Chain.ToString().ToLowerInvariant()</code></td>
-                                    <td><code>@r.Family.ToString().ToLowerInvariant()</code></td>
                                     <td>
-                                        <code>@r.Protocol.ToString().ToLowerInvariant()</code>
+                                        <span class="badge @(r.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
+                                            @r.Verdict.ToString().ToLowerInvariant()
+                                        </span>
+                                    </td>
+                                    <td class="rule-location"><code>@r.Chain.ToString().ToLowerInvariant()</code>
+                                        @if (ifaceText != "any") { <span class="rule-desc">@ifaceText</span> }
+                                    </td>
+                                    <td class="rule-protocol">
+                                        <code>@r.Family.ToString().ToLowerInvariant() · @r.Protocol.ToString().ToLowerInvariant()</code>
                                         @if (!string.IsNullOrEmpty(r.IcmpType)) { <span>(<code>@r.IcmpType</code>)</span> }
                                     </td>
-                                    <td>
+                                    <td class="rule-address">
                                         <code>@(r.NegateSource ? "!= " : "")@srcText</code>
                                         @if (r.SourceMac is not null || r.SourceMacs is not null)
                                         {
                                             <span class="rule-desc">MAC @(r.NegateSourceMac ? "!= " : "")@(r.SourceMac?.Value ?? string.Join(", ", r.SourceMacs!.Select(m => m.Value)))</span>
                                         }
                                     </td>
-                                    <td><code>@(r.NegateDestination ? "!= " : "")@dstText</code></td>
+                                    <td class="rule-address"><code>@(r.NegateDestination ? "!= " : "")@dstText</code></td>
                                     <td><code>@portText</code></td>
-                                    <td><code>@ifaceText</code></td>
                                     <td>
                                         @if (r.ConnectionStates != ConnectionStateFlags.None) { <code>@r.ConnectionStates</code> }
                                         @if (r.MatchOriginalDestinationDnat) { <span class="badge badge-warning">ct dnat</span> }
                                         @if (r.RateLimit is { } rl) { <span class="badge badge-neutral">@rl.PacketsPerWindow/@rl.WindowUnit.ToString().ToLowerInvariant() · @(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "per destination" : "per source")</span> }
                                         @if (r.ConnectionStates == ConnectionStateFlags.None && !r.MatchOriginalDestinationDnat && r.RateLimit is null) { <span class="muted">stateless</span> }
-                                    </td>
-                                    <td>
-                                        <span class="badge @(r.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                            @r.Verdict.ToString().ToLowerInvariant()
-                                        </span>
+                                        @if (!string.IsNullOrEmpty(r.Description)) { <span class="rule-desc">@r.Description</span> }
                                     </td>
 
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(r.Description))
-                                        {
-                                            <span class="rule-desc">@r.Description</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="muted">—</span>
-                                        }
-                                    </td>
+
                                     @if (Model.CanMutate)
                                     {
                                         <td>
@@ -410,26 +400,9 @@
             }
         </section>
 
-        @if (Model.CanMutate && bundle is not null && bundle.Filter.Rules.Count > 0)
-        {
-            <section class="card" aria-labelledby="filter-conditions-heading">
-                <h2 id="filter-conditions-heading">MAC, negation &amp; meter conditions</h2>
-                @for (var i = 0; i < bundle.Filter.Rules.Count; i++)
-                {
-                    if (bundle.Filter.Rules[i] is not null)
-                    { @await Html.PartialAsync("_FilterConditions", new Nergal.Web.FilterConditionsFormModel(Model, i)) }
-                }
-            </section>
-        }
-
-        @await Html.PartialAsync("_AuxiliaryForms", Model)
-        @await Html.PartialAsync("_RawMssForms", Model)
-        @await Html.PartialAsync("_AdvancedRuleStates", Model)
-        @await Html.PartialAsync("_PolicyObjects", Model)
-
         @if (Model.CanMutate)
         {
-            <section class="card">
+            <details class="card settings-disclosure" id="new-filter-rule" open="@(filterCount == 0)"><summary>Add filter rule</summary>
                 <div class="card-header">
                     <h2>Add filter rule</h2>
                     <span class="badge badge-neutral">Supports inline CIDR/port sets &amp; rate limiting</span>
@@ -564,12 +537,30 @@
                         <button type="submit">Add filter rule to draft</button>
                     </div>
                 </form>
-            </section>
+            </details>
         }
+        @if (Model.CanMutate && bundle is not null && bundle.Filter.Rules.Count > 0)
+        {
+            <details class="card settings-disclosure"><summary>MAC, negation and meter conditions</summary>
+                <h2 id="filter-conditions-heading">MAC, negation &amp; meter conditions</h2>
+                @for (var i = 0; i < bundle.Filter.Rules.Count; i++)
+                {
+                    if (bundle.Filter.Rules[i] is not null)
+                    { @await Html.PartialAsync("_FilterConditions", new Nergal.Web.FilterConditionsFormModel(Model, i)) }
+                }
+            </details>
+        }
+
+        <details class="disclosure mb-0 mt-2"><summary>Early filtering table</summary>@await Html.PartialAsync("_AuxiliaryForms", Model)</details>
+        <details class="disclosure mb-0 mt-2"><summary>Reverse-path filtering and TCP MSS</summary>@await Html.PartialAsync("_RawMssForms", Model)</details>
+        @await Html.PartialAsync("_AdvancedRuleStates", Model)
+        <details class="disclosure mb-0 mt-2"><summary>Alias references and pinned list versions</summary>@await Html.PartialAsync("_PolicyObjects", Model)</details>
+
+
     </div>
 
     <!-- TAB 2: NAT -->
-    <div class="tab-panel" data-tab-panel="tab-nat">
+    <div class="tab-panel" id="tab-nat" tabindex="-1" data-tab-panel="tab-nat">
         <section class="card">
             <div class="card-header">
                 <h2>Prerouting DNAT rules (<code>inet nergal_nat</code>)</h2>
@@ -796,12 +787,12 @@
     </div>
 
     <!-- TAB 3: BRIDGE -->
-    <div class="tab-panel" data-tab-panel="tab-bridge">
+    <div class="tab-panel" id="tab-bridge" tabindex="-1" data-tab-panel="tab-bridge">
         @await Html.PartialAsync("_BridgeForms", Model)
     </div>
 
     <!-- TAB 4: CANDIDATE & DIFF -->
-    <div class="tab-panel" data-tab-panel="tab-preview">
+    <div class="tab-panel" id="tab-preview" tabindex="-1" data-tab-panel="tab-preview">
         @if (Model.CanMutate && Model.Revisions.Count > 0)
         {
             <section class="card" aria-labelledby="export-heading">
@@ -864,7 +855,7 @@
     </div>
 
     <!-- TAB 5: ADVANCED JSON & SAVED REVISIONS -->
-    <div class="tab-panel" data-tab-panel="tab-json">
+    <div class="tab-panel" id="tab-json" tabindex="-1" data-tab-panel="tab-json">
         <section class="card">
             <div class="card-header">
                 <h2>Advanced JSON bundle editor</h2>

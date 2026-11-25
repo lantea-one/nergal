@@ -20,3 +20,5 @@
 - [Enabled & Disabled Rules](rule-enabled-state.md)
 
 - [Guided Router Forms](guided-router-forms.md)
+
+- [Appliance Administration Console](appliance-console.md)

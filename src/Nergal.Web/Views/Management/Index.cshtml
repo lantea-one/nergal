@@ -1,290 +1,72 @@
 @model Nergal.Web.FleetDashboardViewModel
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Overview";
     ViewData["ActiveNav"] = "fleet";
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
-
-    var matchedCount = Model.HostHealth.Count(h => h.StateLabel is "matched" or "online");
-    var driftCount = Model.HostHealth.Count(h => h.StateLabel is "drift" or "missing");
-    var pendingCount = Model.HostHealth.Count(h => h.StateLabel == "pending");
-    var unavailableCount = Model.HostHealth.Count(h => h.StateLabel == "unavailable");
-
-    var filterRuleCount = Model.LatestBundle?.Filter.Rules.Count ?? 0;
-    var dnatRuleCount = Model.LatestBundle?.Nat?.DnatRules.Count ?? 0;
-    var snatRuleCount = Model.LatestBundle?.Nat?.SnatRules.Count ?? 0;
-    var bridgeRuleCount = Model.LatestBundle?.Bridge?.Rules.Count ?? 0;
-    var totalRuleCount = filterRuleCount + dnatRuleCount + snatRuleCount + bridgeRuleCount;
-
-    var authMethods = new List<string>();
-    if (Model.Settings.LocalAuth.Enabled) { authMethods.Add("Local"); }
-    if (Model.Settings.Oidc.Enabled) { authMethods.Add("OIDC"); }
-    if (Model.Settings.Ldap.Enabled) { authMethods.Add("LDAP"); }
-}
-<main class="container">
-    <div class="page-header">
-        <div>
-            <h1>@Model.Settings.Branding.ApplicationName overview dashboard</h1>
-            <p class="page-subtitle">@Model.Settings.Branding.InstanceSubtitle · Signed in as <code>@Model.ActorId</code> · Role <code>@Model.ActorRole</code></p>
-        </div>
-        <div class="btn-group">
-            <a class="btn" href="@Url.Content("~/manage/policies")">Open Policy Builder</a>
-            <a class="btn btn-secondary" href="@Url.Content("~/manage/apply")">Confirmed Apply</a>
-            <a class="btn btn-secondary" href="@Url.Content("~/manage/settings")">System Settings</a>
-        </div>
-    </div>
-
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    var next = Model.NextAction;
+    var actionUrl = next.Destination switch
     {
-        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
-    }
-
-    <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-label">Fleet Health</div>
-            <div class="kpi-value">@matchedCount / @Model.Hosts.Count</div>
-            <div class="kpi-meta">
-                <span class="badge badge-success">@matchedCount synced</span>
-                @if (driftCount > 0) { <span class="badge badge-warning">@driftCount drift</span> }
-                @if (pendingCount > 0) { <span class="badge badge-primary">@pendingCount pending</span> }
-                @if (unavailableCount > 0) { <span class="badge badge-danger">@unavailableCount offline</span> }
+        Nergal.Web.DashboardDestination.Hosts => Url.Action("Hosts"),
+        Nergal.Web.DashboardDestination.Apply => Url.Action("Apply", new { hostId = next.HostId }),
+        Nergal.Web.DashboardDestination.Audit => Url.Action("Audit"),
+        _ => Url.Action("Policies"),
+    };
+    var attention = Model.HostHealth.Count(h => h.StateLabel is "drift" or "missing" or "pending");
+    var checkedHosts = Model.HostHealth.Count(h => h.Reachable);
+}
+<main class="container" id="main-content" tabindex="-1">
+    <div class="page-header"><div><p class="eyebrow">@Model.Settings.Branding.InstanceSubtitle</p><h1>Overview</h1>
+        <p class="page-subtitle">Firewall configuration, connected hosts and recent activity.</p></div><span class="badge badge-neutral">Native nftables</span></div>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    { <p class="alert alert-danger" role="alert">@Model.ErrorMessage</p> }
+    <section class="card next-action" aria-labelledby="next-action-heading">
+        <div><p class="eyebrow">@(attention > 0 ? "Needs attention" : "Next action")</p><h2 id="next-action-heading">@next.Heading</h2><p>@next.Description</p>
+            <div class="btn-group"><a class="btn" href="@actionUrl">@next.Label</a>
+            @if (Model.CanMutate && Model.LatestRevision is null)
+            { <a class="btn btn-secondary" href="@Url.Action("Sources")">Import nftables.conf</a> }
             </div>
         </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Latest Saved Policy Revision</div>
+        <ol class="configuration-steps" aria-label="Configuration workflow">
+            <li><span class="step-number">1</span><div><strong>Prepare a policy</strong><span>@(Model.LatestRevision is null ? "Create rules or import a configuration" : $"Revision {Model.LatestRevision.Revision} saved")</span></div></li>
+            <li><span class="step-number">2</span><div><strong>Connect a host</strong><span>@(Model.Hosts.Count == 0 ? "Register an enrolled agent" : $"{Model.Hosts.Count} registered connections")</span></div></li>
+            <li><span class="step-number">3</span><div><strong>Review and apply</strong><span>Inspect changes, apply, then confirm</span></div></li>
+        </ol>
+    </section>
+    <div class="overview-grid">
+        <section class="card" aria-labelledby="configuration-heading"><div class="card-header"><h2 id="configuration-heading">Saved configuration</h2><a href="@Url.Action("Policies")">Open rules</a></div>
             @if (Model.LatestRevision is { } latest)
             {
-                <div class="kpi-value">Rev @latest.Revision</div>
-                <div class="kpi-meta">SHA-256 <code>@latest.CandidateDigest[..12]</code> · @Model.TotalRevisions total revisions</div>
+                <p class="overview-number">Revision @latest.Revision</p><p>@(latest.Summary ?? "Saved policy revision")</p>
+                <p class="hint">Saved @await Html.PartialAsync("_LocalTime", latest.CreatedAtUtc). Desired configuration may differ from the policy confirmed on each host.</p>
             }
+            else { <p>No saved policy yet.</p><p class="hint">Use Firewall / Rules to create a policy, or Configuration / Import to start with a native file.</p> }
+            <details class="disclosure"><summary>How configuration changes reach a host</summary><p>Rule edits change the draft. Saving creates an immutable revision. Review and apply sends an explicitly selected revision to an enrolled host; its local watchdog restores the previous policy if confirmation is missing.</p></details>
+        </section>
+        <section class="card" aria-labelledby="connections-heading"><div class="card-header"><h2 id="connections-heading">Host status</h2><a href="@Url.Action("Hosts")">Manage hosts</a></div>
+            <p class="overview-number">@Model.Hosts.Count <span class="muted">registered</span></p>
+            @if (Model.Hosts.Count == 0) { <p>No hosts connected.</p><p class="hint">You can prepare a policy first. Agent enrollment and connection registration establish the host's trust boundary.</p> }
             else
             {
-                <div class="kpi-value">—</div>
-                <div class="kpi-meta">No policy revisions saved yet</div>
+                <p>@checkedHosts responded to this page's status query. @attention need confirmation or recovery review.</p>
+                <ul class="host-status-list">
+                @foreach (var health in Model.HostHealth.Take(5))
+                { <li><a href="@Url.Action("Apply", new { hostId = health.Host.Id })">@health.Host.Name</a><span class="badge badge-neutral">@health.StateLabel</span></li> }
+                </ul>
+                @if (Model.Hosts.Count > 5) { <p class="hint">Showing 5 hosts. Open Hosts for all connections.</p> }
+                <p class="hint">Matched means the observed agent baseline matches its receipt. It does not establish that the latest saved controller revision is applied. Unavailable means the status query failed; unqueried means no live check was made.</p>
             }
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Compiled Rule Inventory</div>
-            <div class="kpi-value">@totalRuleCount rules</div>
-            <div class="kpi-meta">
-                Filter <strong>@filterRuleCount</strong> · DNAT <strong>@dnatRuleCount</strong> · SNAT <strong>@snatRuleCount</strong> · Bridge <strong>@bridgeRuleCount</strong>
-            </div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Audit Trail</div>
-            <div class="kpi-value">@Model.RecentAudit.Count recent</div>
-            <div class="kpi-meta"><a href="@Url.Content("~/manage/audit")">Inspect full append-only log</a></div>
-        </div>
-    </div>
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Saved configuration preferences</h2>
-            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/settings")">Configure system</a>
-        </div>
-        <p class="muted">These preferences describe saved intent. Runtime authentication and SQLite storage use protected host configuration; the latest saved policy may differ from each agent’s confirmed revision.</p>
-        <div class="status-grid">
-            <div class="status-tile">
-                <div class="status-tile-title">Firewall Backend</div>
-                <div class="status-tile-value">Native nftables</div>
-                <div class="status-tile-meta">Schema v@(Model.Settings.FirewallDefaults.DefaultFilterSchemaVersion) · Watchdog default @(Model.Settings.FirewallDefaults.DefaultConfirmationTimeoutSeconds)s</div>
-            </div>
-            <div class="status-tile">
-                <div class="status-tile-title">Requested authentication providers</div>
-                <div class="status-tile-value">@(authMethods.Count > 0 ? string.Join(" + ", authMethods) : "None")</div>
-                <div class="status-tile-meta">Saved session timeout @(Model.Settings.LocalAuth.SessionIdleTimeoutMinutes)m · Lockout after @(Model.Settings.LocalAuth.LockoutMaxFailedAttempts) tries</div>
-            </div>
-            <div class="status-tile">
-                <div class="status-tile-title">Requested controller database</div>
-                <div class="status-tile-value">@Model.Settings.Database.Provider.ToUpperInvariant()</div>
-                <div class="status-tile-meta">@(Model.Settings.Database.Provider == "sqlite" ? "Protected local WAL store (0600)" : $"{Model.Settings.Database.Host ?? "unconfigured"}:{Model.Settings.Database.Port ?? 0}/{Model.Settings.Database.DatabaseName ?? "-"}")</div>
-            </div>
-            <div class="status-tile">
-                <div class="status-tile-title">Default Policy Posture</div>
-                @if (Model.LatestBundle is { } bundle)
-                {
-                    <div class="status-tile-value">in:@bundle.Filter.InputDefaultVerdict · fwd:@bundle.Filter.ForwardDefaultVerdict · out:@bundle.Filter.OutputDefaultVerdict</div>
-                    <div class="status-tile-meta">NAT @(bundle.Nat is not null ? "enabled" : "disabled") · Bridge @(bundle.Bridge is not null ? "enabled" : "disabled")</div>
-                }
-                else
-                {
-                    <div class="status-tile-value">Not yet authored</div>
-                    <div class="status-tile-meta"><a href="@Url.Content("~/manage/policies")">Create initial policy</a></div>
-                }
-            </div>
-        </div>
-    </section>
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Managed hosts (@Model.Hosts.Count)</h2>
-            @if (Model.Hosts.Count > 0)
-            {
-                <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/apply")">Inspect live agent status</a>
-            }
-        </div>
-        @if (Model.Hosts.Count == 0)
-        {
-            <p class="muted mb-0">No managed hosts registered yet. Register a Unix socket or TLS 1.3 pinned mTLS agent below.</p>
-        }
-        else
-        {
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Host Name</th>
-                            <th>Live Status</th>
-                            <th>Transport</th>
-                            <th>Endpoint</th>
-                            <th>Pin / Peer Identity</th>
-                            <th>Revision</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var health in Model.HostHealth)
-                        {
-                            var host = health.Host;
-                            var statusBadge = health.StateLabel switch
-                            {
-                                "matched" or "online" => "badge-success",
-                                "pending" => "badge-primary",
-                                "drift" or "missing" => "badge-warning",
-                                "unavailable" => "badge-danger",
-                                _ => "badge-neutral",
-                            };
-                            <tr>
-                                <td><strong>@host.Name</strong></td>
-                                <td>
-                                    <span class="badge @statusBadge">@health.StateLabel</span>
-                                    @if (!string.IsNullOrEmpty(health.ErrorCode))
-                                    {
-                                        <span class="muted">(@health.ErrorCode)</span>
-                                    }
-                                </td>
-                                <td>
-                                    <span class="badge @(host.TransportKind == Nergal.Core.Controller.AgentTransportKind.Tls ? "badge-primary" : "badge-neutral")">
-                                        @host.TransportKind
-                                    </span>
-                                </td>
-                                <td><code>@host.Endpoint</code></td>
-                                <td>
-                                    <code>@(host.PinnedServerThumbprint is { Length: > 16 } pin
-                                        ? pin[..16] + "…"
-                                        : (host.PinnedServerThumbprint ?? ($"uid={host.ExpectedServerUserId?.ToString() ?? "-"}" + (host.SocketGroupId.HasValue ? $" gid={host.SocketGroupId}" : ""))))</code>
-                                </td>
-                                <td><span class="badge badge-neutral">rev @(health.ReportedRevision ?? host.LastKnownRevision)</span></td>
-                                <td>
-                                    <div class="btn-group">
-                                        <a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/apply?hostId={host.Id:D}")">Apply / Status</a>
-                                        @if (Model.CanMutate)
-                                        {
-                                            <form class="inline-form" method="post" action="@Url.Content("~/manage/hosts/delete")">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@host.Id.ToString("D")" />
-                                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-                                            </form>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </section>
-
-    @if (Model.CanMutate)
-    {
-        <section class="card">
-            <div class="card-header">
-                <h2>Register agent host</h2>
-                <span class="badge badge-neutral">Administrator</span>
-            </div>
-            <form method="post" action="@Url.Content("~/manage/hosts/add")">
-                @Html.AntiForgeryToken()
-                <div class="form-grid">
-                    <div class="field">
-                        <label for="host-name">Host name</label>
-                        <input id="host-name" type="text" name="name" placeholder="edge-gw-01" required maxlength="128" />
-                    </div>
-                    <div class="field">
-                        <label for="host-transport">Transport</label>
-                        <select id="host-transport" name="transportKind" data-transport-select>
-                            <option value="tls">tls (Pinned TLS 1.3 mTLS)</option>
-                            <option value="unix">unix (Local SO_PEERCRED socket)</option>
-                        </select>
-                    </div>
-                    <div class="field span-2">
-                        <label for="host-endpoint">Endpoint</label>
-                        <input id="host-endpoint" type="text" name="endpoint" placeholder="192.0.2.10:8443 or /run/nergal/control.sock" required maxlength="512" />
-                    </div>
-                    <div class="field span-2" data-transport-only="tls">
-                        <label for="host-pin">Pinned Server SHA-256 Thumbprint (64 hex chars)</label>
-                        <input id="host-pin" type="text" name="pinnedServerThumbprint" placeholder="64 lowercase hex characters" maxlength="64" />
-                    </div>
-                    <div class="field" data-transport-only="unix">
-                        <label for="host-uid">Expected Server UID</label>
-                        <input id="host-uid" type="text" name="expectedServerUserId" placeholder="0" />
-                    </div>
-                    <div class="field" data-transport-only="unix">
-                        <label for="host-gid">Socket Group ID (optional)</label>
-                        <input id="host-gid" type="text" name="socketGroupId" placeholder="nergal-ctl GID" />
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <button type="submit">Register host</button>
-                </div>
-            </form>
         </section>
-    }
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Recent audit activity</h2>
-            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/audit")">Full audit log</a>
-        </div>
-        @if (Model.RecentAudit.Count == 0)
-        {
-            <p class="muted mb-0">No audit records yet.</p>
-        }
+    </div>
+    <section class="card"><div class="card-header"><h2>Recent activity</h2><a href="@Url.Action("Audit")">Open audit log</a></div>
+        @if (Model.RecentAudit.Count == 0) { <p class="muted">No configuration activity recorded yet.</p> }
         else
         {
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Seq</th>
-                            <th>Timestamp (local time)</th>
-                            <th>Actor</th>
-                            <th>Action</th>
-                            <th>Target</th>
-                            <th>Outcome</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var entry in Model.RecentAudit)
-                        {
-                            var badge = entry.Outcome is "confirmed" or "saved" or "registered" or "ok" or "matched" or "succeeded"
-                                ? "badge-success"
-                                : entry.Outcome is "rejected" or "failed" or "denied"
-                                    ? "badge-danger"
-                                    : "badge-warning";
-                            <tr>
-                                <td>#@entry.Sequence</td>
-                                <td class="mono">@await Html.PartialAsync("_LocalTime", entry.TimestampUtc)</td>
-                                <td><code>@entry.ActorId</code></td>
-                                <td><code>@entry.Action</code></td>
-                                <td><code>@entry.Target</code></td>
-                                <td><span class="badge @badge">@entry.Outcome</span></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            <div class="table-wrap"><table><caption class="visually-hidden">Latest five attributed events</caption><thead><tr><th>Time (local)</th><th>Action</th><th>Outcome</th></tr></thead><tbody>
+            @foreach (var entry in Model.RecentAudit.Take(5))
+            { <tr><td>@await Html.PartialAsync("_LocalTime", entry.TimestampUtc)</td><td><code>@entry.Action</code></td><td>@entry.Outcome</td></tr> }
+            </tbody></table></div>
         }
     </section>
 </main>

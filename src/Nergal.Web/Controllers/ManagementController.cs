@@ -28,7 +28,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             ViewData["Branding"] = SystemSettingsSnapshot.Default.Branding;
         }
 
-        ViewData["ShowNativeSources"] = true;
+        ViewData["ShowNativeSources"] = ControllerAuthorization.TryResolveActor(User, out _, out var navigationRole) && navigationRole == NergalRoles.Administrator;
         base.OnActionExecuting(context);
     }
 
@@ -44,7 +44,15 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         return View(await BuildDashboardModelAsync(actorId, role, null, HttpContext.RequestAborted));
     }
 
-    /// <summary>Registers a managed host endpoint from the dashboard (Administrator only).</summary>
+    /// <summary>Displays host connections separately from the overview; registration still requires Administrator authorization.</summary>
+    [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
+    public async Task<IActionResult> Hosts()
+    {
+        if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role)) { return Forbid(); }
+        return View(await BuildDashboardModelAsync(actorId, role, null, HttpContext.RequestAborted));
+    }
+
+    /// <summary>Registers a managed host endpoint from the host connections page (Administrator only).</summary>
     [HttpPost, Authorize(Policy = ControllerAuthorizationPolicies.Administrator), ValidateAntiForgeryToken]
     [RequestSizeLimit(8192)]
     public async Task<IActionResult> AddHost(
@@ -74,7 +82,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             if (!uint.TryParse(expectedServerUserId, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedUid))
             {
                 Response.StatusCode = StatusCodes.Status400BadRequest;
-                return View("Index", await BuildDashboardModelAsync(actorId, role, "Invalid expected server UID.", HttpContext.RequestAborted));
+                return View("Hosts", await BuildDashboardModelAsync(actorId, role, "Invalid expected server UID.", HttpContext.RequestAborted));
             }
 
             uid = parsedUid;
@@ -86,7 +94,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             if (!uint.TryParse(socketGroupId, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedGid))
             {
                 Response.StatusCode = StatusCodes.Status400BadRequest;
-                return View("Index", await BuildDashboardModelAsync(actorId, role, "Invalid socket group ID.", HttpContext.RequestAborted));
+                return View("Hosts", await BuildDashboardModelAsync(actorId, role, "Invalid socket group ID.", HttpContext.RequestAborted));
             }
 
             gid = parsedGid;
@@ -95,7 +103,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         if (kind is null || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(endpoint))
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Index", await BuildDashboardModelAsync(actorId, role, "Missing required host registration fields.", HttpContext.RequestAborted));
+            return View("Hosts", await BuildDashboardModelAsync(actorId, role, "Missing required host registration fields.", HttpContext.RequestAborted));
         }
 
         ManagedHostRecord host;
@@ -107,18 +115,18 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         catch (ArgumentException)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Index", await BuildDashboardModelAsync(actorId, role, "Host specification violated transport constraints.", HttpContext.RequestAborted));
+            return View("Hosts", await BuildDashboardModelAsync(actorId, role, "Host specification violated transport constraints.", HttpContext.RequestAborted));
         }
 
         try
         {
             store.RegisterHost(host, actorId, role);
-            return LocalRedirect("~/manage");
+            return LocalRedirect("~/manage/hosts");
         }
         catch (ControllerStateException ex) when (ex.Code == "host.duplicate")
         {
             Response.StatusCode = StatusCodes.Status409Conflict;
-            return View("Index", await BuildDashboardModelAsync(actorId, role, "A host with that name already exists.", HttpContext.RequestAborted));
+            return View("Hosts", await BuildDashboardModelAsync(actorId, role, "A host with that name already exists.", HttpContext.RequestAborted));
         }
     }
 
@@ -139,17 +147,19 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         }
 
         _ = store.DeleteHost(hostId, actorId, role);
-        return LocalRedirect("~/manage");
+        return LocalRedirect("~/manage/hosts");
     }
 
     /// <summary>Displays the typed policy bundle editor, compatibility report, and candidate diff preview.</summary>
     [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
-    public IActionResult Policies(ulong? revision = null, ulong? compareTo = null)
+    public IActionResult Policies(ulong? revision = null, ulong? compareTo = null, string? section = null)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out _, out var role))
         {
             return Forbid();
         }
+
+        if (section is not (null or "filter" or "nat" or "bridge" or "preview" or "json") || Request.Query["section"].Count > 1) { return BadRequest(); }
 
         var revisions = store.ListPolicyRevisions();
         var selected = revision is > 0
@@ -170,7 +180,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             selected?.Revision,
             baseline,
             revisions,
-            report));
+            report, initialSection: section));
     }
 
     /// <summary>Validates, checks capabilities, compiles, and diffs a policy draft without mutating state.</summary>
@@ -1168,6 +1178,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             ActorId = actorId,
             ActorRole = role,
             CanMutate = role == NergalRoles.Administrator,
+            ControlEnabled = applyWorkflow is not null,
             Hosts = hosts,
             HostHealth = healthList,
             LatestRevision = latest,
@@ -1187,11 +1198,12 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         ulong? compareToRevision,
         IReadOnlyList<PolicyRevisionRecord> revisions,
         PolicyEvaluationReport report,
-        PolicyObjectBrowseSelection? objectBrowseSelection = null) =>
+        PolicyObjectBrowseSelection? objectBrowseSelection = null, string? initialSection = null) =>
         new()
         {
             ActorRole = role,
             CanMutate = role == NergalRoles.Administrator,
+            InitialSection = initialSection,
             LibraryObjects = objectBrowseSelection is not null ? PolicyObjectVersionChoices.Load(store, objectBrowseSelection.ObjectId) : store.ListReusableObjects(),
             ObjectBrowseSelection = objectBrowseSelection,
             BundleJson = bundleJson,

@@ -82,6 +82,11 @@ REQUIRED_FILES = [
     "assets/screenshots/native-conversion-light.jpg",
     "assets/screenshots/native-conversion-mobile.jpg",
     "assets/screenshots/native-conversion-blocked.jpg",
+    "appliance-console.md",
+    "assets/screenshots/console-overview-dark.jpg",
+    "assets/screenshots/console-rules-light.jpg",
+    "assets/screenshots/console-mobile.jpg",
+    "assets/screenshots/console-navigation-mobile.jpg",
 ]
 
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")

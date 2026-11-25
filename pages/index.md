@@ -71,3 +71,5 @@ This local development work is not a published release.
 See [Milestones to Product Code-Complete](milestones.md) for the remaining work and
 completion gates. Historical foundation releases do not establish product-wide
 code-complete status.
+
+The [appliance-style administration console](appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 user management, profiles and observation-backed charts remain in progress.

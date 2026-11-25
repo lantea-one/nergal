@@ -46,6 +46,12 @@
         const active = btn.getAttribute("data-tab-target") === id;
         btn.classList.toggle("active", active);
         btn.setAttribute("aria-selected", active ? "true" : "false");
+        btn.setAttribute("tabindex", active ? "0" : "-1");
+      });
+      document.querySelectorAll("[data-policy-section]").forEach(function (link) {
+        const active = link.getAttribute("data-policy-section") === id;
+        link.classList.toggle("active", active);
+        if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
       });
       document.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
         panel.classList.toggle("hidden", panel.getAttribute("data-tab-panel") !== id);
@@ -53,9 +59,27 @@
       try { sessionStorage.setItem(tabStorageKey, id); } catch { /* Tabs also work with storage disabled. */ }
     };
 
-    tabButtons.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        activateTab(btn.getAttribute("data-tab-target"));
+    tabButtons.forEach(function (btn, index) {
+      const target = btn.getAttribute("data-tab-target");
+      const panel = [...document.querySelectorAll("[data-tab-panel]")].find(item => item.getAttribute("data-tab-panel") === target);
+      if (panel) {
+        panel.id = target;
+        btn.id = "control-" + target;
+        btn.setAttribute("aria-controls", target);
+        panel.setAttribute("role", "tabpanel");
+        panel.setAttribute("aria-labelledby", btn.id);
+      }
+      btn.addEventListener("click", function () { activateTab(target); });
+      btn.addEventListener("keydown", function (event) {
+        let next;
+        if (event.key === "ArrowRight") next = (index + 1) % tabButtons.length;
+        if (event.key === "ArrowLeft") next = (index - 1 + tabButtons.length) % tabButtons.length;
+        if (event.key === "Home") next = 0;
+        if (event.key === "End") next = tabButtons.length - 1;
+        if (next === undefined) return;
+        event.preventDefault();
+        activateTab(tabButtons[next].getAttribute("data-tab-target"));
+        tabButtons[next].focus();
       });
     });
 

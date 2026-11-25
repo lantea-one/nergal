@@ -67,7 +67,7 @@ class Browser:
             self.last_headers = {k.lower(): v for k, v in response.getheaders()}
             self.location = response.getheader("Location")
             if expected == 302:
-                assert self.location in ("/login", "/session") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision="))
+                assert self.location in ("/login", "/session") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
             assert PASSWORD not in body
             return body
         finally:
@@ -168,6 +168,7 @@ def exercise(temp):
         browser.request("/manage/policies/objects", 401, {"bundleJson": "{}"})
         browser.request("/manage/objects", 401)
         browser.request("/manage/objects/save", 401, {"name": "denied"})
+        browser.request("/manage/hosts", 401)
         browser.request("/manage/sources", 401)
         browser.request(report_path, 401)
         browser.request("/manage/sources/download?sourceId=00000000-0000-0000-0000-000000000000", 401)
@@ -185,6 +186,8 @@ def exercise(temp):
         browser.request("/login", 413, {**fields, "password": "x" * 9000})
         browser.request("/login", 400, {"username": "fixture-admin", "password": PASSWORD})
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 302, fields)
+        from appliance_navigation import check_appliance_navigation
+        check_appliance_navigation(browser, ctrl_state)
         source_html = browser.request("/manage/sources", 200)
         assert "No imported snapshots yet" in source_html and "Operator-staged sources" in source_html
         browser.request("/manage/sources/stage", 400, {"name": "synthetic", "digest": source_digest})
@@ -278,6 +281,8 @@ def exercise(temp):
         check_policy_exports(browser, ctrl_state)
         from native_conversion import check_native_conversion
         conversion_plan_id = check_native_conversion(browser, upload, ctrl_state)
+        from appliance_navigation import check_host_connections
+        check_host_connections(browser, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -338,7 +343,12 @@ def exercise(temp):
             "pinnedServerThumbprint": "a" * 64,
             "__RequestVerificationToken": auditor_browser.token("/session"),
         })
-        assert "Register agent host" not in auditor_browser.request("/manage", 200)
+        overview = auditor_browser.request("/manage", 200)
+        assert "Read-only administration" in overview and "Create a policy" not in overview
+        assert 'href="/manage/sources"' not in overview
+        assert "Register agent host" not in auditor_browser.request("/manage/hosts", 200)
+        for action in ("add", "delete"):
+            auditor_browser.request("/manage/hosts/" + action, 403, {"__RequestVerificationToken": auditor_browser.token("/session")})
         # Conversion adds a later filter-only revision. Select the earlier bridge fixture explicitly.
         with sqlite3.connect(ctrl_state / "controller.db") as db:
             bridge_revision = next(revision for revision, policy in db.execute("SELECT revision,policy_json FROM policy_revisions ORDER BY revision DESC") if json.loads(policy).get("bridge"))

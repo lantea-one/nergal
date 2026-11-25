@@ -174,3 +174,5 @@ and [migration status](docs/router-constructs.md).
 See the [remaining product code-complete milestones](docs/milestones.md) for completion gates and dependencies.
 
 Guided [router condition and postrouting forms](docs/guided-router-forms.md) cover the supported M2 constructs, including postrouting/bridge/DNAT address sets and pinned address/port lists. Broader administration UX remains M5.
+
+The [appliance-style administration console](docs/appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 user management, profiles and observation-backed charts remain in progress.
