@@ -28,6 +28,8 @@ class AgentPolicyTests(unittest.TestCase):
 
     def test_unsafe_or_ignored_configuration_is_rejected(self):
         mutations = [
+            ('.codex/config.toml', 'default_subagent_reasoning_effort = "medium"', 'default_subagent_reasoning_effort = "high"'),
+            ('.codex/agents/identity_security.toml', 'model_reasoning_effort = "high"', 'model_reasoning_effort = "medium"'),
             ('.codex/config.toml', 'max_concurrent_threads_per_session = 4', 'max_concurrent_threads_per_session = 5'),
             ('.codex/config.toml', 'max_depth = 1', 'max_depth = 2'),
             ('.codex/config.toml', 'multi_agent_v2 = false', 'multi_agent_v2 = true'),
@@ -35,7 +37,7 @@ class AgentPolicyTests(unittest.TestCase):
             ('.codex/config.toml', 'agents/code_explorer.toml', '../../../foreign.toml'),
             ('.codex/agents/code_explorer.toml', 'model = "gpt-6-luna"', 'model = "unknown-model"'),
             ('.codex/agents/code_explorer.toml', 'name = "code_explorer"', 'name = "another-role"'),
-            ('.codex/agents/code_explorer.toml', 'model_reasoning_effort = "high"', 'model_reasoning_effort = "ultra"'),
+            ('.codex/agents/code_explorer.toml', 'model_reasoning_effort = "medium"', 'model_reasoning_effort = "ultra"'),
         ]
         for path, before, after in mutations:
             with self.subTest(path=path, after=after), tempfile.TemporaryDirectory() as temporary:

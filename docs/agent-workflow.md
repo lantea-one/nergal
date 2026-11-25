@@ -6,15 +6,15 @@ open sub-agents** and **no grandchildren**. Stricter host/service limits still w
 
 | Role | Model / reasoning | Assignment |
 | --- | --- | --- |
-| `code_explorer` | `gpt-6-luna` / high | Read-only code/contract/ADR mapping and targeted evidence. |
-| `dotnet_engineer` | `gpt-6.2-sol` / high | .NET 10 services, MVC/Blazor and framework-independent contracts. |
+| `code_explorer` | `gpt-6-luna` / medium | Read-only code/contract/ADR mapping and targeted evidence. |
+| `dotnet_engineer` | `gpt-6.2-sol` / medium | .NET 10 services, MVC/Blazor and framework-independent contracts. |
 | `nftables_engineer` | `gpt-6.2-astra` / high | Native policy/compiler/import, ownership, agent safety and packet semantics. |
 | `identity_security` | `gpt-6.2-astra` / high | Identity/MFA/secrets/session work and independent security review. |
-| `database_engineer` | `gpt-6.2-sol` / high | Schema, transactional invariants, audit, timestamps and SQL backend work. |
-| `ui_engineer` | `gpt-6.2-sol` / high | Guided forms, accessibility, responsive themes and observation-backed charts. |
-| `browser_qa` | `gpt-6.1-terra` / high | Rendered browser workflows, keyboard checks and authentic synthetic screenshots. |
-| `verification_engineer` | `gpt-6.2-sol` / high | Deterministic tests, failure diagnosis and assigned isolated integration checks. |
-| `docs_release` | `gpt-6-luna` / high | Accurate docs/Pages, evidence summaries and release preparation; no publishing. |
+| `database_engineer` | `gpt-6.2-sol` / medium | Schema, transactional invariants, audit, timestamps and SQL backend work. |
+| `ui_engineer` | `gpt-6.2-sol` / medium | Guided forms, accessibility, responsive themes and observation-backed charts. |
+| `browser_qa` | `gpt-6.1-terra` / medium | Rendered browser workflows, keyboard checks and authentic synthetic screenshots. |
+| `verification_engineer` | `gpt-6.2-sol` / medium | Deterministic tests, failure diagnosis and assigned isolated integration checks. |
+| `docs_release` | `gpt-6-luna` / medium | Accurate docs/Pages, evidence summaries and release preparation; no publishing. |
 
 Luna handles bounded scans and documentation work. Sol handles routine engineering
 and verification. Astra handles deeper firewall/identity safety reasoning. Terra
@@ -22,6 +22,12 @@ handles visual browser verification. These are explicit repository choices, usin
 models present in the verified installed model catalog; contributors need an
 account/client that supports them. Do not silently substitute a model. Report an
 unavailable model to the primary, which can make an explicit appropriate selection.
+
+Routine roles and the fallback use medium reasoning. The nftables and identity
+security profiles use high for work across trust boundaries and failure modes.
+For an unusually complex assignment in a medium role, select high explicitly
+when the dispatch interface supports choosing the effort for that task. Named
+profiles declare their own effort and can take precedence over spawn arguments.
 
 ## Runtime controls
 

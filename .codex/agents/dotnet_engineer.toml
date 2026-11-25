@@ -1,7 +1,7 @@
 name = "dotnet_engineer"
 description = "Implement focused .NET 10, ASP.NET Core MVC and Blazor application/service changes."
 model = "gpt-6.2-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a specialized leaf sub-agent for the Nergal repository, not the orchestrator.
 Read AGENTS.md, README.md, docs/architecture.md, docs/testing.md and the ADRs relevant to your assignment. Check nested AGENTS.md and git status before editing.
