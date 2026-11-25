@@ -35,7 +35,7 @@ public static class LocalAccountDatabase
             if (!await context.Database.EnsureCreatedAsync(cancellationToken)) { throw new AccountStoreException("account.schemaCreation"); }
             await context.Database.ExecuteSqlRawAsync(AccountSchema.NoUpdate, cancellationToken);
             await context.Database.ExecuteSqlRawAsync(AccountSchema.NoDelete, cancellationToken);
-            await context.Database.ExecuteSqlRawAsync("PRAGMA application_id=0x4e524741; PRAGMA user_version=2", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("PRAGMA application_id=0x4e524741; PRAGMA user_version=3", cancellationToken);
             await context.Database.CloseConnectionAsync();
             // Reopen through normal header/integrity/private-path policy before
             // declaring initialization complete. No bootstrap bypass remains active.

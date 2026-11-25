@@ -20,7 +20,7 @@ internal sealed class UserPresentationFilter : IAsyncResultFilter
             try
             {
                 var profile = await accounts.ReadProfileAsync(context.HttpContext.User);
-                view.ViewData!["UserDisplayName"] = string.IsNullOrWhiteSpace(profile.DisplayName) ? profile.LoginName : profile.DisplayName;
+                view.ViewData!["UserDisplayName"] = string.IsNullOrWhiteSpace(profile.Effective.DisplayName) ? profile.LoginName : profile.Effective.DisplayName;
                 if (context.HttpContext.RequestServices.GetService<ControllerStateStore>() is { } store)
                 {
                     try { view.ViewData["Branding"] = store.ReadSystemSettings().Branding; }

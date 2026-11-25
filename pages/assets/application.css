@@ -537,7 +537,7 @@ textarea {
 input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 1; }
 textarea:not(.code-editor) { min-height: 7rem; resize: vertical; }
 input[type="checkbox"], input[type="radio"] { width: 1rem; height: 1rem; margin: 0; flex: 0 0 auto; accent-color: var(--link, var(--primary)); }
-.enablement-switch { display: inline-flex; align-items: center; justify-content: center; min-width: 2.75rem; min-height: 2.75rem; margin: 0; color: var(--text); font-size: .9rem; cursor: pointer; }
+.enablement-switch { align-self: flex-start; justify-self: start; display: inline-flex; align-items: center; justify-content: center; min-width: 2.75rem; min-height: 2.75rem; margin: 0; color: var(--text); font-size: .9rem; cursor: pointer; }
 .enablement-switch input[role="switch"] { appearance: none; position: relative; width: 2.5rem; height: 1.5rem; border: 2px solid var(--danger); border-radius: 999px; background: var(--danger-soft); cursor: pointer; }
 .enablement-switch input[role="switch"]::after { content: ""; position: absolute; width: 1rem; height: 1rem; left: .125rem; top: .125rem; border-radius: 50%; background: var(--danger); }
 .enablement-switch input[role="switch"]:checked { border-color: var(--primary); background: var(--primary); }

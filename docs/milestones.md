@@ -135,8 +135,9 @@ configurable OIDC/OAuth profile defaults with local overrides, local email and
 TOTP/authenticator MFA, administrator email-delivery screens, optional enrollment
 and a requirement policy for Administrators/all/neither. Federated bypass must be
 explicit per provider, optionally requiring a configured MFA assurance claim.
-LDAP sign-in follows local MFA requirements. These remain open until verified;
-the local-user/profile storage slice alone does not satisfy them.
+LDAP sign-in follows local MFA requirements. Signed OIDC profile mapping and
+per-field local overrides are implemented and verified; runtime provider setup,
+generic OAuth/LDAP mapping and local MFA remain open.
 
 This project has not been released publicly. New schema work targets fresh
 installations; do not add legacy account upgrade paths or compatibility shims.

@@ -110,6 +110,7 @@
         </section>
 
         <section class="card hidden" data-tab-panel="auth">
+            @if (Model.CanMutate) { <p><a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">Manage OIDC profile defaults</a></p> }
             <div class="card-header">
                 <h2>Local authentication</h2>
                 <span class="badge @(s.LocalAuth.Enabled ? "badge-success" : "badge-neutral")">@(s.LocalAuth.Enabled ? "Enabled" : "Disabled")</span>

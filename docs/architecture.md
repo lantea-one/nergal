@@ -343,10 +343,16 @@ A dedicated reader Hosts page retains existing Administrator/CSRF mutation route
 Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.
 
 
-Account schema 2 separates local security state, personal metadata and identity
+Account schema 3 separates local security state, personal metadata and identity
 history inside the protected credential store. Expected-version mutations recheck
 local actor authority inside serialized transactions, protect the last enabled
 local Administrator and rotate affected security stamps with transactional audit.
 Profiles never link users by names/email or grant roles. No cross-database atomic
 audit is claimed. Only a fresh pre-release account schema is supported; no legacy
 upgrade path is shipped. See [local users](local-users-and-profiles.md) and ADR 0058.
+
+OIDC profile projection (ADR 0059) stores exact-issuer/version-bound provider
+defaults independently from personal overrides and authority. Only the completed
+protocol handler can refresh them from verified signed claims; no UserInfo request,
+raw token persistence, role overlay, account linking or email verification follows.
+Administrator mapping edits and observations commit audit in the identity store.

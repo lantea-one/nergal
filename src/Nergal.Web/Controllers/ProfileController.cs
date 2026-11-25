@@ -22,10 +22,11 @@ public sealed class ProfileController(LocalAdministratorAccounts accounts, IConf
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save()
     {
-        var form = await ReadFieldsAsync("version", "displayName");
+        var form = await ReadFieldsAsync("version", "displayName", "givenName", "familyName", "email");
         if (form is null || !Version(form["version"], out var version)) { return BadRequest(); }
-        var result = await Accounts.SaveProfileAsync(User, version, form["displayName"].ToString());
-        return result.Succeeded ? LocalRedirect("~/profile") : await PageAsync(Explain(result), form["displayName"]);
+        var proposed = new ProfileMetadata(form["displayName"].ToString(), form["givenName"].ToString(), form["familyName"].ToString(), form["email"].ToString());
+        var result = await Accounts.SaveProfileAsync(User, version, proposed);
+        return result.Succeeded ? LocalRedirect("~/profile") : await PageAsync(Explain(result), proposed);
     }
 
     /// <summary>Changes the current local password after current-password verification, then clears the revoked browser ticket.</summary>
@@ -40,7 +41,7 @@ public sealed class ProfileController(LocalAdministratorAccounts accounts, IConf
         return LocalRedirect("~/login");
     }
 
-    private async Task<IActionResult> PageAsync(string? error = null, string? proposed = null)
+    private async Task<IActionResult> PageAsync(string? error = null, ProfileMetadata? proposed = null)
     {
         if (error is not null) { Response.StatusCode = 400; }
         return View("Index", new ProfilePageModel(await Accounts.ReadProfileAsync(User), error, proposed));

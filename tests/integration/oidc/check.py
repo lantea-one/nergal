@@ -12,6 +12,7 @@ from pathlib import Path
 import secrets
 import socket
 import ssl
+import sqlite3
 import subprocess
 import tempfile
 import threading
@@ -55,6 +56,7 @@ class Issuer(http.server.BaseHTTPRequestHandler):
         elif urlsplit(self.path).path == "/authorize":
             query = parse_qs(urlsplit(self.path).query)
             valid = (query.get("response_type") == ["code"] and query.get("response_mode") == ["form_post"]
+                     and set(query.get("scope", [""])[0].split()) == {"openid", "profile", "email"}
                      and query.get("client_id") == [op.client] and query.get("redirect_uri") == [op.callback]
                      and query.get("code_challenge_method") == ["S256"] and all(k in query for k in ("state", "nonce", "code_challenge")))
             if not valid:
@@ -205,6 +207,7 @@ def exercise(temp):
             assert "Identity provider" in external_profile and 'action="/profile/password"' not in external_profile
             _, profile_destination = rp.request("/profile/save", 302, {
                 "version": "0", "displayName": "External <script>profile</script>",
+                "givenName": "Local given", "familyName": "Local family", "email": "local@example.test",
                 "__RequestVerificationToken": rp.token("/profile"),
             })
             assert profile_destination == "/profile"
@@ -212,9 +215,63 @@ def exercise(temp):
             assert "External &lt;script&gt;profile&lt;/script&gt;" in saved_profile
             assert "synthetic-external-subject" in saved_profile
             assert "<script>profile</script>" not in saved_profile
+            assert all(value in saved_profile for value in ["Local given", "Local family", "local@example.test"])
             other = RelyingParty(browser)
             other.exchange(op, cert, 302)
             independent = other.cookies["__Host-nergal-federated"]
+            local_mapping_admin = RelyingParty(browser)
+            local_mapping_admin.request("/login", 302, {"username": "fixture-admin", "password": sessions.PASSWORD,
+                "__RequestVerificationToken": local_mapping_admin.token("/login")})
+            mapping_page = "/manage/identity/profiles"
+            mapping = {"issuer": op.issuer, "version": "0", "enabled": "true", "displayNameClaim": "name",
+                       "givenNameClaim": "given_name", "familyNameClaim": "family_name", "emailClaim": "email"}
+            local_mapping_admin.request(mapping_page + "/save", 302, {**mapping,
+                "__RequestVerificationToken": local_mapping_admin.token(mapping_page)})
+            op.overrides = {"name": "Provider <script>display</script>", "given_name": "Provider given",
+                            "family_name": "Provider family", "email": "provider@example.test", "email_verified": True}
+            mapped = RelyingParty(browser)
+            mapped.exchange(op, cert, 302)
+            defaults = mapped.request("/profile", 200)[0]
+            assert "Provider &lt;script&gt;display&lt;/script&gt;" in defaults and "<script>display</script>" not in defaults
+            assert all(v in defaults for v in ["Provider given", "Provider family", "provider@example.test", "mapping version 1"])
+            assert 'value="Local given"' in defaults and 'value="local@example.test"' in defaults
+            database = temp / "accounts" / "accounts.db"
+            with sqlite3.connect(database) as db:
+                assert db.execute('SELECT count(*) FROM OidcProfileObservation').fetchone()[0] == 1
+                events = db.execute("SELECT count(*) FROM IdentityAudit WHERE Action='profile.providerRefreshed'").fetchone()[0]
+            # Signature validation alone must not persist metadata before nonce validation.
+            op.overrides["nonce"] = "invalid-after-signature"
+            RelyingParty(browser).exchange(op, cert, 401)
+            with sqlite3.connect(database) as db:
+                assert db.execute("SELECT count(*) FROM IdentityAudit WHERE Action='profile.providerRefreshed'").fetchone()[0] == events
+            op.overrides.pop("nonce")
+            # A mapping change retires defaults immediately; a new signed exchange refreshes just provider fields.
+            local_mapping_admin.request(mapping_page + "/save", 302, {**mapping, "version": "1", "displayNameClaim": "nickname",
+                "__RequestVerificationToken": local_mapping_admin.token(mapping_page)})
+            assert "No current provider defaults" in mapped.request("/profile", 200)[0]
+            op.overrides["nickname"] = "Refreshed provider name"
+            mapped.request("/logout", 302, {"__RequestVerificationToken": mapped.token("/profile")})
+            mapped.exchange(op, cert, 302)
+            refreshed = mapped.request("/profile", 200)[0]
+            assert "Refreshed provider name" in refreshed and "mapping version 2" in refreshed
+            assert 'value="External &lt;script&gt;profile&lt;/script&gt;"' in refreshed
+            op.overrides["email"] = ["invalid-array-value"]
+            missing_optional = RelyingParty(browser)
+            missing_optional.exchange(op, cert, 302)
+            optional_page = missing_optional.request("/profile", 200)[0]
+            assert "The provider supplied an invalid profile email address." in optional_page
+            assert 'value="local@example.test"' in optional_page and "invalid-array-value" not in optional_page
+            op.overrides["email"] = "provider@example.test"
+            with sqlite3.connect(database) as db:
+                db.execute("CREATE TRIGGER fixture_profile_audit_fail BEFORE INSERT ON IdentityAudit BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
+                prior = db.execute('SELECT ObservedUtc FROM OidcProfileObservation').fetchone()[0]
+            failed_storage = RelyingParty(browser)
+            failed_storage.exchange(op, cert, 503)
+            failed_storage.request("/session", 401)
+            with sqlite3.connect(database) as db:
+                assert db.execute('SELECT ObservedUtc FROM OidcProfileObservation').fetchone()[0] == prior
+                db.execute('DROP TRIGGER fixture_profile_audit_fail')
+            op.overrides = {}
             cookie = rp.cookies["__Host-nergal-federated"]
             rp.request("/logout", 302, {"__RequestVerificationToken": rp.token("/session")})
             rp.cookies["__Host-nergal-federated"] = cookie
@@ -352,6 +409,7 @@ def exercise(temp):
             audit_page = auditor_rp.request("/manage/audit", 200)[0]
             assert "Rev 2 https" in audit_page and "policy.save" in audit_page
 
+    print("PASS: signed profile defaults, per-field local overrides, mapping retirement/refresh, nonce non-persistence and audit-failure sign-in denial")
     print("PASS: real discovery, code/PKCE exchange, signed group/role authorization, issuer/audience/nonce/age denial, logout replay, independent local login and audit attribution")
 
 

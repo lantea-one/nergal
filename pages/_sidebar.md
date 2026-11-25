@@ -24,3 +24,5 @@
 - [Appliance Administration Console](appliance-console.md)
 
 - [Local Users & Profiles](local-users-and-profiles.md)
+
+- [OIDC Profile Defaults](oidc-profile-defaults.md)

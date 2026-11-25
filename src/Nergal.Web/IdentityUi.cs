@@ -11,7 +11,7 @@ namespace Nergal.Web;
 public sealed record UsersPageModel(IReadOnlyList<LocalUserSnapshot> Users, IReadOnlyList<IdentityAuditEntry> Audit, string? Error = null);
 
 /// <summary>Current actor's profile; entered passwords are never retained in a view model.</summary>
-public sealed record ProfilePageModel(UserProfileSnapshot Profile, string? Error = null, string? ProposedDisplayName = null);
+public sealed record ProfilePageModel(UserProfileSnapshot Profile, string? Error = null, ProfileMetadata? Proposed = null);
 
 [SupportedOSPlatform("linux")]
 internal sealed class IdentityUiExceptionFilter : IExceptionFilter
@@ -75,7 +75,10 @@ public abstract class IdentityUiController(LocalAdministratorAccounts accounts, 
         "account.nameExists" => "That sign-in name already exists. Choose another name.",
         "password.bounds" => "Use a password of 15–128 characters.",
         "account.credentialsDenied" => "Current password verification failed. Try again or wait for the account lockout to expire.",
-        "profile.displayName" => "Use at most 80 display-name characters without control characters.",
+        "profile.metadata" => "Use at most 80 characters for each name and a valid profile email address, without control characters.",
+        "profile.mappingInvalid" => "Use an exact HTTPS issuer and literal claim names. Identity, role and MFA claims cannot be mapped as metadata.",
+        "profile.mappingStale" => "This mapping changed. Review its current version and submit again.",
+        "profile.mappingCapacity" => "This installation supports up to 16 issuer profile mappings.",
         "account.capacity" => "This installation has reached the supported limit of 256 local accounts.",
         _ => "The change was rejected. Review the fields and try again.",
     };
@@ -100,10 +103,25 @@ internal static class IdentityUiLabels
         "account.passwordChanged" => "Password changed",
         "account.passwordDenied" => "Password verification denied",
         "profile.updated" => "Profile updated",
+        "profile.mappingSaved" => "Profile mapping saved",
+        "profile.providerRefreshed" => "Provider profile refreshed",
         _ => action,
+    };
+    internal static string ProfileDiagnostic(string code) => code switch
+    {
+        "displayName.missing" => "The provider did not supply a display name.",
+        "displayName.invalid" => "The provider supplied an invalid display name.",
+        "givenName.missing" => "The provider did not supply a given name.",
+        "givenName.invalid" => "The provider supplied an invalid given name.",
+        "familyName.missing" => "The provider did not supply a family name.",
+        "familyName.invalid" => "The provider supplied an invalid family name.",
+        "email.missing" => "The provider did not supply a profile email address.",
+        "email.invalid" => "The provider supplied an invalid profile email address.",
+        _ => "A provider profile field is unavailable.",
     };
     internal static string Account(string identity, IReadOnlyList<LocalUserSnapshot> users)
     {
+        if (identity.StartsWith("https://", StringComparison.Ordinal)) { return identity; }
         if (identity == "operator:offline") { return "Offline operator"; }
         var value = identity.StartsWith("local:", StringComparison.Ordinal) ? identity[6..] : identity;
         return Guid.TryParseExact(value, "D", out var id)

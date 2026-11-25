@@ -2,6 +2,15 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased OIDC profile defaults
+
+[Profile mapping](oidc-profile-defaults.md) now selects literal signed ID-token
+fields per exact issuer. Current provider observations stay separate from local
+name/email overrides, and mapping edits retire stale defaults immediately.
+Completed protocol validation precedes storage; metadata never changes roles,
+links accounts, verifies delivery or enrolls MFA. Fresh account schema 3 persists
+mappings, observations, personal metadata and atomic identity audit.
+
 ## Unreleased local users and resilient console navigation
 
 Administrators can manage local roles, enabled access and session revocation.
@@ -9,8 +18,9 @@ Rule, account and settings enablement use shared labelled on/off switches with
 keyboard and assistive-technology support; submission remains explicit.
 Personal profiles and current-password changes use versioned database state;
 last-enabled-admin checks and identity audit commit with the account change.
-The fresh unreleased account schema is version 2. Provider mapping and email/TOTP
-MFA remain open M5 gates. See [users and profiles](local-users-and-profiles.md).
+The fresh unreleased account schema is version 3. Signed OIDC metadata mapping and per-field overrides
+are implemented; runtime provider setup, LDAP/OAuth adapters and email/TOTP MFA
+remain open M5 gates. See [users and profiles](local-users-and-profiles.md).
 
 Browser challenges return to sign-in, and themed errors retain their HTTP status
 without depending on profile storage. Sidebar links have icons, content fills the

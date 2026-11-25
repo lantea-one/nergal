@@ -55,7 +55,9 @@ See [the ordered product workflow](docs/product-workflow.md) for the remaining w
 
 [Local user management and personal profiles](docs/local-users-and-profiles.md)
 provide explicit roles, last-administrator protection, revocation and atomic
-identity-store audit. Provider mapping and local MFA remain M5 work.
+identity-store audit. [Signed OIDC profile defaults](docs/oidc-profile-defaults.md)
+and per-field local overrides are implemented; runtime provider setup, LDAP/OAuth
+adapters and local MFA remain M5 work.
 
 For a persistent, isolated local controller and check-only source containers, see
 [the local sandbox guide](docs/local-sandbox.md). Private exports and credentials

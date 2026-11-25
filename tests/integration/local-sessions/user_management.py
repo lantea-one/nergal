@@ -25,12 +25,14 @@ def check_user_management(host, browser_type, root, tls, admin_tool, password, c
                                            '__RequestVerificationToken': browser.token('/login')})
 
     def post(browser, path, fields, expected=302, token_page='/manage/users'):
+        if path == '/profile/save':
+            fields = {'givenName': '', 'familyName': '', 'email': '', **fields}
         return browser.request(path, expected, {**fields, '__RequestVerificationToken': browser.token(token_page)})
 
     with host(root, tls, settings) as admin:
-        for path in ('/profile', '/manage/users'):
+        for path in ('/profile', '/manage/users', '/manage/identity/profiles'):
             admin.request(path, 401)
-        for path in ('/manage/users/create', '/manage/users/update', '/manage/users/revoke', '/profile/save', '/profile/password'):
+        for path in ('/manage/users/create', '/manage/users/update', '/manage/users/revoke', '/profile/save', '/profile/password', '/manage/identity/profiles/save'):
             admin.request(path, 401, {})
         admin.login()
         original = admin.cookies[cookie_name]
@@ -63,6 +65,8 @@ def check_user_management(host, browser_type, root, tls, admin_tool, password, c
         login(auditor, 'fixture-auditor')
         auditor_cookie = auditor.cookies[cookie_name]
         auditor.request('/manage/users', 403)
+        from profile_mappings import check_profile_mappings
+        check_profile_mappings(admin, auditor, database)
         from browser_errors import check_auditor_browser_errors
         check_auditor_browser_errors(auditor)
         for path in ('/manage/users/create', '/manage/users/update', '/manage/users/revoke'):
@@ -70,6 +74,7 @@ def check_user_management(host, browser_type, root, tls, admin_tool, password, c
         profile = auditor.request('/profile', 200)
         assert 'My profile' in profile and 'Local password' in profile
         assert 'fixture-auditor' in profile
+        auditor.request('/profile/save', 400, {'version': '0', 'displayName': 'incomplete', '__RequestVerificationToken': auditor.token('/profile')})
         before = count('IdentityAudit')
         post(auditor, '/profile/save', {'version': '0', 'displayName': 'Administrator <script>fixture</script>'}, token_page='/profile')
         assert auditor.location == '/profile'

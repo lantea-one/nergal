@@ -2,6 +2,11 @@
 
 ## Unreleased — router authoring and source conversion
 
+- Add audited exact-issuer OIDC profile mapping, signed provider defaults and
+  per-field personal overrides for names and descriptive email. Retire old defaults
+  immediately on mapping edits; refresh only after full protocol validation. Keep
+  metadata separate from roles, identity linking, verified delivery and MFA.
+  Use fresh account schema 3 (ADR 0059).
 - Use consistent accessible on/off switches for rule, account and settings
   enablement. Preserve explicit saves, last-administrator checks, dormant settings
   and reviewed firewall apply. Use green/red states with accessible descriptions
