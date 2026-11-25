@@ -42,6 +42,11 @@ is one acceptance environment. Its topology and integrations must not define cor
 contracts, defaults, required infrastructure or the limits of public conformance.
 See [product scope](product-workflow.md).
 
+The authenticated console root routes to sign-in, then Overview after local or
+federated authentication. Logout returns to sign-in. All destinations are fixed
+local paths; the session-only host falls back to its session page. See
+[local sessions](local-sessions.md) for validation and revocation boundaries.
+
 ## Boundaries
 
 1. MVC owns HTTP controllers and conventional views. Blazor provides reusable

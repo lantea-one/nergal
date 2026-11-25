@@ -159,7 +159,10 @@ internal static class FederatedLogin
                 await context.HttpContext.SignOutAsync(Session);
                 await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
                 ((ClaimsIdentity)principal.Identity!).AddClaim(new("sid", Registry(context.HttpContext).Register(admin)));
-                context.ReturnUri = "/session";
+                // Reassert a fixed local destination after the full protocol validation;
+                // neither caller return URLs nor provider fields choose navigation.
+                context.ReturnUri = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>()
+                    .GetValue<bool>("ControllerState:Enabled") ? "/manage" : "/session";
             };
             options.Events.OnRemoteFailure = context =>
             {

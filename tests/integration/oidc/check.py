@@ -148,7 +148,7 @@ class RelyingParty:
         assert parser.value
         return parser.value
 
-    def exchange(self, op, cert, expected, alter_form=None):
+    def exchange(self, op, cert, expected, alter_form=None, destination="/session"):
         _, location = self.request("/login/oidc", 302, {"__RequestVerificationToken": self.token("/login")})
         parts = urlsplit(location)
         assert parts.scheme + "://" + parts.netloc == op.issuer
@@ -160,9 +160,9 @@ class RelyingParty:
             form = json.load(response)
         if alter_form:
             alter_form(form)
-        _, destination = self.request("/signin-oidc", expected, form)
+        _, actual_destination = self.request("/signin-oidc", expected, form)
         if expected == 302:
-            assert destination == "/session"
+            assert actual_destination == destination
 
 
 
@@ -233,7 +233,7 @@ def exercise(temp):
 
             op.overrides = {"sub": "oidc-auditor-sub", "groups": ["fixture-auditors"]}
             auditor_rp = RelyingParty(browser)
-            auditor_rp.exchange(op, cert, 302)
+            auditor_rp.exchange(op, cert, 302, destination="/manage")
             audit_view = json.loads(auditor_rp.request("/controller/audit", 200)[0])
             assert audit_view["role"] == "nergal:auditor"
             assert audit_view["actorId"] == f"oidc:{op.issuer}:oidc-auditor-sub"
@@ -248,7 +248,7 @@ def exercise(temp):
 
             op.overrides = {"sub": "oidc-admin-sub", "groups": ["fixture-admins"]}
             admin_rp = RelyingParty(browser)
-            admin_rp.exchange(op, cert, 302)
+            admin_rp.exchange(op, cert, 302, destination="/manage")
             admin_csrf = admin_rp.token("/session")
             admin_rp.request("/controller/hosts", 400, {
                 "name": "missing-csrf",

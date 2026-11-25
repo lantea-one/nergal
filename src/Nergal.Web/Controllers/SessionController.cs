@@ -11,11 +11,13 @@ namespace Nergal.Web.Controllers;
 /// <summary>Local session endpoints mapped only by the explicitly enabled authentication host.</summary>
 [SupportedOSPlatform("linux")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class SessionController(LocalAdministratorAccounts accounts) : Controller
+public sealed class SessionController(LocalAdministratorAccounts accounts, IConfiguration configuration) : Controller
 {
+    private string SignedInDestination => configuration.GetValue<bool>("ControllerState:Enabled") ? "~/manage" : "~/session";
+
     /// <summary>Shows a blank, antiforgery-protected credential form.</summary>
     [HttpGet, AllowAnonymous]
-    public IActionResult Login() => View();
+    public IActionResult Login() => User.Identity?.IsAuthenticated == true ? LocalRedirect(SignedInDestination) : View();
 
     /// <summary>Verifies bounded form credentials. Every failure uses the same response without reflecting submitted values.</summary>
     [HttpPost, AllowAnonymous, ValidateAntiForgeryToken, EnableRateLimiting("local-login")]
@@ -33,12 +35,13 @@ public sealed class SessionController(LocalAdministratorAccounts accounts) : Con
         { Response.StatusCode = StatusCodes.Status401Unauthorized; return View("Login", false); }
         if (HttpContext.RequestServices.GetService<FederatedSessions>() is not null)
         { await HttpContext.SignOutAsync(FederatedLogin.Session); }
-        return LocalRedirect("~/session");
+        return LocalRedirect(SignedInDestination);
     }
 
     /// <summary>Begins a correlated authorization-code exchange for an explicitly configured external issuer.</summary>
     [HttpPost, AllowAnonymous, ValidateAntiForgeryToken, EnableRateLimiting("local-login"), RequestSizeLimit(8192)]
-    public IActionResult Federated() => Challenge(new AuthenticationProperties { RedirectUri = "/session" }, FederatedLogin.Protocol);
+    public IActionResult Federated() => Challenge(new AuthenticationProperties
+    { RedirectUri = configuration.GetValue<bool>("ControllerState:Enabled") ? "/manage" : "/session" }, FederatedLogin.Protocol);
 
     /// <summary>Displays the authenticated session page without accessing agent state.</summary>
     [HttpGet, Authorize]

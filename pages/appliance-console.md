@@ -6,6 +6,14 @@ of OPNsense and pfSense while retaining Nergal's Lantea light/dark styling and n
 nftables policy semantics. No PF rule-order, alias-refresh or interface assumptions
 are imported. This is the first M5 usability slice; M5 remains in progress.
 
+Open the console root to sign in. Successful authentication opens **Overview**;
+returning to the root or sign-in while authenticated also opens Overview.
+**Sign out** returns to sign-in and revokes the current local account sessions
+(or the current federated ticket). Credential and sign-out forms retain CSRF
+protection and fixed local redirects.
+
+![Console sign-in before authentication](assets/screenshots/console-sign-in-light.jpg)
+
 ## Find a task
 
 | Sidebar | Purpose |

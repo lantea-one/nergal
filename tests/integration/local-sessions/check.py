@@ -67,7 +67,7 @@ class Browser:
             self.last_headers = {k.lower(): v for k, v in response.getheaders()}
             self.location = response.getheader("Location")
             if expected == 302:
-                assert self.location in ("/login", "/session") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
+                assert self.location in ("/login", "/session", "/manage") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
             assert PASSWORD not in body
             return body
         finally:
@@ -177,7 +177,8 @@ def exercise(temp):
         browser.request("/manage/sources/conversion/plan/00000000-0000-0000-0000-000000000000/report", 401)
         for action in ("review", "commit"):
             browser.request("/manage/sources/conversion/" + action, 401, {})
-        assert 'href="/login"' in browser.request("/", 200)
+        browser.request("/?returnUrl=https%3A%2F%2Fexample.invalid", 302)
+        assert browser.location == "/login"
         browser.request("/login", 400, plain=True, headers={"X-Forwarded-Proto": "https"})
         browser.request("/session", 401)
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 200)
@@ -186,6 +187,10 @@ def exercise(temp):
         browser.request("/login", 413, {**fields, "password": "x" * 9000})
         browser.request("/login", 400, {"username": "fixture-admin", "password": PASSWORD})
         browser.request("/login?returnUrl=https%3A%2F%2Fexample.invalid", 302, fields)
+        assert browser.location == "/manage"
+        for entry in ("/", "/login?returnUrl=https%3A%2F%2Fexample.invalid"):
+            browser.request(entry, 302)
+            assert browser.location == "/manage"
         from appliance_navigation import check_appliance_navigation
         check_appliance_navigation(browser, ctrl_state)
         source_html = browser.request("/manage/sources", 200)
@@ -302,6 +307,10 @@ def exercise(temp):
         assert "Later contents" in browser.request(object_path, 200)
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
+        assert browser.location == "/login"
+        assert '<h1' in browser.request("/login", 200)
+        browser.request("/", 302)
+        assert browser.location == "/login"
         browser.cookies[ADMIN] = session
         browser.request("/session", 401)
         for _ in range(5):

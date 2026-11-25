@@ -29,9 +29,13 @@ a separate cookie, group authorization and session registry. The host suppresses
 separate default key-ring preload so that authentication, antiforgery and page
 protection use the selected provider without creating a second profile key ring.
 
-Visit `/login` and submit the antiforgery-protected form. A successful verification
-redirects to `/session`. Redirect destinations are fixed. The protected page
-shows the signed-in administrator and a logout form. Both POSTs validate antiforgery
+Open `/` to reach `/login` and submit the antiforgery-protected form. Successful
+local or OIDC sign-in opens the overview at `/manage` when controller state is
+enabled. Authenticated visits to `/` or `/login` also open the overview. A
+session-only installation without controller state uses `/session` instead.
+Redirect destinations are fixed; submitted return URLs cannot change them.
+The protected session page remains available with identity details and a logout form.
+Signing out returns to `/login`; revisiting `/` after sign-out also opens sign-in. Both POSTs validate antiforgery
 tokens. The host bounds request bodies to 8 KiB. Login allows ten submissions per
 process per minute with no queue. That shared budget also limits availability
 under heavy failed-login traffic. Account lockout persists independently.

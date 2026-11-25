@@ -2,6 +2,10 @@
 
 ## Unreleased — router authoring and source conversion
 
+- Route the authenticated console root through sign-in to Overview, skip the
+  credential form for current sessions and return to sign-in after logout.
+  Keep fixed local redirects and the session-only development fallback.
+
 - Add exhaustive source-bound native conversion plans, explicit table/include
   choices, original-coordinate mapping/gaps and separate atomic reviewed revision/
   pinned-list creation. Any unsupported statement blocks the complete candidate;
