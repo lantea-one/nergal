@@ -14,6 +14,17 @@ protection and fixed local redirects.
 
 ![Console sign-in before authentication](assets/screenshots/console-sign-in-light.jpg)
 
+[Dark sign-in](assets/screenshots/console-sign-in-dark.jpg) and
+[mobile sign-in](assets/screenshots/console-sign-in-mobile.jpg) show the same layout in the other supported presentations.
+
+The selected **Guardian** mark appears in the application and documentation
+headers, and is centered above the sign-in form with the Nergal wordmark. The
+same transparent silhouette uses theme colors for light/dark contrast. A local
+Guardian SVG favicon follows the browser theme, with the transparent PNG as a
+fallback, in MVC, Blazor and Pages. The
+centered sign-in footer shows `Nergal Firewall Management - TZ: <timezone>` using
+the browser timezone. Branding assets are local; no external image host is used.
+
 ## Find a task
 
 | Sidebar | Purpose |

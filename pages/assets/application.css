@@ -259,17 +259,30 @@ pre {
   text-decoration: none;
 }
 
-.brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), #1e40af);
-  color: #fff;
-  display: inline-flex;
+.guardian-mark {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  mask: url("../brand/guardian.png") center / contain no-repeat;
+  -webkit-mask: url("../brand/guardian.png") center / contain no-repeat;
+}
+
+.sign-in-brand {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.9rem;
+  gap: .25rem;
+  margin-bottom: 1.5rem;
+  color: var(--link, var(--primary));
+}
+
+.sign-in-brand .guardian-mark { width: 144px; height: 144px; }
+.sign-in-wordmark { font-size: 2rem; font-weight: 750; letter-spacing: -.04em; line-height: 1.2; }
+
+@media (forced-colors: active) {
+  .guardian-mark { background-color: CanvasText; }
 }
 
 .nav-links {
@@ -758,7 +771,6 @@ details.disclosure summary {
 .topbar { background: #041510; border-bottom: 2px solid #10b981; color: #ecfdf5; }
 .topbar .brand, .topbar .nav-link { color: #ecfdf5; }
 .topbar .nav-link:hover, .topbar .nav-link.active { background: #0f4d36; color: #fff; }
-.brand-mark { background: #0f4d36; border: 1px solid #167756; }
 :root[data-accent="emerald"] { --primary: #0f4d36; --primary-hover: #126247; --primary-soft: #10b9811a; --link: #0f4d36; }
 :root[data-theme="dark"] { color-scheme: dark; --text-subtle: #b2bdb7; --link: #6ee7b7; }
 :root[data-theme="light"] { color-scheme: light; --link: #0f4d36; }

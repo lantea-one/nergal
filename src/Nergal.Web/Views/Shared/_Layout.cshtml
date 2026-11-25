@@ -3,7 +3,6 @@
 @{
     var branding = ViewData["Branding"] as Nergal.Core.Controller.BrandingSettings ?? Nergal.Core.Controller.SystemSettingsSnapshot.Default.Branding;
     var appName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "nergal" : branding.ApplicationName;
-    var brandMark = char.ToUpperInvariant(appName[0]);
     var title = ViewData["Title"] as string ?? appName;
     var activeNav = ViewData["ActiveNav"] as string ?? "";
     var actorRole = ViewData["ActorRole"] as string;
@@ -15,6 +14,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title · @appName</title>
+    <link rel="icon" type="image/png" sizes="1254x1254" href="@Url.Content("~/brand/guardian.png")" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="@Url.Content("~/brand/guardian.svg")" asp-append-version="true" />
     <script src="@Url.Content("~/js/theme.js")" asp-append-version="true"></script>
     <link rel="stylesheet" href="@Url.Content("~/css/nergal.css")" asp-append-version="true" />
 </head>
@@ -23,7 +24,7 @@
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="@Url.Content(showNav ? "~/manage" : "~/")">
-                <span class="brand-mark" aria-hidden="true">@brandMark</span>
+                <span class="guardian-mark" aria-hidden="true"></span>
                 <span>@appName</span>
             </a>
 

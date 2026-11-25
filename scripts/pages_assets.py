@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep the documentation portal's shared application styles and theme initialization identical."""
+"""Keep the documentation portal's shared application styles, theme initialization and branding identical."""
 import argparse
 from pathlib import Path
 
@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parent.parent
 ASSETS = {
     'src/Nergal.Web/wwwroot/css/nergal.css': 'pages/assets/application.css',
     'src/Nergal.Web/wwwroot/js/theme.js': 'pages/assets/theme.js',
+    'src/Nergal.Web/wwwroot/brand/guardian.png': 'pages/brand/guardian.png',
+    'src/Nergal.Web/wwwroot/brand/guardian.svg': 'pages/brand/guardian.svg',
 }
 
 
@@ -23,12 +25,13 @@ def main():
     args = parser.parse_args()
     if not args.check:
         for source, target in ASSETS.items():
+            (ROOT / target).parent.mkdir(parents=True, exist_ok=True)
             (ROOT / target).write_bytes((ROOT / source).read_bytes())
     errors = verify_shared_assets()
     if errors:
         print('\n'.join(errors))
         return 1
-    print('PASS: Pages application stylesheet and theme initialization are identical.')
+    print('PASS: Pages application styles, theme initialization and branding are identical.')
     return 0
 
 
