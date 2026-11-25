@@ -78,7 +78,7 @@ per object and 64 entries per version; capacity errors leave no partial audit/st
 Native projection also has the stricter complete-observation budget documented in
 [the native static-set guide](native-static-lists.md#bounds-and-support-limits).
 
-Current stores use controller schema 4. Initialize a new store with the offline
+Current stores use controller schema 5. Initialize a new store with the offline
 controller initializer. The application rejects retired controller schemas and
 preserves existing files. Additional SQL engines remain M6 work.
 

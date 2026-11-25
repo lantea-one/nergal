@@ -960,13 +960,14 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             return Forbid();
         }
 
-        var settings = store.ReadSystemSettings();
+        var settings = store.ReadSystemSettingsVersion();
         var model = new SystemSettingsViewModel
         {
             ActorId = actorId,
             ActorRole = role,
             CanMutate = role == NergalRoles.Administrator,
-            Settings = settings,
+            Settings = settings.Settings,
+            SavedVersion = settings,
             StatusMessage = notice == "saved" ? "System settings saved and recorded in the append-only audit log." : null,
             ValidationErrors = [],
         };
@@ -1016,13 +1017,18 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         string? defaultInputVerdict,
         string? defaultForwardVerdict,
         string? defaultOutputVerdict,
-        bool requireChangeSummary)
+        bool requireChangeSummary,
+        [FromForm] string? settingsToken)
     {
         if (!ControllerAuthorization.TryResolveActor(User, out var actorId, out var role) ||
             role != NergalRoles.Administrator)
         {
             return Forbid();
         }
+
+        if (!SystemSettingsVersion.IsValidFormToken(settingsToken) ||
+            Request.HasFormContentType && Request.Form["settingsToken"].Count != 1)
+        { return BadRequest("settings.invalidVersion"); }
 
         var candidate = new SystemSettingsSnapshot(
             new BrandingSettings(
@@ -1074,22 +1080,50 @@ public sealed partial class ManagementController(ControllerStateStore store, App
 
         var errors = SystemSettingsCodec.Validate(candidate);
         if (errors.Count > 0)
-        {
-            Response.StatusCode = StatusCodes.Status400BadRequest;
-            ViewData["Branding"] = store.ReadSystemSettings().Branding;
-            return View("Settings", new SystemSettingsViewModel
-            {
-                ActorId = actorId,
-                ActorRole = role,
-                CanMutate = true,
-                Settings = candidate,
-                ErrorMessage = "One or more settings failed validation. Review the highlighted codes below.",
-                ValidationErrors = errors,
-            });
-        }
+        { return SettingsValidationFailure(candidate, settingsToken!, actorId, role, errors); }
 
-        store.SaveSystemSettings(candidate, actorId, role);
+        try { store.SaveSystemSettings(candidate, settingsToken!, actorId, role); }
+        catch (ControllerStateException error) when (error.Code == "settings.stale")
+        { return SettingsConflict(store.ReadSystemSettingsVersion(), actorId, role); }
+        catch (ControllerStateException error) when (error.Code == "settings.bounds")
+        { return SettingsValidationFailure(candidate, settingsToken!, actorId, role, [error.Code]); }
         return LocalRedirect("~/manage/settings?notice=saved");
+    }
+
+    private ViewResult SettingsValidationFailure(
+        SystemSettingsSnapshot candidate, string settingsToken, string actorId, string role, IReadOnlyList<string> errors)
+    {
+        var saved = store.ReadSystemSettingsVersion();
+        if (saved.FormToken != settingsToken) { return SettingsConflict(saved, actorId, role); }
+
+        Response.StatusCode = StatusCodes.Status400BadRequest;
+        ViewData["Branding"] = saved.Settings.Branding;
+        return View("Settings", new SystemSettingsViewModel
+        {
+            ActorId = actorId,
+            ActorRole = role,
+            CanMutate = true,
+            Settings = candidate,
+            SavedVersion = saved,
+            ErrorMessage = "One or more settings failed validation. Review the highlighted codes below.",
+            ValidationErrors = errors,
+        });
+    }
+
+    private ViewResult SettingsConflict(SystemSettingsVersion saved, string actorId, string role)
+    {
+        Response.StatusCode = StatusCodes.Status409Conflict;
+        ViewData["Branding"] = saved.Settings.Branding;
+        return View("Settings", new SystemSettingsViewModel
+        {
+            ActorId = actorId,
+            ActorRole = role,
+            CanMutate = true,
+            Settings = saved.Settings,
+            SavedVersion = saved,
+            ErrorMessage = "System settings changed while you were editing. Review the current settings and reapply your changes.",
+            ValidationErrors = [],
+        });
     }
 
     private async Task<FleetDashboardViewModel> BuildDashboardModelAsync(

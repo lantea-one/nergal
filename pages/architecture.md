@@ -130,7 +130,7 @@ The source viewer and conversion planner share a bounded lossless document and
 contextual partition. Explicit table roles and ordered uploaded include bindings
 produce exhaustive source-bound mappings/gaps. Any unsupported statement removes
 the complete candidate; source commands and server paths are never executed.
-Controller schema 4 stores immutable plans, original digests and audit; separate
+The controller SQLite schema stores immutable plans, original digests and audit; separate
 Administrator/CSRF commit recomputes the saved plan and atomically creates one
 linked revision plus pinned lists. Apply remains a separate agent workflow.
 Native meter update/add expiry is explicit intent and native operation-only drift

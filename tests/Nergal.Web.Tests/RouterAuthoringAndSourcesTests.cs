@@ -54,9 +54,9 @@ public sealed class RouterAuthoringAndSourcesTests
         Assert.Equal(-5, roundTrip.AuxiliaryFilter!.Priority);
     }
 
-    /// <summary>A blank stored settings row is corruption, not permission to reset operator intent.</summary>
+    /// <summary>An invalid stored settings payload is corruption, even when table and trigger definitions are intact.</summary>
     [Fact]
-    public void StoredSettings_BlankCorruptionFailsClosed()
+    public void StoredSettings_InvalidPayloadFailsClosed()
     {
         if (!OperatingSystem.IsLinux()) { return; }
         var root = Path.Combine(Path.GetTempPath(), "ng-setting-corrupt-" + Guid.NewGuid().ToString("N"));
@@ -64,11 +64,14 @@ public sealed class RouterAuthoringAndSourcesTests
         try
         {
             var store = ControllerStateStore.Initialize(new(root));
-            store.SaveSystemSettings(SystemSettingsSnapshot.Default, ControllerActorIdentity.FromLocalAccount(Guid.NewGuid()), NergalRoles.Administrator);
+            store.SaveSystemSettings(SystemSettingsSnapshot.Default, store.ReadSystemSettingsVersion().FormToken,
+                ControllerActorIdentity.FromLocalAccount(Guid.NewGuid()), NergalRoles.Administrator);
             using (var db = new SqliteConnection("Data Source=" + Path.Combine(root, "controller.db")))
             {
                 db.Open(); using var command = db.CreateCommand();
-                command.CommandText = "UPDATE system_settings SET settings_json = ' ' WHERE singleton = 1";
+                command.CommandText = "SELECT sql FROM sqlite_master WHERE name='system_settings_no_update'";
+                var definition = Assert.IsType<string>(command.ExecuteScalar());
+                command.CommandText = "DROP TRIGGER system_settings_no_update; UPDATE system_settings SET settings_json = '{}' WHERE version = 1; " + definition;
                 command.ExecuteNonQuery();
             }
             Assert.Equal("settings.corrupt", Assert.Throws<ControllerStateException>(() => store.ReadSystemSettings()).Code);

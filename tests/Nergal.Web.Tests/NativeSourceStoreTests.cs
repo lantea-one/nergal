@@ -106,6 +106,7 @@ public sealed class NativeSourceStoreTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
+    [InlineData(4)]
     [InlineData(99)]
     public void ObsoleteSchema_IsRejectedAndKeptIntact(int version)
     {
@@ -122,7 +123,7 @@ public sealed class NativeSourceStoreTests
                 command.CommandText = "PRAGMA user_version";
                 Assert.Equal((long)version, command.ExecuteScalar());
             }
-            Sql(path, "PRAGMA user_version=4;");
+            Sql(path, "PRAGMA user_version=5;");
             var reopened = ControllerStateStore.Open(new(path));
             Assert.Equal("accept", reopened.ReadNativeSource(source.Id)!.Content.Text);
             Assert.Single(reopened.ListAuditEntries());
@@ -152,11 +153,11 @@ public sealed class NativeSourceStoreTests
             var store = ControllerStateStore.Open(new(path), new OffsetClock(input));
             store.RegisterHost(new(Guid.NewGuid(), "synthetic", AgentTransportKind.Unix, "/run/nergal/control.sock", expectedServerUserId: 1001, createdAtUtc: input), Actor, NergalRoles.Administrator);
             store.SavePolicyRevision("{}", new string('a', 64), Actor, NergalRoles.Administrator);
-            store.SaveSystemSettings(SystemSettingsSnapshot.Default, Actor, NergalRoles.Administrator);
+            store.SaveSystemSettings(SystemSettingsSnapshot.Default, store.ReadSystemSettingsVersion().FormToken, Actor, NergalRoles.Administrator);
             store.ImportNativeSource(new("synthetic", "accept"), Actor, NergalRoles.Administrator);
             store.SaveReusableObject(null, 0, new("synthetic", ReusableObjectKind.Port, "", ["443"]), Actor, NergalRoles.Administrator);
             using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT created_at_utc FROM hosts UNION ALL SELECT created_at_utc FROM policy_revisions UNION ALL SELECT updated_at_utc FROM system_settings UNION ALL SELECT imported_at_utc FROM native_sources UNION ALL SELECT timestamp_utc FROM audit_log UNION ALL SELECT updated_at_utc FROM reusable_object_versions";
+            cmd.CommandText = "SELECT created_at_utc FROM hosts UNION ALL SELECT created_at_utc FROM policy_revisions UNION ALL SELECT imported_at_utc FROM native_sources UNION ALL SELECT timestamp_utc FROM audit_log UNION ALL SELECT updated_at_utc FROM reusable_object_versions";
             using var reader = cmd.ExecuteReader(); var timestamps = new List<DateTimeOffset>();
             while (reader.Read()) { timestamps.Add(DateTimeOffset.Parse(reader.GetString(0), System.Globalization.CultureInfo.InvariantCulture)); }
             Assert.NotEmpty(timestamps);

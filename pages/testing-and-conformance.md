@@ -192,3 +192,10 @@ language selector, and the [Overview host observation chart](overview-host-obser
 The populated chart check reads a real agent over pinned mutual TLS inside a
 disposable network namespace. The full native conformance fixture separately
 covers packet delivery and confirmed rollback.
+
+## System settings and controller backup
+
+The HTTPS settings fixture checks stale forms, immutable settings history, and
+online SQLite backup and isolated restore. Its restored controller can record
+a new version while a token from a different database history is rejected.
+See [controller SQLite backup and restore](controller-sqlite-backup.md).

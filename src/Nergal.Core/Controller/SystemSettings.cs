@@ -82,6 +82,9 @@ public sealed record SystemSettingsSnapshot(
 /// <summary>Strict validator and JSON serializer for <see cref="SystemSettingsSnapshot"/>.</summary>
 public static class SystemSettingsCodec
 {
+    /// <summary>Maximum length of a persisted settings JSON string.</summary>
+    public const int MaximumJsonLength = 32_768;
+
     private static readonly HashSet<string> ValidAccents = new(["blue", "emerald", "violet", "amber", "rose", "slate"], StringComparer.Ordinal);
     private static readonly HashSet<string> ValidThemes = new(["system", "light", "dark"], StringComparer.Ordinal);
     private static readonly HashSet<string> ValidDbProviders = new(["sqlite", "postgresql", "mariadb"], StringComparer.Ordinal);
@@ -269,7 +272,7 @@ public static class SystemSettingsCodec
             return SystemSettingsSnapshot.Default;
         }
 
-        if (json.Length > 32_768) { throw new JsonException("settings.bounds"); }
+        if (json.Length > MaximumJsonLength) { throw new JsonException("settings.bounds"); }
         using var document = JsonDocument.Parse(json);
         if (document.RootElement.ValueKind != JsonValueKind.Object || HasDuplicateSettingsProperties(document.RootElement))
         { throw new JsonException("settings.invalid"); }

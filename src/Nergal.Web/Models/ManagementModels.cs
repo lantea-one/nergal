@@ -77,8 +77,11 @@ public sealed class SystemSettingsViewModel
     /// <summary>Gets whether the viewer can save system settings.</summary>
     public required bool CanMutate { get; init; }
 
-    /// <summary>Gets the current system settings snapshot.</summary>
+    /// <summary>Gets the settings displayed by the form, including proposed values after input validation fails.</summary>
     public required SystemSettingsSnapshot Settings { get; init; }
+
+    /// <summary>Gets the committed settings version used by the form's optimistic concurrency check.</summary>
+    public required SystemSettingsVersion SavedVersion { get; init; }
 
     /// <summary>Gets optional non-sensitive confirmation notice.</summary>
     public string? StatusMessage { get; init; }

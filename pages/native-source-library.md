@@ -102,7 +102,7 @@ permits 128 plans and 64 MiB total content, with bounded request/report/intent f
 No deletion/retention UI is implemented. UTC instants display in the browser's local
 timezone with an explicit indication and the stored UTC instant in the tooltip.
 
-Current controller stores use **schema 4**. Initialize a fresh controller store
+Current controller stores use **schema 5**. Initialize a fresh controller store
 with `nergal-admin controller init ABSOLUTE_CONTROLLER_DIRECTORY`. Startup
 rejects retired or unknown schemas. Initialization refuses to replace an
 existing database or its SQLite sidecars. Controller, identity and protected
