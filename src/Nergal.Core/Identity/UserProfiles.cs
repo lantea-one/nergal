@@ -20,8 +20,17 @@ public sealed record LocalUserSnapshot(Guid Id, string UserName, string Role, bo
 /// <param name="DisplayName">Optional local display-name override; empty retains the identity's default.</param>
 /// <param name="Version">Expected profile version; zero represents no saved override.</param>
 /// <param name="UpdatedUtc">UTC metadata update instant, or null for no saved profile.</param>
+/// <param name="GivenName">Optional personal given-name override.</param>
+/// <param name="FamilyName">Optional personal family-name override.</param>
+/// <param name="Email">Optional descriptive mailbox override without delivery verification.</param>
+/// <param name="Provider">Current eligible provider defaults, or null until an enabled mapping is observed at sign-in.</param>
 public sealed record UserProfileSnapshot(string ActorId, string LoginName, string Role, Guid? LocalAccountId, long? AccountVersion,
-    string DisplayName, long Version, DateTimeOffset? UpdatedUtc);
+    string DisplayName, long Version, DateTimeOffset? UpdatedUtc, string GivenName = "", string FamilyName = "", string Email = "",
+    ProviderProfileSnapshot? Provider = null)
+{
+    /// <summary>Gets metadata resolved field by field without changing verified login or authority.</summary>
+    public ProfileMetadata Effective => new ProfileMetadata(DisplayName, GivenName, FamilyName, Email).Over(Provider?.Metadata ?? ProfileMetadata.Empty);
+}
 
 /// <summary>An immutable, credential-free event from the protected identity store.</summary>
 /// <param name="Sequence">Monotonic identity-store sequence, independent of controller events.</param>

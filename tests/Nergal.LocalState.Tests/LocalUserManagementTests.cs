@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
@@ -41,18 +42,18 @@ public sealed class LocalUserManagementTests
         var profile = await f.Run(a => a.ReadProfileAsync(auditor));
         Assert.Equal(0, profile.Version);
         Assert.Equal(count, f.Count("IdentityAudit"));
-        Assert.True((await f.Run(a => a.SaveProfileAsync(auditor, 0, "Administrator \U0001f981"))).Succeeded);
+        Assert.True((await f.Run(a => a.SaveProfileAsync(auditor, 0, new ProfileMetadata("Administrator \U0001f981")))).Succeeded);
         var saved = await f.Run(a => a.ReadProfileAsync(auditor));
         Assert.Equal("Administrator \U0001f981", saved.DisplayName);
         Assert.Equal(NergalRoles.Auditor, saved.Role);
         Assert.Equal(TimeSpan.Zero, saved.UpdatedUtc!.Value.Offset);
-        Assert.Equal(["profile.stale"], (await f.Run(a => a.SaveProfileAsync(auditor, 0, "lost edit"))).ErrorCodes);
+        Assert.Equal(["profile.stale"], (await f.Run(a => a.SaveProfileAsync(auditor, 0, new ProfileMetadata("lost edit")))).ErrorCodes);
         await Denied(() => f.Run(a => a.ListUsersAsync(auditor)));
         await Denied(() => f.Run(a => a.CreateUserAsync(auditor, "escalation", Password, NergalRoles.Administrator)));
         Assert.Empty((await f.Run(a => a.ReadProfileAsync(admin))).DisplayName);
         Assert.Equal(saved, await f.Run(a => a.ReadProfileAsync(auditor)));
         Assert.Equal(count + 1, f.Count("IdentityAudit"));
-        Assert.Equal(["profile.displayName"], (await f.Run(a => a.SaveProfileAsync(auditor, saved.Version, "hidden\ncontrol"))).ErrorCodes);
+        Assert.Equal(["profile.metadata"], (await f.Run(a => a.SaveProfileAsync(auditor, saved.Version, new ProfileMetadata("hidden\ncontrol")))).ErrorCodes);
     }
 
     /// <summary>Independent signed issuer/subject identities never merge profiles based on an identical name or email.</summary>
@@ -62,7 +63,7 @@ public sealed class LocalUserManagementTests
         await using var f = await Fixture.Create();
         var first = External("https://issuer-one.example", "subject");
         var second = External("https://issuer-two.example", "subject");
-        Assert.True((await f.Run(a => a.SaveProfileAsync(first, 0, "Shared display name"))).Succeeded);
+        Assert.True((await f.Run(a => a.SaveProfileAsync(first, 0, new ProfileMetadata("Shared display name")))).Succeeded);
         Assert.Empty((await f.Run(a => a.ReadProfileAsync(second))).DisplayName);
         Assert.Null((await f.Run(a => a.ReadProfileAsync(first))).LocalAccountId);
         Assert.Equal(["account.externalCredential"], (await f.Run(a => a.ChangeOwnPasswordAsync(first, 1, Password, Password))).ErrorCodes);
@@ -151,6 +152,84 @@ public sealed class LocalUserManagementTests
         Assert.False((await f.Run(a => a.VerifyAsync("fixture-admin", Password))).Succeeded);
         Assert.True((await f.Run(a => a.VerifyAsync("fixture-admin", replacement))).Succeeded);
         Assert.Equal(2L, f.Scalar("SELECT Version FROM LocalAccountState"));
+    }
+
+    /// <summary>Observed defaults stay separate from local overrides, and old mapping versions become immediately ineligible.</summary>
+    [Fact]
+    public async Task ProviderDefaults_AreExactIdentityVersionBoundAndPreserveLocalOverrides()
+    {
+        await using var f = await Fixture.Create();
+        var admin = await f.SignIn("fixture-admin");
+        var mapping = new OidcProfileMapping("https://issuer-one.example", 0, true, "name", "given_name", "family_name", "email", null);
+        Assert.True((await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping))).Succeeded);
+        var actor = External(mapping.Issuer, "subject");
+        using var claims = JsonDocument.Parse("""{"iss":"https://issuer-one.example","sub":"subject","name":"Provider","given_name":"Given","family_name":"Family","email":"person@example.test"}""");
+        Assert.True((await f.Run(a => a.RefreshVerifiedOidcProfileAsync(actor, claims.RootElement))).Succeeded);
+        var read = await f.Run(a => a.ReadProfileAsync(actor));
+        Assert.Equal(new ProfileMetadata("Provider", "Given", "Family", "person@example.test"), read.Effective);
+        Assert.Empty(read.DisplayName);
+        Assert.Equal(1, read.Provider!.MappingVersion);
+        Assert.Equal(TimeSpan.Zero, read.Provider.ObservedUtc.Offset);
+        Assert.True((await f.Run(a => a.SaveProfileAsync(actor, 0, new ProfileMetadata("Local", FamilyName: "Local family")))).Succeeded);
+        var local = await f.Run(a => a.ReadProfileAsync(actor));
+        Assert.Equal(new ProfileMetadata("Local", "Given", "Local family", "person@example.test"), local.Effective);
+        Assert.Null((await f.Run(a => a.ReadProfileAsync(External(mapping.Issuer, "other-subject")))).Provider);
+        Assert.Null((await f.Run(a => a.ReadProfileAsync(External("https://issuer-two.example", "subject")))).Provider);
+        Assert.True((await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping with { Version = 1, DisplayNameClaim = "nickname" }))).Succeeded);
+        var retired = await f.Run(a => a.ReadProfileAsync(actor));
+        Assert.Null(retired.Provider);
+        Assert.Equal("Local", retired.Effective.DisplayName);
+        Assert.Empty(retired.Effective.Email);
+        Assert.True((await f.Run(a => a.RefreshVerifiedOidcProfileAsync(actor, claims.RootElement))).Succeeded);
+        var refreshed = await f.Run(a => a.ReadProfileAsync(actor));
+        Assert.Equal(local.Version, refreshed.Version);
+        Assert.Equal("Local", refreshed.Effective.DisplayName);
+        Assert.Equal(["displayName.missing"], refreshed.Provider!.Diagnostics);
+        Assert.True((await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping with { Version = 2, Enabled = false }))).Succeeded);
+        Assert.Null((await f.Run(a => a.ReadProfileAsync(actor))).Provider);
+        Assert.Equal(1, f.Count("OidcProfileObservation"));
+    }
+
+    /// <summary>Current Administrator authority, expected versions and transactional audit protect mapping changes.</summary>
+    [Fact]
+    public async Task MappingMutations_DenyStaleOrRevokedAuthorityAndRollbackAuditFailure()
+    {
+        await using var f = await Fixture.Create();
+        var admin = await f.SignIn("fixture-admin");
+        var mapping = new OidcProfileMapping("https://issuer.example", 0, true, "name", "", "", "", null);
+        await Denied(() => f.Run(a => a.SaveOidcProfileMappingAsync(External(mapping.Issuer, "auditor"), mapping)));
+        Assert.Equal(["profile.mappingInvalid"], (await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping with { DisplayNameClaim = "groups" }))).ErrorCodes);
+        Assert.True((await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping))).Succeeded);
+        Assert.Equal(["profile.mappingStale"], (await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping))).ErrorCodes);
+        var events = f.Count("IdentityAudit");
+        f.Sql("CREATE TRIGGER fixture_mapping_audit_failure BEFORE INSERT ON IdentityAudit BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END");
+        await Assert.ThrowsAsync<AccountStoreException>(() => f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping with { Version = 1, Enabled = false })));
+        Assert.True(Assert.Single(await f.Run(a => a.ReadOidcProfileMappingsAsync(admin))).Enabled);
+        Assert.Equal(events, f.Count("IdentityAudit"));
+        f.Sql("DROP TRIGGER fixture_mapping_audit_failure");
+        var account = Assert.Single(await f.Run(a => a.ListUsersAsync(admin)));
+        Assert.True((await f.Run(a => a.RevokeUserAsync(admin, account.Id, account.Version))).Succeeded);
+        await Denied(() => f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping with { Version = 1 })));
+    }
+
+    /// <summary>Metadata cannot cross actor bindings or persist from ambiguous payloads or incomplete schema.</summary>
+    [Fact]
+    public async Task ProviderRefresh_DeniesLocalActorsIdentityMismatchDuplicatesAndBrokenSchema()
+    {
+        await using var f = await Fixture.Create();
+        var admin = await f.SignIn("fixture-admin");
+        var mapping = new OidcProfileMapping("https://issuer.example", 0, true, "name", "", "", "", null);
+        Assert.True((await f.Run(a => a.SaveOidcProfileMappingAsync(admin, mapping))).Succeeded);
+        using var mismatch = JsonDocument.Parse("""{"iss":"https://issuer.example","sub":"another","name":"wrong"}""");
+        var actor = External(mapping.Issuer, "subject");
+        Assert.Equal(["profile.providerIdentity"], (await f.Run(a => a.RefreshVerifiedOidcProfileAsync(actor, mismatch.RootElement))).ErrorCodes);
+        Assert.Equal(["profile.providerIdentity"], (await f.Run(a => a.RefreshVerifiedOidcProfileAsync(admin, mismatch.RootElement))).ErrorCodes);
+        using var duplicate = JsonDocument.Parse("""{"iss":"https://issuer.example","sub":"subject","name":"first","name":"second"}""");
+        Assert.Equal(["profile.providerClaims"], (await f.Run(a => a.RefreshVerifiedOidcProfileAsync(actor, duplicate.RootElement))).ErrorCodes);
+        Assert.Equal(0, f.Count("OidcProfileObservation"));
+        f.Sql("DROP TABLE OidcProfileObservation");
+        Assert.Equal("account.schemaOrIntegrity", (await Assert.ThrowsAsync<AccountStoreException>(() =>
+            f.Run(a => a.VerifyAsync("fixture-admin", Password)))).Code);
     }
 
     private static ClaimsPrincipal External(string issuer, string subject) => new(new ClaimsIdentity([

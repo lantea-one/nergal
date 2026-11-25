@@ -18,6 +18,7 @@ internal static class FederatedLogin
     internal const string Protocol = "nergal.oidc";
     internal const string Session = "nergal.federated-session";
     internal const string Browser = "nergal.browser-session";
+    private static readonly object VerifiedProfilePayload = new();
     private const string Cookie = "__Host-nergal-federated";
 
     internal static void Configure(IServiceCollection services, IConfigurationSection config, IDataProtectionProvider keys)
@@ -80,6 +81,7 @@ internal static class FederatedLogin
             options.UsePkce = true;
             options.RequireHttpsMetadata = true;
             options.SaveTokens = false;
+            options.GetClaimsFromUserInfoEndpoint = false;
             options.MapInboundClaims = false;
             // We build the complete bounded principal from verified signed data.
             // Framework defaults run later and otherwise delete its issuer claim
@@ -87,6 +89,8 @@ internal static class FederatedLogin
             options.ClaimActions.Clear();
             options.Scope.Clear();
             options.Scope.Add("openid");
+            options.Scope.Add("profile");
+            options.Scope.Add("email");
             options.RemoteAuthenticationTimeout = TimeSpan.FromMinutes(5);
             options.BackchannelTimeout = TimeSpan.FromSeconds(10);
             options.BackchannelHttpHandler = new IssuerBackchannel(issuer);
@@ -149,6 +153,7 @@ internal static class FederatedLogin
                 id.AddClaim(new(ClaimTypes.Name, admin.Subject));
                 id.AddClaim(new(ClaimTypes.Role, admin.Role));
                 id.AddClaim(new(ControllerActorIdentity.ActorClaimType, ControllerActorIdentity.FromFederatedAccount(admin.Issuer, admin.Subject)));
+                context.HttpContext.Items[VerifiedProfilePayload] = payload;
                 context.Principal = new(id);
                 context.Properties!.ExpiresUtc = admin.Expires;
                 context.Properties.AllowRefresh = false;
@@ -157,6 +162,7 @@ internal static class FederatedLogin
             };
             options.Events.OnTicketReceived = async context =>
             {
+                if (!OperatingSystem.IsLinux()) { context.Fail("Federated profile unavailable."); return; }
                 var principal = context.Principal!;
                 var role = principal.FindFirstValue(ClaimTypes.Role);
                 var issuer = principal.FindFirstValue("iss");
@@ -165,9 +171,22 @@ internal static class FederatedLogin
                     principal.FindFirstValue(ControllerActorIdentity.ActorClaimType) != ControllerActorIdentity.FromFederatedAccount(issuer, subject))
                 { context.Fail("Federated login denied."); return; }
                 var admin = new FederatedAdministrator(issuer, subject, context.Properties!.ExpiresUtc!.Value, role!);
-                await context.HttpContext.SignOutAsync(Session);
-                await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-                ((ClaimsIdentity)principal.Identity!).AddClaim(new("sid", Registry(context.HttpContext).Register(admin)));
+                var sid = Registry(context.HttpContext).Register(admin);
+                try
+                {
+                    if (context.HttpContext.Items.Remove(VerifiedProfilePayload, out var raw) && raw is string payload)
+                    {
+                        using var claims = JsonDocument.Parse(Base64UrlEncoder.DecodeBytes(payload), new JsonDocumentOptions { MaxDepth = 16 });
+                        var profiles = context.HttpContext.RequestServices.GetRequiredService<LocalAdministratorAccounts>();
+                        if (!(await profiles.RefreshVerifiedOidcProfileAsync(principal, claims.RootElement)).Succeeded)
+                        { Registry(context.HttpContext).Revoke(sid); context.Fail("Federated profile denied."); return; }
+                    }
+                    else { Registry(context.HttpContext).Revoke(sid); context.Fail("Federated profile denied."); return; }
+                    await context.HttpContext.SignOutAsync(Session);
+                    await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                    ((ClaimsIdentity)principal.Identity!).AddClaim(new("sid", sid));
+                }
+                catch { Registry(context.HttpContext).Revoke(sid); throw; }
                 // Reassert a fixed local destination after the full protocol validation;
                 // neither caller return URLs nor provider fields choose navigation.
                 context.ReturnUri = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>()

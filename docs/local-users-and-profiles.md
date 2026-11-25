@@ -35,9 +35,9 @@ none modify production accounts automatically.
 ## Profiles and credentials
 
 **System / My profile & session** shows the verified sign-in name and role
-separately from the optional display-name override. The override is database-backed,
+separately from optional display-name, given-name, family-name and profile-email overrides. The override is database-backed,
 versioned, escaped on output and used in the desktop profile link. It cannot grant
-a role or change/link identity. Leaving it blank uses the identity default. Names
+a role or change/link identity. Blank fields use current provider defaults; display name falls back to the verified identity name. Profile email does not verify delivery or enroll MFA. Names
 can contain up to 80 Unicode characters, with malformed Unicode/control characters
 denied. Profile reads do not create rows or audit entries.
 
@@ -54,8 +54,8 @@ Passwords never enter view models or audit events.
 
 ## Storage and audit
 
-The private credential database uses account schema 2 with explicit role claims,
-per-account state, personal profiles and append-only identity audit. The former
+The private credential database uses account schema 3 with explicit role claims,
+per-account state, personal profiles and append-only identity audit. Mappings and provider observations remain separate from local metadata overrides. The former
 singleton slot is removed. Missing roles fail closed; there is no implicit
 Administrator default. Initialization creates no user; offline provisioning remains
 one-time bootstrap even though authenticated management can add more accounts.
@@ -76,8 +76,9 @@ process/agent boundaries remain in force.
 
 ## Remaining M5 identity gates
 
-This slice does not complete M5. Configurable OIDC/OAuth/LDAP provider profile
-mappings and provider defaults with local overrides remain required. LDAP must
+This slice does not complete M5. Signed OIDC profile defaults and per-field local overrides are implemented in
+[OIDC profile defaults](oidc-profile-defaults.md). Runtime provider configuration,
+generic OAuth and LDAP profile mapping remain required. LDAP must
 support direct sign-in. Local email and TOTP/authenticator MFA, administrator
 email-delivery screens, optional enrollment with Administrator/all/neither
 requirement policy, and explicit per-provider federated bypass with optional

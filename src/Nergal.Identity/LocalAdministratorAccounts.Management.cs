@@ -1,7 +1,6 @@
 using System.Data;
 using System.Globalization;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -36,11 +35,12 @@ public sealed partial class LocalAdministratorAccounts
         context.ChangeTracker.Clear();
         var actor = await ActorAsync(principal, administrator: false);
         var profile = await context.Set<LocalProfile>().AsNoTracking().SingleOrDefaultAsync(p => p.ActorId == actor.Id);
-        if (profile is not null && (profile.Version < 1 || !ValidDisplayName(profile.DisplayName))) { throw new AccountStoreException("account.corrupt"); }
+        if (profile is not null && (profile.Version < 1 || !new ProfileMetadata(profile.DisplayName, profile.GivenName, profile.FamilyName, profile.Email).IsValid)) { throw new AccountStoreException("account.corrupt"); }
         return new(actor.Id, actor.Name, actor.Role, actor.LocalId,
             actor.LocalId is null ? null : (await StateAsync(actor.LocalId.Value.ToString("D"))).Version,
             profile?.DisplayName ?? "", profile?.Version ?? 0,
-            ReadTime(profile?.UpdatedUtc));
+            ReadTime(profile?.UpdatedUtc), profile?.GivenName ?? "", profile?.FamilyName ?? "", profile?.Email ?? "",
+            actor.LocalId is null ? await ReadProviderAsync(actor.Id, principal.FindFirstValue("iss")!) : null);
     }
 
     /// <summary>Creates an additional local account only under serialized current Administrator authorization; never overwrites a name.</summary>
@@ -107,15 +107,18 @@ public sealed partial class LocalAdministratorAccounts
             return Success();
         });
 
-    /// <summary>Saves only the current actor's display-name override; identity, role and other people's profiles cannot be supplied.</summary>
-    public Task<LocalProvisionResult> SaveProfileAsync(ClaimsPrincipal principal, long expectedVersion, string displayName)
+    /// <summary>Saves only the current actor's profile metadata overrides; identity, role and other people's profiles cannot be supplied.</summary>
+    public Task<LocalProvisionResult> SaveProfileAsync(ClaimsPrincipal principal, long expectedVersion, ProfileMetadata metadata)
         => MutateAsync(principal, false, async actor =>
         {
-            if (!ValidDisplayName(displayName)) { return Failure("profile.displayName"); }
+            if (metadata is null || !metadata.IsValid) { return Failure("profile.metadata"); }
             var profile = await context.Set<LocalProfile>().SingleOrDefaultAsync(p => p.ActorId == actor.Id);
             if ((profile?.Version ?? 0) != expectedVersion) { return Failure("profile.stale"); }
             if (profile is null) { profile = new() { ActorId = actor.Id }; context.Add(profile); }
-            profile.DisplayName = displayName;
+            profile.DisplayName = metadata.DisplayName;
+            profile.GivenName = metadata.GivenName;
+            profile.FamilyName = metadata.FamilyName;
+            profile.Email = metadata.Email;
             profile.Version = checked(profile.Version + 1);
             profile.UpdatedUtc = Now();
             Audit(actor.Id, actor.Role, "profile.updated", actor.Id);
@@ -226,12 +229,6 @@ public sealed partial class LocalAdministratorAccounts
     private static DateTimeOffset? ReadTime(string? value) => value is null ? null :
         DateTime.TryParseExact(value, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var time) && time.Kind == DateTimeKind.Utc
             ? new DateTimeOffset(time) : throw new AccountStoreException("account.corrupt");
-    private static bool ValidDisplayName(string? value)
-    {
-        if (value is null || value.Length > 160 || value.EnumerateRunes().Count() > 80 || value.Any(char.IsControl)) { return false; }
-        try { _ = new UTF8Encoding(false, true).GetByteCount(value); return true; }
-        catch (EncoderFallbackException) { return false; }
-    }
     private static LocalProvisionResult Success() => new([]);
     private static LocalProvisionResult Failure(string code) => new([code]);
     private sealed record AccountActor(string Id, string Role, string Name, Guid? LocalId);

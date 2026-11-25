@@ -838,3 +838,15 @@ uses one column without horizontal page overflow; long badges and imported objec
 identifiers wrap. Protocol changes still select the transport versus ICMP control.
 Text-free switches retain accessible names, keyboard operation and distinct
 red/green states with knob position as a non-color cue.
+
+## OIDC profile defaults and overrides
+
+Core projection tests exercise exact literal claim names, reserved selector denial,
+optional missing/invalid values, duplicate JSON, bounded Unicode/mailboxes and
+defensive snapshots. Real Identity/SQLite tests cover issuer/subject isolation,
+per-field overrides, current mapping versions/disabled state, current role/stamp
+denial, audit failure rollback and incomplete-schema denial. HTTPS mapping forms
+verify unknown/repeated input, expected versions, switch-off submission and CSRF/RBAC.
+The real disposable OIDC issuer checks signed metadata and escaping, independent
+local overrides, nonce-failure non-persistence, refresh and atomic audit failure
+sign-in denial. No browser claim overlay or UserInfo request supplies metadata.

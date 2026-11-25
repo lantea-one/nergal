@@ -108,6 +108,8 @@ internal static class LocalSessionHost
         app.MapControllerRoute("local-users", "manage/users", new { controller = "Users", action = "Index" });
         foreach (var action in new[] { "Create", "Update", "Revoke" })
         { app.MapControllerRoute("local-users-" + action, "manage/users/" + action.ToLowerInvariant(), new { controller = "Users", action }); }
+        app.MapControllerRoute("profile-mappings", "manage/identity/profiles", new { controller = "IdentityProfiles", action = "Index" });
+        app.MapControllerRoute("profile-mappings-save", "manage/identity/profiles/save", new { controller = "IdentityProfiles", action = "Save" });
         app.MapControllerRoute("user-profile", "profile", new { controller = "Profile", action = "Index" });
         foreach (var action in new[] { "Save", "Password" })
         { app.MapControllerRoute("user-profile-" + action, "profile/" + action.ToLowerInvariant(), new { controller = "Profile", action }); }
