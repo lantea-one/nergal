@@ -130,8 +130,10 @@ On remote managed hosts:
 
 ## Unreleased controller schema 4
 
-The source, typed object and conversion-plan libraries require controller schema 4. Existing
-schema-1/2/3 controllers need an explicit offline `nergal-admin controller upgrade`
-after a verified backup and stopping writers. New stores initialize at schema 4.
-This upgrade does not change account or agent journal schemas. See
-[the source library upgrade procedure](native-source-library.md).
+The source, typed object and conversion-plan libraries use controller schema 4.
+Initialize a fresh directory with `nergal-admin controller init`. Startup rejects
+older development schemas and initialization refuses to replace an existing
+store. Handle retained development data separately. The account store and
+protected agent journal have their own initialization and ownership boundaries.
+See the [source library](native-source-library.md) and the
+[fresh-schema decision](decisions/0065-fresh-prerelease-database-schemas.md).

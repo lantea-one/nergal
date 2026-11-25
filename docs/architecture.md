@@ -231,8 +231,8 @@ conversion. Exact sources and exported reports remain private.
 Native source ingestion now persists immutable exact UTF-8 snapshots and attributed
 audit entries transactionally (introduced in controller schema 2, retained in schema 4). The optional operator file
 catalog is staging only. Web uploads never execute source text, and original-file
-downloads use the verified database snapshot. Existing controllers require explicit
-offline `controller upgrade`; no additional SQL adapter is introduced. See
+downloads use the verified database snapshot. Initialize current-schema
+controller stores offline. Ordinary startup rejects retired formats. See
 [source library](native-source-library.md) and [ADR 0038](decisions/0038-database-native-source-snapshots.md).
 
 Timestamp persistence and API contracts use UTC instants. Shared MVC/Blazor time
@@ -328,8 +328,8 @@ with transactional audit. Separate Administrator/CSRF commit recomputes against
 database originals, verifies the full saved content binding, then atomically creates
 one revision and missing pinned list history. Replay, changed logic, source mismatch
 and failed audit leave no partial write. Import never contacts an agent; existing
-revision review and confirmed apply remain mandatory. Explicit offline upgrades
-preserve schema-1/2/3 data; web startup never migrates. See ADR 0055.
+revision review and confirmed apply remain mandatory. Fresh initialization
+creates the current schema. See ADR 0055 and ADR 0065.
 
 Meter timeout refresh is explicit intent and a distinct feature (ADR 0056). Native
 `meter`/`update` maps to refreshed idle expiry, while legacy `add` retains creation

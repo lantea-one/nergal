@@ -135,7 +135,7 @@ Administrator/CSRF commit recomputes the saved plan and atomically creates one
 linked revision plus pinned lists. Apply remains a separate agent workflow.
 Native meter update/add expiry is explicit intent and native operation-only drift
 is detected. See the [conversion guide](native-source-library.md) for supported
-grammar, offline upgrades and independent packet/rollback evidence.
+grammar, fresh store initialization and independent packet/rollback evidence.
 
 The first M5 [appliance-console](appliance-console.md) slice separates presentation
 from privilege. Pure state-based guidance only chooses navigation; pending/recovery

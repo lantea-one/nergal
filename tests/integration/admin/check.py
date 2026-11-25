@@ -78,31 +78,23 @@ def exercise(directory):
     print("PASS: explicit one-time initialization, denied provisioning, exact pipe framing, no terminal echo and mode restoration")
 
 
-def controller_upgrade(directory):
-    """Only an explicit offline invocation upgrades legacy state; unknown versions remain untouched."""
+def controller_fresh_baseline(directory):
+    """Offline initialization refuses to replace a previous development database."""
     directory.mkdir(mode=0o700)
     invoke(["controller", "init", str(directory)], 0)
     with sqlite3.connect(directory / "controller.db") as db:
-        db.execute("DROP TABLE native_conversion_commits")
-        db.execute("DROP TABLE native_conversion_plans")
-        db.execute("DROP TABLE reusable_object_versions")
-        db.execute("DROP TABLE reusable_objects")
-        db.execute("DROP TABLE native_sources")
-        db.execute("PRAGMA user_version=1")
-    invoke(["controller", "upgrade", str(directory)], 0)
-    invoke(["controller", "upgrade", str(directory)], 0)
-    with sqlite3.connect(directory / "controller.db") as db:
         assert db.execute("PRAGMA user_version").fetchone() == (4,)
-        assert db.execute("SELECT count(*) FROM native_sources").fetchone() == (0,)
-        db.execute("PRAGMA user_version=99")
-    assert b"controller.upgradeUnsupported" in invoke(["controller", "upgrade", str(directory)], 1)
+        db.execute("PRAGMA user_version=3")
+    assert b"controller.exists" in invoke(["controller", "init", str(directory)], 1)
+    invoke(["controller", "upgrade", str(directory)], 2)
     with sqlite3.connect(directory / "controller.db") as db:
-        assert db.execute("PRAGMA user_version").fetchone() == (99,)
-    print("PASS: explicit idempotent controller schema upgrade and unknown-version denial")
+        assert db.execute("PRAGMA user_version").fetchone() == (3,)
+        assert db.execute("SELECT count(*) FROM native_sources").fetchone() == (0,)
+    print("PASS: fresh controller initialization and refusal to replace retired schema")
 
 
 if __name__ == "__main__":
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="nergal-provision-") as root:
         exercise(Path(root))
-        controller_upgrade(Path(root) / "controller")
+        controller_fresh_baseline(Path(root) / "controller")

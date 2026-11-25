@@ -88,7 +88,7 @@ tokens per document, 64 delimiter groups deep; conversion permits 32 distinct
 snapshots, 2 MiB combined source bytes, 8 include levels and 131,072 expanded terms.
 Literal collections are bounded to 64 entries. Exhausted bounds fail explicitly.
 
-## Storage, authorization and upgrades
+## Storage and authorization
 
 Originals, plans, mappings/gaps, immutable revisions, reusable lists and attributed
 audit live in the controller database. Files are derived artifacts. Source and plan
@@ -102,19 +102,12 @@ permits 128 plans and 64 MiB total content, with bounded request/report/intent f
 No deletion/retention UI is implemented. UTC instants display in the browser's local
 timezone with an explicit indication and the stored UTC instant in the tooltip.
 
-New controller stores use **schema 4**. Existing schema-1/2/3 stores require an
-explicit offline upgrade; web startup never silently migrates them:
+Current controller stores use **schema 4**. Initialize a fresh controller store
+with `nergal-admin controller init ABSOLUTE_CONTROLLER_DIRECTORY`. Startup
+rejects retired or unknown schemas. Initialization refuses to replace an
+existing database or its SQLite sidecars. Controller, identity and protected
+agent stores are independent. Other SQL backends remain M6 work.
 
-1. Stop all controller writers and take a verified SQLite backup, including any
-   uncheckpointed WAL state.
-2. Run `nergal-admin controller upgrade ABSOLUTE_CONTROLLER_DIRECTORY` under the
-   store's owner identity.
-3. Restart and verify retained sources, objects, hosts, settings, revisions and
-   audit. The atomic idempotent operation rejects unknown versions, collisions and
-   invalid protection definitions without repair. Agent/account stores are separate.
-
-The isolated local sandbox stops its own writer for this upgrade. It does not
-perform a production upgrade. Other SQL backends remain deferred to M6.
 `NativeSources:Directory` is optional staging: **Import staged …** makes a new
 immutable database copy; later file changes cannot overwrite it. A basic
 installation requires no staging directory or particular topology.

@@ -78,10 +78,9 @@ per object and 64 entries per version; capacity errors leave no partial audit/st
 Native projection also has the stricter complete-observation budget documented in
 [the native static-set guide](native-static-lists.md#bounds-and-support-limits).
 
-New stores use controller schema 4. Existing schema-1/2/3 stores need a verified
-SQLite backup and explicit offline `nergal-admin controller upgrade` before restart;
-the web process never migrates. See the source-library upgrade procedure. Native
-projection adds no SQL migration. Additional SQL engines remain M6 work.
+Current stores use controller schema 4. Initialize a new store with the offline
+controller initializer. The application rejects retired controller schemas and
+preserves existing files. Additional SQL engines remain M6 work.
 
 Native named objects now have complete definition/content/handle/lookup receipts,
 generation-consistent collection and confirmed apply/rollback. Dynamic meters remain
