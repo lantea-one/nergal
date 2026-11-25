@@ -2,6 +2,16 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased contextual native declarations
+
+Shared viewer/import analysis now retains ordered contextual statements over the
+original tree. Declaration counts require table/chain scope; keyword sequences in
+raw expressions cannot inflate them. Unknown heads are explicit masked review
+topics. Object bodies, directives, includes, commands and rule expressions remain
+source data requiring semantic mapping; conversion is still blocked. Existing
+schema-2 reports and source workflow screenshots remain applicable. See
+[the source workflow](native-source-library.md).
+
 ## Unreleased native source structure
 
 The combined source viewer/import analysis now builds a bounded delimiter tree

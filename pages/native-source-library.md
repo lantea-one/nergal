@@ -48,6 +48,16 @@ physical source lines; tabs count as one column. Structural completion is not
 native syntax validation or semantic conversion. See
 [ADR 0052](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0052-bounded-native-source-structure.md).
 
+The shared analysis also partitions original nodes into ordered contextual
+statements, retaining all trivia and raw expressions. It recognizes root table
+headers and table-local chain/object headers; table/chain counts come from those
+scopes rather than keyword sequences inside definitions or rules. Definitions,
+includes and native commands remain source data. Unclassified heads appear as
+`source.unclassifiedStatements` review topics with value-free line positions.
+Object bodies and rule expressions still need semantic parsing. No statement is
+discarded, include opened or command executed; conversion remains blocked.
+See [ADR 0053](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0053-native-source-declaration-partition.md).
+
 The following captures use staged synthetic sources in a separate controller.
 Complete grouping retains semantic gaps; failed grouping identifies the exact
 position without partial counts. The mobile light view has no page overflow.

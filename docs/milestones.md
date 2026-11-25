@@ -86,6 +86,9 @@ The source viewer and import workflow now share one lossless bounded tokenizatio
 and structural parsing/review pipeline. Exact nested delimiter spans, bounded depth
 and value-free schema-2 diagnostics are implemented; semantic parsing, include
 mappings and persisted gap plans remain open. Structural success still grants no conversion authority.
+Ordered contextual statement partitioning now retains all original nodes and raw
+expressions, derives declaration counts from legal header scopes, and reports
+unclassified heads explicitly. Typed expression mapping is still open.
 Maps, concatenations, arbitrary native object types, standalone unused declarations
 and native dynamic-list options are not claimed by M3. Their treatment must be
 explicit in the supported import grammar and gap reports.

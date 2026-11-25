@@ -65,9 +65,10 @@ public static class NativeMigrationReviewer
     /// <exception cref="ArgumentNullException">Source is null.</exception>
     public static NativeMigrationReview Review(string source) => NativeSourceAnalyzer.Analyze(source).Review;
 
-    internal static NativeMigrationReview Review(NativeSourceStructureResult structure)
+    internal static NativeMigrationReview Review(NativeSourceStructureResult structure, NativeSourceDeclarations? declarations)
     {
         if (structure.Tree is not { } tree) { return Incomplete(structure.Summary.Diagnostic!.Code); }
+        ArgumentNullException.ThrowIfNull(declarations);
         var document = tree.Document;
         var tokens = new List<Token>();
         for (var i = 0; i < document.Tokens.Count; i++)
@@ -77,13 +78,6 @@ public static class NativeMigrationReviewer
             // Keep private quoted/reference values opaque even though the frontend retains their spans.
             var text = token.Kind is NativeSourceTokenKind.Bare or NativeSourceTokenKind.Symbol ? document.GetText(i) : "";
             tokens.Add(new(text, token.Span.Line, token.Kind == NativeSourceTokenKind.Bare && text.All(IsWord)));
-        }
-        var tables = 0;
-        var chains = 0;
-        for (var i = 0; i < tokens.Count; i++)
-        {
-            if (Match(tokens, i, ["table"]) && i + 3 < tokens.Count && tokens[i + 1].Text is "inet" or "ip" or "ip6" or "bridge" or "arp" or "netdev" && tokens[i + 3].Text == "{") { tables++; }
-            if (Match(tokens, i, ["chain"]) && i + 2 < tokens.Count && tokens[i + 2].Text == "{") { chains++; }
         }
         var signals = new List<MigrationSignal>();
         foreach (var topic in Topics)
@@ -95,7 +89,12 @@ public static class NativeMigrationReviewer
             }
             if (lines.Count > 0) { signals.Add(new(topic.Code, topic.Description, topic.Kind, lines.AsReadOnly())); }
         }
-        return new(true, null, tables, chains, signals.AsReadOnly());
+        if (declarations.Diagnostics.Count > 0)
+        {
+            signals.Add(new("source.unclassifiedStatements", "Map unclassified source statements explicitly; none may be discarded.",
+                MigrationSignalKind.SourceResolution, Array.AsReadOnly(declarations.Diagnostics.Select(d => d.Span.Line).Distinct().ToArray())));
+        }
+        return new(true, null, declarations.TableCount, declarations.ChainCount, signals.AsReadOnly());
     }
 
     private static bool IsWord(char c) => char.IsLetterOrDigit(c) || c is '_' or '-' or '.' or '/' or ':';

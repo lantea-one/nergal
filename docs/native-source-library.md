@@ -69,6 +69,16 @@ native syntax validity, semantic compatibility or conversion readiness. Semantic
 parsing, explicit include mappings and persisted gap plans remain M4 work. See
 [ADR 0052](decisions/0052-bounded-native-source-structure.md).
 
+The shared analysis also partitions original nodes into ordered contextual
+statements, retaining all trivia and raw expressions. It recognizes root table
+headers and table-local chain/object headers; table/chain counts come from those
+scopes rather than keyword sequences inside definitions or rules. Definitions,
+includes and native commands remain source data. Unclassified heads appear as
+`source.unclassifiedStatements` review topics with value-free line positions.
+Object bodies and rule expressions still need semantic parsing. No statement is
+discarded, include opened or command executed; conversion remains blocked.
+See [ADR 0053](decisions/0053-native-source-declaration-partition.md).
+
 These captures use staged synthetic sources in a separate disposable controller.
 The complete structure still reports semantic work; the failed structure shows
 the exact mismatch position and omits partial counts. The mobile light view fits

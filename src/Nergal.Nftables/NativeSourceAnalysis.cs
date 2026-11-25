@@ -4,13 +4,15 @@ namespace Nergal.Nftables;
 /// <remarks>The lexical document contains private source values. Use the value-masked Review for inventory reports.</remarks>
 public sealed class NativeSourceAnalysis
 {
-    internal NativeSourceAnalysis(NativeSourceLexingResult lexical, NativeSourceStructureResult structure, NativeMigrationReview review)
-    { Lexical = lexical; Structure = structure; Review = review; }
+    internal NativeSourceAnalysis(NativeSourceLexingResult lexical, NativeSourceStructureResult structure, NativeSourceDeclarations? declarations, NativeMigrationReview review)
+    { Lexical = lexical; Structure = structure; Declarations = declarations; Review = review; }
 
     /// <summary>Gets the complete source tokens or the exact lexical failure used by the review.</summary>
     public NativeSourceLexingResult Lexical { get; }
     /// <summary>Gets the complete structural tree or failure over the same token document.</summary>
     public NativeSourceStructureResult Structure { get; }
+    /// <summary>Gets contextual statement partitioning over the same tree, or null when structure failed; raw expressions remain unparsed.</summary>
+    public NativeSourceDeclarations? Declarations { get; }
     /// <summary>Gets the non-exhaustive inventory derived only from this same complete structural result.</summary>
     public NativeMigrationReview Review { get; }
     /// <summary>Returns status only, never private source values.</summary>
@@ -27,6 +29,7 @@ public static class NativeSourceAnalyzer
     {
         var lexical = NativeSourceLexer.Lex(source);
         var structure = NativeSourceStructureParser.Parse(lexical);
-        return new(lexical, structure, NativeMigrationReviewer.Review(structure));
+        var declarations = structure.Tree is { } tree ? NativeSourceDeclarationParser.Parse(tree) : null;
+        return new(lexical, structure, declarations, NativeMigrationReviewer.Review(structure, declarations));
     }
 }
