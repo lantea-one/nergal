@@ -1,6 +1,6 @@
 # ADR 0050: Lossless native source tokenization
 
-Status: Accepted for a bounded lexical frontend; semantic conversion remains blocked.
+Status: Accepted for a bounded lexical frontend. Later semantic conversion follows ADR 0055.
 
 The inspection slice below remains unchanged. Source-bound semantic conversion
 now extends this frontend under [ADR 0055](0055-source-bound-native-conversion-plans.md);

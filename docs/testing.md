@@ -776,6 +776,7 @@ expire and grant a new burst. The bounded driver fails if it misses an expiry
 window; the test never falls back to a parent namespace.
 
 Imported intent also runs the existing complete auxiliary/bridge native observation,
+with explicit dual-stack refreshed-expiry rules in the agent matrix, then
 agent confirm, explicit rollback, independent timed rollback, restart, collision and
 drift-denial scenarios, including named sets. These fixtures use synthetic data and
 isolated namespaces. They establish the declared conversion slice, not arbitrary

@@ -1,6 +1,6 @@
 # ADR 0053: Native source declaration and statement partition
 
-Status: Accepted for source-head classification; typed semantic conversion remains blocked.
+Status: Accepted for source-head classification. Later semantic conversion follows ADR 0055.
 
 The inspection slice below remains unchanged. Source-bound semantic conversion
 now extends this frontend under [ADR 0055](0055-source-bound-native-conversion-plans.md);

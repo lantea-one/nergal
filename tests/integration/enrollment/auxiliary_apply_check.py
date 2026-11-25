@@ -195,6 +195,18 @@ opened = json.loads(run('dotnet', compiler, 'native-static-open-json' if named e
 if os.environ.get('NERGAL_NATIVE_IMPORT_ACCEPTANCE') == '1':
     # Convert complete native snapshots before the existing independent packet/agent assertions.
     def imported_intent(value):
+        # Exercise refreshed-expiry receipt reconstruction and rollback as well as legacy add.
+        for policy in (value['filter'], value.get('auxiliaryFilter', {}).get('filter', {})):
+            for rule in policy.get('rules', []):
+                if rule.get('rateLimit'):
+                    rule['rateLimit']['refreshEntryTimeout'] = True
+        # The full named-set matrix already approaches the protected observation
+        # budget. Keep every named lookup/drift case intact; exercise both refresh
+        # families in the separate agent matrix without raising that safety limit.
+        for family in (() if named else ('ipv4', 'ipv6')):
+            value['filter']['rules'].append({'family': family, 'protocol': 'udp', 'verdict': 'accept',
+                'destinationPort': 19111, 'rateLimit': {'packetsPerWindow': 1, 'windowUnit': 'minute',
+                'burst': 1, 'entryTimeoutSeconds': 60, 'keyKind': 'destinationAddress', 'refreshEntryTimeout': True}})
         with tempfile.TemporaryDirectory(prefix='nergal-import-acceptance-') as directory:
             native = Path(directory) / 'source.nft'
             # The fixture compiler's synthetic JSON input mode emits native text without touching a host.
@@ -208,7 +220,13 @@ children = topology() if scenario in ('native', 'lifecycle') else []
 process = None
 try:
     if scenario == 'native':
-        artifact = run('dotnet', compiler, 'native-static-sets' if named else 'auxiliary-acceptance-native')
+        if os.environ.get('NERGAL_NATIVE_IMPORT_ACCEPTANCE') == '1':
+            with tempfile.TemporaryDirectory(prefix='nergal-import-native-') as directory:
+                payload = Path(directory) / 'policy.json'
+                payload.write_text(json.dumps(blocked))
+                artifact = run('dotnet', compiler, 'compile-import-json', str(payload))
+        else:
+            artifact = run('dotnet', compiler, 'native-static-sets' if named else 'auxiliary-acceptance-native')
         run('nft', '--check', '-f', '-', text=artifact)
         nft(artifact)
         for family in (socket.AF_INET, socket.AF_INET6):

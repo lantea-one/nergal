@@ -123,3 +123,16 @@ listings can complete nft creation-echo element omissions only when creation
 handles agree and the reconstructed artifact exactly matches protected intent.
 Missing provenance or conflicting data remains denied. The journal repeats exact
 artifact verification; dynamic meter runtime contents retain their separate boundary.
+
+## Native conversion review boundary
+
+The source viewer and conversion planner share a bounded lossless document and
+contextual partition. Explicit table roles and ordered uploaded include bindings
+produce exhaustive source-bound mappings/gaps. Any unsupported statement removes
+the complete candidate; source commands and server paths are never executed.
+Controller schema 4 stores immutable plans, original digests and audit; separate
+Administrator/CSRF commit recomputes the saved plan and atomically creates one
+linked revision plus pinned lists. Apply remains a separate agent workflow.
+Native meter update/add expiry is explicit intent and native operation-only drift
+is detected. See the [conversion guide](native-source-library.md) for supported
+grammar, offline upgrades and independent packet/rollback evidence.
