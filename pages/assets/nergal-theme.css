@@ -14,8 +14,8 @@ body { overflow-x: hidden; }
 .sidebar > h1 { order: -1; margin: .3rem 1rem 1rem 3.5rem; text-align: left; font-size: .95rem; font-weight: 700; color: var(--text); }
 .sidebar .search { margin-bottom: 1rem; padding: .8rem 1rem; border-bottom: 1px solid var(--border); }
 .sidebar .search .input-wrap { align-items: center; }
-.sidebar .search input { background: var(--surface-subtle); color: var(--text); padding: .65rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
-.sidebar .search input:focus { box-shadow: none; outline: 2px solid var(--primary); }
+.sidebar .search input { background: var(--surface); color: var(--text); min-height: 2.625rem; padding: .55rem .75rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: .92rem; line-height: 1.4; }
+.sidebar .search input:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 .sidebar .search input::placeholder { color: var(--text-muted); opacity: 1; }
 .sidebar .search .clear-button { color: var(--text-muted); }
 .sidebar .search .matching-post { border-color: var(--border); }

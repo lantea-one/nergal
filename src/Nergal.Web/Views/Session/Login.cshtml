@@ -2,7 +2,6 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Sign in";
-    ViewData["CenterFooter"] = true;
 }
 <main id="main-content" tabindex="-1" class="container-narrow">
     <div class="sign-in-brand">
@@ -18,13 +17,13 @@
             <div class="alert alert-danger" role="alert">Sign-in failed. Verify your credentials and try again.</div>
         }
 
-        <form method="post" action="@Url.Content("~/login")">
+        <form class="form-stack" method="post" action="@Url.Content("~/login")">
             @Html.AntiForgeryToken()
-            <div class="field" style="margin-bottom: 0.9rem;">
+            <div class="field">
                 <label for="login-username">Username</label>
                 <input id="login-username" name="username" type="text" autocomplete="username" maxlength="64" required autofocus />
             </div>
-            <div class="field" style="margin-bottom: 1.2rem;">
+            <div class="field">
                 <label for="login-password">Password</label>
                 <input id="login-password" name="password" type="password" autocomplete="current-password" maxlength="256" required />
             </div>

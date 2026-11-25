@@ -22,8 +22,9 @@ headers, and is centered above the sign-in form with the Nergal wordmark. The
 same transparent silhouette uses theme colors for light/dark contrast. A local
 Guardian SVG favicon follows the browser theme, with the transparent PNG as a
 fallback, in MVC, Blazor and Pages. The
-centered sign-in footer shows `Nergal Firewall Management - TZ: <timezone>` using
-the browser timezone. Branding assets are local; no external image host is used.
+side navigation ends with centered `Timezone is <timezone>` using the browser
+timezone. Sign-in and error pages have no footer. Navigation links have decorative
+line icons, and the main content uses the width remaining beside the sidebar. Branding assets are local; no external image host is used.
 
 ## Find a task
 
@@ -38,7 +39,7 @@ the browser timezone. Branding assets are local; no external image host is used.
 | Firewall / Aliases & IP lists | The reusable typed list library. References pin a version; editing the library cannot silently change a saved policy. |
 | Configuration / Import nftables.conf | Combined source viewer, include/table mapping, conversion plans and separately reviewed revision creation. Administrator only. |
 | Configuration / Review & apply | Select a host and revision, inspect status, apply, confirm or roll back using the existing protected agent workflow. |
-| System | Attributed activity/audit, settings and the current session. Local users/profiles remain upcoming M5 work. |
+| System | Attributed activity/audit, settings and the current session. [Local users and profiles](local-users-and-profiles.md) provide role/enabled controls, revocation, identity audit and personal metadata/passwords. Provider mapping and MFA remain open. |
 
 The sidebar shows implemented functions only. It does not imply management of
 interfaces, DNS, VPNs or other appliance services outside Nergal's declared scope.
@@ -91,8 +92,8 @@ rendering, keyboard navigation and mobile layout. These presentation changes add
 no compiler or packet semantics; existing packet evidence remains applicable.
 
 M5 still needs further authoring simplification and product-wide usability review,
-local Administrator/Auditor management and profiles with last-administrator
-protection, audit/session revocation, and charts backed by actual observations.
+configurable identity providers and profile mapping, local email/TOTP MFA, and
+charts backed by actual observations. Local user management and profiles are implemented.
 See [milestones](milestones.md).
 
 These screenshots show the current console with synthetic data. Screenshots in

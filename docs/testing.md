@@ -266,7 +266,7 @@ and `/manage/audit` (`200`) while mutations on `/controller/hosts` and
 `/manage/policies/save` fail with `403`. `tests/integration/oidc/check.py` verifies
 `Oidc:AuditorGroups` (`403` on host and policy mutations) vs `Oidc:AdministratorGroups`
 (`201`/`204` host lifecycle and `302` policy revision saves with valid CSRF) and checks
-that both `oidc:<issuer>:<subject>` and `local:<uuid>` audit attributions persist
+that both `oidc:<issuer-length>:<issuer>:<subject>` and `local:<uuid>` audit attributions persist
 across both JSON and MVC audit views.
 
 `tests/integration/local-status/web-apply-check.py` (invoked by `tests/integration/local-status/check.sh`)
@@ -798,3 +798,30 @@ layouts. These checks add no packet semantics; no privileged boundary changes.
 sign-in, authenticated root/sign-in to Overview, fixed destinations despite
 external return URLs, and logout returning to sign-in with revoked ticket replay
 denied. Session-only installations retain their protected session destination.
+
+
+## Local users and personal profiles
+
+Real Identity/SQLite tests cover role/stamp rechecks, concurrent last-administrator
+self-demotions, disabled-login and old-principal denial, personal/federated profile
+isolation, stale submissions, failed audit rollback, append-only trigger integrity,
+current-password failure accounting and password-change revocation. Bootstrap stays
+one-time; missing role claims do not imply Administrator. There is no legacy account
+migration acceptance: the product targets a fresh unreleased schema.
+
+The HTTPS user fixture uses independent synthetic accounts and private storage for
+strict/duplicate/unknown forms, CSRF, anonymous/Auditor denial, escaped profile
+metadata, stale access forms, disable/reenable and revoked-ticket replay, password
+change, audit persistence and restart. These checks do not establish email/TOTP,
+LDAP or OAuth integration; those remain explicit M5 acceptance gates.
+
+Browser-response unit/HTTPS checks distinguish explicit HTML navigation from API
+requests, keep fixed local sign-in destinations, preserve status codes and no-store
+headers, and verify standalone 403/404/503 error rendering without exception/query
+disclosure. The 503 fixture deliberately damages only its synthetic audit trigger,
+then proves that account-store unavailability does not break the error view.
+
+`navigation.test.mjs` verifies mobile Escape dismissal from both the Menu toggle
+and sidebar, return of focus, and unrelated-key behavior. Browser QA checks actual
+SVG icons, matching 42px profile fields, footer removal, full-width desktop cards
+and a 375px mobile layout without horizontal page overflow.

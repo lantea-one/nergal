@@ -12,6 +12,7 @@
         </div>
 
         <p class="muted">Signed in as <strong>@User.Identity?.Name</strong>.</p>
+        <p><a href="@Url.Content("~/profile")">My profile and password</a></p>
 
         <div class="btn-group mt-2" style="margin-bottom: 1.25rem;">
             @if (Url.RouteUrl("manage-dashboard") is string manageUrl)

@@ -692,7 +692,7 @@ public sealed partial class ControllerStateStore
     {
         if (!ControllerActorIdentity.IsValid(actorId))
         {
-            throw new ArgumentException("Actor identifier must be canonical 'local:<uuid>' or 'oidc:<issuer>:<subject>'.", nameof(actorId));
+            throw new ArgumentException("Actor identifier must be canonical 'local:<uuid>' or 'oidc:<issuer-length>:<issuer>:<subject>'.", nameof(actorId));
         }
 
         if (!NergalRoles.IsDefined(actorRole))

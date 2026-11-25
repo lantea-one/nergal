@@ -75,6 +75,9 @@ public sealed class FederatedAdministratorTests
         var other = registry.Register(actor);
         Assert.False(registry.IsCurrent(ticket, Issuer, "other"));
         Assert.False(registry.IsCurrent(ticket, Issuer + "/other", "actor"));
+        Assert.False(registry.IsCurrent(ticket, null, "actor"));
+        Assert.False(registry.IsCurrent(ticket, Issuer, null));
+        Assert.Throws<InvalidOperationException>(() => registry.Register(new(null!, "actor", Now.AddMinutes(15))));
         Assert.False(new FederatedSessions(clock).IsCurrent(ticket, Issuer, "actor"));
         clock.Now = Now.AddMinutes(14);
         Assert.True(registry.IsCurrent(ticket, Issuer, "actor"));

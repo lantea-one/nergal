@@ -10,19 +10,20 @@ using Nergal.Core.Identity;
 
 namespace Nergal.Identity;
 
-/// <summary>Explicit singleton administrator provisioning and serialized password verification and explicit browser session operations.</summary>
+/// <summary>Explicit local bootstrap, serialized credential verification, authenticated account/profile management and browser session operations.</summary>
 /// <remarks>Trusted callers provision through a local administrative boundary, never an unauthenticated registration route. Use a fresh DI scope per operation.</remarks>
 [SupportedOSPlatform("linux")]
-public sealed class LocalAdministratorAccounts
+public sealed partial class LocalAdministratorAccounts
 {
     private readonly LocalAccountContext context;
     private readonly UserManager<LocalAdministrator> users;
     private readonly SignInManager<LocalAdministrator> signIn;
     private readonly DummyPasswordVerification dummy;
+    private readonly TimeProvider clock;
 
     internal LocalAdministratorAccounts(LocalAccountContext context, UserManager<LocalAdministrator> users,
-        SignInManager<LocalAdministrator> signIn, DummyPasswordVerification dummy)
-    { this.context = context; this.users = users; this.signIn = signIn; this.dummy = dummy; }
+        SignInManager<LocalAdministrator> signIn, DummyPasswordVerification dummy, TimeProvider clock)
+    { this.context = context; this.users = users; this.signIn = signIn; this.dummy = dummy; this.clock = clock; }
 
     /// <summary>Creates the sole local administrator in an explicitly initialized database; no default credential or replacement is accepted.</summary>
     /// <exception cref="ArgumentNullException">User name or password is null.</exception>
@@ -52,11 +53,11 @@ public sealed class LocalAdministratorAccounts
             var account = new LocalAdministrator { UserName = userName };
             var result = await users.CreateAsync(account, password);
             if (!result.Succeeded) { return new(result.Errors.Select(error => error.Code)); }
-            if (role != NergalRoles.Administrator)
-            {
-                var claimResult = await users.AddClaimAsync(account, new Claim(ClaimTypes.Role, role));
-                if (!claimResult.Succeeded) { return new(claimResult.Errors.Select(error => error.Code)); }
-            }
+            var claimResult = await users.AddClaimAsync(account, new Claim(ClaimTypes.Role, role));
+            if (!claimResult.Succeeded) { return new(claimResult.Errors.Select(error => error.Code)); }
+            context.Add(new LocalAccountState { UserId = account.Id, CreatedUtc = Now(), UpdatedUtc = Now() });
+            Audit("operator:offline", "operator", "account.bootstrap", account.Id);
+            await context.SaveChangesAsync(CancellationToken.None);
             // Once a credential operation begins, finish its durable decision even if
             // an HTTP caller later disconnects. Cancellation must not erase attempts.
             await transaction.CommitAsync(CancellationToken.None);
@@ -77,12 +78,13 @@ public sealed class LocalAdministratorAccounts
         return new(user is null ? null : Guid.Parse(user.Id));
     }
 
-    /// <summary>Checks that the existing store contains one administrator with supported password and session state before accepting requests.</summary>
+    /// <summary>Checks the existing bounded account set and supported credential, role and session state before accepting requests.</summary>
     public async Task RequireProvisionedAsync(CancellationToken cancellationToken = default)
     {
-        var user = await users.Users.AsNoTracking().SingleOrDefaultAsync(cancellationToken)
-            ?? throw new AccountStoreException("account.unprovisioned");
-        RequireSupported(user);
+        var all = await users.Users.AsNoTracking().Take(257).ToArrayAsync(cancellationToken);
+        if (all.Length == 0) { throw new AccountStoreException("account.unprovisioned"); }
+        if (all.Length > 256) { throw new AccountStoreException("account.capacity"); }
+        foreach (var user in all) { RequireSupported(user); _ = await StateAsync(user.Id); _ = await ResolveValidatedRoleAsync(users, user); }
     }
 
     /// <summary>Issues a nonpersistent application cookie from the account snapshot whose password was verified under reservation.</summary>
@@ -100,6 +102,7 @@ public sealed class LocalAdministratorAccounts
         var user = await signIn.ValidateSecurityStampAsync(principal);
         if (user is null) { return false; }
         RequireSupported(user);
+        if (!(await StateAsync(user.Id)).Enabled) { return false; }
         var storedRole = await ResolveValidatedRoleAsync(users, user);
         var claimRole = principal.FindFirstValue(ClaimTypes.Role);
         var claimActor = principal.FindFirstValue(ControllerActorIdentity.ActorClaimType);
@@ -111,11 +114,6 @@ public sealed class LocalAdministratorAccounts
     {
         var claims = await userManager.GetClaimsAsync(user);
         var roles = claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToArray();
-        if (roles.Length == 0)
-        {
-            return NergalRoles.Administrator;
-        }
-
         if (roles.Length == 1 && NergalRoles.IsDefined(roles[0]))
         {
             return roles[0];
@@ -127,16 +125,21 @@ public sealed class LocalAdministratorAccounts
     /// <summary>Revokes sessions for the authenticated account by replacing its security stamp. The host also clears the local cookie.</summary>
     public async Task RevokeSessionsAsync(ClaimsPrincipal principal)
     {
-        ArgumentNullException.ThrowIfNull(principal);
-        var user = await signIn.ValidateSecurityStampAsync(principal);
-        if (user is null) { throw new AccountStoreException("account.sessionInvalid"); }
-        RequireSupported(user);
-        if (!(await users.UpdateSecurityStampAsync(user)).Succeeded)
-        { throw new AccountStoreException("account.revokeFailed"); }
+        var result = await MutateAsync(principal, false, async actor =>
+        {
+            if (actor.LocalId is null) { return Failure("account.externalCredential"); }
+            var user = (await users.FindByIdAsync(actor.LocalId.Value.ToString("D")))!;
+            await RotateAsync(user, await StateAsync(user.Id));
+            Audit(actor.Id, actor.Role, "account.signedOut", user.Id);
+            return Success();
+        });
+        if (!result.Succeeded) { throw new AccountStoreException("account.denied"); }
     }
 
     private static void RequireSupported(LocalAdministrator user)
     {
+        if (!ValidName(user.UserName) || user.NormalizedUserName != user.UserName!.ToUpperInvariant())
+        { throw new AccountStoreException("account.corrupt"); }
         if (!user.LockoutEnabled || user.TwoFactorEnabled || string.IsNullOrWhiteSpace(user.PasswordHash) ||
             string.IsNullOrWhiteSpace(user.SecurityStamp) || string.IsNullOrWhiteSpace(user.ConcurrencyStamp))
         { throw new AccountStoreException("account.unsupportedState"); }
@@ -155,8 +158,8 @@ public sealed class LocalAdministratorAccounts
             await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
             AccountConnectionPolicy.RequireSchema(context.Database.GetDbConnection(), transaction.GetDbTransaction());
             var user = await users.FindByNameAsync(userName);
-            if (user is not null) { RequireSupported(user); }
-            if (user is null || await users.IsLockedOutAsync(user))
+            if (user is not null) { RequireSupported(user); _ = await ResolveValidatedRoleAsync(users, user); }
+            if (user is null || !(await StateAsync(user.Id)).Enabled || await users.IsLockedOutAsync(user))
             {
                 dummy.Verify(password);
                 await transaction.CommitAsync(CancellationToken.None);
@@ -171,7 +174,7 @@ public sealed class LocalAdministratorAccounts
         catch (FormatException) { throw new AccountStoreException("account.corrupt"); }
     }
 
-    private static bool ValidName(string value) => value.Length is >= 1 and <= 64 &&
+    private static bool ValidName(string? value) => value is { Length: >= 1 and <= 64 } &&
         value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '.');
 }
 

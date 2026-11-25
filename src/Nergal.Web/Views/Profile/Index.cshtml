@@ -1,0 +1,40 @@
+@using Nergal.Core.Identity
+@model Nergal.Web.ProfilePageModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "My profile";
+    ViewData["ActiveNav"] = "profile";
+    var profile = Model.Profile;
+}
+<main id="main-content" tabindex="-1" class="container">
+    <h1>My profile</h1>
+    @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+    <div class="profile-grid">
+    <section class="card"><h2>Identity</h2>
+        <dl class="profile-details"><dt>Signed in as</dt><dd>@profile.LoginName</dd><dt>Role</dt><dd>@(profile.Role == NergalRoles.Administrator ? "Administrator" : "Auditor")</dd><dt>Authentication</dt><dd>@(profile.LocalAccountId is null ? "Identity provider" : "Local password")</dd></dl>
+        <p class="hint">Your display name appears in the header. Sign-in and permissions use your verified account.</p>
+        <form class="form-stack" method="post" action="@Url.Content("~/profile/save")">
+            @Html.AntiForgeryToken()<input type="hidden" name="version" value="@profile.Version" />
+            <div class="field"><label for="profile-name">Display name</label><input id="profile-name" name="displayName" type="text" value="@(Model.ProposedDisplayName ?? profile.DisplayName)" maxlength="160" autocomplete="name" aria-describedby="profile-name-hint" /><p class="hint" id="profile-name-hint">Optional, up to 80 characters. Leave blank to use the identity's default name.</p></div>
+            <button type="submit" class="btn">Save profile</button>
+        </form>
+        @if (profile.UpdatedUtc is DateTimeOffset updated) { <p class="hint">Updated <time data-local-time datetime="@updated.UtcDateTime.ToString("O")" title="Stored UTC: @updated.UtcDateTime.ToString("O")">@updated.UtcDateTime.ToString("u") UTC</time>.</p> }
+    </section>
+    @if (profile.LocalAccountId is not null)
+    {
+        <section class="card"><h2>Change password</h2><p class="hint" id="password-hint">Verify your current password, then choose 15–128 characters. A successful change signs out all your local sessions and returns to sign-in. Incorrect current passwords count toward account lockout.</p>
+            <form class="form-stack" method="post" action="@Url.Content("~/profile/password")">
+                @Html.AntiForgeryToken()<input type="hidden" name="version" value="@profile.AccountVersion" />
+                <div class="field"><label for="current-password">Current password</label><input id="current-password" name="currentPassword" type="password" required maxlength="256" autocomplete="current-password" /></div>
+                <div class="field"><label for="new-password">New password</label><input id="new-password" name="newPassword" type="password" required minlength="15" maxlength="256" autocomplete="new-password" aria-describedby="password-hint" /></div>
+                <button type="submit" class="btn">Change password and sign out</button>
+            </form>
+        </section>
+    }
+    else { <section class="card"><h2>External credentials</h2><p class="hint">Manage external credentials at your identity provider.</p></section> }
+    <section class="card"><h2>Session</h2>
+        <p class="hint">Signing out revokes @(profile.LocalAccountId is null ? "this federated ticket" : "all sessions for your local account").</p>
+        <form method="post" action="@Url.Content("~/logout")">@Html.AntiForgeryToken()<button type="submit" class="btn btn-danger">Sign out</button></form>
+    </section>
+    </div>
+</main>

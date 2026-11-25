@@ -6,13 +6,14 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Nergal.Identity;
 
 /// <summary>Registers local credential verification only; no cookie, HTTP endpoint, default account or automatic database creation.</summary>
 public static class LocalAccountServices
 {
-    /// <summary>Registers one explicitly configured existing private account database and standard Identity password/lockout services.</summary>
+    /// <summary>Registers one explicitly configured existing private local-account database and standard Identity password/lockout services.</summary>
     /// <exception cref="ArgumentNullException">Services or options are null.</exception>
     /// <exception cref="InvalidOperationException">A local account store is already registered.</exception>
     /// <exception cref="PlatformNotSupportedException">Storage platform is not Linux.</exception>
@@ -27,6 +28,7 @@ public static class LocalAccountServices
         services.AddLogging();
         services.AddAuthenticationCore();
         services.AddSingleton(options);
+        services.TryAddSingleton(TimeProvider.System);
         services.AddDbContext<LocalAccountContext>(builder => ConfigureDatabase(builder, options));
         services.AddIdentityCore<LocalAdministrator>(identity =>
         {
@@ -48,7 +50,8 @@ public static class LocalAccountServices
         services.AddSingleton<DummyPasswordVerification>();
         services.AddScoped(provider => new LocalAdministratorAccounts(
             provider.GetRequiredService<LocalAccountContext>(), provider.GetRequiredService<UserManager<LocalAdministrator>>(),
-            provider.GetRequiredService<SignInManager<LocalAdministrator>>(), provider.GetRequiredService<DummyPasswordVerification>()));
+            provider.GetRequiredService<SignInManager<LocalAdministrator>>(), provider.GetRequiredService<DummyPasswordVerification>(),
+            provider.GetRequiredService<TimeProvider>()));
         return services;
     }
 

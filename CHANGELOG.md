@@ -2,6 +2,14 @@
 
 ## Unreleased — router authoring and source conversion
 
+- Add database-backed local Administrator/Auditor management, last-enabled-admin
+  protection, versioned personal profiles, current-password changes, ticket revocation
+  and atomic append-only identity audit (ADR 0058). Use fresh account schema 2.
+- Redirect browser authentication challenges to sign-in and render themed error
+  pages independently of profile storage. Preserve API status responses.
+- Add decorative sidebar icons, full-width console content, centered sidebar
+  timezone and uniform form fields; remove page footers. Refresh synthetic UI screenshots.
+
 - Route the authenticated console root through sign-in to Overview, skip the
   credential form for current sessions and return to sign-in after logout.
   Keep fixed local redirects and the session-only development fallback.

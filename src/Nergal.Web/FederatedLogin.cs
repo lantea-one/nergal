@@ -63,7 +63,7 @@ internal static class FederatedLogin
                 var ticket = await context.HttpContext.AuthenticateAsync(Session);
                 Registry(context.HttpContext).Revoke(ticket.Principal?.FindFirstValue("sid"));
             };
-            cookie.Events.OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; };
+            cookie.Events.OnRedirectToLogin = BrowserResponses.LoginChallenge;
             cookie.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
         });
         auth.AddOpenIdConnect(Protocol, options =>
@@ -81,6 +81,10 @@ internal static class FederatedLogin
             options.RequireHttpsMetadata = true;
             options.SaveTokens = false;
             options.MapInboundClaims = false;
+            // We build the complete bounded principal from verified signed data.
+            // Framework defaults run later and otherwise delete its issuer claim
+            // or overlay unselected profile fields.
+            options.ClaimActions.Clear();
             options.Scope.Clear();
             options.Scope.Add("openid");
             options.RemoteAuthenticationTimeout = TimeSpan.FromMinutes(5);
@@ -154,8 +158,13 @@ internal static class FederatedLogin
             options.Events.OnTicketReceived = async context =>
             {
                 var principal = context.Principal!;
-                var role = principal.FindFirstValue(ClaimTypes.Role) ?? NergalRoles.Administrator;
-                var admin = new FederatedAdministrator(principal.FindFirstValue("iss")!, principal.FindFirstValue("sub")!, context.Properties!.ExpiresUtc!.Value, role);
+                var role = principal.FindFirstValue(ClaimTypes.Role);
+                var issuer = principal.FindFirstValue("iss");
+                var subject = principal.FindFirstValue("sub");
+                if (issuer is null || issuer != policy.Issuer || string.IsNullOrWhiteSpace(subject) || !NergalRoles.IsDefined(role) ||
+                    principal.FindFirstValue(ControllerActorIdentity.ActorClaimType) != ControllerActorIdentity.FromFederatedAccount(issuer, subject))
+                { context.Fail("Federated login denied."); return; }
+                var admin = new FederatedAdministrator(issuer, subject, context.Properties!.ExpiresUtc!.Value, role!);
                 await context.HttpContext.SignOutAsync(Session);
                 await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
                 ((ClaimsIdentity)principal.Identity!).AddClaim(new("sid", Registry(context.HttpContext).Register(admin)));

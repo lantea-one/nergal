@@ -2,6 +2,19 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased local users and resilient console navigation
+
+Administrators can manage local roles, enabled access and session revocation.
+Personal profiles and current-password changes use versioned database state;
+last-enabled-admin checks and identity audit commit with the account change.
+The fresh unreleased account schema is version 2. Provider mapping and email/TOTP
+MFA remain open M5 gates. See [users and profiles](local-users-and-profiles.md).
+
+Browser challenges return to sign-in, and themed errors retain their HTTP status
+without depending on profile storage. Sidebar links have icons, content fills the
+available width, shared fields have uniform styling, and the browser timezone
+appears at the bottom of the sidebar. Page footers have been removed.
+
 ## Source conversion and controller schema 4
 
 Source viewing and conversion share one bounded lossless frontend. Guided table

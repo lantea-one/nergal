@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Nergal.Identity;
+using Nergal.Core.Identity;
 
 namespace Nergal.Web;
 
@@ -12,6 +13,8 @@ internal sealed class FederatedSessions(TimeProvider clock)
 
     internal string Register(FederatedAdministrator administrator)
     {
+        if (string.IsNullOrWhiteSpace(administrator.Issuer) || string.IsNullOrWhiteSpace(administrator.Subject) ||
+            !NergalRoles.IsDefined(administrator.Role)) { throw new InvalidOperationException("Federated session unavailable."); }
         lock (gate)
         {
             var now = clock.GetUtcNow();
@@ -28,7 +31,8 @@ internal sealed class FederatedSessions(TimeProvider clock)
     {
         lock (gate)
         {
-            if (id is null || !active.TryGetValue(id, out var identity)) { return false; }
+            if (id is null || string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(subject) ||
+                !active.TryGetValue(id, out var identity)) { return false; }
             if (identity.Expires <= clock.GetUtcNow()) { active.Remove(id); return false; }
             return identity.Issuer == issuer &&
                    identity.Subject == subject &&

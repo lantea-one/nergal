@@ -73,3 +73,10 @@ completion gates. Historical foundation releases do not establish product-wide
 code-complete status.
 
 The [appliance-style administration console](appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 user management, profiles and observation-backed charts remain in progress.
+
+
+[Local users and profiles](local-users-and-profiles.md) now provide explicit
+Administrator/Auditor access controls, last-administrator protection, revocation,
+atomic identity audit and personal metadata/password changes. Configurable external
+profile mapping, LDAP sign-in, email/TOTP MFA and charts remain M5 work. New account
+schemas target fresh pre-release installations; no legacy upgrade path is shipped.

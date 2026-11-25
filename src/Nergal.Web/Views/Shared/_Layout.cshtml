@@ -32,6 +32,8 @@
             { <button type="button" class="btn btn-secondary btn-sm navigation-toggle" data-sidebar-toggle aria-controls="management-navigation" aria-expanded="false">Menu</button> }
 
             <div class="topbar-meta">
+                @if (ViewData["UserDisplayName"] is string displayName)
+                { <a class="nav-link profile-link" href="@Url.Content("~/profile")" aria-label="My profile for @displayName">@displayName</a> }
                 @if (!string.IsNullOrEmpty(actorRole))
                 {
                     <span class="badge @(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "badge-primary" : "badge-neutral")">@(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "Administrator" : "Auditor")</span>
@@ -52,7 +54,6 @@
     }
     else { @RenderBody() }
 
-    <footer class="time-zone-note muted @(ViewData["CenterFooter"] is true ? "time-zone-note-centered" : "")">Nergal Firewall Management - TZ: <span data-local-time-zone>UTC (local time unavailable)</span></footer>
     <script src="@Url.Content("~/js/local-time.js")" asp-append-version="true" defer></script>
     <script src="@Url.Content("~/js/nergal.js")" asp-append-version="true" defer></script>
     @if (showNav) { <script src="@Url.Content("~/js/navigation.js")" asp-append-version="true" defer></script> }

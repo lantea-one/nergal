@@ -67,7 +67,7 @@ class Browser:
             self.last_headers = {k.lower(): v for k, v in response.getheaders()}
             self.location = response.getheader("Location")
             if expected == 302:
-                assert self.location in ("/login", "/session", "/manage") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
+                assert self.location in ("/login", "/session", "/manage", "/profile", "/manage/users") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
             assert PASSWORD not in body
             return body
         finally:
@@ -158,6 +158,8 @@ def exercise(temp):
     controller_settings = {"ControllerState__Enabled": "true", "ControllerState__Directory": str(ctrl_state),
                            "NativeSources__Directory": str(sources)}
     with host(temp, tls, controller_settings) as browser:
+        from browser_errors import check_anonymous_browser_errors
+        check_anonymous_browser_errors(browser)
         for kind in ("native", "intent"):
             browser.request("/manage/policies/export/" + kind + "?revision=1", 401)
         browser.request("/manage/policies/rules/state", 401, {"bundleJson": "{}"})
@@ -306,7 +308,7 @@ def exercise(temp):
         assert "Operator-staged sources" not in database_only_html
         assert "synthetic" in database_only_html and "immutable database content" in database_only_html
         assert 'data-local-time datetime="' in database_only_html and 'Stored UTC:' in database_only_html
-        assert "Imported (local time)" in database_only_html and "Nergal Firewall Management - TZ:" in database_only_html
+        assert "Imported (local time)" in database_only_html and "Timezone is" in database_only_html
         assert "Later contents" in browser.request(object_path, 200)
         browser.request("/session", 200)
         browser.request("/logout", 302, {"__RequestVerificationToken": browser.token("/session")})
@@ -404,6 +406,9 @@ def exercise(temp):
         for action in ("review", "commit"):
             auditor_browser.request("/manage/sources/conversion/" + action, 403, {"__RequestVerificationToken": auditor_browser.token("/session")})
         assert "Append-only audit log" in auditor_browser.request("/manage/audit", 200)
+
+    from user_management import check_user_management
+    check_user_management(host, Browser, temp, tls, ADMIN_TOOL, PASSWORD, ADMIN)
 
     print("PASS: database source ingestion, exact original downloads, restart persistence, XSS/CSRF/UTF-8/size denial and anonymous/auditor boundaries")
     print("PASS: HTTPS, cookie attributes, CSRF, durable sessions, revocation, lockout, RBAC auditor boundaries and request rate limits")
