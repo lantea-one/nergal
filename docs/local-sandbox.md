@@ -93,6 +93,11 @@ and pinned SDK. Renovate may propose servicing updates within 10.x; a runtime-on
 major upgrade is not a supported substitute for an intentional target migration.
 
 Manual and watched stack refreshes share a local build lock. Sandbox builds use
-two MSBuild workers and disable node reuse, keeping refresh processes independent
-from other builds. A failed refresh reports failure; check current HTTPS health
+two MSBuild workers, disable node reuse and disable shared compilation. A persistent
+compiler server can otherwise inherit the lock descriptor and block subsequent
+refreshes after the build has exited. A failed refresh reports failure; check current HTTPS health
 and the build log before assuming the running stack contains the latest edits.
+
+After a completed refresh, `flock -n artifacts/dev-stack/build.lock true` must
+succeed when no other refresh is running. An active watcher retains its separate
+`watch.lock`; that lock is expected to remain held while watching.

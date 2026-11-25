@@ -9,7 +9,8 @@ flock 9
 export MSBUILDDISABLENODEREUSE=1
 export NERGAL_DEV_UID=$(id -u) NERGAL_DEV_GID=$(id -g)
 dotnet restore Nergal.slnx --locked-mode
-dotnet build Nergal.slnx -c Release --no-restore -m:2 -nr:false
+# A persistent compiler server would inherit descriptor 9 and retain this lock.
+dotnet build Nergal.slnx -c Release --no-restore -m:2 -nr:false -p:UseSharedCompilation=false
 dotnet publish src/Nergal.Web -c Release --no-build --no-restore -o artifacts/dev-stack/web
 dotnet publish src/Nergal.Admin -c Release --no-build --no-restore -o artifacts/dev-stack/admin
 # This disposable stack owns its private database. Stop its writer before the explicit offline upgrade.
