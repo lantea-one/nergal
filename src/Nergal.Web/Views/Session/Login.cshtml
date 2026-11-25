@@ -1,7 +1,11 @@
-@model bool?
+@model Nergal.Web.Controllers.LoginPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Sign in";
+    var ldapGeneration = await Model.ReadLdapGenerationAsync();
+    var oauthGeneration = await Model.ReadOAuthGenerationAsync();
 }
 <main id="main-content" tabindex="-1" class="container-narrow">
     <div class="sign-in-brand">
@@ -9,26 +13,56 @@
         <span class="sign-in-wordmark">Nergal</span>
     </div>
     <div class="card" style="padding: 1.75rem;">
-        <h1 style="margin: 0 0 0.25rem; font-size: 1.5rem;">Sign in</h1>
-        <p class="muted" style="margin: 0 0 1.25rem;">Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies.</p>
+        <h1 style="margin: 0 0 0.25rem; font-size: 1.5rem;">@L["Sign in"]</h1>
+        <p class="muted" style="margin: 0 0 1.25rem;">@L["Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies."]</p>
 
-        @if (Model == false)
+        @if (Model.Failed)
         {
-            <div class="alert alert-danger" role="alert">Sign-in failed. Verify your credentials and try again.</div>
+            <div class="alert alert-danger" role="alert">@L["Sign-in failed. Verify your credentials and try again."]</div>
         }
 
         <form class="form-stack" method="post" action="@Url.Content("~/login")">
             @Html.AntiForgeryToken()
             <div class="field">
-                <label for="login-username">Username</label>
+                <label for="login-username">@L["Username"]</label>
                 <input id="login-username" name="username" type="text" autocomplete="username" maxlength="64" required autofocus />
             </div>
             <div class="field">
-                <label for="login-password">Password</label>
+                <label for="login-password">@L["Password"]</label>
                 <input id="login-password" name="password" type="password" autocomplete="current-password" maxlength="256" required />
             </div>
-            <button type="submit" style="width: 100%;">Sign in</button>
+            <button type="submit" style="width: 100%;">@L["Sign in"]</button>
         </form>
+
+        @if (ldapGeneration is long generation)
+        {
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.25rem 0;" />
+            <h2>@L["Directory sign-in"]</h2>
+            <form class="form-stack" method="post" action="@Url.Content("~/login/ldap")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="version" value="@generation" />
+                <div class="field">
+                    <label for="ldap-username">@L["Directory username"]</label>
+                    <input id="ldap-username" name="username" type="text" autocomplete="section-ldap username" maxlength="256" required />
+                </div>
+                <div class="field">
+                    <label for="ldap-password">@L["Directory password"]</label>
+                    <input id="ldap-password" name="password" type="password" autocomplete="section-ldap current-password" maxlength="2048" required />
+                </div>
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">@L["Sign in with LDAP"]</button>
+            </form>
+        }
+
+        <p><a href="@Url.Content("~/login/recovery")">@L["Use a recovery authorization"]</a></p>
+
+        @if (oauthGeneration is long version)
+        {
+            <form class="form-stack" method="post" action="@Url.Content("~/login/oauth")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="version" value="@version" />
+                <button type="submit" class="btn btn-secondary">@L["Sign in with OAuth"]</button>
+            </form>
+        }
 
         @if (Context.RequestServices.GetService<Nergal.Web.OidcRequestConnection>()?.Enabled == true &&
             Url.RouteUrl("federated-login", new { controller = "Session", action = "Federated" }) is string federatedUrl)
@@ -36,7 +70,7 @@
             <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.25rem 0;" />
             <form method="post" action="@federatedUrl">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-secondary" style="width: 100%;">Sign in with identity provider</button>
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">@L["Sign in with identity provider"]</button>
             </form>
         }
     </div>

@@ -1,0 +1,60 @@
+@model Nergal.Web.Controllers.OAuthConnectionPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
+    ViewData["Title"] = "OAuth connection";
+    ViewData["ActiveNav"] = "settings";
+    var saved = Model.Connection;
+    var settings = Model.Proposed ?? saved?.Settings;
+}
+<main id="main-content" tabindex="-1" class="container">
+    <div class="page-header">
+        <div><h1>@L["OAuth connection"]</h1><p class="muted">@L["Connect an OAuth provider with a current-user JSON endpoint that supplies a stable account ID and trusted groups."]</p></div>
+        <a class="btn btn-secondary" href="@Url.Content("~/manage/settings#auth")">@L["Back to settings"]</a>
+    </div>
+    @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@L[error]</div> }
+    <section class="card">
+        <form class="form-stack" method="post" action="@Url.Content("~/manage/identity/oauth/save")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="version" value="@(saved?.Version ?? 0)" />
+            <h2>@L["Connection settings"]</h2>
+            <div class="form-grid">
+                <div class="field"><label for="oauth-enabled">@L["OAuth sign-in"]</label><select id="oauth-enabled" name="enabled">
+                    <option value="false" selected="@(settings?.Enabled != true)">@L["Disabled"]</option>
+                    <option value="true" selected="@(settings?.Enabled == true)">@L["Enabled"]</option>
+                </select></div>
+                <div class="field"><label for="oauth-authorization">@L["Authorization endpoint"]</label><input id="oauth-authorization" type="url" name="authorizationEndpoint" value="@settings?.AuthorizationEndpoint" maxlength="512" aria-describedby="oauth-endpoints-hint" required /></div>
+                <div class="field"><label for="oauth-token">@L["Token endpoint"]</label><input id="oauth-token" type="url" name="tokenEndpoint" value="@settings?.TokenEndpoint" maxlength="512" aria-describedby="oauth-endpoints-hint" required /></div>
+                <div class="field"><label for="oauth-profile">@L["Current-user endpoint"]</label><input id="oauth-profile" type="url" name="profileEndpoint" value="@settings?.ProfileEndpoint" maxlength="512" aria-describedby="oauth-endpoints-hint" required /></div>
+                <p class="hint span-2" id="oauth-endpoints-hint">@L["Use three HTTPS URLs on the same provider origin. The current-user endpoint must accept a Bearer token and return a JSON object."]</p>
+                <div class="field"><label for="oauth-callback">@L["Registered callback URL"]</label><input id="oauth-callback" type="url" name="callbackUri" value="@settings?.CallbackUri" maxlength="512" aria-describedby="oauth-callback-hint" required /><small id="oauth-callback-hint">@L["Register the exact HTTPS callback ending in /signin-oauth."]</small></div>
+                <div class="field"><label for="oauth-client">@L["Client ID"]</label><input id="oauth-client" name="clientId" value="@settings?.ClientId" maxlength="256" required /></div>
+                <div class="field"><label for="oauth-secret">@L["Client secret"]</label><input id="oauth-secret" name="clientSecret" type="password" autocomplete="new-password" maxlength="4096" aria-describedby="oauth-secret-hint" /><small id="oauth-secret-hint">@(saved is null ? L["Enter the confidential client's secret."] : L["A secret is stored. Leave blank to retain it for the same provider identity binding."])</small></div>
+                <div class="field"><label for="oauth-scope">@L["Scopes"]</label><input id="oauth-scope" name="scope" value="@settings?.Scope" maxlength="512" aria-describedby="oauth-scope-hint" /><small id="oauth-scope-hint">@L["Space-separated provider scopes for reading the current account and groups."]</small></div>
+            </div>
+            <h2>@L["Identity and access"]</h2>
+            <div class="form-grid">
+                <div class="field"><label for="oauth-subject">@L["Immutable account ID field"]</label><input id="oauth-subject" name="subjectField" value="@(settings?.SubjectField ?? "id")" maxlength="128" required aria-describedby="oauth-subject-hint" /><small id="oauth-subject-hint">@L["The field must contain a stable string ID."]</small></div>
+                <div class="field"><label for="oauth-groups">@L["Groups field"]</label><input id="oauth-groups" name="groupField" value="@(settings?.GroupField ?? "groups")" maxlength="128" required aria-describedby="oauth-groups-hint" /><small id="oauth-groups-hint">@L["The field must contain an array of group names."]</small></div>
+                <div class="field"><label for="oauth-admin-groups">@L["Administrator groups"]</label><textarea id="oauth-admin-groups" name="administratorGroups" rows="3" maxlength="8192" aria-describedby="oauth-allowed-hint">@settings?.AdministratorGroups</textarea></div>
+                <div class="field"><label for="oauth-auditor-groups">@L["Auditor groups"]</label><textarea id="oauth-auditor-groups" name="auditorGroups" rows="3" maxlength="8192" aria-describedby="oauth-allowed-hint">@settings?.AuditorGroups</textarea></div>
+                <p class="hint span-2" id="oauth-allowed-hint">@L["Enter one exact group name per line and at least one group across both roles. Accounts matching both roles are denied."]</p>
+                <div class="field"><label for="oauth-mfa">@L["When Nergal requires MFA"]</label><select id="oauth-mfa" name="trustProviderMfa">
+                    <option value="false" selected="@(settings?.TrustProviderMfa != true)">@L["Deny OAuth sign-in"]</option>
+                    <option value="true" selected="@(settings?.TrustProviderMfa == true)">@L["Trust the provider to enforce MFA"]</option>
+                </select></div>
+            </div>
+            <h2>@L["Profile defaults"]</h2>
+            <p class="hint" id="oauth-field-hint">@L["Use literal top-level JSON field names. Leave any descriptive field blank to skip it. Users can override these values on their own profile."]</p>
+            <div class="form-grid">
+                <div class="field"><label for="oauth-display-name">@L["Display name field"]</label><input id="oauth-display-name" name="displayName" value="@settings?.Fields.DisplayName" maxlength="128" aria-describedby="oauth-field-hint" /></div>
+                <div class="field"><label for="oauth-given-name">@L["Given name field"]</label><input id="oauth-given-name" name="givenName" value="@settings?.Fields.GivenName" maxlength="128" aria-describedby="oauth-field-hint" /></div>
+                <div class="field"><label for="oauth-family-name">@L["Family name field"]</label><input id="oauth-family-name" name="familyName" value="@settings?.Fields.FamilyName" maxlength="128" aria-describedby="oauth-field-hint" /></div>
+                <div class="field"><label for="oauth-email">@L["Email field"]</label><input id="oauth-email" name="email" value="@settings?.Fields.Email" maxlength="128" aria-describedby="oauth-field-hint" /></div>
+            </div>
+            <div class="field"><label for="oauth-confirm"><input id="oauth-confirm" name="confirm" type="checkbox" value="replace-trust" required /> @L["Replace provider trust and retire current OAuth sessions"]</label></div>
+            <div><button class="btn" type="submit">@L["Save OAuth connection"]</button></div>
+        </form>
+    </section>
+</main>

@@ -1,0 +1,95 @@
+dn: dc=example,dc=test
+objectClass: domain
+dc: example
+
+dn: cn=reader,dc=example,dc=test
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: reader
+userPassword: fixture-reader-password
+
+dn: ou=people,dc=example,dc=test
+objectClass: organizationalUnit
+ou: people
+
+dn: cn=Fixture Administrator,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: Fixture Administrator
+sn: Administrator
+givenName: Fixture
+displayName: Fixture Administrator
+mail: administrator@example.test
+uid: administrator
+userPassword: fixture-user-password
+entryUUID: 26fccabb-d580-4e59-b2ce-4a6aa8eb4a5b
+
+dn: cn=Fixture Auditor,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: Fixture Auditor
+sn: Auditor
+displayName: Fixture Auditor
+mail: auditor@example.test
+mail: spare@example.test
+uid: auditor
+userPassword: fixture-user-password
+entryUUID: a5870a72-3cff-467c-8da0-cd75470cf41a
+
+dn: cn=No Membership,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: No Membership
+sn: Membership
+uid: no-membership
+userPassword: fixture-user-password
+
+dn: cn=Dual Membership,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: Dual Membership
+sn: Membership
+uid: dual-membership
+userPassword: fixture-user-password
+
+dn: cn=Owner Only,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: Owner Only
+sn: Only
+uid: owner-only
+userPassword: fixture-user-password
+
+dn: cn=Ambiguous First,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: Ambiguous First
+sn: First
+uid: ambiguous
+userPassword: fixture-user-password
+
+dn: cn=Ambiguous Second,ou=people,dc=example,dc=test
+objectClass: inetOrgPerson
+cn: Ambiguous Second
+sn: Second
+uid: ambiguous
+userPassword: fixture-user-password
+
+dn: ou=roles,dc=example,dc=test
+objectClass: organizationalUnit
+ou: roles
+
+dn: cn=administrators,ou=roles,dc=example,dc=test
+objectClass: groupOfNames
+cn: administrators
+member: cn=Fixture Administrator,ou=people,dc=example,dc=test
+member: cn=Dual Membership,ou=people,dc=example,dc=test
+member: cn=Ambiguous First,ou=people,dc=example,dc=test
+member: cn=Ambiguous Second,ou=people,dc=example,dc=test
+owner: cn=Owner Only,ou=people,dc=example,dc=test
+
+dn: cn=auditors,ou=roles,dc=example,dc=test
+objectClass: groupOfNames
+cn: auditors
+member: cn=Fixture Auditor,ou=people,dc=example,dc=test
+member: cn=Dual Membership,ou=people,dc=example,dc=test
+
+dn: ou=referral,dc=example,dc=test
+objectClass: referral
+objectClass: extensibleObject
+ou: referral
+ref: ldaps://127.0.0.1:@PORT@/ou=people,dc=example,dc=test

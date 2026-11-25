@@ -8,9 +8,8 @@ and `email`; providers can use different literal names. Blank selectors turn off
 individual fields. Up to 16 exact-issuer mappings are supported.
 
 These controls map descriptive metadata. They do not activate sign-in or change
-the protected issuer, client, callback, group or role configuration. LDAP and
-generic OAuth profile adapters and local MFA remain
-M5 work. Providers must include selected claims in the signed ID token. Nergal
+the protected issuer, client, callback, group, role or MFA assurance configuration.
+Providers must include selected claims in the signed ID token. Nergal
 requests `openid profile email`; it does not call UserInfo or fetch remote images.
 
 ## Save and refresh
@@ -53,7 +52,7 @@ also supplies `email_verified`.
 
 ## Persistence and verification
 
-Account schema 4 stores current typed mappings, exact-actor provider observations,
+Account schema 8 stores current typed mappings, exact-actor provider observations,
 personal overrides and append-only identity audit in the protected identity store.
 Mapping and observation mutations commit their audit atomically. UTC instants are
 displayed in the browser's local timezone. Ordinary application startup refuses

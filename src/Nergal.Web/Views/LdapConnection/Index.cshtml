@@ -1,0 +1,112 @@
+@model Nergal.Web.Controllers.LdapConnectionPageModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "LDAP connection";
+    ViewData["ActiveNav"] = "settings";
+    var connection = Model.Connection;
+    var settings = connection?.Settings;
+    var attributes = new[] { "", "cn", "displayName", "givenName", "sn", "mail" };
+    var selectors = new[]
+    {
+        ("displayNameAttribute", "Display name", settings?.ProfileMapping.DisplayNameAttribute),
+        ("givenNameAttribute", "Given name", settings?.ProfileMapping.GivenNameAttribute),
+        ("familyNameAttribute", "Family name", settings?.ProfileMapping.FamilyNameAttribute),
+        ("emailAttribute", "Profile email", settings?.ProfileMapping.EmailAttribute),
+    };
+}
+<main id="main-content" tabindex="-1" class="container">
+    <div class="page-header">
+        <div><h1>LDAP connection</h1><p class="page-subtitle">Configure one OpenLDAP directory over TLS. Local password sign-in remains available.</p></div>
+        @if (ViewData["ShowManageNav"] is true)
+        {
+            <a class="btn btn-secondary" href="@Url.Content("~/manage/settings#auth")">Back to settings</a>
+        }
+        else
+        {
+            <a class="btn btn-secondary" href="@Url.Content("~/profile")">Back to my profile</a>
+        }
+    </div>
+    @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+    <section class="card">
+        <h2>Connection settings</h2>
+        @if (connection is not null)
+        {
+            <p class="hint">Updated <time data-local-time datetime="@connection.UpdatedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @connection.UpdatedUtc.UtcDateTime.ToString("O")">@connection.UpdatedUtc.UtcDateTime.ToString("u") UTC</time> · Version @connection.Version</p>
+        }
+        <form class="form-stack" method="post" action="@Url.Content("~/manage/identity/ldap/save")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="version" value="@(connection?.Version ?? 0)" />
+            <div class="form-grid">
+                <div class="field">
+                    <span class="switch-field-label">Directory sign-in</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", settings?.Enabled ?? false, "Enable LDAP sign-in"))
+                    <span class="hint">Enable to offer directory sign-in. Disabling retains the saved settings.</span>
+                </div>
+                <div class="field">
+                    <label for="ldap-endpoint">LDAPS endpoint</label>
+                    <input id="ldap-endpoint" name="serverUri" type="url" value="@settings?.ServerUri" placeholder="ldaps://directory.example.test:636" maxlength="320" aria-describedby="ldap-endpoint-hint" required />
+                    <span id="ldap-endpoint-hint" class="hint">Use the exact TLS peer name and optional port. The certificate must chain to a trusted CA and match this name.</span>
+                </div>
+                <div class="field">
+                    <label for="ldap-dial-ip">Directory IP address</label>
+                    <input id="ldap-dial-ip" name="dialIp" value="@settings?.DialIp" maxlength="45" aria-describedby="ldap-ip-hint" required />
+                    <span id="ldap-ip-hint" class="hint">Enter the exact IPv4 or IPv6 address to connect to, without brackets or an interface scope.</span>
+                </div>
+                <div class="field">
+                    <label for="ldap-user-base">User search base DN</label>
+                    <input id="ldap-user-base" name="userBaseDn" value="@settings?.UserBaseDn" maxlength="1024" aria-describedby="ldap-user-base-hint" required />
+                    <span id="ldap-user-base-hint" class="hint">Limit the lookup to the subtree containing eligible user entries.</span>
+                </div>
+                <div class="field">
+                    <label for="ldap-login-attribute">Username lookup attribute</label>
+                    <select id="ldap-login-attribute" name="loginAttribute">
+                        @foreach (var attribute in new[] { "uid", "cn", "mail" })
+                        {
+                            <option value="@(attribute)" selected="@(string.Equals(attribute, settings?.LoginAttribute ?? "uid", StringComparison.OrdinalIgnoreCase))">@(attribute)</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="ldap-bind-dn">Search account DN</label>
+                    <input id="ldap-bind-dn" name="searchBindDn" value="@settings?.SearchBindDn" maxlength="1024" aria-describedby="ldap-bind-dn-hint" required />
+                    <span id="ldap-bind-dn-hint" class="hint">Use a read-only account with access to the required user attributes and role group membership.</span>
+                </div>
+                <div class="field span-2">
+                    <label for="ldap-search-password">@(connection?.HasSecret == true ? "Replacement search password" : "Search password")</label>
+                    <input id="ldap-search-password" name="searchPassword" type="password" autocomplete="new-password" maxlength="2048" required="@(connection?.HasSecret != true)" aria-describedby="ldap-secret-hint" />
+                    <span id="ldap-secret-hint" class="hint">The password is encrypted and never displayed. Leave blank to keep a stored password. Changing the endpoint, IP address, search base or bind DN requires a replacement.</span>
+                </div>
+            </div>
+            <h3>Role groups</h3>
+            <p id="ldap-group-hint" class="hint">Enter two distinct groupOfNames DNs. The user must be a direct member of exactly one group through its member attribute.</p>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="ldap-administrator-group">Administrator group DN</label>
+                    <input id="ldap-administrator-group" name="administratorGroupDn" value="@settings?.AdministratorGroupDn" maxlength="1024" aria-describedby="ldap-group-hint" required />
+                </div>
+                <div class="field">
+                    <label for="ldap-auditor-group">Auditor group DN</label>
+                    <input id="ldap-auditor-group" name="auditorGroupDn" value="@settings?.AuditorGroupDn" maxlength="1024" aria-describedby="ldap-group-hint" required />
+                </div>
+            </div>
+            <h3>Profile defaults</h3>
+            <p id="ldap-profile-hint" class="hint">Each selector reads one descriptive attribute. The user can override these values in their profile. Profile email cannot verify a delivery address or supply an MFA factor.</p>
+            <div class="form-grid">
+                @foreach (var (name, label, current) in selectors)
+                {
+                    <div class="field">
+                        <label for="ldap-@name">@label</label>
+                        <select id="ldap-@name" name="@name" aria-describedby="ldap-profile-hint">
+                            @foreach (var attribute in attributes)
+                            {
+                                <option value="@(attribute)" selected="@(string.Equals(attribute, current ?? "", StringComparison.OrdinalIgnoreCase))">@(attribute.Length == 0 ? "Leave blank" : attribute)</option>
+                            }
+                        </select>
+                    </div>
+                }
+            </div>
+            <p class="alert alert-warning">Saving retires existing LDAP sessions and pending LDAP sign-ins. The directory is contacted only when someone attempts LDAP sign-in.</p>
+            <div><button type="submit" name="confirm" value="replace-trust">Save and replace LDAP settings</button></div>
+        </form>
+    </section>
+</main>

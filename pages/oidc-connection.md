@@ -24,15 +24,29 @@ when the provider is disabled or unavailable.
 Saving does not contact the provider or verify its availability. Provider discovery,
 keys and token requests happen during explicit sign-in. HTTPS trust validation is
 mandatory, endpoints must remain on the issuer's origin and HTTP redirects are
-refused. Split-origin endpoints, different signing algorithms, generic OAuth,
-LDAP, multiple concurrent providers and MFA are not implemented by this screen.
+refused. The controller supports one active OIDC issuer using RS256. Configure
+LDAP through the separate LDAP connection screen.
 Requested scopes are fixed to `openid profile email`; group data must be in the
 signed ID token. There is no UserInfo lookup or downstream API token storage.
 
 ![OIDC connection form in dark mode](assets/screenshots/oidc-connection-dark.jpg)
 
-The screenshot shows an **unsaved synthetic example**. It does not configure a live
-provider or demonstrate a successful live-provider connection.
+![OIDC connection form on a light desktop](assets/screenshots/oidc-connection-light.jpg)
+
+![OIDC connection form at a 375-pixel mobile viewport](assets/screenshots/oidc-connection-mobile.jpg)
+
+The captures show unsaved forms in synthetic installations.
+
+## MFA assurance
+
+When the local MFA policy applies to an OIDC role, the connection denies
+provider sign-in by default. A local Administrator can explicitly trust the
+provider's enforcement or require an exact value in one literal top-level
+signed ID-token claim. Signed-claim mode accepts a matching text value or one
+matching member of a bounded, distinct string array. Missing or ambiguous
+evidence denies the affected role before session or profile completion.
+Assurance settings are part of the connection generation, so a replacement
+retires previously issued provider tickets.
 
 ## Replacing or disabling a connection
 
@@ -52,7 +66,7 @@ body is bounded to 32 KiB; unknown/repeated fields or unconfirmed replacement fa
 
 ## Storage and bootstrap
 
-Fresh account schema 4 stores one typed OIDC connection row, its version, UTC
+Fresh account schema 8 stores one typed OIDC connection row, its version, UTC
 update time and protected secret in the private account database. Keep the entire
 protected session key ring and current/retained wrapping certificates with backups:
 losing them prevents decryption. Timestamps display in the browser's local timezone.
@@ -72,7 +86,8 @@ secret retention, denial of secret reflection, expected versions, local versus
 external authority, CSRF, audit-failure rollback, old-cookie and in-flight callback
 retirement, disabling/re-enabling and restart persistence. Unit tests verify exact
 trust validation, defensive groups, real SQLite transactions, wrong-key/tampered
-secret denial and missing-row failure. Browser checks cover the connection fields, keyboard switch, secret-empty state
-and dark desktop layout. New light/mobile connection captures remain unverified;
-existing shared form/theme coverage does not establish this screen's visual acceptance. No production identity provider or account is changed.
+secret denial and missing-row failure. Browser checks covered associated form
+labels, keyboard focus, an empty secret field and the light and dark desktop
+layouts. At 375 CSS pixels, the form rendered in one column without horizontal
+page overflow.
 See the repository decision record ADR 0060.

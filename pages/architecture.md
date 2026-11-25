@@ -149,3 +149,20 @@ The private identity database now holds versioned OIDC connection settings and a
 purpose-protected write-only client secret. Each authentication request uses an
 immutable generation; replacing settings retires old challenges and sessions without
 changing local access. See [the connection guide](oidc-connection.md).
+
+## LDAP directory proof
+
+The controller's internal verifier checks one trusted LDAPS peer and one
+explicit dial IP under a single deadline. It verifies the user bind, immutable
+directory entry identity and direct group membership before returning a
+credential-free proof. The protected identity database stores versioned
+connection settings and the encrypted search password. LDAP browser sign-in
+uses the same server-side MFA completion flow as local passwords. Completion
+commits the LDAP session and the provider's descriptive profile observation
+together. Personal overrides stay separate.
+
+Email MFA uses a separately verified mailbox and delivers codes over STARTTLS.
+An explicit recovery authorization can stage a replacement authenticator when
+MFA is required. OIDC assurance belongs to the active connection and can use
+evidence from the signed ID token. See [local users and profiles](local-users-and-profiles.md)
+and [OIDC connection settings](oidc-connection.md).

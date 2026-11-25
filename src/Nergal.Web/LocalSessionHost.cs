@@ -37,8 +37,10 @@ internal static class LocalSessionHost
             Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme,
             options => options.Events.OnRedirectToLogin = BrowserResponses.LoginChallenge);
         services.AddScoped<UserPresentationFilter>();
+        services.AddScoped<IMfaEmailSender, EmailMfaSmtpSender>();
         services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(options => options.Filters.AddService<UserPresentationFilter>());
         services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+        services.AddSingleton<Microsoft.AspNetCore.Antiforgery.IAntiforgeryAdditionalDataProvider, ActorAntiforgeryData>();
         services.AddAntiforgery(options =>
         {
             options.Cookie.Name = "__Host-nergal-csrf";
@@ -50,18 +52,15 @@ internal static class LocalSessionHost
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.AddFixedWindowLimiter("local-login", limiter =>
+            foreach (var policy in new[] { "local-login", "local-password", "ldap-login", "mfa-login", "mfa-enrollment" })
             {
-                limiter.PermitLimit = 10;
-                limiter.Window = TimeSpan.FromMinutes(1);
-                limiter.QueueLimit = 0;
-            });
-            options.AddFixedWindowLimiter("local-password", limiter =>
-            {
-                limiter.PermitLimit = 10;
-                limiter.Window = TimeSpan.FromMinutes(1);
-                limiter.QueueLimit = 0;
-            });
+                options.AddFixedWindowLimiter(policy, limiter =>
+                {
+                    limiter.PermitLimit = 10;
+                    limiter.Window = TimeSpan.FromMinutes(1);
+                    limiter.QueueLimit = 0;
+                });
+            }
         });
         return ring;
     }
@@ -90,6 +89,13 @@ internal static class LocalSessionHost
                 : context.Request.Path.StartsWithSegments("/manage/policies", StringComparison.OrdinalIgnoreCase) ||
                            context.Request.Path.StartsWithSegments("/controller/policies", StringComparison.OrdinalIgnoreCase)
                 ? 524_288L
+                : (context.Request.Path.Equals("/login/ldap", StringComparison.OrdinalIgnoreCase) ||
+                   context.Request.Path.Equals("/login/recovery/ldap", StringComparison.OrdinalIgnoreCase))
+                    ? 16_384L
+                : context.Request.Path.StartsWithSegments("/manage/identity/ldap", StringComparison.OrdinalIgnoreCase)
+                    ? 49_152L
+                : context.Request.Path.StartsWithSegments("/manage/identity/oauth", StringComparison.OrdinalIgnoreCase)
+                    ? 131_072L
                 : context.Request.Path.StartsWithSegments("/manage/settings", StringComparison.OrdinalIgnoreCase) ||
                            context.Request.Path.StartsWithSegments("/manage/identity/connection", StringComparison.OrdinalIgnoreCase)
                     ? 32_768L
@@ -114,6 +120,11 @@ internal static class LocalSessionHost
         app.UseRateLimiter();
         app.MapControllerRoute("local-login", "login", new { controller = "Session", action = "Login" });
         app.MapControllerRoute("local-authenticate", "login", new { controller = "Session", action = "Authenticate" });
+        app.MapControllerRoute("ldap-authenticate", "login/ldap", new { controller = "Session", action = "AuthenticateLdap" });
+        app.MapControllerRoute("oauth-authenticate", "login/oauth", new { controller = "OAuthSignIn", action = "Start" });
+        app.MapControllerRoute("oauth-callback", "signin-oauth", new { controller = "OAuthSignIn", action = "Complete" });
+        app.MapControllerRoute("mfa-login", "login/mfa", new { controller = "Session", action = "VerifyMfa" });
+        app.MapControllerRoute("mfa-authenticate", "login/mfa", new { controller = "Session", action = "CompleteMfa" });
         app.MapControllerRoute("local-session", "session", new { controller = "Session", action = "Index" });
         app.MapControllerRoute("local-logout", "logout", new { controller = "Session", action = "Logout" });
         app.MapControllerRoute("local-users", "manage/users", new { controller = "Users", action = "Index" });
@@ -121,6 +132,26 @@ internal static class LocalSessionHost
         { app.MapControllerRoute("local-users-" + action, "manage/users/" + action.ToLowerInvariant(), new { controller = "Users", action }); }
         app.MapControllerRoute("identity-connection", "manage/identity/connection", new { controller = "IdentityConnection", action = "Index" });
         app.MapControllerRoute("identity-connection-save", "manage/identity/connection/save", new { controller = "IdentityConnection", action = "Save" });
+        app.MapControllerRoute("oauth-connection", "manage/identity/oauth", new { controller = "OAuthConnection", action = "Index" });
+        app.MapControllerRoute("oauth-connection-save", "manage/identity/oauth/save", new { controller = "OAuthConnection", action = "Save" });
+        app.MapControllerRoute("ldap-connection", "manage/identity/ldap", new { controller = "LdapConnection", action = "Index" });
+        app.MapControllerRoute("ldap-connection-save", "manage/identity/ldap/save", new { controller = "LdapConnection", action = "Save" });
+        app.MapControllerRoute("email-delivery", "manage/identity/email-delivery", new { controller = "EmailDelivery", action = "Index" });
+        app.MapControllerRoute("email-delivery-save", "manage/identity/email-delivery/save", new { controller = "EmailDelivery", action = "Save" });
+        app.MapControllerRoute("mfa-policy", "manage/identity/mfa", new { controller = "Mfa", action = "Policy" });
+        app.MapControllerRoute("mfa-policy-save", "manage/identity/mfa/save", new { controller = "Mfa", action = "SavePolicy" });
+        app.MapControllerRoute("mfa-enrollment", "profile/mfa", new { controller = "Mfa", action = "Index" });
+        app.MapControllerRoute("mfa-enrollment-begin", "profile/mfa/begin", new { controller = "Mfa", action = "Begin" });
+        app.MapControllerRoute("mfa-enrollment-confirm", "profile/mfa/confirm", new { controller = "Mfa", action = "Confirm" });
+        app.MapControllerRoute("email-mfa-enrollment", "profile/mfa/email", new { controller = "EmailMfa", action = "Index" });
+        app.MapControllerRoute("email-mfa-begin", "profile/mfa/email/begin", new { controller = "EmailMfa", action = "Begin" });
+        app.MapControllerRoute("email-mfa-confirm", "profile/mfa/email/confirm", new { controller = "EmailMfa", action = "Confirm" });
+        app.MapControllerRoute("recovery-issue", "manage/identity/mfa/recovery", new { controller = "Recovery", action = "Issue" });
+        app.MapControllerRoute("recovery-authorize", "manage/identity/mfa/recovery", new { controller = "Recovery", action = "AuthorizeRecovery" });
+        app.MapControllerRoute("recovery-login", "login/recovery", new { controller = "Recovery", action = "Index" });
+        app.MapControllerRoute("recovery-local", "login/recovery/local", new { controller = "Recovery", action = "Local" });
+        app.MapControllerRoute("recovery-ldap", "login/recovery/ldap", new { controller = "Recovery", action = "Ldap" });
+        app.MapControllerRoute("recovery-confirm", "login/recovery/confirm", new { controller = "Recovery", action = "Confirm" });
         app.MapControllerRoute("profile-mappings", "manage/identity/profiles", new { controller = "IdentityProfiles", action = "Index" });
         app.MapControllerRoute("profile-mappings-save", "manage/identity/profiles/save", new { controller = "IdentityProfiles", action = "Save" });
         app.MapControllerRoute("user-profile", "profile", new { controller = "Profile", action = "Index" });

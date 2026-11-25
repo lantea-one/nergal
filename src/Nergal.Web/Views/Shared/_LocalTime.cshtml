@@ -1,6 +1,7 @@
 @model DateTimeOffset
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     var utc = Model.UtcDateTime;
     var instant = utc.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 }
-<time data-local-time datetime="@instant" title="Stored UTC: @instant">@utc.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", System.Globalization.CultureInfo.InvariantCulture)</time>
+<time data-local-time datetime="@instant" title="@L["Stored UTC: {0}", instant]" lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">@utc.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", System.Globalization.CultureInfo.InvariantCulture)</time>

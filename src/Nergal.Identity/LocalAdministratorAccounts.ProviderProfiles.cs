@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,12 @@ public sealed partial class LocalAdministratorAccounts
                 !verifiedClaims.TryGetProperty("sub", out var subject) || subject.ValueKind != JsonValueKind.String ||
                 issuer.GetString() != principal.FindFirstValue("iss") || subject.GetString() != principal.FindFirstValue("sub"))
             { return Failure("profile.providerIdentity"); }
+            var connection = await ConnectionAsync();
+            var generation = principal.FindFirstValue("nergal.oidc-generation") ?? "0";
+            if (connection is null ? generation != "0" : !ConnectionSnapshot(connection).Settings.Enabled ||
+                generation != connection.Version.ToString(CultureInfo.InvariantCulture) || connection.Issuer != issuer.GetString())
+            { return Failure("profile.providerRetired"); }
+
             var map = await context.Set<OidcProfileMap>().SingleOrDefaultAsync(m => m.Issuer == issuer.GetString());
             if (map is null || !Mapping(map).Enabled) { return Success(); }
             ProviderProfileSnapshot projected;

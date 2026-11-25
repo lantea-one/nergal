@@ -49,10 +49,14 @@ class Issuer(http.server.BaseHTTPRequestHandler):
         if self.path == "/.well-known/openid-configuration":
             self.respond({"issuer": op.issuer, "authorization_endpoint": op.issuer + "/authorize",
                           "token_endpoint": op.issuer + "/token", "jwks_uri": op.issuer + "/keys",
+                          "userinfo_endpoint": op.issuer + "/userinfo",
                           "response_types_supported": ["code"], "subject_types_supported": ["public"],
                           "id_token_signing_alg_values_supported": ["RS256"]})
         elif self.path == "/keys":
             self.respond({"keys": [op.jwk]})
+        elif self.path == "/userinfo":
+            op.userinfo_requests += 1
+            self.respond({"sub": "synthetic-external-subject", "amr": ["mfa"]})
         elif urlsplit(self.path).path == "/authorize":
             query = parse_qs(urlsplit(self.path).query)
             valid = (query.get("response_type") == ["code"] and query.get("response_mode") == ["form_post"]
@@ -84,7 +88,10 @@ class Issuer(http.server.BaseHTTPRequestHandler):
         now = int(time.time())
         claims = {"iss": op.issuer, "sub": "synthetic-external-subject", "aud": op.client, "iat": now,
                   "exp": now + 3600, "nonce": authorization[0], "groups": ["fixture-admins"], **op.overrides}
-        signed = compact({"alg": "RS256", "typ": "JWT", "kid": "fixture-key"}) + "." + compact(claims)
+        encoded_claims = json.dumps(claims, separators=(",", ":"))
+        for name, value in op.repeated_claims:
+            encoded_claims = encoded_claims[:-1] + "," + json.dumps(name) + ":" + json.dumps(value) + "}"
+        signed = compact({"alg": "RS256", "typ": "JWT", "kid": "fixture-key"}) + "." + encode(encoded_claims.encode())
         signature = subprocess.check_output(["openssl", "dgst", "-sha256", "-sign", op.signing_key], input=signed.encode())
         self.respond({"id_token": signed + "." + encode(signature), "access_token": "synthetic-unused", "token_type": "Bearer"})
 
@@ -104,6 +111,8 @@ def provider(temp):
         server.signing_key, server.client, server.secret = key, "fixture-client", secrets.token_urlsafe(32)
         server.codes, server.overrides = {}, {}
         server.token_requests = 0
+        server.userinfo_requests = 0
+        server.repeated_claims = []
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
@@ -152,8 +161,8 @@ class RelyingParty:
         assert parser.value
         return parser.value
 
-    def exchange(self, op, cert, expected, alter_form=None, destination="/session"):
-        _, location = self.request("/login/oidc", 302, {"__RequestVerificationToken": self.token("/login")})
+    def authorize(self, op, cert, token_path="/login"):
+        _, location = self.request("/login/oidc", 302, {"__RequestVerificationToken": self.token(token_path)})
         parts = urlsplit(location)
         assert parts.scheme + "://" + parts.netloc == op.issuer
         # The IdP receives no RP cookies or password.
@@ -161,7 +170,10 @@ class RelyingParty:
             idp.request("GET", parts.path + "?" + parts.query)
             response = idp.getresponse()
             assert response.status == 200
-            form = json.load(response)
+            return json.load(response)
+
+    def exchange(self, op, cert, expected, alter_form=None, destination="/session"):
+        form = self.authorize(op, cert)
         if alter_form:
             alter_form(form)
         _, actual_destination = self.request("/signin-oidc", expected, form)
@@ -423,3 +435,11 @@ if __name__ == "__main__":
     from connection_settings import exercise_connections
     with tempfile.TemporaryDirectory(prefix="nergal-oidc-connection-") as directory:
         exercise_connections(Path(directory), sessions, provider, host_settings, RelyingParty)
+
+    from bootstrap_switch import exercise_bootstrap_switch
+    with tempfile.TemporaryDirectory(prefix="nergal-oidc-switch-") as directory:
+        exercise_bootstrap_switch(Path(directory), sessions, provider, host_settings, RelyingParty)
+
+    from mfa_assurance import exercise_assurance
+    with tempfile.TemporaryDirectory(prefix="nergal-oidc-assurance-") as directory:
+        exercise_assurance(Path(directory), sessions, provider, host_settings, RelyingParty)

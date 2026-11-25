@@ -343,7 +343,7 @@ A dedicated reader Hosts page retains existing Administrator/CSRF mutation route
 Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.
 
 
-Account schema 4 separates local security state, personal metadata and identity
+Account schema 8 separates local security state, personal metadata and identity
 history inside the protected credential store. Expected-version mutations recheck
 local actor authority inside serialized transactions, protect the last enabled
 local Administrator and rotate affected security stamps with transactional audit.
@@ -357,8 +357,30 @@ protocol handler can refresh them from verified signed claims; no UserInfo reque
 raw token persistence, role overlay, account linking or email verification follows.
 Administrator mapping edits and observations commit audit in the identity store.
 
-UI-managed OIDC trust and encrypted secrets live in account schema 4. Immutable
+UI-managed OIDC trust and encrypted secrets live in account schema 8. Immutable
 request snapshots and bounded generation-keyed framework options prevent concurrent
 trust changes from mutating active handlers. Challenges and cookies bind a generation;
 callback completion checks current persisted trust. Local sign-in remains independent.
 See [OIDC connection](oidc-connection.md) and ADR 0060.
+
+The LDAP verifier binds a single LDAPS peer, a configured dial IP, an immutable
+entry UUID and exactly one proven direct role. It returns an internal proof under
+one deadline. The identity database stores versioned LDAP trust with a protected
+search-account secret and atomic audit. Browser LDAP and local password sign-in
+share a server-side MFA continuation. Completion consumes the accepted TOTP
+step or the one-time email code and commits the LDAP profile observation and
+session in the same transaction. LDAP sessions, OIDC tickets and local cookies
+all bind the current MFA policy generation. See [ADR 0061](decisions/0061-direct-ldap-trust-boundary.md)
+and [ADR 0062](decisions/0062-local-mfa-completion.md).
+
+Email MFA verifies a separate mailbox and delivers codes over validated
+STARTTLS after reserving them in the identity store. Recovery can stage a
+replacement authenticator under enforcement without issuing a session. OIDC
+assurance binds the role, the signed ID token and the active connection.
+See [ADR 0063](decisions/0063-email-mfa-recovery-and-oidc-assurance.md).
+
+Account schema 8 adds one explicit OAuth 2.0 current-user connection. The
+controller redeems the code using S256 PKCE and reads the bounded current-user
+response over the configured HTTPS connection. OAuth has its own actor namespace,
+session scheme and profile observations. Descriptive overrides remain per actor.
+See [ADR 0064](decisions/0064-generic-oauth-profile-provider.md).

@@ -28,7 +28,7 @@ public static class ControllerAuthorizationPolicies
     public const string Reader = "NergalReader";
 }
 
-/// <summary>Canonical controller actor identifiers recorded in audit logs (`local:&lt;uuid&gt;` or `oidc:&lt;issuer-length&gt;:&lt;issuer&gt;:&lt;subject&gt;`).</summary>
+/// <summary>Canonical account identifiers recorded in controller audit logs.</summary>
 public static class ControllerActorIdentity
 {
     /// <summary>Custom claim storing the canonical actor attribution string on authenticated principals.</summary>
@@ -66,7 +66,24 @@ public static class ControllerActorIdentity
         return $"oidc:{issuer.Length.ToString(CultureInfo.InvariantCulture)}:{issuer}:{subject}";
     }
 
-    /// <summary>Validates canonical <c>local:&lt;uuid&gt;</c> or <c>oidc:&lt;issuer-length&gt;:&lt;issuer&gt;:&lt;subject&gt;</c> syntax.</summary>
+    /// <summary>Formats the canonical actor for a verified immutable LDAP entry in one configured directory namespace.</summary>
+    /// <exception cref="ArgumentException">Either UUID is empty.</exception>
+    public static string FromLdapAccount(Guid directoryId, Guid entryId)
+    {
+        if (directoryId == Guid.Empty || entryId == Guid.Empty) { throw new ArgumentException("LDAP directory and entry IDs are required."); }
+        return $"ldap:{directoryId:D}:{entryId:D}";
+    }
+
+    /// <summary>Formats an immutable OAuth subject in the configured provider namespace.</summary>
+    public static string FromOAuthAccount(Guid connectionId, string subject)
+    {
+        if (connectionId == Guid.Empty || subject is not { Length: >= 1 and <= 255 } ||
+            !subject.All(character => character is >= '!' and <= '~'))
+        { throw new ArgumentException("A provider namespace and immutable OAuth subject are required."); }
+        return $"oauth:{connectionId:D}:{subject}";
+    }
+
+    /// <summary>Validates canonical account syntax for attribution.</summary>
     public static bool IsValid(string? actorId)
     {
         if (string.IsNullOrWhiteSpace(actorId) || actorId.Length > 1024 || actorId.Any(char.IsControl))
@@ -80,6 +97,15 @@ public static class ControllerActorIdentity
                 FromLocalAccount(parsed) == actorId;
         }
 
+        if (actorId.StartsWith("ldap:", StringComparison.Ordinal))
+        {
+            var pair = actorId.AsSpan("ldap:".Length);
+            return pair.Length == 73 && pair[36] == ':' &&
+                Guid.TryParseExact(pair[..36], "D", out var directoryId) && directoryId != Guid.Empty &&
+                Guid.TryParseExact(pair[37..], "D", out var entryId) && entryId != Guid.Empty &&
+                FromLdapAccount(directoryId, entryId) == actorId;
+        }
+
         if (actorId.StartsWith("oidc:", StringComparison.Ordinal))
         {
             var rest = actorId.AsSpan("oidc:".Length);
@@ -89,6 +115,15 @@ public static class ControllerActorIdentity
             var pair = rest[(separator + 1)..];
             if (pair.Length <= length + 1 || pair[length] != ':') { return false; }
             try { return FromFederatedAccount(pair[..length].ToString(), pair[(length + 1)..].ToString()) == actorId; }
+            catch (ArgumentException) { return false; }
+        }
+
+        if (actorId.StartsWith("oauth:", StringComparison.Ordinal))
+        {
+            var pair = actorId.AsSpan("oauth:".Length);
+            if (pair.Length is < 38 or > 292 || pair[36] != ':' ||
+                !Guid.TryParseExact(pair[..36], "D", out var connectionId)) { return false; }
+            try { return FromOAuthAccount(connectionId, pair[37..].ToString()) == actorId; }
             catch (ArgumentException) { return false; }
         }
 

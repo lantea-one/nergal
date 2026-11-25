@@ -1,3 +1,4 @@
+@using Nergal.Core.Identity
 @model Nergal.Web.OidcConnectionPageModel
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -5,6 +6,7 @@
     ViewData["ActiveNav"] = "settings";
     var saved = Model.Connection;
     var s = saved?.Settings;
+    var assurance = s?.MfaAssuranceMode ?? OidcMfaAssuranceMode.Deny;
     var local = User.FindFirst(Nergal.Core.Identity.ControllerActorIdentity.ActorClaimType)?.Value.StartsWith("local:", StringComparison.Ordinal) == true;
 }
 <main id="main-content" tabindex="-1" class="container">
@@ -31,6 +33,28 @@
                 <div class="field"><label for="provider-claim">Groups claim</label><input id="provider-claim" name="groupClaim" value="@(s?.GroupClaim ?? "groups")" maxlength="128" required disabled="@(!local)" /><small class="muted">Literal top-level claim name; expressions and nested lookups are unsupported.</small></div>
                 <div class="field span-2"><label for="provider-admins">Administrator groups</label><textarea id="provider-admins" name="administratorGroups" rows="3" maxlength="8224" disabled="@(!local)">@string.Join("\n", s?.AdministratorGroups ?? [])</textarea><small class="muted">One exact group per line, up to 32. No wildcards.</small></div>
                 <div class="field"><label for="provider-auditors">Auditor groups</label><textarea id="provider-auditors" name="auditorGroups" rows="3" maxlength="8224" disabled="@(!local)">@string.Join("\n", s?.AuditorGroups ?? [])</textarea><small class="muted">One per line. A group cannot appear in both roles.</small></div>
+            </div>
+            <h3>MFA assurance</h3>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="provider-mfa-mode">When MFA is required for the signed-in role</label>
+                    <select id="provider-mfa-mode" name="mfaAssuranceMode" aria-describedby="provider-mfa-hint" disabled="@(!local)">
+                        <option value="Deny" selected="@(assurance == OidcMfaAssuranceMode.Deny)">Deny provider sign-in</option>
+                        <option value="ProviderBypass" selected="@(assurance == OidcMfaAssuranceMode.ProviderBypass)">Trust the provider to enforce MFA</option>
+                        <option value="SignedClaim" selected="@(assurance == OidcMfaAssuranceMode.SignedClaim)">Require a signed ID-token claim</option>
+                    </select>
+                    <small class="muted" id="provider-mfa-hint">Choose provider trust only if the provider enforces MFA for this connection. Roles with optional MFA can sign in under any mode.</small>
+                </div>
+                <div class="field">
+                    <label for="provider-mfa-claim">Assurance claim</label>
+                    <input id="provider-mfa-claim" name="mfaAssuranceClaim" value="@s?.MfaAssuranceClaim" maxlength="128" placeholder="amr" aria-describedby="provider-mfa-claim-hint" disabled="@(!local)" />
+                    <small class="muted" id="provider-mfa-claim-hint">Signed-claim mode only. Enter a literal top-level claim name, separate from the groups claim.</small>
+                </div>
+                <div class="field">
+                    <label for="provider-mfa-value">Expected assurance value</label>
+                    <input id="provider-mfa-value" name="mfaAssuranceValue" value="@s?.MfaAssuranceValue" maxlength="256" placeholder="mfa" aria-describedby="provider-mfa-value-hint" disabled="@(!local)" />
+                    <small class="muted" id="provider-mfa-value-hint">Match the exact case-sensitive string or one item in an array of distinct strings. Leave both claim fields blank in other modes.</small>
+                </div>
             </div>
             <div class="alert alert-warning">Saving replaces the active connection settings, invalidates existing provider sessions and cancels in-flight provider sign-ins. Local sessions remain available. No provider request is made until sign-in.</div>
             <div><button type="submit" name="confirm" value="replace-trust" disabled="@(!local)">Save and replace provider settings</button></div>

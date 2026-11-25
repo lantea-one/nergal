@@ -10,7 +10,12 @@ PAGES = ROOT / "pages"
 
 REQUIRED_FILES = [
     "oidc-connection.md",
+    "oauth-connection.md",
+    "overview-host-observations.md",
+    "ui-localization.md",
     "assets/screenshots/oidc-connection-dark.jpg",
+    "assets/screenshots/oidc-connection-light.jpg",
+    "assets/screenshots/oidc-connection-mobile.jpg",
     ".nojekyll",
     "index.html",
     "index.md",

@@ -1,10 +1,12 @@
 using System.Data;
 using System.Security.Claims;
 using System.Runtime.Versioning;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Nergal.Core.Identity;
 
@@ -74,7 +76,8 @@ public sealed partial class LocalAdministratorAccounts
     /// <exception cref="OperationCanceledException">Cancellation preceded credential reservation.</exception>
     public async Task<LocalCredentialResult> VerifyAsync(string userName, string password, CancellationToken cancellationToken = default)
     {
-        var user = await VerifyPasswordAsync(userName, password, cancellationToken);
+        if (!ValidCredentialInput(userName, password, cancellationToken)) { return new(null); }
+        var user = await WithCredentialTransactionAsync(() => VerifyPasswordAsync(userName, password), cancellationToken);
         return new(user is null ? null : Guid.Parse(user.Id));
     }
 
@@ -91,14 +94,16 @@ public sealed partial class LocalAdministratorAccounts
     /// <remarks>The calling host must install the protected local cookie scheme and enforce HTTPS, antiforgery and rate limits.</remarks>
     public async Task<bool> SignInAsync(string userName, string password, CancellationToken cancellationToken = default)
     {
-        var user = await VerifyPasswordAsync(userName, password, cancellationToken);
-        if (user is null) { return false; }
-        await signIn.SignInAsync(user, isPersistent: false);
-        return true;
+        var options = signIn.Context.RequestServices.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>();
+        var keys = options.Get(signIn.AuthenticationScheme).DataProtectionProvider
+            ?? throw new AccountStoreException("account.sessionKeys");
+        var result = await BeginLocalSignInAsync(userName, password, keys, cancellationToken);
+        return result.Status == MfaSignInStatus.SignedIn;
     }
 
     internal async Task<bool> ValidateSessionAsync(ClaimsPrincipal principal)
     {
+        context.ChangeTracker.Clear();
         var user = await signIn.ValidateSecurityStampAsync(principal);
         if (user is null) { return false; }
         RequireSupported(user);
@@ -106,7 +111,9 @@ public sealed partial class LocalAdministratorAccounts
         var storedRole = await ResolveValidatedRoleAsync(users, user);
         var claimRole = principal.FindFirstValue(ClaimTypes.Role);
         var claimActor = principal.FindFirstValue(ControllerActorIdentity.ActorClaimType);
-        return string.Equals(claimRole, storedRole, StringComparison.Ordinal) &&
+        return await ValidLocalMfaSessionAsync(principal) &&
+               principal.FindAll(ClaimTypes.Role).Count() == 1 && principal.FindAll(ControllerActorIdentity.ActorClaimType).Count() == 1 &&
+               string.Equals(claimRole, storedRole, StringComparison.Ordinal) &&
                string.Equals(claimActor, ControllerActorIdentity.FromLocalAccount(Guid.Parse(user.Id)), StringComparison.Ordinal);
     }
 
@@ -147,31 +154,51 @@ public sealed partial class LocalAdministratorAccounts
         { throw new AccountStoreException("account.corrupt"); }
     }
 
-    private async Task<LocalAdministrator?> VerifyPasswordAsync(string userName, string password, CancellationToken cancellationToken)
+    private static bool ValidCredentialInput(string userName, string password, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(userName);
         ArgumentNullException.ThrowIfNull(password);
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!ValidName(userName) || !BoundedPasswordValidator.Valid(password)) { return null; }
+        token.ThrowIfCancellationRequested();
+        return ValidName(userName) && BoundedPasswordValidator.Valid(password);
+    }
+
+    // The caller reserves the transaction before verification. A browser sign-in commits
+    // password accounting, the MFA decision and its audit before emitting any cookie.
+    private async Task<LocalAdministrator?> VerifyPasswordAsync(string userName, string password)
+    {
+        var user = await users.FindByNameAsync(userName);
+        if (user is not null) { RequireSupported(user); _ = await ResolveValidatedRoleAsync(users, user); }
+        if (user is null || !(await StateAsync(user.Id)).Enabled || await users.IsLockedOutAsync(user))
+        {
+            dummy.Verify(password);
+            return null;
+        }
+        var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
+        return result.Succeeded ? user : null;
+    }
+
+    private async Task<T> WithCredentialTransactionAsync<T>(Func<Task<T>> operation, CancellationToken token = default,
+        bool cancelBeforeCommit = false)
+    {
+        token.ThrowIfCancellationRequested();
+        context.ChangeTracker.Clear();
         try
         {
-            await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, token);
             AccountConnectionPolicy.RequireSchema(context.Database.GetDbConnection(), transaction.GetDbTransaction());
-            var user = await users.FindByNameAsync(userName);
-            if (user is not null) { RequireSupported(user); _ = await ResolveValidatedRoleAsync(users, user); }
-            if (user is null || !(await StateAsync(user.Id)).Enabled || await users.IsLockedOutAsync(user))
-            {
-                dummy.Verify(password);
-                await transaction.CommitAsync(CancellationToken.None);
-                return null;
-            }
-            var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
-            await transaction.CommitAsync(CancellationToken.None);
-            return result.Succeeded ? user : null;
+            var result = await operation();
+            // Password lockout accounting normally commits despite a disconnect. OAuth
+            // projection is useful only while its single-use browser decision is current.
+            var commitToken = cancelBeforeCommit ? token : CancellationToken.None;
+            await context.SaveChangesAsync(commitToken);
+            commitToken.ThrowIfCancellationRequested();
+            await transaction.CommitAsync(commitToken);
+            return result;
         }
         catch (Exception error) when (error is SqliteException or DbUpdateException)
         { throw new AccountStoreException("account.databaseError"); }
         catch (FormatException) { throw new AccountStoreException("account.corrupt"); }
+        catch (System.Security.Cryptography.CryptographicException) { throw new AccountStoreException("mfa.keysUnavailable"); }
     }
 
     private static bool ValidName(string? value) => value is { Length: >= 1 and <= 64 } &&

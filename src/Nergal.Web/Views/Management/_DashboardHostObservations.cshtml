@@ -1,0 +1,53 @@
+@using Nergal.Web
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
+@model FleetDashboardViewModel
+@{
+    string StateLabel(DashboardHostState state) => L[state switch
+    {
+        DashboardHostState.Matched => "Baseline matches",
+        DashboardHostState.Drift => "Drift detected",
+        DashboardHostState.MissingBaseline => "Missing baseline receipt",
+        DashboardHostState.ActiveChange => "Change in progress",
+        DashboardHostState.Unavailable => "Status unavailable",
+        DashboardHostState.Unqueried => "No query made",
+        _ => "Status unknown",
+    }].Value;
+
+    var observations = DashboardHostObservations.From(Model.Hosts, Model.HostHealth);
+    var observedCount = observations.ObservedCount;
+    var gaps = observations.Counts.Where(count => !count.IsObserved).ToArray();
+}
+@if (observedCount > 0)
+{
+    <figure class="observation-chart" aria-labelledby="host-observation-caption">
+        <figcaption id="host-observation-caption">@L["{0:N0} of {1:N0} registered hosts classified by agent status", observedCount, observations.RegisteredCount]</figcaption>
+        <ul role="list">
+            @foreach (var count in observations.Counts.Where(count => count.IsObserved))
+            {
+                <li>
+                    <span>@StateLabel(count.State)</span><strong>@count.Count.ToString("N0")</strong>
+                    <meter min="0" max="@observations.RegisteredCount.ToString(System.Globalization.CultureInfo.InvariantCulture)" value="@count.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)" aria-hidden="true"></meter>
+                </li>
+            }
+        </ul>
+    </figure>
+}
+else
+{
+    <p>@L["No usable agent status classifications for this page load."]</p>
+}
+@if (gaps.Length > 0)
+{
+    <ul class="observation-gaps" role="list" aria-label="@L["Gaps in status coverage"]">
+        @foreach (var gap in gaps)
+        {
+            <li><span>@StateLabel(gap.State)</span> <strong>@gap.Count.ToString("N0")</strong></li>
+        }
+    </ul>
+}
+<details class="disclosure">
+    <summary>@L["How host status is measured"]</summary>
+    <p>@L["When agent control is configured, Overview requests status over each registered agent’s authenticated connection. Each bar shows the number of hosts in that state against the full registered fleet for this page load."]</p>
+    <p>@L["A matching baseline means the agent matched its protected receipt. The latest saved controller revision can differ. A missing baseline receipt means the agent has no bound reference for comparison."]</p>
+    <p>@L["Unavailable means the query could not establish status. Unqueried means no status request was made. Unknown means the controller lacks a usable classification. These gaps leave the firewall state undetermined."]</p>
+</details>

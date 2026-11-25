@@ -178,3 +178,17 @@ cookie retirement, disabled sign-in, audit rollback and restart persistence.
 The solution is `Nergal.slnx`; application projects are at root and all nine
 unit/integration fixture projects are in `Tests`. New connection-screen dark desktop
 and keyboard checks were performed; light/mobile captures remain unverified.
+
+## M5 console acceptance
+
+The Chromium usability fixture uses a fresh synthetic installation to exercise
+first use, guided rule authoring and review, host registration, native import,
+apply review, identity/settings, Auditor denial, keyboard use, both themes
+and narrow mobile layout. The browser fixture blocks apply, confirm and rollback
+writes.
+
+Independent HTTPS fixtures exercise OAuth over a synthetic provider, the
+language selector, and the [Overview host observation chart](overview-host-observations.md).
+The populated chart check reads a real agent over pinned mutual TLS inside a
+disposable network namespace. The full native conformance fixture separately
+covers packet delivery and confirmed rollback.

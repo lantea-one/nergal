@@ -1,11 +1,14 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Nergal.Core.Identity;
@@ -18,8 +21,13 @@ internal static class FederatedLogin
     internal const string Protocol = "nergal.oidc";
     internal const string Session = "nergal.federated-session";
     internal const string Browser = "nergal.browser-session";
+    private const string ConnectionGenerationClaim = "nergal.oidc-generation";
+    private const string PolicyGenerationClaim = "nergal.oidc-mfa-generation";
+    private const string MfaAssuredClaim = "nergal.oidc-mfa-assured";
     private static readonly object VerifiedProfilePayload = new();
     internal const string Cookie = "__Host-nergal-federated";
+    internal const string LdapSession = "nergal.ldap-session";
+    internal const string LdapCookie = "__Host-nergal-ldap";
 
     [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     internal static void Configure(IServiceCollection services, IConfigurationSection config, IDataProtectionProvider keys)
@@ -31,7 +39,39 @@ internal static class FederatedLogin
         services.AddSingleton(new FederatedSessions(TimeProvider.System));
         var auth = services.AddAuthentication(options => options.DefaultScheme = Browser);
         auth.AddPolicyScheme(Browser, null, options => options.ForwardDefaultSelector =
-            context => context.Request.Cookies.ContainsKey(Cookie) ? Session : IdentityConstants.ApplicationScheme);
+            context => context.Request.Cookies.ContainsKey(Cookie) ? Session :
+                context.Request.Cookies.ContainsKey(OAuthLogin.Cookie) ? OAuthLogin.Session :
+                context.Request.Cookies.ContainsKey(LdapCookie) ? LdapSession : IdentityConstants.ApplicationScheme);
+        OAuthLogin.Configure(auth, keys);
+        auth.AddCookie(LdapSession, cookie =>
+        {
+            cookie.DataProtectionProvider = keys;
+            cookie.Cookie.Name = LdapCookie;
+            cookie.Cookie.Path = "/";
+            cookie.Cookie.HttpOnly = true;
+            cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            cookie.Cookie.SameSite = SameSiteMode.Strict;
+            cookie.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+            cookie.SlidingExpiration = false;
+            cookie.Events.OnValidatePrincipal = async context =>
+            {
+                var accounts = context.HttpContext.RequestServices.GetRequiredService<LocalAdministratorAccounts>();
+                if (context.Principal is null || !await accounts.ValidateLdapSessionAsync(context.Principal))
+                {
+                    context.RejectPrincipal();
+                    context.Options.CookieManager.DeleteCookie(context.HttpContext, LdapCookie,
+                        context.Options.Cookie.Build(context.HttpContext));
+                }
+            };
+            cookie.Events.OnSigningOut = async context =>
+            {
+                var ticket = await context.HttpContext.AuthenticateAsync(LdapSession);
+                if (ticket.Principal is { } principal)
+                { await context.HttpContext.RequestServices.GetRequiredService<LocalAdministratorAccounts>().RevokeLdapSessionAsync(principal); }
+            };
+            cookie.Events.OnRedirectToLogin = BrowserResponses.LoginChallenge;
+            cookie.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
+        });
         auth.AddCookie(Session, cookie =>
         {
             cookie.DataProtectionProvider = keys;
@@ -42,15 +82,22 @@ internal static class FederatedLogin
             cookie.Cookie.SameSite = SameSiteMode.Strict;
             cookie.ExpireTimeSpan = TimeSpan.FromMinutes(15);
             cookie.SlidingExpiration = false;
-            cookie.Events.OnValidatePrincipal = context =>
+            cookie.Events.OnValidatePrincipal = async context =>
             {
                 var principal = context.Principal;
                 var connection = context.HttpContext.RequestServices.GetRequiredService<OidcRequestConnection>();
-                if (!connection.Enabled || principal?.FindFirstValue("nergal.oidc-generation") != connection.Generation ||
-                    !Registry(context.HttpContext).IsCurrent(principal?.FindFirstValue("sid"),
-                    principal?.FindFirstValue("iss"), principal?.FindFirstValue("sub"), principal?.FindFirstValue(ClaimTypes.Role)))
-                { context.RejectPrincipal(); }
-                return Task.CompletedTask;
+                if (principal is null || !connection.Enabled || principal.FindFirstValue(ConnectionGenerationClaim) != connection.Generation ||
+                    principal.FindFirstValue(MfaAssuredClaim) is not ("true" or "false") ||
+                    (await context.HttpContext.RequestServices.GetRequiredService<LocalAdministratorAccounts>()
+                        .ReadOidcMfaGenerationAsync(principal.FindFirstValue(ClaimTypes.Role),
+                            principal.FindFirstValue(MfaAssuredClaim) == "true")) is not { } policyGeneration ||
+                    principal.FindFirstValue(PolicyGenerationClaim) != policyGeneration.ToString(CultureInfo.InvariantCulture) ||
+                    !Registry(context.HttpContext).IsCurrent(principal.FindFirstValue("sid"),
+                        principal.FindFirstValue("iss"), principal.FindFirstValue("sub"), principal.FindFirstValue(ClaimTypes.Role)))
+                {
+                    context.RejectPrincipal();
+                    context.Options.CookieManager.DeleteCookie(context.HttpContext, Cookie, context.Options.Cookie.Build(context.HttpContext));
+                }
             };
             cookie.Events.OnSigningOut = async context =>
             {
@@ -64,6 +111,7 @@ internal static class FederatedLogin
         services.AddOptions<OpenIdConnectOptions>(Protocol).Configure<OidcRequestConnection>((options, connection) =>
         {
             var generation = connection.Generation;
+            var challengeGeneration = connection.ChallengeGeneration;
             var runtime = connection.Runtime;
             var settings = runtime?.Snapshot.Settings ?? new Nergal.Core.Identity.OidcConnectionSettings(false,
                 "https://disabled.invalid", "disabled", "https://disabled.invalid/signin-oidc", "groups", ["disabled"], []);
@@ -112,7 +160,7 @@ internal static class FederatedLogin
             options.Events.OnRedirectToIdentityProvider = async context =>
             {
                 if (!settings.Enabled) { context.HandleResponse(); context.Response.StatusCode = 404; return; }
-                context.Properties.Items["nergal.oidc-generation"] = generation;
+                context.Properties.Items[ConnectionGenerationClaim] = challengeGeneration;
                 if (context.Request.PathBase.HasValue ||
                     !string.Equals(context.Request.Host.ToUriComponent(), callback.Authority, StringComparison.OrdinalIgnoreCase))
                 {
@@ -146,8 +194,8 @@ internal static class FederatedLogin
             {
                 // Reject retired state before sending its authorization code to
                 // any token endpoint selected by a newer connection generation.
-                if (context.Properties is null || !context.Properties.Items.TryGetValue("nergal.oidc-generation", out var challengeGeneration) ||
-                    challengeGeneration != generation ||
+                if (context.Properties is null || !context.Properties.Items.TryGetValue(ConnectionGenerationClaim, out var issuedGeneration) ||
+                    issuedGeneration != challengeGeneration ||
                     !await context.HttpContext.RequestServices.GetRequiredService<OidcRequestConnection>().IsCurrentAsync(generation))
                 { context.Fail("Retired federated connection."); }
             };
@@ -176,34 +224,46 @@ internal static class FederatedLogin
             };
             options.Events.OnTicketReceived = async context =>
             {
-                if (!OperatingSystem.IsLinux()) { context.Fail("Federated profile unavailable."); return; }
-                if (context.Properties is null || !context.Properties.Items.TryGetValue("nergal.oidc-generation", out var challengeGeneration) || challengeGeneration != generation ||
+                if (!OperatingSystem.IsLinux()) { RejectTicket(context); return; }
+                if (context.Properties is null || !context.Properties.Items.TryGetValue(ConnectionGenerationClaim, out var issuedGeneration) || issuedGeneration != challengeGeneration ||
                     !await context.HttpContext.RequestServices.GetRequiredService<OidcRequestConnection>().IsCurrentAsync(generation))
-                { context.Fail("Retired federated connection."); return; }
+                { RejectTicket(context); return; }
                 var principal = context.Principal!;
-                ((ClaimsIdentity)principal.Identity!).AddClaim(new("nergal.oidc-generation", generation));
                 var role = principal.FindFirstValue(ClaimTypes.Role);
                 var issuer = principal.FindFirstValue("iss");
                 var subject = principal.FindFirstValue("sub");
                 if (issuer is null || issuer != policy.Issuer || string.IsNullOrWhiteSpace(subject) || !NergalRoles.IsDefined(role) ||
                     principal.FindFirstValue(ControllerActorIdentity.ActorClaimType) != ControllerActorIdentity.FromFederatedAccount(issuer, subject))
-                { context.Fail("Federated login denied."); return; }
+                { RejectTicket(context); return; }
+                if (!context.HttpContext.Items.Remove(VerifiedProfilePayload, out var raw) || raw is not string payload)
+                { RejectTicket(context); return; }
+
+                // The protocol and nonce checks are complete. Evaluate the signed payload and
+                // retain only the decision in the application principal.
+                using var claims = JsonDocument.Parse(Base64UrlEncoder.DecodeBytes(payload), new JsonDocumentOptions { MaxDepth = 16 });
+                var assured = settings.AssuresVerifiedMfa(claims.RootElement);
+                var accounts = context.HttpContext.RequestServices.GetRequiredService<LocalAdministratorAccounts>();
+                var mfaGeneration = await accounts.ReadOidcMfaGenerationAsync(role, assured);
+                if (mfaGeneration is null) { RejectTicket(context); return; }
+                var identity = (ClaimsIdentity)principal.Identity!;
+                identity.AddClaim(new(ConnectionGenerationClaim, generation));
+                identity.AddClaim(new(MfaAssuredClaim, assured ? "true" : "false"));
+                identity.AddClaim(new(PolicyGenerationClaim, mfaGeneration.Value.ToString(CultureInfo.InvariantCulture)));
                 var admin = new FederatedAdministrator(issuer, subject, context.Properties!.ExpiresUtc!.Value, role!);
                 var sid = Registry(context.HttpContext).Register(admin);
                 try
                 {
-                    if (context.HttpContext.Items.Remove(VerifiedProfilePayload, out var raw) && raw is string payload)
-                    {
-                        using var claims = JsonDocument.Parse(Base64UrlEncoder.DecodeBytes(payload), new JsonDocumentOptions { MaxDepth = 16 });
-                        var profiles = context.HttpContext.RequestServices.GetRequiredService<LocalAdministratorAccounts>();
-                        if (!(await profiles.RefreshVerifiedOidcProfileAsync(principal, claims.RootElement)).Succeeded)
-                        { Registry(context.HttpContext).Revoke(sid); context.Fail("Federated profile denied."); return; }
-                    }
-                    else { Registry(context.HttpContext).Revoke(sid); context.Fail("Federated profile denied."); return; }
+                    if (!(await accounts.RefreshVerifiedOidcProfileAsync(principal, claims.RootElement)).Succeeded)
+                    { Registry(context.HttpContext).Revoke(sid); RejectTicket(context); return; }
                     await context.HttpContext.SignOutAsync(Session);
-                    await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-                    ((ClaimsIdentity)principal.Identity!).AddClaim(new("sid", sid));
+                    await RetireLocalSessionAsync(context.HttpContext);
+                    await context.HttpContext.SignOutAsync(LdapSession);
+                    await context.HttpContext.SignOutAsync(OAuthLogin.Session);
+                    OAuthLogin.RetireChallenge(context.HttpContext);
+                    identity.AddClaim(new("sid", sid));
                 }
+                catch (AccountStoreException error) when (error.Code == "account.denied")
+                { Registry(context.HttpContext).Revoke(sid); RejectTicket(context); return; }
                 catch { Registry(context.HttpContext).Revoke(sid); throw; }
                 // Reassert a fixed local destination after the full protocol validation;
                 // neither caller return URLs nor provider fields choose navigation.
@@ -217,6 +277,29 @@ internal static class FederatedLogin
                 return Task.CompletedTask;
             };
         });
+    }
+
+    // Authenticate the local cookie explicitly, even when the browser scheme selected a different ticket.
+    // The store rechecks its stamp under a write reservation and commits revocation together with its audit.
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+    internal static async Task RetireLocalSessionAsync(HttpContext context)
+    {
+        if (context.Request.Cookies.Count == 0) { return; }
+        var scheme = IdentityConstants.ApplicationScheme;
+        var cookie = context.RequestServices.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(scheme).Cookie.Name;
+        if (cookie is null || !context.Request.Cookies.ContainsKey(cookie)) { return; }
+
+        var ticket = await context.AuthenticateAsync(scheme);
+        if (ticket.Principal is { } principal)
+        { await context.RequestServices.GetRequiredService<LocalAdministratorAccounts>().RevokeSessionsAsync(principal); }
+        await context.SignOutAsync(scheme);
+    }
+
+    private static void RejectTicket(TicketReceivedContext context)
+    {
+        // End the remote callback here, before the handler can issue an application cookie.
+        context.HandleResponse();
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
     }
 
     internal static bool SameOrigin(Uri expected, Uri target) =>

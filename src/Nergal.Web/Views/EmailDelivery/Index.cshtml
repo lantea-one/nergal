@@ -1,0 +1,50 @@
+@model Nergal.Web.Controllers.EmailDeliveryPageModel
+@{
+    ViewData["Title"] = "Email delivery";
+    var state = Model.Connection;
+    var settings = state?.Settings;
+}
+<main id="main-content" tabindex="-1" class="container-narrow">
+    <h1>Email delivery</h1>
+    <p>Configure the SMTP relay for verification and sign-in codes. The relay must support STARTTLS with a certificate trusted by this installation.</p>
+    <p><a href="@Url.Content("~/manage/settings")">Back to settings</a></p>
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-danger" role="alert">@Model.Error</div>
+    }
+    <section class="card">
+        <form method="post" class="form-stack" action="@Url.Content("~/manage/identity/email-delivery/save")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="version" value="@(state?.Version ?? 0)" />
+            <div class="field">
+                <label for="email-delivery-enabled">Enable email delivery</label>
+                <input id="email-delivery-enabled" name="enabled" type="checkbox" value="true" checked="@(settings?.Enabled == true)" />
+            </div>
+            <div class="field">
+                <label for="email-delivery-host">SMTP server</label>
+                <input id="email-delivery-host" name="host" value="@settings?.Host" maxlength="253" placeholder="smtp.example.test" required />
+            </div>
+            <div class="field">
+                <label for="email-delivery-port">SMTP port</label>
+                <input id="email-delivery-port" name="port" inputmode="numeric" value="@(settings?.Port ?? 587)" required />
+            </div>
+            <div class="field">
+                <label for="email-delivery-from">Sender address</label>
+                <input id="email-delivery-from" name="fromAddress" type="email" maxlength="254" value="@settings?.FromAddress" required />
+            </div>
+            <div class="field">
+                <label for="email-delivery-user">SMTP username</label>
+                <input id="email-delivery-user" name="userName" value="@settings?.UserName" maxlength="256"
+                       autocomplete="off" aria-describedby="email-delivery-user-hint" />
+                <p id="email-delivery-user-hint" class="hint">Leave blank if the relay accepts mail without SMTP authentication.</p>
+            </div>
+            <div class="field">
+                <label for="email-delivery-password">SMTP password</label>
+                <input id="email-delivery-password" name="password" type="password" maxlength="1024"
+                       autocomplete="new-password" aria-describedby="email-delivery-password-hint" />
+                <p id="email-delivery-password-hint" class="hint">Leave blank to retain the saved password for the same relay and username.</p>
+            </div>
+            <button type="submit">Save email delivery settings</button>
+        </form>
+    </section>
+</main>

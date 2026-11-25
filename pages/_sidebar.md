@@ -28,3 +28,9 @@
 - [OIDC Profile Defaults](oidc-profile-defaults.md)
 
 - [OIDC connection](oidc-connection.md)
+
+- [OAuth connection](oauth-connection.md)
+
+- [Host observations in Overview](overview-host-observations.md)
+
+- [Display languages](ui-localization.md)

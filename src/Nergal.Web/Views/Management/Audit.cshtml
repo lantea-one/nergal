@@ -1,31 +1,36 @@
 @model Nergal.Web.AuditHistoryViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Audit & revision history";
     ViewData["ActiveNav"] = "audit";
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
+    ViewData["LocalizedContent"] = true;
+    var displayCulture = System.Globalization.CultureInfo.CurrentUICulture;
+    var entryCount = Model.Entries.Count.ToString("N0", displayCulture);
+    var revisionCount = Model.Revisions.Count.ToString("N0", displayCulture);
 }
 <main id="main-content" tabindex="-1" class="container">
     <div class="page-header">
         <div>
-            <h1>Controller audit &amp; revision history</h1>
-            <p class="page-subtitle">Trigger-protected append-only audit log and immutable policy revision archive.</p>
+            <h1>@L["Controller audit & revision history"]</h1>
+            <p class="page-subtitle">@L["Trigger-protected append-only audit log and immutable policy revision archive."]</p>
         </div>
-        <span class="badge badge-neutral">@Model.Entries.Count events · @Model.Revisions.Count revisions</span>
+        <span class="badge badge-neutral">@L["Events: {0} · Revisions: {1}", entryCount, revisionCount]</span>
     </div>
 
     <section class="card">
         <div class="card-header">
-            <h2>Append-only audit log (@Model.Entries.Count)</h2>
+            <h2>@L["Append-only audit log ({0})", entryCount]</h2>
             <div style="min-width: 240px;">
-                <input type="text" placeholder="Filter by actor, action, target, outcome…" data-audit-filter aria-label="Filter audit entries" />
+                <input type="text" placeholder="@L["Filter by actor, action, target, outcome…"]" data-audit-filter aria-label="@L["Filter audit entries"]" />
             </div>
         </div>
 
         @if (Model.Entries.Count == 0)
         {
-            <p class="muted mb-0">No audit events recorded.</p>
+            <p class="muted mb-0">@L["No audit events recorded."]</p>
         }
         else
         {
@@ -33,15 +38,15 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Seq</th>
-                            <th>Timestamp (local time)</th>
-                            <th>Actor</th>
-                            <th>Role</th>
-                            <th>Action</th>
-                            <th>Target</th>
-                            <th>Rev</th>
-                            <th>Outcome</th>
-                            <th>Detail</th>
+                            <th>@L["Seq"]</th>
+                            <th>@L["Timestamp (local time)"]</th>
+                            <th>@L["Actor"]</th>
+                            <th>@L["Role"]</th>
+                            <th>@L["Action"]</th>
+                            <th>@L["Target"]</th>
+                            <th>@L["Rev"]</th>
+                            <th>@L["Outcome"]</th>
+                            <th>@L["Detail"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,12 +77,12 @@
 
     <section class="card">
         <div class="card-header">
-            <h2>Saved policy revisions (@Model.Revisions.Count)</h2>
-            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/policies")">Open Policy Builder</a>
+            <h2>@L["Saved policy revisions ({0})", revisionCount]</h2>
+            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/policies")">@L["Open Policy Builder"]</a>
         </div>
         @if (Model.Revisions.Count == 0)
         {
-            <p class="muted mb-0">No saved policy revisions.</p>
+            <p class="muted mb-0">@L["No saved policy revisions."]</p>
         }
         else
         {
@@ -85,18 +90,18 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Revision</th>
-                            <th>Candidate SHA-256</th>
-                            <th>Created by</th>
-                            <th>Created (local time)</th>
-                            <th>Summary</th>
+                            <th>@L["Revision"]</th>
+                            <th>@L["Candidate SHA-256"]</th>
+                            <th>@L["Created by"]</th>
+                            <th>@L["Created (local time)"]</th>
+                            <th>@L["Summary"]</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var rev in Model.Revisions)
                         {
                             <tr>
-                                <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Rev @rev.Revision</a></td>
+                                <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">@L["Rev {0}", rev.Revision]</a></td>
                                 <td><code>@rev.CandidateDigest</code></td>
                                 <td><code>@rev.CreatedByActor</code></td>
                                 <td class="mono">@await Html.PartialAsync("_LocalTime", rev.CreatedAtUtc)</td>

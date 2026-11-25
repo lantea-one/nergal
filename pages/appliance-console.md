@@ -39,7 +39,7 @@ line icons, and the main content uses the width remaining beside the sidebar. Br
 | Firewall / Aliases & IP lists | The reusable typed list library. References pin a version; editing the library cannot silently change a saved policy. |
 | Configuration / Import nftables.conf | Combined source viewer, include/table mapping, conversion plans and separately reviewed revision creation. Administrator only. |
 | Configuration / Review & apply | Select a host and revision, inspect status, apply, confirm or roll back using the existing protected agent workflow. |
-| System | Attributed activity/audit, settings and the current session. [Local users and profiles](local-users-and-profiles.md) provide role/enabled controls, revocation, identity audit and personal metadata/passwords. Provider mapping and MFA remain open. |
+| System | Attributed activity/audit, settings and the current session. [Local users and profiles](local-users-and-profiles.md) provide role/enabled controls, revocation, identity audit and personal metadata/passwords. The Authentication settings manage LDAP, OIDC, MFA policy, recovery and email delivery. |
 
 The sidebar shows implemented functions only. It does not imply management of
 interfaces, DNS, VPNs or other appliance services outside Nergal's declared scope.

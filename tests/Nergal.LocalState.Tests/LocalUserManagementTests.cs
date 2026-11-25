@@ -232,6 +232,33 @@ public sealed class LocalUserManagementTests
             f.Run(a => a.VerifyAsync("fixture-admin", Password)))).Code);
     }
 
+    /// <summary>A callback from a retired connection cannot refresh profile defaults or append a sign-in audit.</summary>
+    [Fact]
+    public async Task OidcProfileRefresh_DeniesRetiredConnectionInsideTheStore()
+    {
+        await using var f = await Fixture.Create();
+        var admin = await f.SignIn("fixture-admin");
+        var keys = new EphemeralDataProtectionProvider();
+        const string issuer = "https://identity.example.test";
+        var connection = new OidcConnectionSettings(true, issuer, "client", "https://firewall.example.test/signin-oidc",
+            "groups", ["admins"], []);
+        Assert.True((await f.Run(a => a.SaveOidcConnectionAsync(admin, 0, connection, "synthetic-secret", keys))).Succeeded);
+        Assert.True((await f.Run(a => a.SaveOidcProfileMappingAsync(admin,
+            new OidcProfileMapping(issuer, 0, true, "name", "", "", "", null)))).Succeeded);
+        var actor = External(issuer, "subject");
+        ((ClaimsIdentity)actor.Identity!).AddClaim(new("nergal.oidc-generation", "1"));
+        using var verified = JsonDocument.Parse("""{"iss":"https://identity.example.test","sub":"subject","name":"Stable"}""");
+        Assert.True((await f.Run(a => a.RefreshVerifiedOidcProfileAsync(actor, verified.RootElement))).Succeeded);
+        var disabled = new OidcConnectionSettings(false, issuer, connection.ClientId, connection.CallbackUri,
+            connection.GroupClaim, connection.AdministratorGroups, connection.AuditorGroups);
+        Assert.True((await f.Run(a => a.SaveOidcConnectionAsync(admin, 1, disabled, "", keys))).Succeeded);
+        var events = f.Count("IdentityAudit");
+        using var retired = JsonDocument.Parse("""{"iss":"https://identity.example.test","sub":"subject","name":"Retired"}""");
+        await Denied(() => f.Run(a => a.RefreshVerifiedOidcProfileAsync(actor, retired.RootElement)));
+        Assert.Equal(events, f.Count("IdentityAudit"));
+        Assert.Equal("Stable", f.Scalar("SELECT DisplayName FROM OidcProfileObservation"));
+    }
+
     /// <summary>Secret storage is purpose-bound, write-only, versioned, and cannot be replaced by stale or nonlocal actors.</summary>
     [Fact]
     public async Task OidcConnection_EncryptsSecretsAndRequiresCurrentLocalAuthority()

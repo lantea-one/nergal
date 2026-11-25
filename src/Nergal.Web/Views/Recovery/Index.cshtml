@@ -1,0 +1,38 @@
+@model Nergal.Web.Controllers.RecoveryLoginModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Recover authenticator";
+}
+<main id="main-content" tabindex="-1" class="container-narrow">
+    <h1>Recover authenticator</h1>
+    <p>Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in.</p>
+    @foreach (var directory in Model.DirectoryGeneration.HasValue ? new[] { false, true } : new[] { false })
+    {
+        var kind = directory ? "ldap" : "local";
+        var title = directory ? "Directory account" : "Local account";
+        <section class="card">
+            <h2>@title</h2>
+            <form method="post" class="form-stack" action="@Url.Content("~/login/recovery/" + kind)">
+                @Html.AntiForgeryToken()
+                @if (directory)
+                {
+                    <input type="hidden" name="version" value="@Model.DirectoryGeneration" />
+                }
+                <div class="field">
+                    <label for="grant-@kind">Recovery authorization</label>
+                    <input id="grant-@kind" name="authorization" type="password" minlength="64" maxlength="64" autocomplete="off" required />
+                </div>
+                <div class="field">
+                    <label for="username-@kind">Username</label>
+                    <input id="username-@kind" name="username" type="text" maxlength="@(directory ? 256 : 64)" autocomplete="section-@kind username" required />
+                </div>
+                <div class="field">
+                    <label for="password-@kind">Password</label>
+                    <input id="password-@kind" name="password" type="password" maxlength="@(directory ? 2048 : 256)" autocomplete="section-@kind current-password" required />
+                </div>
+                <button type="submit">Set up new authenticator</button>
+            </form>
+        </section>
+    }
+    <a href="@Url.Content("~/login")">Back to sign-in</a>
+</main>

@@ -31,6 +31,7 @@ public sealed class ProfileController(LocalAdministratorAccounts accounts, IConf
 
     /// <summary>Changes the current local password after current-password verification, then clears the revoked browser ticket.</summary>
     [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("local-password")]
+    [RequestFormLimits(ValueCountLimit = 4, ValueLengthLimit = 2048, KeyLengthLimit = 128)]
     public async Task<IActionResult> Password()
     {
         var form = await ReadFieldsAsync("version", "currentPassword", "newPassword");

@@ -15,7 +15,7 @@ Application accounts are not Linux users: no host account/group changes occur.
 A trusted operator must first provision an existing nonsymlink service-owned 0700
 local directory. `LocalAccountOptions` requires its explicit absolute NUL-free path;
 it creates nothing. `LocalAccountDatabase.InitializeAsync` creates only a **new**
-0600 `accounts.db`, schema 4 and application ID `0x4e524741`. Any existing database
+0600 `accounts.db`, schema 8 and application ID `0x4e524741`. Any existing database
 or sidecar is refused. It creates no administrator and never adopts, upgrades or
 repairs existing/partial state. A canceled/failed initialization can leave an
 incomplete new file; subsequent access fails closed pending explicit offline repair.
@@ -125,3 +125,20 @@ one-time bootstrap and cannot add or replace an existing account. Fresh account
 The current schema removes the singleton constraint and requires explicit role claims,
 per-account state and atomic identity audit. Prior unreleased account stores are
 not supported by the web host; it never auto-migrates or resets them.
+
+## Offline authenticator recovery
+
+If a local Administrator cannot complete MFA, an operator with access to the
+protected account directory can issue an authorization from a private
+terminal:
+
+```sh
+nergal-admin account recover /absolute/private/accounts LOCAL_ADMINISTRATOR_UUID
+```
+
+Use the intended enabled local Administrator's stable account UUID. The command
+shows the ten-minute authorization once on the terminal. Keep it out of logs
+and use the local account recovery form with the account's current password.
+Confirm a code from the newly configured TOTP authenticator, then sign in
+normally. Issuance records the offline operator in the identity audit. Recovery
+supersedes the prior authenticator only after the confirmation commits.

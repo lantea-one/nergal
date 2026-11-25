@@ -311,6 +311,44 @@ public sealed class PolicyAuthoringAndManagementTests
         }
     }
 
+    /// <summary>Both accepted and rejected draft posts bound the displayed note without creating a revision or audit entry.</summary>
+    [Theory]
+    [InlineData("443", StatusCodes.Status200OK)]
+    [InlineData("443, 443", StatusCodes.Status400BadRequest)]
+    public void VisualRuleBuilder_BoundsDraftNoteWithoutPersisting(string ports, int expectedStatus)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var dir = CreateOwnerOnlyTempDirectory();
+        try
+        {
+            var store = ControllerStateStore.Initialize(new ControllerStateOptions(dir));
+            var actor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+            var admin = CreateController(store, actor, NergalRoles.Administrator);
+            var retained = "<draft> " + new string('a', 247);
+            var submitted = retained + "🔒 extra";
+
+            var result = Assert.IsType<ViewResult>(admin.AddFilterRule(
+                PolicyAuthoringService.DefaultStarterBundleJson, submitted, null,
+                "input", "ipv4", "tcp", "accept", "192.0.2.0/24", null, ports, null, null, null, null));
+            Assert.Equal(expectedStatus, admin.Response.StatusCode);
+            Assert.Equal(retained, Assert.IsType<PolicyEditorViewModel>(result.Model).Summary);
+
+            var invalidSave = Assert.IsType<ViewResult>(admin.SavePolicy(PolicyAuthoringService.DefaultStarterBundleJson, submitted, null));
+            Assert.Equal(StatusCodes.Status400BadRequest, admin.Response.StatusCode);
+            Assert.Contains(Assert.IsType<PolicyEditorViewModel>(invalidSave.Model).Diagnostics, d => d.Code == "summary.bounds");
+            Assert.Empty(store.ListPolicyRevisions());
+            Assert.Empty(store.ListAuditEntries(20));
+        }
+        finally
+        {
+            TryDelete(dir);
+        }
+    }
+
     /// <summary>Structured visual forms edit Filter defaults, rate limits, ct status dnat, NAT DNAT/SNAT, and L2 Bridge rules while denying Auditors.</summary>
     [Fact]
     public void VisualBuilder_SupportsFilterDefaultsRateLimitNatBridgeAndDeniesAuditors()

@@ -7,10 +7,15 @@ import vm from 'node:vm';
 const initial = await readFile(new URL('../src/Nergal.Web/wwwroot/js/theme.js', import.meta.url), 'utf8');
 const ui = await readFile(new URL('../src/Nergal.Web/wwwroot/js/nergal.js', import.meta.url), 'utf8');
 
-function fixture({ preference = null, defaultTheme = 'system', systemDark = false, denyStorage = false } = {}) {
+const englishLabels = {
+  'data-light-label': 'Light mode', 'data-light-action': 'Switch to light theme',
+  'data-dark-label': 'Dark mode', 'data-dark-action': 'Switch to dark theme',
+};
+
+function fixture({ preference = null, defaultTheme = 'system', systemDark = false, denyStorage = false, labels = englishLabels } = {}) {
   const attributes = new Map([['data-default-theme', defaultTheme]]);
   const handlers = new Map();
-  const button = { textContent: 'Theme', setAttribute(key, value) { this[key] = value; } };
+  const button = { textContent: 'Theme', getAttribute: key => labels[key], setAttribute(key, value) { this[key] = value; } };
   const system = { matches: systemDark, addEventListener(key, callback) { handlers.set('system:' + key, callback); } };
   const storage = new Map(preference ? [['nergal-theme', preference]] : []);
   const context = vm.createContext({
@@ -65,4 +70,16 @@ test('configured default and storage denial retain accessible switching', () => 
   assert.doesNotThrow(() => f.click());
   assert.equal(f.button.textContent, 'Dark mode');
   assert.equal(f.attributes.get('data-theme'), 'light');
+});
+
+test('the visible and accessible actions use the localized labels supplied by MVC', () => {
+  const f = fixture({ labels: {
+    'data-light-label': 'Modo claro', 'data-light-action': 'Cambiar al tema claro',
+    'data-dark-label': 'Modo oscuro', 'data-dark-action': 'Cambiar al tema oscuro',
+  } });
+  assert.equal(f.button.textContent, 'Modo oscuro');
+  assert.equal(f.button['aria-label'], 'Cambiar al tema oscuro');
+  f.click();
+  assert.equal(f.button.textContent, 'Modo claro');
+  assert.equal(f.button['aria-label'], 'Cambiar al tema claro');
 });

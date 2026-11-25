@@ -6,6 +6,7 @@
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
     var s = Model.Settings;
+    var localAdministrator = Model.CanMutate && User.Identity?.AuthenticationType == Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme;
     var disabledAttr = Model.CanMutate ? null : "disabled";
     var accentColors = new[] { "blue", "emerald", "violet", "amber", "rose", "slate" };
     var themes = new[] { "system", "light", "dark" };
@@ -17,7 +18,7 @@
     <div class="page-header">
         <div>
             <h1>System settings</h1>
-            <p class="page-subtitle">Manage appearance and saved configuration intent. Use the dedicated OIDC connection screen for live provider settings. Storage and apply safety retain their protected host boundaries.</p>
+            <p class="page-subtitle">Manage appearance and saved configuration intent. Use the dedicated OIDC and LDAP connection screens for live provider settings. Storage and apply safety retain their protected host boundaries.</p>
         </div>
         <div class="btn-group">
             <a class="btn btn-secondary" href="@Url.Content("~/manage")">Back to Dashboard</a>
@@ -55,7 +56,7 @@
 
     <div class="alert alert-info" role="status">
         Appearance changes apply to management pages. Authentication, database, and firewall fields below are saved preferences;
-        they do not reconfigure the running services. LDAP, PostgreSQL, and MariaDB adapters are not implemented.
+        they do not reconfigure the running services. PostgreSQL and MariaDB adapters are not implemented.
         Keep local access and protected host configuration available when planning changes.
     </div>
 
@@ -110,7 +111,16 @@
         </section>
 
         <section class="card hidden" data-tab-panel="auth">
-            @if (Model.CanMutate) { <p><a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">Manage OIDC profile defaults</a></p> }
+            <div class="btn-group">
+                @if (Model.CanMutate) { <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">Manage OIDC profile defaults</a> }
+                @if (localAdministrator)
+                {
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/oauth")">Configure OAuth connection</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">Manage MFA policy</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/email-delivery")">Configure email delivery</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa/recovery")">Issue MFA recovery authorization</a>
+                }
+            </div>
             <div class="card-header">
                 <h2>Local authentication</h2>
                 <span class="badge @(s.LocalAuth.Enabled ? "badge-success" : "badge-neutral")">@(s.LocalAuth.Enabled ? "Enabled" : "Disabled")</span>
@@ -192,7 +202,8 @@
                 <h2>LDAP / Active Directory</h2>
                 <span class="badge @(s.Ldap.Enabled ? "badge-success" : "badge-neutral")">@(s.Ldap.Enabled ? "Enabled" : "Disabled")</span>
             </div>
-            <p class="muted">Directory bind passwords are managed externally via environment variables or protected secret files and are never stored in SQLite.</p>
+            @if (localAdministrator) { <p><a href="@Url.Content("~/manage/identity/ldap")">Configure active LDAP connection</a></p> }
+            <p class="muted">These general settings are saved intent. The active OpenLDAP connection and its encrypted search password are managed on the dedicated connection screen.</p>
             <div class="form-grid">
                 <div class="field">
                     <span class="switch-field-label">LDAP / AD sign-in</span>

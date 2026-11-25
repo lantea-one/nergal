@@ -57,9 +57,10 @@ See [the decision record](decisions/0014-local-administrator-sessions.md) and
 account management, current-role/stamp rechecks, last-enabled-administrator
 protection and atomic identity-store audit. Disabling/role changes and password
 changes revoke affected tickets; they cannot resurrect previous cookies. Profile
-display names cannot affect authority. Account schema 4 requires fresh initialization;
-there is no supported migration from unreleased schemas. Email/TOTP MFA and the
-new provider integrations remain open M5 gates, not implemented session assurances.
+display names cannot affect authority. Account schema 8 requires fresh initialization.
+Local and LDAP sign-in share [TOTP, email MFA and enrollment recovery](local-users-and-profiles.md).
+The active [OIDC connection](oidc-connection.md) defines whether a verified OIDC
+session can satisfy the local MFA policy.
 
 Browser HTML navigation now redirects to a fixed `/login` when authentication is
 required, including expired/revoked-cookie refreshes. JSON/API clients retain
