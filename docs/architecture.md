@@ -18,6 +18,12 @@ schema-2 reports expose only counts and value-free positions, never private toke
 This is structural accounting, not the complete native grammar or semantic mapper.
 See [ADR 0052](decisions/0052-bounded-native-source-structure.md).
 
+The same analysis partitions every original node into contextual statements. Only
+root table and table-local chain headers contribute to declaration counts. Raw
+expressions, object bodies and native commands remain private source data; unknown
+heads produce explicit masked review gaps. This is head classification, not typed
+conversion. See [ADR 0053](decisions/0053-native-source-declaration-partition.md).
+
 The first milestone is an independently implemented, native nftables management
 application, not a new packet-filtering engine. The kernel continues to enforce
 policy when the web console or identity provider is unavailable.

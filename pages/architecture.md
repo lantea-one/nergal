@@ -14,6 +14,9 @@ nergal separates policy authoring, compilation, identity/session handling, and k
 Native source viewing/import shares one bounded analysis pipeline: a lossless
 token document, immutable delimiter tree and masked inventory. Schema-2 reports
 expose counts and diagnostic positions, without private tokens or partial results.
+An ordered contextual statement partition retains every original node and raw
+expression; unknown heads produce masked review gaps. Table/chain counts require
+proper declaration scope. This head classification does not parse rule semantics.
 Structural completion does not grant conversion authority; semantic mapping and
 explicit include resolution remain M4 work. See [the source workflow](native-source-library.md).
 

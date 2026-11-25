@@ -27,7 +27,7 @@ public sealed class RouterAuthoringAndSourcesTests
         Assert.Same(source.Analysis.Review, source.Review);
         Assert.Equal(text, source.Analysis.Lexical.Document!.Source);
         Assert.Same(source.Analysis.Lexical.Document, source.Analysis.Structure.Tree!.Document);
-        Assert.Equal(new[] { 2 }, Assert.Single(source.Review.Signals).Lines);
+        Assert.Equal(new[] { 2 }, source.Review.Signals.Single(s => s.Code == "review.sourceMac").Lines);
         Assert.False(source.Review.CanConvert);
         Assert.DoesNotContain("private-source", source.ToString(), StringComparison.Ordinal);
     }

@@ -1,5 +1,12 @@
 # Testing standards
 
+Declaration partition regressions cover every original node in scope/order, named
+blocks versus anonymous expressions, directive/command retention, continued
+headers, unknown head positions, immutable collections and maximum-width input.
+HTTPS checks verify contextual table/chain counts, masked unknown diagnostics and
+unchanged original downloads. These tests do not establish semantic conversion or
+packet equivalence (ADR 0053).
+
 Native structure regressions cover exact ordered token coverage, nested spans,
 opaque quoted/comment contents, unknown input, immutable nodes, inclusive 64-group
 depth and value-free missing/mismatched delimiter positions. The shared review
