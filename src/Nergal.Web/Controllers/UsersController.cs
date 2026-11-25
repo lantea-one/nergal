@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Nergal.Core.Identity;
@@ -11,7 +12,7 @@ namespace Nergal.Web.Controllers;
 /// <summary>Administrator-only local accounts and identity audit. No route creates Linux users or grants agent authority.</summary>
 [SupportedOSPlatform("linux")]
 [Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
-public sealed class UsersController(LocalAdministratorAccounts accounts, IConfiguration configuration) : IdentityUiController(accounts, configuration)
+public sealed class UsersController(LocalAdministratorAccounts accounts, IConfiguration configuration, IDataProtectionProvider keys) : IdentityUiController(accounts, configuration)
 {
     /// <summary>Lists credential-free accounts and the latest independent identity-store audit events.</summary>
     [HttpGet]
@@ -19,6 +20,7 @@ public sealed class UsersController(LocalAdministratorAccounts accounts, IConfig
 
     /// <summary>Creates an explicitly named application account with one supported role.</summary>
     [HttpPost, ValidateAntiForgeryToken]
+    [RequestFormLimits(ValueCountLimit = 4, ValueLengthLimit = 2048, KeyLengthLimit = 128)]
     public async Task<IActionResult> Create()
     {
         var form = await ReadFieldsAsync("userName", "password", "role");
@@ -34,7 +36,7 @@ public sealed class UsersController(LocalAdministratorAccounts accounts, IConfig
         var form = await ReadFieldsWithOptionalSwitchAsync("enabled", "id", "version", "role");
         if (form is null || !Guid.TryParseExact(form["id"], "D", out var id) || id == Guid.Empty ||
             !Version(form["version"], out var version) || (form.ContainsKey("enabled") && form["enabled"].ToString() is not ("true" or "false"))) { return BadRequest(); }
-        var result = await Accounts.UpdateUserAsync(User, id, version, form["role"].ToString(), form["enabled"] == "true");
+        var result = await Accounts.UpdateUserAsync(User, id, version, form["role"].ToString(), form["enabled"] == "true", keys);
         return await CompleteAsync(result, id, form["enabled"] != "true" || form["role"] != User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value);
     }
 

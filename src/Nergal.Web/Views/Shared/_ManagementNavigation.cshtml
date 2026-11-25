@@ -1,33 +1,34 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     var active = ViewData["ActiveNav"] as string ?? "";
     var section = ViewData["PolicySection"] as string ?? "filter";
 }
-<nav class="appliance-nav" aria-label="Primary navigation">
+<nav class="appliance-nav" aria-label="@L["Primary navigation"]">
     <div class="nav-sections">
-    <div class="nav-section"><p class="nav-section-label">Dashboard</p>
-        <a class="nav-link @(active == "fleet" ? "active" : "")" aria-current="@(active == "fleet" ? "page" : null)" href="@Url.Content("~/manage")">@await Html.PartialAsync("_NavigationIcon", "overview")<span>Overview</span></a>
-        <a class="nav-link @(active == "hosts" ? "active" : "")" aria-current="@(active == "hosts" ? "page" : null)" href="@Url.Content("~/manage/hosts")">@await Html.PartialAsync("_NavigationIcon", "hosts")<span>Hosts</span></a>
+    <div class="nav-section"><p class="nav-section-label">@L["Dashboard"]</p>
+        <a class="nav-link @(active == "fleet" ? "active" : "")" aria-current="@(active == "fleet" ? "page" : null)" href="@Url.Content("~/manage")">@await Html.PartialAsync("_NavigationIcon", "overview")<span>@L["Overview"]</span></a>
+        <a class="nav-link @(active == "hosts" ? "active" : "")" aria-current="@(active == "hosts" ? "page" : null)" href="@Url.Content("~/manage/hosts")">@await Html.PartialAsync("_NavigationIcon", "hosts")<span>@L["Hosts"]</span></a>
     </div>
-    <div class="nav-section"><p class="nav-section-label">Firewall</p>
+    <div class="nav-section"><p class="nav-section-label">@L["Firewall"]</p>
         @foreach (var item in new[] { ("filter", "Rules"), ("nat", "NAT"), ("bridge", "Bridge"), ("preview", "Review & export") })
         {
             var current = active == "policies" && section == item.Item1;
-            <a class="nav-link @(current ? "active" : "")" aria-current="@(current ? "page" : null)" data-policy-section="@("tab-" + item.Item1)" href="@(Url.Action("Policies", "Management", new { section = item.Item1 }) + "#tab-" + item.Item1)">@await Html.PartialAsync("_NavigationIcon", item.Item1 == "filter" ? "rules" : item.Item1 == "preview" ? "review" : item.Item1)<span>@item.Item2</span></a>
+            <a class="nav-link @(current ? "active" : "")" aria-current="@(current ? "page" : null)" data-policy-section="@("tab-" + item.Item1)" href="@(Url.Action("Policies", "Management", new { section = item.Item1 }) + "#tab-" + item.Item1)">@await Html.PartialAsync("_NavigationIcon", item.Item1 == "filter" ? "rules" : item.Item1 == "preview" ? "review" : item.Item1)<span>@L[item.Item2]</span></a>
         }
-        <a class="nav-link @(active == "objects" ? "active" : "")" aria-current="@(active == "objects" ? "page" : null)" href="@Url.Content("~/manage/objects")">@await Html.PartialAsync("_NavigationIcon", "lists")<span>Aliases &amp; IP lists</span></a>
+        <a class="nav-link @(active == "objects" ? "active" : "")" aria-current="@(active == "objects" ? "page" : null)" href="@Url.Content("~/manage/objects")">@await Html.PartialAsync("_NavigationIcon", "lists")<span>@L["Aliases & IP lists"]</span></a>
     </div>
-    <div class="nav-section"><p class="nav-section-label">Configuration</p>
+    <div class="nav-section"><p class="nav-section-label">@L["Configuration"]</p>
         @if (ViewData["ShowNativeSources"] as bool? == true)
-        { <a class="nav-link @(active == "sources" ? "active" : "")" aria-current="@(active == "sources" ? "page" : null)" href="@Url.Content("~/manage/sources")">@await Html.PartialAsync("_NavigationIcon", "import")<span>Import nftables.conf</span></a> }
-        <a class="nav-link @(active == "apply" ? "active" : "")" aria-current="@(active == "apply" ? "page" : null)" href="@Url.Content("~/manage/apply")">@await Html.PartialAsync("_NavigationIcon", "apply")<span>Review &amp; apply</span></a>
+        { <a class="nav-link @(active == "sources" ? "active" : "")" aria-current="@(active == "sources" ? "page" : null)" href="@Url.Content("~/manage/sources")">@await Html.PartialAsync("_NavigationIcon", "import")<span>@L["Import nftables.conf"]</span></a> }
+        <a class="nav-link @(active == "apply" ? "active" : "")" aria-current="@(active == "apply" ? "page" : null)" href="@Url.Content("~/manage/apply")">@await Html.PartialAsync("_NavigationIcon", "apply")<span>@L["Review & apply"]</span></a>
     </div>
-    <div class="nav-section"><p class="nav-section-label">System</p>
-        <a class="nav-link @(active == "audit" ? "active" : "")" aria-current="@(active == "audit" ? "page" : null)" href="@Url.Content("~/manage/audit")">@await Html.PartialAsync("_NavigationIcon", "audit")<span>Activity &amp; audit</span></a>
-        <a class="nav-link @(active == "settings" ? "active" : "")" aria-current="@(active == "settings" ? "page" : null)" href="@Url.Content("~/manage/settings")">@await Html.PartialAsync("_NavigationIcon", "settings")<span>Settings</span></a>
+    <div class="nav-section"><p class="nav-section-label">@L["System"]</p>
+        <a class="nav-link @(active == "audit" ? "active" : "")" aria-current="@(active == "audit" ? "page" : null)" href="@Url.Content("~/manage/audit")">@await Html.PartialAsync("_NavigationIcon", "audit")<span>@L["Activity & audit"]</span></a>
+        <a class="nav-link @(active == "settings" ? "active" : "")" aria-current="@(active == "settings" ? "page" : null)" href="@Url.Content("~/manage/settings")">@await Html.PartialAsync("_NavigationIcon", "settings")<span>@L["Settings"]</span></a>
         @if (User.IsInRole(Nergal.Core.Identity.NergalRoles.Administrator))
-        { <a class="nav-link @(active == "users" ? "active" : "")" aria-current="@(active == "users" ? "page" : null)" href="@Url.Content("~/manage/users")">@await Html.PartialAsync("_NavigationIcon", "users")<span>Local users</span></a> }
-        <a class="nav-link @(active == "profile" ? "active" : "")" aria-current="@(active == "profile" ? "page" : null)" href="@Url.Content("~/profile")">@await Html.PartialAsync("_NavigationIcon", "profile")<span>My profile &amp; session</span></a>
+        { <a class="nav-link @(active == "users" ? "active" : "")" aria-current="@(active == "users" ? "page" : null)" href="@Url.Content("~/manage/users")">@await Html.PartialAsync("_NavigationIcon", "users")<span>@L["Local users"]</span></a> }
+        <a class="nav-link @(active == "profile" ? "active" : "")" aria-current="@(active == "profile" ? "page" : null)" href="@Url.Content("~/profile")">@await Html.PartialAsync("_NavigationIcon", "profile")<span>@L["My profile & session"]</span></a>
     </div>
     </div>
-    <p class="nav-timezone">Timezone is <span data-local-time-zone>UTC (local time unavailable)</span></p>
+    <p class="nav-timezone">@L["Timezone is"] <span data-local-time-zone>@L["UTC (local time unavailable)"]</span></p>
 </nav>

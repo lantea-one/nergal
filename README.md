@@ -57,8 +57,8 @@ See [the ordered product workflow](docs/product-workflow.md) for the remaining w
 provide explicit roles, last-administrator protection, revocation and atomic
 identity-store audit. [Signed OIDC profile defaults](docs/oidc-profile-defaults.md)
 and per-field local overrides are implemented. [UI-managed OIDC connections](docs/oidc-connection.md)
-provide versioned live settings and encrypted write-only secrets; LDAP/OAuth
-adapters and local MFA remain M5 work.
+provide versioned live settings, encrypted write-only secrets and configurable
+MFA assurance. [Generic OAuth](docs/oauth-connection.md) uses an authenticated current-user endpoint. Local and LDAP users share TOTP, email MFA and enrollment recovery.
 
 For a persistent, isolated local controller and check-only source containers, see
 [the local sandbox guide](docs/local-sandbox.md). Private exports and credentials
@@ -185,4 +185,4 @@ See the [remaining product code-complete milestones](docs/milestones.md) for com
 
 Guided [router condition and postrouting forms](docs/guided-router-forms.md) cover the supported M2 constructs, including postrouting/bridge/DNAT address sets and pinned address/port lists. Broader administration UX remains M5.
 
-The [appliance-style administration console](docs/appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 user management, profiles and observation-backed charts remain in progress.
+The [appliance-style administration console](docs/appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 adds local user management, protected provider connections, observation-backed host status and display-language selection.

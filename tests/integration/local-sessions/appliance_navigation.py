@@ -10,6 +10,7 @@ def check_appliance_navigation(browser, state):
     assert 'id="management-navigation"' in overview and 'Skip to content' in overview
     assert 'Register agent host' not in overview and 'Saved configuration preferences' not in overview
     assert '0 synced' not in overview and 'offline' not in overview
+    assert 'No hosts connected' in overview and '<meter ' not in overview
     hosts = browser.request('/manage/hosts', 200)
     assert 'Register agent host' in hosts and 'already enrolled' in hosts
     assert 'Registering a connection does not apply a policy' in hosts
@@ -36,6 +37,9 @@ def check_host_connections(browser, state):
     page = browser.request('/manage/hosts', 200)
     assert fields['name'] in page and 'Connection and identity' in page
     assert 'Last recorded' in page and 'unavailable' in page
+    overview = browser.request('/manage', 200)
+    assert 'No usable agent status classifications' in overview and '<meter ' not in overview
+    assert 'Gaps in status coverage' in overview and 'Status unavailable' in overview
     with sqlite3.connect(state / 'controller.db') as db:
         host_id = db.execute('SELECT id FROM hosts').fetchone()[0]
     browser.request('/manage/hosts/delete', 400, {'id': host_id})
@@ -43,4 +47,4 @@ def check_host_connections(browser, state):
     assert browser.location == '/manage/hosts'
     with sqlite3.connect(state / 'controller.db') as db:
         assert db.execute('SELECT count(*) FROM hosts').fetchone()[0] == 0
-    print('PASS: focused host registration/removal, retained Administrator/CSRF boundary and unavailable-versus-offline status')
+    print('PASS: focused host registration/removal, retained Administrator/CSRF boundary and explicit Overview observation gaps')

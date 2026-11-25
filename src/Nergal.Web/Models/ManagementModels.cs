@@ -93,6 +93,8 @@ public sealed class SystemSettingsViewModel
 /// <summary>View model for the typed policy bundle editor, compatibility report, and diff preview.</summary>
 public sealed class PolicyEditorViewModel
 {
+    internal const int MaximumSummaryLength = 256;
+
     /// <summary>Gets an explicitly requested, allowlisted firewall subsection; null retains normal tab selection.</summary>
     public string? InitialSection { get; init; }
 
@@ -111,7 +113,7 @@ public sealed class PolicyEditorViewModel
     /// <summary>Gets current draft bundle JSON text displayed in the editor.</summary>
     public required string BundleJson { get; init; }
 
-    /// <summary>Gets optional revision summary note.</summary>
+    /// <summary>Gets the bounded revision note carried through the unsaved draft.</summary>
     public string? Summary { get; init; }
 
     /// <summary>Gets optional baseline revision identifier used for diff comparison.</summary>

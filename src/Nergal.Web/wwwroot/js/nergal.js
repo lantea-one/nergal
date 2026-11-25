@@ -9,8 +9,9 @@
     (!root.getAttribute("data-theme") && systemTheme.matches);
   const updateThemeButtons = () => {
     document.querySelectorAll("[data-theme-toggle]").forEach(toggle => {
-      toggle.textContent = isDark() ? "Light mode" : "Dark mode";
-      toggle.setAttribute("aria-label", "Switch to " + (isDark() ? "light" : "dark") + " theme");
+      const action = isDark() ? "light" : "dark";
+      toggle.textContent = toggle.getAttribute(`data-${action}-label`);
+      toggle.setAttribute("aria-label", toggle.getAttribute(`data-${action}-action`));
     });
   };
   document.addEventListener("click", function (e) {

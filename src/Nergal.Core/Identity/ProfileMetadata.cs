@@ -52,9 +52,18 @@ public sealed class ProviderProfileSnapshot
     public ProviderProfileSnapshot(string issuer, long mappingVersion, ProfileMetadata metadata,
         DateTimeOffset observedUtc, IEnumerable<string> diagnostics)
     {
+        _ = ControllerActorIdentity.FromFederatedAccount(issuer, "metadata-validation");
+        Diagnostics = ValidateObservation(mappingVersion, metadata, diagnostics);
+        Issuer = issuer;
+        MappingVersion = mappingVersion;
+        Metadata = metadata;
+        ObservedUtc = observedUtc.ToUniversalTime();
+    }
+
+    internal static IReadOnlyList<string> ValidateObservation(long mappingVersion, ProfileMetadata metadata, IEnumerable<string> diagnostics)
+    {
         ArgumentNullException.ThrowIfNull(metadata);
         ArgumentNullException.ThrowIfNull(diagnostics);
-        _ = ControllerActorIdentity.FromFederatedAccount(issuer, "metadata-validation");
         var items = diagnostics.Take(5).ToArray();
         var allowed = new[] { "displayName", "givenName", "familyName", "email" }
             .SelectMany(field => new[] { field + ".missing", field + ".invalid" }).ToHashSet(StringComparer.Ordinal);
@@ -62,8 +71,7 @@ public sealed class ProviderProfileSnapshot
             items.Distinct(StringComparer.Ordinal).Count() != items.Length || items.Any(item => !allowed.Contains(item)) ||
             items.Select(item => item.Split('.')[0]).Distinct(StringComparer.Ordinal).Count() != items.Length)
         { throw new ArgumentException("Invalid provider metadata snapshot."); }
-        Issuer = issuer; MappingVersion = mappingVersion; Metadata = metadata;
-        ObservedUtc = observedUtc.ToUniversalTime(); Diagnostics = Array.AsReadOnly(items);
+        return Array.AsReadOnly(items);
     }
     /// <summary>Gets the exact validated issuer.</summary>
     public string Issuer { get; }
@@ -80,3 +88,34 @@ public sealed class ProviderProfileSnapshot
 /// <summary>Administrator-owned literal top-level claim mapping. A mapping cannot activate an authentication provider.</summary>
 public sealed record OidcProfileMapping(string Issuer, long Version, bool Enabled, string DisplayNameClaim,
     string GivenNameClaim, string FamilyNameClaim, string EmailClaim, DateTimeOffset? UpdatedUtc);
+
+/// <summary>Current descriptive defaults from a verified LDAP sign-in at a specific connection generation.</summary>
+public sealed class LdapProfileSnapshot
+{
+    /// <summary>Creates an immutable metadata observation with directory provenance.</summary>
+    public LdapProfileSnapshot(Guid directoryId, long mappingVersion, ProfileMetadata metadata,
+        DateTimeOffset observedUtc, IEnumerable<string> diagnostics)
+    {
+        if (directoryId == Guid.Empty) { throw new ArgumentException("A directory identity is required.", nameof(directoryId)); }
+        Diagnostics = ProviderProfileSnapshot.ValidateObservation(mappingVersion, metadata, diagnostics);
+        DirectoryId = directoryId;
+        MappingVersion = mappingVersion;
+        Metadata = metadata;
+        ObservedUtc = observedUtc.ToUniversalTime();
+    }
+
+    /// <summary>Gets the configured directory identity.</summary>
+    public Guid DirectoryId { get; }
+
+    /// <summary>Gets the connection generation that selected these defaults.</summary>
+    public long MappingVersion { get; }
+
+    /// <summary>Gets descriptive defaults without authentication meaning.</summary>
+    public ProfileMetadata Metadata { get; }
+
+    /// <summary>Gets the UTC observation time.</summary>
+    public DateTimeOffset ObservedUtc { get; }
+
+    /// <summary>Gets immutable value-free diagnostics.</summary>
+    public IReadOnlyList<string> Diagnostics { get; }
+}

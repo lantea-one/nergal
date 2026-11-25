@@ -5,6 +5,9 @@
     ViewData["Title"] = "My profile";
     ViewData["ActiveNav"] = "profile";
     var profile = Model.Profile;
+    var ldap = User.Identity?.AuthenticationType == Nergal.Web.FederatedLogin.LdapSession;
+    var oauth = User.Identity?.AuthenticationType == Nergal.Web.OAuthLogin.Session;
+    var localAdministrator = profile.LocalAccountId is not null && User.IsInRole(NergalRoles.Administrator);
     var proposed = Model.Proposed ?? new ProfileMetadata(profile.DisplayName, profile.GivenName, profile.FamilyName, profile.Email);
 }
 <main id="main-content" tabindex="-1" class="container">
@@ -12,7 +15,7 @@
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
     <div class="profile-grid">
     <section class="card"><h2>Identity</h2>
-        <dl class="profile-details"><dt>Signed in as</dt><dd>@profile.LoginName</dd><dt>Role</dt><dd>@(profile.Role == NergalRoles.Administrator ? "Administrator" : "Auditor")</dd><dt>Authentication</dt><dd>@(profile.LocalAccountId is null ? "Identity provider" : "Local password")</dd></dl>
+        <dl class="profile-details"><dt>Signed in as</dt><dd>@profile.LoginName</dd><dt>Role</dt><dd>@(profile.Role == NergalRoles.Administrator ? "Administrator" : "Auditor")</dd><dt>Authentication</dt><dd>@(ldap ? "LDAP" : profile.LocalAccountId is null ? "Identity provider" : "Local password")</dd>@if (ldap) { <dt>Directory actor ID</dt><dd><code>@profile.ActorId</code></dd> }</dl>
         <p class="hint">Your display name appears in the header. Sign-in and permissions use your verified account.</p>
         <form class="form-stack" method="post" action="@Url.Content("~/profile/save")">
             @Html.AntiForgeryToken()<input type="hidden" name="version" value="@profile.Version" />
@@ -30,10 +33,17 @@
         <section class="card"><h2>Provider defaults</h2>
         @if (profile.Provider is { } provider)
         {
-            <p class="hint">Current signed OIDC defaults, mapping version @provider.MappingVersion. Local nonempty fields override these values.</p>
+            <p class="hint">@(oauth ? "Current OAuth profile endpoint defaults" : "Current signed OIDC defaults"), mapping version @provider.MappingVersion. Local nonempty fields override these values.</p>
             <dl class="profile-details"><dt>Issuer</dt><dd>@provider.Issuer</dd><dt>Display name</dt><dd>@(provider.Metadata.DisplayName.Length == 0 ? "Not supplied" : provider.Metadata.DisplayName)</dd><dt>Given name</dt><dd>@(provider.Metadata.GivenName.Length == 0 ? "Not supplied" : provider.Metadata.GivenName)</dd><dt>Family name</dt><dd>@(provider.Metadata.FamilyName.Length == 0 ? "Not supplied" : provider.Metadata.FamilyName)</dd><dt>Profile email</dt><dd>@(provider.Metadata.Email.Length == 0 ? "Not supplied" : provider.Metadata.Email)</dd></dl>
             <p class="hint">Observed <time data-local-time datetime="@provider.ObservedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @provider.ObservedUtc.UtcDateTime.ToString("O")">@provider.ObservedUtc.UtcDateTime.ToString("u") UTC</time>.</p>
             @if (provider.Diagnostics.Count > 0) { <ul class="hint">@foreach (var diagnostic in provider.Diagnostics) { <li>@Nergal.Web.IdentityUiLabels.ProfileDiagnostic(diagnostic)</li> }</ul> }
+        }
+        else if (profile.LdapProvider is { } ldapProvider)
+        {
+            <p class="hint">Current LDAP defaults, mapping version @ldapProvider.MappingVersion. Local nonempty fields override these values.</p>
+            <dl class="profile-details"><dt>Display name</dt><dd>@(ldapProvider.Metadata.DisplayName.Length == 0 ? "Not supplied" : ldapProvider.Metadata.DisplayName)</dd><dt>Given name</dt><dd>@(ldapProvider.Metadata.GivenName.Length == 0 ? "Not supplied" : ldapProvider.Metadata.GivenName)</dd><dt>Family name</dt><dd>@(ldapProvider.Metadata.FamilyName.Length == 0 ? "Not supplied" : ldapProvider.Metadata.FamilyName)</dd><dt>Profile email</dt><dd>@(ldapProvider.Metadata.Email.Length == 0 ? "Not supplied" : ldapProvider.Metadata.Email)</dd></dl>
+            <p class="hint">Observed <time data-local-time datetime="@ldapProvider.ObservedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @ldapProvider.ObservedUtc.UtcDateTime.ToString("O")">@ldapProvider.ObservedUtc.UtcDateTime.ToString("u") UTC</time>.</p>
+            @if (ldapProvider.Diagnostics.Count > 0) { <ul class="hint">@foreach (var diagnostic in ldapProvider.Diagnostics) { <li>@Nergal.Web.IdentityUiLabels.ProfileDiagnostic(diagnostic)</li> }</ul> }
         }
         else { <p class="hint">No current provider defaults. An Administrator can configure a mapping; sign in again after changes to refresh the mapped fields.</p> }
         <p class="hint">Provider information never links accounts or verifies a delivery address.</p>
@@ -52,8 +62,25 @@
         </section>
     }
     else { <section class="card"><h2>External credentials</h2><p class="hint">Manage external credentials at your identity provider.</p></section> }
+    @if (profile.LocalAccountId is not null || ldap)
+    {
+        <section class="card">
+            <h2>Authenticator app</h2>
+            <p class="hint">Set up time-based verification codes for your sign-ins.</p>
+            <div class="btn-group">
+                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa")">My authenticator</a>
+                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa/email")">Email factor</a>
+                @if (localAdministrator)
+                {
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">Manage MFA policy</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa/recovery")">Issue MFA recovery authorization</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/ldap")">Configure LDAP connection</a>
+                }
+            </div>
+        </section>
+    }
     <section class="card"><h2>Session</h2>
-        <p class="hint">Signing out revokes @(profile.LocalAccountId is null ? "this federated ticket" : "all sessions for your local account").</p>
+        <p class="hint">Signing out revokes @(ldap ? "this LDAP session" : profile.LocalAccountId is null ? "this federated ticket" : "all sessions for your local account").</p>
         <form method="post" action="@Url.Content("~/logout")">@Html.AntiForgeryToken()<button type="submit" class="btn btn-danger">Sign out</button></form>
     </section>
     </div>

@@ -1,15 +1,21 @@
 @addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
+@using Microsoft.AspNetCore.Http
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     var branding = ViewData["Branding"] as Nergal.Core.Controller.BrandingSettings ?? Nergal.Core.Controller.SystemSettingsSnapshot.Default.Branding;
     var appName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "nergal" : branding.ApplicationName;
-    var title = ViewData["Title"] as string ?? appName;
-    var activeNav = ViewData["ActiveNav"] as string ?? "";
+    var title = ViewData["Title"] is string pageTitle ? L[pageTitle].Value : appName;
     var actorRole = ViewData["ActorRole"] as string;
     var showNav = ViewData["ShowManageNav"] as bool? ?? false;
+    var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var english = Nergal.Web.UiLocalization.DefaultCulture.Name;
+    var bodyLanguage = culture != english && ViewData["LocalizedContent"] is not true ? english : null;
+    Context.Response.Headers.ContentLanguage = culture;
+    Context.Response.Headers.Append("Vary", "Cookie");
 }
 <!doctype html>
-<html lang="en" data-accent="@branding.AccentColor" data-default-theme="@branding.DefaultTheme">
+<html lang="@culture" data-ui-locale="@culture" data-accent="@branding.AccentColor" data-default-theme="@branding.DefaultTheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -20,7 +26,7 @@
     <link rel="stylesheet" href="@Url.Content("~/css/nergal.css")" asp-append-version="true" />
 </head>
 <body class="@(showNav ? "management-shell" : "")">
-    @if (showNav) { <a class="skip-link" href="#main-content">Skip to content</a> }
+    <a class="skip-link" href="#main-content">@L["Skip to content"]</a>
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="@Url.Content(showNav ? "~/manage" : "~/")">
@@ -29,16 +35,19 @@
             </a>
 
             @if (showNav)
-            { <button type="button" class="btn btn-secondary btn-sm navigation-toggle" data-sidebar-toggle aria-controls="management-navigation" aria-expanded="false">Menu</button> }
+            { <button type="button" class="btn btn-secondary btn-sm navigation-toggle" data-sidebar-toggle aria-controls="management-navigation" aria-expanded="false">@L["Menu"]</button> }
 
             <div class="topbar-meta">
                 @if (ViewData["UserDisplayName"] is string displayName)
-                { <a class="nav-link profile-link" href="@Url.Content("~/profile")" aria-label="My profile for @displayName">@displayName</a> }
+                { <a class="nav-link profile-link" href="@Url.Content("~/profile")" aria-label="@L["My profile for {0}", displayName]">@displayName</a> }
                 @if (!string.IsNullOrEmpty(actorRole))
                 {
-                    <span class="badge @(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "badge-primary" : "badge-neutral")">@(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "Administrator" : "Auditor")</span>
+                    <span class="badge @(actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "badge-primary" : "badge-neutral")">@L[actorRole == Nergal.Core.Identity.NergalRoles.Administrator ? "Administrator" : "Auditor"]</span>
                 }
-                <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle>Theme</button>
+                @await Html.PartialAsync("_LanguageMenu")
+                <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle
+                        data-light-label="@L["Light mode"]" data-light-action="@L["Switch to light theme"]"
+                        data-dark-label="@L["Dark mode"]" data-dark-action="@L["Switch to dark theme"]">@L["Theme"]</button>
             </div>
         </div>
     </header>
@@ -49,9 +58,10 @@
             <aside class="appliance-sidebar" id="management-navigation">
                 @await Html.PartialAsync("_ManagementNavigation")
             </aside>
-            <div class="appliance-content">@RenderBody()</div>
+            <div class="appliance-content" lang="@bodyLanguage">@RenderBody()</div>
         </div>
     }
+    else if (bodyLanguage is not null) { <div lang="@bodyLanguage">@RenderBody()</div> }
     else { @RenderBody() }
 
     <script src="@Url.Content("~/js/local-time.js")" asp-append-version="true" defer></script>

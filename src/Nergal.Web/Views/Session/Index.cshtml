@@ -12,7 +12,7 @@
         </div>
 
         <p class="muted">Signed in as <strong>@User.Identity?.Name</strong>.</p>
-        <p><a href="@Url.Content("~/profile")">My profile and password</a></p>
+        <p><a href="@Url.Content("~/profile")">My profile</a></p>
 
         <div class="btn-group mt-2" style="margin-bottom: 1.25rem;">
             @if (Url.RouteUrl("manage-dashboard") is string manageUrl)
@@ -29,7 +29,7 @@
 
         <form method="post" action="@Url.Content("~/logout")">
             @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-danger">@(User.Identity?.AuthenticationType == Nergal.Web.FederatedLogin.Session ? "Sign out of this session" : "Sign out of all local sessions")</button>
+            <button type="submit" class="btn btn-danger">@((User.Identity?.AuthenticationType is Nergal.Web.FederatedLogin.Session or Nergal.Web.FederatedLogin.LdapSession) ? "Sign out of this session" : "Sign out of all local sessions")</button>
         </form>
     </div>
 </main>

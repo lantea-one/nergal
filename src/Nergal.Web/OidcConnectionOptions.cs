@@ -14,28 +14,53 @@ internal sealed class OidcRequestConnection(OidcBootstrapConnection bootstrap, L
 {
     internal OidcConnectionRuntime? Runtime { get; private set; }
     internal string Generation => Runtime is null ? "none" : Runtime.Snapshot.Version.ToString(CultureInfo.InvariantCulture);
+    // The store uses generation zero for bootstrap, but protected challenges survive a host restart.
+    internal string ChallengeGeneration => Runtime?.Snapshot.Version == 0 ? bootstrap.StartIdentifier : Generation;
     internal bool Enabled => Runtime?.Snapshot.Settings.Enabled == true;
 
-    internal async Task LoadAsync() => Runtime = await accounts.ReadOidcRuntimeAsync(keys) ?? bootstrap.Runtime;
+    internal async Task LoadAsync() => Runtime = await ReadRuntimeAsync();
 
     internal async Task<bool> IsCurrentAsync(string generation)
     {
-        var latest = await accounts.ReadOidcRuntimeAsync(keys) ?? bootstrap.Runtime;
+        var latest = await ReadRuntimeAsync();
         return latest?.Snapshot.Settings.Enabled == true && latest.Snapshot.Version.ToString(CultureInfo.InvariantCulture) == generation;
+    }
+
+    private async Task<OidcConnectionRuntime?> ReadRuntimeAsync()
+    {
+        OidcConnectionRuntime? managed;
+        try { managed = await accounts.ReadOidcRuntimeAsync(keys); }
+        catch (AccountStoreException error) when (error.Code is "account.corrupt" or "provider.secretUnavailable")
+        {
+            // Disable this provider while preserving local sign-in. Only a genuinely absent row permits bootstrap.
+            return null;
+        }
+        return managed ?? bootstrap.Runtime;
     }
 
     internal static OidcConnectionRuntime? Bootstrap(IConfiguration config)
     {
         if (!config.GetValue<bool>("Enabled")) { return null; }
+        var assurance = ParseAssuranceMode(config["MfaAssuranceMode"] ?? nameof(OidcMfaAssuranceMode.Deny));
+        if (assurance is null) { throw new InvalidOperationException("Invalid protected OIDC bootstrap configuration."); }
         var admins = config.GetSection("AdministratorGroups").GetChildren().Select(v => v.Value ?? "").ToArray();
         if (admins.Length == 0) { admins = config.GetSection("AllowedGroups").GetChildren().Select(v => v.Value ?? "").ToArray(); }
         var settings = new OidcConnectionSettings(true, config["Issuer"] ?? "", config["ClientId"] ?? "", config["CallbackUri"] ?? "",
-            config["GroupClaim"] ?? "", admins, config.GetSection("AuditorGroups").GetChildren().Select(v => v.Value ?? ""));
+            config["GroupClaim"] ?? "", admins, config.GetSection("AuditorGroups").GetChildren().Select(v => v.Value ?? ""),
+            assurance.Value, config["MfaAssuranceClaim"] ?? "", config["MfaAssuranceValue"] ?? "");
         var secret = config["ClientSecret"] ?? "";
         if (!settings.IsValid || string.IsNullOrWhiteSpace(secret) || secret.Length > 4096 || secret.Any(char.IsControl))
         { throw new InvalidOperationException("Invalid protected OIDC bootstrap configuration."); }
         return new(new(0, settings, true, DateTimeOffset.UnixEpoch), secret);
     }
+
+    internal static OidcMfaAssuranceMode? ParseAssuranceMode(string? value) => value switch
+    {
+        nameof(OidcMfaAssuranceMode.Deny) => OidcMfaAssuranceMode.Deny,
+        nameof(OidcMfaAssuranceMode.ProviderBypass) => OidcMfaAssuranceMode.ProviderBypass,
+        nameof(OidcMfaAssuranceMode.SignedClaim) => OidcMfaAssuranceMode.SignedClaim,
+        _ => null,
+    };
 }
 
 // Snapshot operator bootstrap inputs once. Reloadable configuration must not
@@ -44,6 +69,7 @@ internal sealed class OidcRequestConnection(OidcBootstrapConnection bootstrap, L
 internal sealed class OidcBootstrapConnection
 {
     private readonly Lazy<OidcConnectionRuntime?> runtime;
+    internal string StartIdentifier { get; } = Guid.NewGuid().ToString("N");
     internal OidcBootstrapConnection(IConfigurationSection config)
     {
         var snapshot = new ConfigurationBuilder().AddInMemoryCollection(config.AsEnumerable(makePathsRelative: true).ToArray()).Build();

@@ -24,12 +24,13 @@ public sealed record LocalUserSnapshot(Guid Id, string UserName, string Role, bo
 /// <param name="FamilyName">Optional personal family-name override.</param>
 /// <param name="Email">Optional descriptive mailbox override without delivery verification.</param>
 /// <param name="Provider">Current eligible provider defaults, or null until an enabled mapping is observed at sign-in.</param>
+/// <param name="LdapProvider">Current LDAP descriptive defaults for this directory identity and connection generation.</param>
 public sealed record UserProfileSnapshot(string ActorId, string LoginName, string Role, Guid? LocalAccountId, long? AccountVersion,
     string DisplayName, long Version, DateTimeOffset? UpdatedUtc, string GivenName = "", string FamilyName = "", string Email = "",
-    ProviderProfileSnapshot? Provider = null)
+    ProviderProfileSnapshot? Provider = null, LdapProfileSnapshot? LdapProvider = null)
 {
     /// <summary>Gets metadata resolved field by field without changing verified login or authority.</summary>
-    public ProfileMetadata Effective => new ProfileMetadata(DisplayName, GivenName, FamilyName, Email).Over(Provider?.Metadata ?? ProfileMetadata.Empty);
+    public ProfileMetadata Effective => new ProfileMetadata(DisplayName, GivenName, FamilyName, Email).Over(Provider?.Metadata ?? LdapProvider?.Metadata ?? ProfileMetadata.Empty);
 }
 
 /// <summary>An immutable, credential-free event from the protected identity store.</summary>

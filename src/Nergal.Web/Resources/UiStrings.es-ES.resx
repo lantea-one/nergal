@@ -1,0 +1,744 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>Saltar al contenido</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>Menú</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>Mi perfil de {0}</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>Administrador</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>Auditor</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>Tema</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>Modo claro</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>Modo oscuro</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>Cambiar al tema claro</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>Cambiar al tema oscuro</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>Idioma</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>Idioma de la interfaz</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>Guardar idioma</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>Navegación principal</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Panel de control</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Vista general</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>Equipos</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>Cortafuegos</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>Reglas</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>Puente</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>Revisar y exportar</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>Alias y listas de IP</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>Configuración</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>Importar nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>Revisar y aplicar</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>Sistema</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>Actividad y auditoría</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Ajustes</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>Usuarios locales</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>Mi perfil y sesión</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>Zona horaria</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (hora local no disponible)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>Hora almacenada en UTC: {0}</value>
+    </data>
+    <data name="System / Connections" xml:space="preserve">
+        <value>Sistema / Conexiones</value>
+    </data>
+    <data name="Manage connections to enrolled firewall agents. Registering a connection does not apply a policy." xml:space="preserve">
+        <value>Gestiona las conexiones con agentes del cortafuegos ya inscritos. Registrar una conexión no aplica ninguna política.</value>
+    </data>
+    <data name="Live agent control is not configured on this controller. Connections can be registered, but their current firewall state has not been checked." xml:space="preserve">
+        <value>Este controlador no tiene configurado el control de agentes en tiempo real. Puedes registrar conexiones. El estado actual del cortafuegos de esos agentes queda sin comprobar.</value>
+    </data>
+    <data name="Managed hosts ({0})" xml:space="preserve">
+        <value>Equipos administrados ({0})</value>
+    </data>
+    <data name="Inspect live agent status" xml:space="preserve">
+        <value>Consultar el estado actual de los agentes</value>
+    </data>
+    <data name="No managed hosts registered yet. Connect an already enrolled agent below. Its local operator establishes the trust boundary before registration." xml:space="preserve">
+        <value>Aún no hay equipos administrados registrados. Conecta abajo un agente ya inscrito. Su operador local configura la relación de confianza antes del registro.</value>
+    </data>
+    <data name="Live Status" xml:space="preserve">
+        <value>Estado actual</value>
+    </data>
+    <data name="Transport" xml:space="preserve">
+        <value>Transporte</value>
+    </data>
+    <data name="Connection details" xml:space="preserve">
+        <value>Detalles de conexión</value>
+    </data>
+    <data name="Revision" xml:space="preserve">
+        <value>Revisión</value>
+    </data>
+    <data name="Actions" xml:space="preserve">
+        <value>Acciones</value>
+    </data>
+    <data name="Connection and identity" xml:space="preserve">
+        <value>Conexión e identidad</value>
+    </data>
+    <data name="Expected peer:" xml:space="preserve">
+        <value>Identidad esperada:</value>
+    </data>
+    <data name="Socket group:" xml:space="preserve">
+        <value>Grupo del socket:</value>
+    </data>
+    <data name="Reported revision {0}" xml:space="preserve">
+        <value>Revisión comunicada {0}</value>
+    </data>
+    <data name="Last recorded revision {0}" xml:space="preserve">
+        <value>Última revisión registrada {0}</value>
+    </data>
+    <data name="Apply / Status" xml:space="preserve">
+        <value>Aplicar / Consultar estado</value>
+    </data>
+    <data name="Remove" xml:space="preserve">
+        <value>Quitar</value>
+    </data>
+    <data name="Register agent host" xml:space="preserve">
+        <value>Registrar un equipo con agente</value>
+    </data>
+    <data name="Choose a remote pinned mTLS agent or a local Unix socket. Obtain the exact endpoint and expected identity from the agent's local operator; this page cannot enroll a host or create its credentials." xml:space="preserve">
+        <value>Elige un agente remoto con mTLS y certificado fijado, o un socket Unix local. Pide al operador local del agente el punto de conexión exacto y la identidad esperada. La inscripción del equipo y la creación de credenciales las realiza el operador local.</value>
+    </data>
+    <data name="Host name" xml:space="preserve">
+        <value>Nombre del equipo</value>
+    </data>
+    <data name="Use letters, digits, dots, underscores or hyphens; no spaces." xml:space="preserve">
+        <value>Usa letras, dígitos, puntos, guiones bajos o guiones, sin espacios.</value>
+    </data>
+    <data name="tls (Pinned TLS 1.3 mTLS)" xml:space="preserve">
+        <value>tls (TLS 1.3 mutuo con certificado fijado)</value>
+    </data>
+    <data name="unix (Local SO_PEERCRED socket)" xml:space="preserve">
+        <value>unix (socket SO_PEERCRED local)</value>
+    </data>
+    <data name="Endpoint" xml:space="preserve">
+        <value>Punto de conexión</value>
+    </data>
+    <data name="Pinned Server SHA-256 Thumbprint (64 hex chars)" xml:space="preserve">
+        <value>Huella SHA-256 fijada del servidor (64 caracteres hexadecimales)</value>
+    </data>
+    <data name="64 lowercase hex characters" xml:space="preserve">
+        <value>64 caracteres hexadecimales en minúsculas</value>
+    </data>
+    <data name="Expected Server UID" xml:space="preserve">
+        <value>UID esperado del servidor</value>
+    </data>
+    <data name="Socket Group ID (optional)" xml:space="preserve">
+        <value>ID del grupo del socket (opcional)</value>
+    </data>
+    <data name="nergal-ctl GID" xml:space="preserve">
+        <value>GID de nergal-ctl</value>
+    </data>
+    <data name="Register host" xml:space="preserve">
+        <value>Registrar equipo</value>
+    </data>
+    <data name="matched" xml:space="preserve">
+        <value>Coincide con la referencia</value>
+    </data>
+    <data name="online" xml:space="preserve">
+        <value>En línea</value>
+    </data>
+    <data name="pending" xml:space="preserve">
+        <value>Pendiente de confirmación</value>
+    </data>
+    <data name="drift" xml:space="preserve">
+        <value>Difiere de la referencia</value>
+    </data>
+    <data name="missing" xml:space="preserve">
+        <value>Sin vínculo de propiedad</value>
+    </data>
+    <data name="unavailable" xml:space="preserve">
+        <value>No disponible</value>
+    </data>
+    <data name="unqueried" xml:space="preserve">
+        <value>Sin consultar</value>
+    </data>
+    <data name="Invalid expected server UID." xml:space="preserve">
+        <value>El UID esperado del servidor no es válido.</value>
+    </data>
+    <data name="Invalid socket group ID." xml:space="preserve">
+        <value>El ID del grupo del socket no es válido.</value>
+    </data>
+    <data name="Missing required host registration fields." xml:space="preserve">
+        <value>Completa los campos obligatorios para registrar el equipo.</value>
+    </data>
+    <data name="Host specification violated transport constraints." xml:space="preserve">
+        <value>Los datos del equipo no cumplen los requisitos del transporte.</value>
+    </data>
+    <data name="A host with that name already exists." xml:space="preserve">
+        <value>Ya existe un equipo con ese nombre.</value>
+    </data>
+    <data name="Audit &amp; revision history" xml:space="preserve">
+        <value>Auditoría e historial de revisiones</value>
+    </data>
+    <data name="Controller audit &amp; revision history" xml:space="preserve">
+        <value>Auditoría del controlador e historial de revisiones</value>
+    </data>
+    <data name="Trigger-protected append-only audit log and immutable policy revision archive." xml:space="preserve">
+        <value>Registro de auditoría protegido por disparadores que solo admite nuevas entradas y archivo inmutable de revisiones de política.</value>
+    </data>
+    <data name="Events: {0} · Revisions: {1}" xml:space="preserve">
+        <value>Eventos: {0} · Revisiones: {1}</value>
+    </data>
+    <data name="Append-only audit log ({0})" xml:space="preserve">
+        <value>Registro de auditoría de solo adición ({0})</value>
+    </data>
+    <data name="Filter by actor, action, target, outcome…" xml:space="preserve">
+        <value>Filtrar por actor, acción, objetivo o resultado…</value>
+    </data>
+    <data name="Filter audit entries" xml:space="preserve">
+        <value>Filtrar entradas de auditoría</value>
+    </data>
+    <data name="No audit events recorded." xml:space="preserve">
+        <value>No hay eventos de auditoría registrados.</value>
+    </data>
+    <data name="Seq" xml:space="preserve">
+        <value>Sec.</value>
+    </data>
+    <data name="Timestamp (local time)" xml:space="preserve">
+        <value>Fecha y hora local</value>
+    </data>
+    <data name="Actor" xml:space="preserve">
+        <value>Actor</value>
+    </data>
+    <data name="Role" xml:space="preserve">
+        <value>Rol</value>
+    </data>
+    <data name="Action" xml:space="preserve">
+        <value>Acción</value>
+    </data>
+    <data name="Target" xml:space="preserve">
+        <value>Objetivo</value>
+    </data>
+    <data name="Rev" xml:space="preserve">
+        <value>Rev.</value>
+    </data>
+    <data name="Rev {0}" xml:space="preserve">
+        <value>Rev. {0}</value>
+    </data>
+    <data name="Outcome" xml:space="preserve">
+        <value>Resultado</value>
+    </data>
+    <data name="Detail" xml:space="preserve">
+        <value>Detalle</value>
+    </data>
+    <data name="Saved policy revisions ({0})" xml:space="preserve">
+        <value>Revisiones de política guardadas ({0})</value>
+    </data>
+    <data name="Open Policy Builder" xml:space="preserve">
+        <value>Abrir el editor de políticas</value>
+    </data>
+    <data name="No saved policy revisions." xml:space="preserve">
+        <value>No hay revisiones de política guardadas.</value>
+    </data>
+    <data name="Candidate SHA-256" xml:space="preserve">
+        <value>SHA-256 de la política candidata</value>
+    </data>
+    <data name="Created by" xml:space="preserve">
+        <value>Creada por</value>
+    </data>
+    <data name="Created (local time)" xml:space="preserve">
+        <value>Fecha y hora local de creación</value>
+    </data>
+    <data name="Summary" xml:space="preserve">
+        <value>Resumen</value>
+    </data>
+    <data name="Request {0}" xml:space="preserve">
+        <value>Solicitud {0}</value>
+    </data>
+    <data name="We couldn't process that request" xml:space="preserve">
+        <value>No se pudo procesar la solicitud</value>
+    </data>
+    <data name="Sign in to continue" xml:space="preserve">
+        <value>Inicia sesión para continuar</value>
+    </data>
+    <data name="Access denied" xml:space="preserve">
+        <value>Acceso denegado</value>
+    </data>
+    <data name="Page not found" xml:space="preserve">
+        <value>Página no encontrada</value>
+    </data>
+    <data name="That action isn't available" xml:space="preserve">
+        <value>Esa acción no está disponible</value>
+    </data>
+    <data name="Please wait before trying again" xml:space="preserve">
+        <value>Espera antes de intentarlo de nuevo</value>
+    </data>
+    <data name="Service temporarily unavailable" xml:space="preserve">
+        <value>Servicio no disponible temporalmente</value>
+    </data>
+    <data name="Something went wrong" xml:space="preserve">
+        <value>Se produjo un error</value>
+    </data>
+    <data name="Request unsuccessful" xml:space="preserve">
+        <value>La solicitud no se pudo completar</value>
+    </data>
+    <data name="Review the submitted information, then try again. Your change may not have been saved." xml:space="preserve">
+        <value>Revisa la información enviada y vuelve a intentarlo. Es posible que el cambio no se haya guardado.</value>
+    </data>
+    <data name="Your session has ended or a sign-in is required. Sign in to open the console." xml:space="preserve">
+        <value>Tu sesión ha terminado o necesitas identificarte. Inicia sesión para abrir la consola.</value>
+    </data>
+    <data name="Your account doesn't have permission for this page or action. Contact an Administrator if you need access." xml:space="preserve">
+        <value>Tu cuenta no tiene permisos para esta página o acción. Si necesitas acceso, ponte en contacto con un administrador.</value>
+    </data>
+    <data name="This page may have moved, or the address may be incorrect. Use the console navigation to continue." xml:space="preserve">
+        <value>Puede que esta página haya cambiado de lugar o que la dirección sea incorrecta. Usa la navegación de la consola para continuar.</value>
+    </data>
+    <data name="Return to the console and use the available controls for this action." xml:space="preserve">
+        <value>Vuelve a la consola y utiliza los controles disponibles para esta acción.</value>
+    </data>
+    <data name="Too many requests arrived in a short time. Wait a minute, then try again." xml:space="preserve">
+        <value>Se han recibido demasiadas solicitudes en poco tiempo. Espera un minuto y vuelve a intentarlo.</value>
+    </data>
+    <data name="Try again shortly. If the problem continues, ask an Administrator to check the application logs." xml:space="preserve">
+        <value>Vuelve a intentarlo en breve. Si el problema persiste, pide a un administrador que revise los registros de la aplicación.</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>Iniciar sesión</value>
+    </data>
+    <data name="Go to overview" xml:space="preserve">
+        <value>Ir a la vista general</value>
+    </data>
+    <data name="Go to home" xml:space="preserve">
+        <value>Ir al inicio</value>
+    </data>
+    <data name="OAuth connection" xml:space="preserve">
+        <value>Conexión OAuth</value>
+    </data>
+    <data name="Connect an OAuth provider with a current-user JSON endpoint that supplies a stable account ID and trusted groups." xml:space="preserve">
+        <value>Conecte un proveedor OAuth cuyo punto de acceso del usuario actual devuelva en JSON un identificador estable y grupos de confianza.</value>
+    </data>
+    <data name="Back to settings" xml:space="preserve">
+        <value>Volver a los ajustes</value>
+    </data>
+    <data name="Connection settings" xml:space="preserve">
+        <value>Ajustes de conexión</value>
+    </data>
+    <data name="OAuth sign-in" xml:space="preserve">
+        <value>Inicio de sesión con OAuth</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>Desactivado</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>Activado</value>
+    </data>
+    <data name="Authorization endpoint" xml:space="preserve">
+        <value>Punto de acceso de autorización</value>
+    </data>
+    <data name="Token endpoint" xml:space="preserve">
+        <value>Punto de acceso para tokens</value>
+    </data>
+    <data name="Current-user endpoint" xml:space="preserve">
+        <value>Punto de acceso del usuario actual</value>
+    </data>
+    <data name="Use three HTTPS URLs on the same provider origin. The current-user endpoint must accept a Bearer token and return a JSON object." xml:space="preserve">
+        <value>Use tres direcciones HTTPS del mismo origen. El punto de acceso del usuario actual debe aceptar un token Bearer y devolver un objeto JSON.</value>
+    </data>
+    <data name="Registered callback URL" xml:space="preserve">
+        <value>Dirección de retorno registrada</value>
+    </data>
+    <data name="Register the exact HTTPS callback ending in /signin-oauth." xml:space="preserve">
+        <value>Registre la dirección de retorno HTTPS exacta que termina en /signin-oauth.</value>
+    </data>
+    <data name="Client ID" xml:space="preserve">
+        <value>Identificador de cliente</value>
+    </data>
+    <data name="Client secret" xml:space="preserve">
+        <value>Secreto de cliente</value>
+    </data>
+    <data name="Enter the confidential client's secret." xml:space="preserve">
+        <value>Introduzca el secreto del cliente confidencial.</value>
+    </data>
+    <data name="A secret is stored. Leave blank to retain it for the same provider identity binding." xml:space="preserve">
+        <value>Hay un secreto guardado. Deje el campo vacío para conservarlo si la identidad del proveedor sigue siendo la misma.</value>
+    </data>
+    <data name="Scopes" xml:space="preserve">
+        <value>Ámbitos</value>
+    </data>
+    <data name="Space-separated provider scopes for reading the current account and groups." xml:space="preserve">
+        <value>Ámbitos del proveedor separados por espacios para leer la cuenta actual y sus grupos.</value>
+    </data>
+    <data name="Identity and access" xml:space="preserve">
+        <value>Identidad y acceso</value>
+    </data>
+    <data name="Immutable account ID field" xml:space="preserve">
+        <value>Campo del identificador inmutable de la cuenta</value>
+    </data>
+    <data name="The field must contain a stable string ID." xml:space="preserve">
+        <value>El campo debe contener un identificador de texto estable.</value>
+    </data>
+    <data name="Groups field" xml:space="preserve">
+        <value>Campo de grupos</value>
+    </data>
+    <data name="The field must contain an array of group names." xml:space="preserve">
+        <value>El campo debe contener una matriz de nombres de grupos.</value>
+    </data>
+    <data name="Administrator groups" xml:space="preserve">
+        <value>Grupos de administradores</value>
+    </data>
+    <data name="Auditor groups" xml:space="preserve">
+        <value>Grupos de auditores</value>
+    </data>
+    <data name="Enter one exact group name per line and at least one group across both roles. Accounts matching both roles are denied." xml:space="preserve">
+        <value>Introduzca un nombre exacto por línea y al menos un grupo entre los dos roles. Las cuentas que coincidan con ambos roles se rechazan.</value>
+    </data>
+    <data name="When Nergal requires MFA" xml:space="preserve">
+        <value>Cuando Nergal exige autenticación multifactor</value>
+    </data>
+    <data name="Deny OAuth sign-in" xml:space="preserve">
+        <value>Denegar el inicio de sesión con OAuth</value>
+    </data>
+    <data name="Trust the provider to enforce MFA" xml:space="preserve">
+        <value>Confiar en que el proveedor exija autenticación multifactor</value>
+    </data>
+    <data name="Profile defaults" xml:space="preserve">
+        <value>Valores predeterminados del perfil</value>
+    </data>
+    <data name="Use literal top-level JSON field names. Leave any descriptive field blank to skip it. Users can override these values on their own profile." xml:space="preserve">
+        <value>Use nombres literales de campos JSON de nivel superior. Deje en blanco los campos descriptivos que no quiera usar. Cada usuario puede cambiar estos valores en su perfil.</value>
+    </data>
+    <data name="Display name field" xml:space="preserve">
+        <value>Campo del nombre visible</value>
+    </data>
+    <data name="Given name field" xml:space="preserve">
+        <value>Campo del nombre</value>
+    </data>
+    <data name="Family name field" xml:space="preserve">
+        <value>Campo de los apellidos</value>
+    </data>
+    <data name="Email field" xml:space="preserve">
+        <value>Campo del correo electrónico</value>
+    </data>
+    <data name="Replace provider trust and retire current OAuth sessions" xml:space="preserve">
+        <value>Sustituir la configuración de confianza y cerrar las sesiones OAuth actuales</value>
+    </data>
+    <data name="Save OAuth connection" xml:space="preserve">
+        <value>Guardar la conexión OAuth</value>
+    </data>
+    <data name="Confirm the replacement to save OAuth provider trust." xml:space="preserve">
+        <value>Confirme la sustitución para guardar la configuración de confianza del proveedor OAuth.</value>
+    </data>
+    <data name="Check the HTTPS endpoints, callback, exact groups and literal JSON field names." xml:space="preserve">
+        <value>Compruebe los puntos de acceso HTTPS, la dirección de retorno, los grupos exactos y los nombres literales de los campos JSON.</value>
+    </data>
+    <data name="Enter the client secret for this new provider identity configuration." xml:space="preserve">
+        <value>Introduzca el secreto del cliente para esta nueva configuración de identidad del proveedor.</value>
+    </data>
+    <data name="These connection settings changed. Reload the page before saving again." xml:space="preserve">
+        <value>Estos ajustes de conexión han cambiado. Vuelva a cargar la página antes de guardar.</value>
+    </data>
+    <data name="The change was rejected. Review the fields and try again." xml:space="preserve">
+        <value>Se ha rechazado el cambio. Revise los campos y vuelva a intentarlo.</value>
+    </data>
+    <data name="Baseline matches" xml:space="preserve">
+        <value>La referencia coincide</value>
+    </data>
+    <data name="Drift detected" xml:space="preserve">
+        <value>Se ha detectado una desviación</value>
+    </data>
+    <data name="Missing baseline receipt" xml:space="preserve">
+        <value>Falta el comprobante de referencia</value>
+    </data>
+    <data name="Change in progress" xml:space="preserve">
+        <value>Cambio en curso</value>
+    </data>
+    <data name="Status unavailable" xml:space="preserve">
+        <value>Estado no disponible</value>
+    </data>
+    <data name="No query made" xml:space="preserve">
+        <value>Sin consulta</value>
+    </data>
+    <data name="Status unknown" xml:space="preserve">
+        <value>Estado desconocido</value>
+    </data>
+    <data name="{0:N0} of {1:N0} registered hosts classified by agent status" xml:space="preserve">
+        <value>{0:N0} de {1:N0} equipos registrados clasificados según el estado del agente</value>
+    </data>
+    <data name="No usable agent status classifications for this page load." xml:space="preserve">
+        <value>No hay estados de agentes que se puedan clasificar en esta visita.</value>
+    </data>
+    <data name="Gaps in status coverage" xml:space="preserve">
+        <value>Información de estado incompleta</value>
+    </data>
+    <data name="How host status is measured" xml:space="preserve">
+        <value>Cómo se mide el estado de los equipos</value>
+    </data>
+    <data name="When agent control is configured, Overview requests status over each registered agent’s authenticated connection. Each bar shows the number of hosts in that state against the full registered fleet for this page load." xml:space="preserve">
+        <value>Si el control de agentes está configurado, el resumen solicita el estado por la conexión autenticada de cada agente registrado. Cada barra muestra cuántos equipos están en ese estado respecto del total registrado en esta visita.</value>
+    </data>
+    <data name="A matching baseline means the agent matched its protected receipt. The latest saved controller revision can differ. A missing baseline receipt means the agent has no bound reference for comparison." xml:space="preserve">
+        <value>Una referencia coincidente indica que el estado del agente coincide con su comprobante protegido. La última revisión guardada en el controlador puede ser distinta. Si falta el comprobante, el agente carece de una referencia con la que comparar.</value>
+    </data>
+    <data name="Unavailable means the query could not establish status. Unqueried means no status request was made. Unknown means the controller lacks a usable classification. These gaps leave the firewall state undetermined." xml:space="preserve">
+        <value>No disponible indica que la consulta no pudo determinar el estado. Sin consulta indica que no se solicitó el estado. Desconocido indica que el controlador no puede clasificarlo. En estos casos se desconoce el estado del cortafuegos.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>Inicie sesión para gestionar equipos inscritos, revisiones de políticas y aplicaciones confirmadas.</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>No se ha podido iniciar sesión. Revise sus credenciales y vuelva a intentarlo.</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Nombre de usuario</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Contraseña</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>Inicio de sesión con el directorio</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>Nombre de usuario del directorio</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>Contraseña del directorio</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>Iniciar sesión con LDAP</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>Usar una autorización de recuperación</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>Iniciar sesión con OAuth</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>Iniciar sesión con el proveedor de identidad</value>
+    </data>
+    <data name="Firewall configuration, connected hosts and recent activity." xml:space="preserve">
+        <value>Configuración del cortafuegos, equipos conectados y actividad reciente.</value>
+    </data>
+    <data name="Native nftables" xml:space="preserve">
+        <value>nftables nativo</value>
+    </data>
+    <data name="Needs attention" xml:space="preserve">
+        <value>Requiere atención</value>
+    </data>
+    <data name="Next action" xml:space="preserve">
+        <value>Siguiente paso</value>
+    </data>
+    <data name="Configuration workflow" xml:space="preserve">
+        <value>Proceso de configuración</value>
+    </data>
+    <data name="Prepare a policy" xml:space="preserve">
+        <value>Preparar una política</value>
+    </data>
+    <data name="Create rules or import a configuration" xml:space="preserve">
+        <value>Crear reglas o importar una configuración</value>
+    </data>
+    <data name="Revision {0} saved" xml:space="preserve">
+        <value>Revisión {0} guardada</value>
+    </data>
+    <data name="Connect a host" xml:space="preserve">
+        <value>Conectar un equipo</value>
+    </data>
+    <data name="Register an enrolled agent" xml:space="preserve">
+        <value>Registrar un agente inscrito</value>
+    </data>
+    <data name="Registered connections: {0:N0}" xml:space="preserve">
+        <value>Conexiones registradas: {0:N0}</value>
+    </data>
+    <data name="Review and apply" xml:space="preserve">
+        <value>Revisar y aplicar</value>
+    </data>
+    <data name="Inspect changes, apply, then confirm" xml:space="preserve">
+        <value>Revisar los cambios, aplicarlos y confirmar</value>
+    </data>
+    <data name="Saved configuration" xml:space="preserve">
+        <value>Configuración guardada</value>
+    </data>
+    <data name="Open rules" xml:space="preserve">
+        <value>Abrir las reglas</value>
+    </data>
+    <data name="Revision {0}" xml:space="preserve">
+        <value>Revisión {0}</value>
+    </data>
+    <data name="Saved policy revision" xml:space="preserve">
+        <value>Revisión de política guardada</value>
+    </data>
+    <data name="Saved" xml:space="preserve">
+        <value>Guardado</value>
+    </data>
+    <data name="Desired configuration may differ from the policy confirmed on each host." xml:space="preserve">
+        <value>La configuración prevista puede diferir de la política confirmada en cada equipo.</value>
+    </data>
+    <data name="No saved policy yet." xml:space="preserve">
+        <value>Todavía no hay ninguna política guardada.</value>
+    </data>
+    <data name="Use Firewall / Rules to create a policy, or Configuration / Import to start with a native file." xml:space="preserve">
+        <value>Use Cortafuegos / Reglas para crear una política o Configuración / Importar para empezar con un archivo nativo.</value>
+    </data>
+    <data name="How configuration changes reach a host" xml:space="preserve">
+        <value>Cómo llegan al equipo los cambios de configuración</value>
+    </data>
+    <data name="Rule edits change the draft. Saving creates an immutable revision. Review and apply sends an explicitly selected revision to an enrolled host; its local watchdog restores the previous policy if confirmation is missing." xml:space="preserve">
+        <value>La edición de reglas modifica el borrador. Al guardar se crea una revisión inmutable. Revisar y aplicar envía la revisión seleccionada a un equipo inscrito. El supervisor local restaura la política anterior si no se confirma.</value>
+    </data>
+    <data name="Host status" xml:space="preserve">
+        <value>Estado de los equipos</value>
+    </data>
+    <data name="Manage hosts" xml:space="preserve">
+        <value>Gestionar equipos</value>
+    </data>
+    <data name="No hosts connected." xml:space="preserve">
+        <value>No hay equipos conectados.</value>
+    </data>
+    <data name="You can prepare a policy first. Agent enrollment and connection registration establish the host's trust boundary." xml:space="preserve">
+        <value>Puede preparar primero una política. La inscripción del agente y el registro de la conexión establecen la confianza del equipo.</value>
+    </data>
+    <data name="Showing 5 hosts. Open Hosts for all connections." xml:space="preserve">
+        <value>Se muestran cinco equipos. Abra Equipos para ver todas las conexiones.</value>
+    </data>
+    <data name="Recent activity" xml:space="preserve">
+        <value>Actividad reciente</value>
+    </data>
+    <data name="Open audit log" xml:space="preserve">
+        <value>Abrir el registro de auditoría</value>
+    </data>
+    <data name="No configuration activity recorded yet." xml:space="preserve">
+        <value>Todavía no hay actividad de configuración registrada.</value>
+    </data>
+    <data name="Latest five attributed events" xml:space="preserve">
+        <value>Últimos cinco eventos con autor identificado</value>
+    </data>
+    <data name="Time (local)" xml:space="preserve">
+        <value>Hora local</value>
+    </data>
+    <data name="A change is waiting for confirmation" xml:space="preserve">
+        <value>Un cambio está pendiente de confirmación</value>
+    </data>
+    <data name="Inspect the pending operation and its deadline. The agent's local watchdog decides rollback independently of this page." xml:space="preserve">
+        <value>Revise la operación pendiente y su plazo. El supervisor local del agente decide si revierte el cambio con independencia de esta página.</value>
+    </data>
+    <data name="Review pending change" xml:space="preserve">
+        <value>Revisar el cambio pendiente</value>
+    </data>
+    <data name="Inspect pending change" xml:space="preserve">
+        <value>Consultar el cambio pendiente</value>
+    </data>
+    <data name="A host needs attention" xml:space="preserve">
+        <value>Un equipo requiere atención</value>
+    </data>
+    <data name="Observed firewall state differs from its protected baseline, or owned resources are missing. Inspect recovery status before making another change." xml:space="preserve">
+        <value>El estado observado del cortafuegos difiere de su referencia protegida o faltan recursos gestionados. Revise la recuperación antes de realizar otro cambio.</value>
+    </data>
+    <data name="Inspect host state" xml:space="preserve">
+        <value>Consultar el estado del equipo</value>
+    </data>
+    <data name="Read-only administration" xml:space="preserve">
+        <value>Administración de solo lectura</value>
+    </data>
+    <data name="You can inspect policy revisions, host status and audit history. An administrator must save configuration changes and manage connections." xml:space="preserve">
+        <value>Puede consultar las revisiones de políticas, los estados de los equipos y el historial de auditoría. Un administrador debe guardar los cambios y gestionar las conexiones.</value>
+    </data>
+    <data name="Inspect saved policy" xml:space="preserve">
+        <value>Consultar la política guardada</value>
+    </data>
+    <data name="Inspect activity" xml:space="preserve">
+        <value>Consultar la actividad</value>
+    </data>
+    <data name="Start with your firewall policy" xml:space="preserve">
+        <value>Empiece por la política del cortafuegos</value>
+    </data>
+    <data name="Create rules in Firewall, or import an existing nftables.conf. You can prepare and review configuration before connecting a host." xml:space="preserve">
+        <value>Cree reglas en Cortafuegos o importe un archivo nftables.conf. Puede preparar y revisar la configuración antes de conectar un equipo.</value>
+    </data>
+    <data name="Create a policy" xml:space="preserve">
+        <value>Crear una política</value>
+    </data>
+    <data name="Connect a firewall host" xml:space="preserve">
+        <value>Conectar un equipo con cortafuegos</value>
+    </data>
+    <data name="Your policy is saved. Register an already enrolled agent to inspect its state and prepare a reviewed change." xml:space="preserve">
+        <value>La política está guardada. Registre un agente ya inscrito para consultar su estado y preparar un cambio que pueda revisar.</value>
+    </data>
+    <data name="Check host connections" xml:space="preserve">
+        <value>Comprobar las conexiones de los equipos</value>
+    </data>
+    <data name="Live status is unavailable, unqueried or incomplete. This does not establish that a host is offline. Review its connection and agent configuration." xml:space="preserve">
+        <value>El estado en directo no está disponible, no se ha consultado o está incompleto. Revise la conexión y la configuración del agente.</value>
+    </data>
+    <data name="Inspect connections" xml:space="preserve">
+        <value>Consultar las conexiones</value>
+    </data>
+    <data name="Review your saved configuration" xml:space="preserve">
+        <value>Revisar la configuración guardada</value>
+    </data>
+    <data name="A matching agent baseline does not mean the latest controller policy is applied. Review the selected revision and each host before starting a confirmed change." xml:space="preserve">
+        <value>El agente compara el estado con su referencia protegida. Revise la última política del controlador, la revisión seleccionada y cada equipo antes de iniciar un cambio confirmado.</value>
+    </data>
+</root>

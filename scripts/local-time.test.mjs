@@ -5,7 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 const script = await readFile(new URL('../src/Nergal.Web/wwwroot/js/local-time.js', import.meta.url), 'utf8');
 
-function fixture(instants, initialZone = 'America/New_York', noIntl = false) {
+function fixture(instants, initialZone = 'America/New_York', noIntl = false, selectedLocale = null) {
   let zone = initialZone;
   let observe;
   const events = {};
@@ -13,11 +13,11 @@ function fixture(instants, initialZone = 'America/New_York', noIntl = false) {
     matches: selector => selector === 'time[data-local-time]', querySelectorAll: () => [] });
   const times = instants.map(element);
   const label = { textContent: 'UTC fallback' };
-  const document = { documentElement: {}, hidden: false,
+  const document = { documentElement: { getAttribute: name => name === 'data-ui-locale' ? selectedLocale : null }, hidden: false,
     querySelectorAll: selector => selector === 'time[data-local-time]' ? times : [label],
     addEventListener: (name, callback) => { events[name] = callback; } };
   const context = vm.createContext({ document, window: { addEventListener: (name, callback) => { events[name] = callback; } },
-    Intl: noIntl ? undefined : { DateTimeFormat: function (_, options) { return new Intl.DateTimeFormat('en-US', { ...options, timeZone: zone }); } },
+    Intl: noIntl ? undefined : { DateTimeFormat: function (locale, options) { return new Intl.DateTimeFormat(locale ?? 'en-US', { ...options, timeZone: zone }); } },
     MutationObserver: class { constructor(callback) { observe = callback; } observe() {} } });
   vm.runInContext(script, context);
   return { times, label, events, element, setZone: value => { zone = value; }, mutate: records => observe(records) };
@@ -30,6 +30,14 @@ test('local presentation crosses the date boundary without modifying the UTC ins
   assert.match(f.times[0].textContent, /08:00:00\s+PM\s+EST/);
   assert.equal(f.times[0].getAttribute('datetime'), instant);
   assert.equal(f.label.textContent, 'America/New_York');
+});
+test('selected UI language changes the date format and retains the browser timezone', () => {
+  const instant = '2026-11-23T01:00:00Z';
+  const f = fixture([instant], 'America/New_York', false, 'es-ES');
+  assert.match(f.times[0].textContent, /22\s+nov\s+2026/);
+  assert.match(f.times[0].textContent, /20:00:00/);
+  assert.equal(f.label.textContent, 'America/New_York');
+  assert.equal(f.times[0].getAttribute('datetime'), instant);
 });
 test('spring DST skips the nonexistent local hour', () => {
   const f = fixture(['2026-03-08T06:59:59Z', '2026-03-08T07:00:00Z']);

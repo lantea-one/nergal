@@ -4,6 +4,7 @@ using Nergal.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddHealthChecks();
 var sessions = builder.Configuration.GetSection("LocalSessions");
@@ -53,6 +54,7 @@ foreach (var service in builder.Services.Where(service => service.ServiceType ==
 }
 
 var app = builder.Build();
+app.UseRequestLocalization(UiLocalization.CreateRequestOptions());
 app.UseStatusCodePages(BrowserResponses.StatusPageAsync);
 app.UseExceptionHandler(handler => handler.Run(context =>
 {

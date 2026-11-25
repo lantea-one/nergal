@@ -10,7 +10,8 @@ def exercise_connections(temp, sessions, provider, host_settings, RelyingParty):
         path = '/manage/identity/connection'
         fields = {'version': '0', 'enabled': 'true', 'issuer': op.issuer, 'clientId': op.client,
                   'callbackUri': op.callback, 'groupClaim': 'groups', 'administratorGroups': 'fixture-admins',
-                  'auditorGroups': 'fixture-auditors', 'clientSecret': op.secret, 'confirm': 'replace-trust'}
+                  'auditorGroups': 'fixture-auditors', 'clientSecret': op.secret, 'confirm': 'replace-trust',
+                  'mfaAssuranceMode': 'Deny', 'mfaAssuranceClaim': '', 'mfaAssuranceValue': ''}
         database = temp / 'accounts/accounts.db'
         with sessions.host(temp, tls, settings) as browser:
             admin = RelyingParty(browser)
@@ -31,9 +32,13 @@ def exercise_connections(temp, sessions, provider, host_settings, RelyingParty):
             admin.request(path + '/save', 400, fields)
             for change in [{'extra': 'x'}, {'enabled': 'false'}, {'issuer': 'http://identity.example.test'},
                            {'callbackUri': op.callback + '?next=x'}, {'administratorGroups': 'same', 'auditorGroups': 'same'},
-                           {'clientSecret': ''}, {'confirm': 'unconfirmed'}]:
+                           {'clientSecret': ''}, {'confirm': 'unconfirmed'}, {'mfaAssuranceMode': '1'},
+                           {'mfaAssuranceMode': 'SignedClaim'}, {'mfaAssuranceClaim': 'amr'}]:
                 post({**fields, **change}, 400)
+            post({key: value for key, value in fields.items() if key != 'mfaAssuranceMode'}, 400)
             admin.request(path + '/save', 400, [*fields.items(), ('issuer', 'https://other.example.test'),
+                ('__RequestVerificationToken', admin.token(path))])
+            admin.request(path + '/save', 400, [*fields.items(), ('mfaAssuranceMode', 'ProviderBypass'),
                 ('__RequestVerificationToken', admin.token(path))])
             with sqlite3.connect(database) as db:
                 assert db.execute('SELECT count(*) FROM OidcConnection').fetchone()[0] == 0
@@ -87,9 +92,15 @@ def exercise_connections(temp, sessions, provider, host_settings, RelyingParty):
             with sqlite3.connect(database) as db:
                 assert db.execute('SELECT Version,ProtectedSecret FROM OidcConnection').fetchone() == (4, encrypted)
                 db.execute('DROP TRIGGER fixture_provider_failure')
+            pending_restart = RelyingParty(browser)
+            form = pending_restart.authorize(op, cert)
         with sessions.host(temp, tls, settings) as browser:
             fresh = RelyingParty(browser)
             assert 'Sign in with identity provider' in fresh.request('/login', 200)[0]
-            fresh.exchange(op, cert, 302)
+            # The persisted managed generation still authorizes its own outstanding challenge after restart.
+            fresh.cookies.update(pending_restart.cookies)
+            _, location = fresh.request('/signin-oidc', 302, form)
+            assert location == '/session'
             fresh.request('/session', 200)
+            RelyingParty(browser).exchange(op, cert, 302)
         print('PASS: UI-only OIDC activation, encrypted write-only secret retention, retired sessions/callbacks, local fallback, CSRF/RBAC/audit denial and restart')

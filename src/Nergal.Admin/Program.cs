@@ -9,6 +9,7 @@ const string usage = """
     Usage:
       nergal-admin account init <absolute-directory>
       nergal-admin account provision <absolute-directory> <username> [--role <administrator|auditor>] [--password-stdin]
+      nergal-admin account recover <absolute-directory> <local-administrator-uuid>
       nergal-admin controller init <absolute-directory>
       nergal-admin controller upgrade <absolute-directory>
       nergal-admin --version
@@ -42,6 +43,7 @@ if (args is ["controller", var controllerOperation, var controllerDir] && contro
 }
 
 var initialize = args is ["account", "init", _];
+var recover = args is ["account", "recover", _, _];
 var pipe = false;
 var role = NergalRoles.Administrator;
 var validProvision = false;
@@ -75,7 +77,7 @@ if (!initialize && args.Length >= 4 && args[0] == "account" && args[1] == "provi
     }
 }
 
-if (!initialize && !validProvision) { Console.Error.WriteLine(usage); return 2; }
+if (!initialize && !recover && !validProvision) { Console.Error.WriteLine(usage); return 2; }
 try
 {
     var options = new LocalAccountOptions(args[2]);
@@ -83,6 +85,19 @@ try
     {
         await LocalAccountDatabase.InitializeAsync(options);
         Console.WriteLine("Account database initialized.");
+        return 0;
+    }
+    if (recover)
+    {
+        if (Console.IsOutputRedirected || !Guid.TryParseExact(args[3], "D", out var id) || id == Guid.Empty)
+        { Console.Error.WriteLine("recovery.terminalAndAccountRequired"); return 2; }
+        using var recoveryServices = new ServiceCollection().AddLocalAdministratorAccounts(options).BuildServiceProvider();
+        using var recoveryScope = recoveryServices.CreateScope();
+        var accounts = recoveryScope.ServiceProvider.GetRequiredService<LocalAdministratorAccounts>();
+        var authorization = await accounts.IssueOfflineAdministratorRecoveryAsync(id);
+        if (authorization is null) { Console.Error.WriteLine("recovery.denied"); return 1; }
+        Console.WriteLine("Enter this authorization on the local account recovery form within ten minutes.");
+        Console.WriteLine(authorization.Authorization);
         return 0;
     }
     if (Console.IsInputRedirected != pipe) { Console.Error.WriteLine("password.inputMode"); return 2; }

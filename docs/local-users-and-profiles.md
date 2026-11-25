@@ -12,6 +12,7 @@ version is adopted, migrated or reset by the application.
 - Create an explicitly named local Administrator or Auditor. Names use 1–64 ASCII
   letters, digits, dots, underscores or hyphens and are case-insensitive. Initial
   passwords use the existing Identity hasher and 15–128 Unicode-character bounds.
+  A local Administrator is required to grant or restore local Administrator access.
 - Change a role or use the switch in **Access**, then choose **Save access**. Disabling retains
   the account identity, profile and history. It blocks password sign-in and
   invalidates existing tickets; reenabling cannot resurrect old tickets.
@@ -41,9 +42,9 @@ a role or change/link identity. Blank fields use current provider defaults; disp
 can contain up to 80 Unicode characters, with malformed Unicode/control characters
 denied. Profile reads do not create rows or audit entries.
 
-Profiles use canonical local UUIDs or exact validated OIDC issuer/subject identity.
-Equal display names or email claims cannot merge identities. Existing OIDC users
-can save their own local override; their credentials remain at their provider.
+Profiles use canonical local, OIDC, OAuth or LDAP actors. Equal display names
+or email claims cannot merge identities. Provider users can save their own local
+overrides and manage their credentials at their provider.
 
 A local password change requires the current password. Incorrect verification
 persists lockout accounting even when the HTTP caller disconnects. Successful
@@ -54,7 +55,7 @@ Passwords never enter view models or audit events.
 
 ## Storage and audit
 
-The private credential database uses account schema 4 with explicit role claims,
+The private credential database uses account schema 8 with explicit role claims,
 per-account state, personal profiles and append-only identity audit. Mappings and provider observations remain separate from local metadata overrides. The former
 singleton slot is removed. Missing roles fail closed; there is no implicit
 Administrator default. Initialization creates no user; offline provisioning remains
@@ -74,18 +75,47 @@ See [ADR 0058](decisions/0058-local-users-and-profile-boundary.md),
 The existing private-path, protected-key, fifteen-minute session, CSRF and Linux
 process/agent boundaries remain in force.
 
-## Remaining M5 identity gates
+## Authenticator sign-in and LDAP
 
-This slice does not complete M5. Signed OIDC profile defaults and per-field local overrides are implemented in
-[OIDC profile defaults](oidc-profile-defaults.md). Runtime provider configuration,
-generic OAuth and LDAP profile mapping remain required. LDAP must
-support direct sign-in. Local email and TOTP/authenticator MFA, administrator
-email-delivery screens, optional enrollment with Administrator/all/neither
-requirement policy, and explicit per-provider federated bypass with optional
-assurance claims remain open. LDAP sign-in follows local MFA requirements.
-These integrations must preserve identity/authority separation and receive their
-own failure, replay, TLS and authorization acceptance before being advertised.
+A signed-in local or LDAP user can open **Profile → Authenticator**, start
+setup, and enter the displayed manual key in a six-digit TOTP authenticator.
+Confirm a current code to activate the factor, then sign in again. Save the
+authenticator securely. Setup keys are displayed during enrollment only.
 
+A local Administrator manages **Settings → Authentication → MFA policy**.
+Optional mode asks enrolled users for their factor. Administrator and
+all-user modes also deny sign-in to required users who lack a verified factor.
+Enroll the relevant users before enforcement. A policy change retires old
+sessions. OIDC users subject to the policy need an explicit provider assurance
+configuration under **OIDC connection**, with signed-token assurance available.
+
+A local Administrator manages the active connection in **Settings →
+Authentication → LDAP connection**. Enter one LDAPS endpoint and dial IP, the
+read-only search account, the user search base, and the two direct role groups.
+The LDAP sign-in form appears after the connection is enabled. LDAP shares
+the authenticator flow and populates descriptive defaults from verified
+directory attributes. Personal edits override defaults field by field.
+
+### Email and recovery
+
+A local Administrator configures the SMTP relay from **Settings →
+Authentication → Email delivery**. The relay must support STARTTLS with a
+certificate trusted by the controller. Local and LDAP users verify an explicit
+mailbox under **Profile → Email factor**. Sending a code does not change the
+profile email. An enrolled authenticator remains the preferred factor.
+Local Administrator access always retains a path independent of the relay.
+
+A local Administrator can issue a one-time authorization under **Settings →
+Authentication → Issue MFA recovery authorization**. Give it to the intended
+account holder through a private channel. The recipient selects recovery on
+the sign-in page, provides their current credentials and verifies a new
+authenticator. The authorization grants access only to setup. A protected
+offline command supports local Administrator recovery.
+
+OIDC connections can deny sign-in for roles requiring MFA, explicitly trust
+the provider to enforce MFA, or require an exact assurance value in a signed
+ID token. Configure the mode in the active OIDC connection. Generic OAuth
+remains open.
 
 Browser page navigation redirects to sign-in when a session is required. API
 clients keep status-code responses. Themed 403/404/503 pages retain the original

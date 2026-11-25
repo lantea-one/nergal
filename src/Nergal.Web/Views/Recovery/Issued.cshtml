@@ -1,0 +1,14 @@
+@model Nergal.Identity.RecoveryAuthorization
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Recovery authorization";
+}
+<main id="main-content" tabindex="-1" class="container-narrow">
+    <h1>Recovery authorization</h1>
+    <section class="card">
+        <p>Give this one-time authorization to the verified recipient through a private channel. It expires in ten minutes.</p>
+        <p><code class="text-break">@Model.Authorization</code></p>
+        <p>Ask the recipient to open <a href="@Url.Content("~/login/recovery")">authenticator recovery</a> and use their current password. The setup key appears once after verification.</p>
+        <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">Back to MFA policy</a>
+    </section>
+</main>

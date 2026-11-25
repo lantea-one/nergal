@@ -239,6 +239,12 @@ Run `python3 -B tests/integration/oidc/check.py` for a real loopback HTTPS issue
 and Kestrel login. OpenSSL generates synthetic signing and TLS keys. The fixture
 checks code redemption with PKCE, signature, issuer, audience, nonce, state, group
 and token-age denial, logout replay, restart invalidation and independent local login.
+The assurance cases exercise enforced rejection by default, explicit provider
+bypass, signed-claim matching, UserInfo-only and malformed evidence denial, and
+retirement of sessions after an assurance setting changes. A partial connection
+restore cannot re-enable retired trust. Unreadable managed provider credentials
+still allow local sign-in and enrollment recovery. A separate case checks local
+session retirement on OIDC initiation and callback denial after bootstrap restart.
 No machine trust anchor is installed. Clock-controlled tests exercise absolute expiry
 and issuer/subject binding. The mapped-UID native fixture also checks federated
 group denial and authorized read-only status. For upstream provider interoperability, run
@@ -282,10 +288,9 @@ rollback and confirmed persistence while preserving foreign tables.
 ## Continuous integration
 
 The Forgejo workflow builds, checks formatting, runs unit tests with coverage
-and runs the default MVC/Blazor smoke check and isolated HTTPS session fixture. Set the
-repository variable `CI_RUNNER_LABEL` to a suitable trusted Linux runner label;
-otherwise it uses `ubuntu-latest`. Action revisions are pinned. CI has no
-production deployment step or host firewall access. Automatic fork-PR execution
+and runs the default MVC/Blazor smoke check and isolated HTTPS session fixture.
+Verification uses the fixed `asgard-ci` label. Action revisions are pinned. CI
+has no production deployment step or host firewall access. Automatic fork-PR execution
 is intentionally not configured in the initial workflow; contributor code can
 be reviewed and tested through the normal trusted-branch process.
 
@@ -859,3 +864,102 @@ tests deny ambiguous trust/group configurations, wrong keys, tampered ciphertext
 and deletion of a previously saved connection. All 20 projects remain present in
 `Nergal.slnx`, with application projects at root and nine test/fixture projects
 in the `Tests` solution folder.
+
+## Direct LDAP transport and protected configuration
+
+`LdapDirectoryContractTests` covers LDAPS endpoints, bounded login names,
+canonical directory and entry UUIDs, and literal single-valued profile defaults.
+`LdapWireCodecTests` covers structured UTF-8 assertions, explicit attribute
+selection and denial of uncorrelated responses, referrals and unexpected
+attributes. `LdapDirectoryProofTests` denies changed role-group revisions and
+noncanonical entry IDs. `LdapConnectionPersistenceTests` uses real SQLite for
+authorized generation updates, concurrent saves, corrupt and rolled-back row
+denial, bind-secret isolation, and atomic audit failure. The standard unit suite
+requires no directory or network access.
+
+After a Release build, run `bash tests/integration/ldap/check-openldap.sh`.
+It creates a disposable synthetic OpenLDAP server and CA using Docker and
+OpenSSL. The fixture verifies real binds, direct role membership, ambiguous
+lookup, profile isolation, TLS peer name and chain validation, referral denial,
+cancellation and oversized-frame handling. Its test process trusts the fixture
+CA without altering the machine trust store. The complete browser and MFA
+acceptance gates are documented in [ADR 0061](decisions/0061-direct-ldap-trust-boundary.md).
+
+## Shared TOTP and LDAP browser completion
+
+`TotpTests` checks six-digit RFC 6238 vectors, leading zeroes, 64-bit time
+counters, the enrollment window and replay rejection. Real SQLite tests use
+the protected cookie scheme and an injected clock to verify enrollment,
+continuation expiry, attempt limits, replay, concurrent completion, policy
+retirement, audit rollback and preservation of a local recovery Administrator.
+
+After a Release build, run:
+
+```sh
+python3 -B tests/integration/local-sessions/check-totp.py
+bash tests/integration/ldap/check-openldap.sh
+```
+
+The first exercises local TOTP through loopback HTTPS. The LDAP runner also
+launches the real controller against its disposable TLS directory. The browser
+flow checks stale settings, role isolation, persisted defaults and overrides,
+LDAP TOTP, atomic profile/audit rollback and logout replay. The app and test
+data are synthetic. Run the standard local-session and OIDC HTTPS checks as
+regressions for the shared authentication boundary.
+
+## Email MFA and enforced enrollment recovery
+
+After a Release build, run:
+
+```sh
+python3 -B tests/integration/local-sessions/check-email-mfa.py
+python3 -B tests/integration/local-sessions/check-recovery.py
+```
+
+The email fixture sends through a disposable loopback STARTTLS relay. It checks
+address verification independent of the profile, email sign-in, wrong and
+replayed codes, denial when the relay offers only plaintext, and independent
+local Administrator sign-in during relay failure. Store tests cover limits
+across replaced proofs, recipient and generation binding, and replay denial.
+
+The recovery fixture exercises grants during MFA enforcement, failed and replayed
+redemptions, absence of a full session during enrollment, and offline recovery
+using a pseudo-terminal. Store tests also exercise LDAP recovery against its
+provider generation and verify atomic revocation and consumption.
+
+## M5 console acceptance
+
+After a Release build, run the OAuth, locale and rendered-console fixtures:
+
+```sh
+python3 -B tests/integration/oauth/check.py
+python3 -B tests/integration/local-sessions/check-localization.py
+node --test scripts/local-time.test.mjs scripts/app-theme.test.mjs
+python3 -B tests/integration/m5-usability/check.py
+```
+
+The OAuth fixture uses a disposable HTTPS provider and verifies the saved
+connection, PKCE and confidential-client exchange, authoritative groups and
+profile defaults, stale trust, callback replay, MFA decisions, and atomic audit.
+The locale checks exercise the real selector and keep machine-readable dates
+in UTC while the browser changes formatting and timezone presentation. The
+Chromium fixture provisions fresh synthetic state, blocks agent mutations, and
+captures first use, rule authoring, connection setup, import, apply review,
+identity/settings, and Auditor denial. It exercises keyboard navigation, light
+and dark themes, and narrow mobile layout. See the fixture README for the
+artifacts and prerequisites.
+
+Use a single disposable user/network mapping to exercise a populated chart
+with real pinned mutual TLS agent status, followed by a coverage gap when the
+listener stops:
+
+```sh
+unshare --user --map-root-user --net python3 -B tests/integration/m5-usability/check-observations.py \
+    "$(readlink /proc/self/ns/user)" "$(readlink /proc/self/ns/net)"
+```
+
+The full local-status fixture still covers distinct controller and agent UIDs
+and real apply/rollback. That fixture also asserts both authenticated host
+connections appear in Overview. A passing chart check verifies observations
+and display, while packet and timed rollback verification belong to the full
+native conformance fixture.

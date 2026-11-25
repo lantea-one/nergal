@@ -1,0 +1,23 @@
+@using Microsoft.AspNetCore.Http
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
+@{
+    var current = System.Globalization.CultureInfo.CurrentUICulture;
+    var returnPath = HttpMethods.IsGet(Context.Request.Method) && Context.Response.StatusCode == 200
+        ? Context.Request.PathBase.Add(Context.Request.Path).ToUriComponent()
+        : Url.Content("~/");
+}
+<details class="language-menu">
+    <summary class="btn btn-secondary btn-sm">@L["Language"]</summary>
+    <form method="post" action="@Url.Content("~/language")" class="language-menu-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnPath" value="@returnPath" />
+        <label for="ui-culture" class="visually-hidden">@L["Display language"]</label>
+        <select id="ui-culture" name="culture">
+            @foreach (var (culture, nativeName) in Nergal.Web.UiLocalization.Languages)
+            {
+                <option value="@culture.Name" lang="@culture.Name" selected="@(culture.Equals(current))">@nativeName</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-sm">@L["Set language"]</button>
+    </form>
+</details>

@@ -240,7 +240,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
                 report));
         }
 
-        if (cleanSummary is not null && (cleanSummary.Length > 256 || cleanSummary.Any(char.IsControl)))
+        if (cleanSummary is not null && (cleanSummary.Length > PolicyEditorViewModel.MaximumSummaryLength || cleanSummary.Any(char.IsControl)))
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
             var errReport = report with { IsValid = false, Diagnostics = [new("summary.bounds", "summary")] };
@@ -1207,7 +1207,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             LibraryObjects = objectBrowseSelection is not null ? PolicyObjectVersionChoices.Load(store, objectBrowseSelection.ObjectId) : store.ListReusableObjects(),
             ObjectBrowseSelection = objectBrowseSelection,
             BundleJson = bundleJson,
-            Summary = summary,
+            Summary = LimitDraftSummary(summary),
             SelectedRevision = selectedRevision,
             CompareToRevision = compareToRevision,
             Revisions = revisions,
@@ -1219,6 +1219,18 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             IntentDiff = report.IntentDiff,
             Diagnostics = report.Diagnostics,
         };
+
+    private static string? LimitDraftSummary(string? summary)
+    {
+        const int limit = PolicyEditorViewModel.MaximumSummaryLength;
+        if (summary is null || summary.Length <= limit)
+        {
+            return summary;
+        }
+
+        // Bound the reflected note without splitting a UTF-16 surrogate pair at the limit.
+        return summary[..(char.IsSurrogatePair(summary, limit - 1) ? limit - 1 : limit)];
+    }
 
     private async Task<ConfirmedApplyViewModel> BuildApplyModelAsync(
         string actorId,

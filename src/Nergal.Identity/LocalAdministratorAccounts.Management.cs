@@ -1,6 +1,7 @@
 using System.Data;
 using System.Globalization;
 using System.Security.Claims;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -40,14 +41,18 @@ public sealed partial class LocalAdministratorAccounts
             actor.LocalId is null ? null : (await StateAsync(actor.LocalId.Value.ToString("D"))).Version,
             profile?.DisplayName ?? "", profile?.Version ?? 0,
             ReadTime(profile?.UpdatedUtc), profile?.GivenName ?? "", profile?.FamilyName ?? "", profile?.Email ?? "",
-            actor.LocalId is null ? await ReadProviderAsync(actor.Id, principal.FindFirstValue("iss")!) : null);
+            actor.Id.StartsWith("oidc:", StringComparison.Ordinal) ? await ReadProviderAsync(actor.Id, principal.FindFirstValue("iss")!) :
+                actor.Id.StartsWith("oauth:", StringComparison.Ordinal) ? await ReadOAuthProfileAsync(actor.Id, principal.FindFirstValue("iss")!) : null,
+            actor.Id.StartsWith("ldap:", StringComparison.Ordinal) ? await ReadLdapProfileAsync(actor.Id) : null);
     }
 
-    /// <summary>Creates an additional local account only under serialized current Administrator authorization; never overwrites a name.</summary>
+    /// <summary>Creates a local account under serialized Administrator authorization. Creating a local Administrator requires a current local Administrator.</summary>
     public Task<LocalProvisionResult> CreateUserAsync(ClaimsPrincipal principal, string userName, string password, string role)
         => MutateAsync(principal, true, async actor =>
         {
             if (!ValidName(userName) || !NergalRoles.IsDefined(role)) { return Failure("account.invalidInput"); }
+            if (role == NergalRoles.Administrator && actor.LocalId is null)
+            { return Failure("account.localAdministratorRequired"); }
             if (!BoundedPasswordValidator.Valid(password)) { return Failure("password.bounds"); }
             if (await users.Users.CountAsync() >= 256) { return Failure("account.capacity"); }
             if (await users.FindByNameAsync(userName) is not null) { return Failure("account.nameExists"); }
@@ -60,8 +65,10 @@ public sealed partial class LocalAdministratorAccounts
             return Success();
         });
 
-    /// <summary>Updates role/enabled state, preserving at least one enabled local Administrator and revoking all affected tickets atomically.</summary>
-    public Task<LocalProvisionResult> UpdateUserAsync(ClaimsPrincipal principal, Guid id, long expectedVersion, string role, bool enabled)
+    /// <summary>Updates access and revokes affected tickets atomically while preserving independent local recovery.</summary>
+    /// <remarks>Only a current local Administrator can promote or reactivate a local Administrator.</remarks>
+    public Task<LocalProvisionResult> UpdateUserAsync(ClaimsPrincipal principal, Guid id, long expectedVersion, string role, bool enabled,
+        IDataProtectionProvider? keys = null)
         => MutateAsync(principal, true, async actor =>
         {
             if (!NergalRoles.IsDefined(role)) { return Failure("account.role"); }
@@ -71,16 +78,13 @@ public sealed partial class LocalAdministratorAccounts
             var state = await StateAsync(user.Id);
             if (state.Version != expectedVersion) { return Failure("account.stale"); }
             var oldRole = await ResolveValidatedRoleAsync(users, user);
+            if (actor.LocalId is null && role == NergalRoles.Administrator &&
+                (oldRole != NergalRoles.Administrator || (!state.Enabled && enabled)))
+            { return Failure("account.localAdministratorRequired"); }
             if (state.Enabled && oldRole == NergalRoles.Administrator && (!enabled || role != NergalRoles.Administrator))
             {
-                var count = 0;
-                foreach (var candidate in await users.Users.ToArrayAsync())
-                {
-                    RequireSupported(candidate);
-                    if ((await StateAsync(candidate.Id)).Enabled &&
-                        await ResolveValidatedRoleAsync(users, candidate) == NergalRoles.Administrator) { count++; }
-                }
-                if (count <= 1) { return Failure("account.lastAdministrator"); }
+                if (!await HasIndependentLocalRecoveryAsync(user.Id, keys))
+                { return Failure("account.lastAdministrator"); }
             }
             if (state.Enabled == enabled && oldRole == role) { return Success(); }
             var claims = (await users.GetClaimsAsync(user)).Where(claim => claim.Type == ClaimTypes.Role).ToArray();
@@ -190,14 +194,37 @@ public sealed partial class LocalAdministratorAccounts
             if (user is null) { throw new AccountStoreException("account.denied"); }
             RequireSupported(user);
             if (!(await StateAsync(user.Id)).Enabled || ControllerActorIdentity.FromLocalAccount(Guid.Parse(user.Id)) != id ||
-                await ResolveValidatedRoleAsync(users, user) != role) { throw new AccountStoreException("account.denied"); }
+                await ResolveValidatedRoleAsync(users, user) != role || !await ValidLocalMfaSessionAsync(principal)) { throw new AccountStoreException("account.denied"); }
             return new(id, role!, user.UserName!, Guid.Parse(user.Id));
         }
-        // The web authentication handler validates issuer, signature, subject, group and current session registration.
+        if (id.StartsWith("ldap:", StringComparison.Ordinal))
+        {
+            var session = await ReadCurrentLdapSessionAsync(principal);
+            if (session is null) { throw new AccountStoreException("account.denied"); }
+            return new(id, session.Role, session.Name, null);
+        }
+        if (id.StartsWith("oauth:", StringComparison.Ordinal))
+        { return await ReadCurrentOAuthActorAsync(principal) ?? throw new AccountStoreException("account.denied"); }
+
+        // The web handler validates the OIDC protocol and its session registration.
+        var assurance = principal.FindAll("nergal.oidc-mfa-assured").Take(2).ToArray();
+        if (assurance.Length > 1 || assurance.Length == 1 && assurance[0].Value is not ("true" or "false"))
+        { throw new AccountStoreException("account.denied"); }
+
+        var mfaGeneration = await ReadOidcMfaGenerationAsync(role, assurance.SingleOrDefault()?.Value == "true");
+        var ticketGeneration = principal.FindFirstValue("nergal.oidc-mfa-generation");
+        if (mfaGeneration is null || (ticketGeneration ?? "1") != mfaGeneration.Value.ToString(CultureInfo.InvariantCulture))
+        { throw new AccountStoreException("account.denied"); }
         var issuer = principal.FindFirstValue("iss");
         var subject = principal.FindFirstValue("sub");
         if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(subject))
         { throw new AccountStoreException("account.denied"); }
+
+        var connectionGeneration = principal.FindFirstValue("nergal.oidc-generation");
+        if (connectionGeneration is null ? assurance.Length != 0 :
+            !await IsCurrentOidcGenerationAsync(connectionGeneration, issuer))
+        { throw new AccountStoreException("account.denied"); }
+
         try
         {
             if (id != ControllerActorIdentity.FromFederatedAccount(issuer, subject))

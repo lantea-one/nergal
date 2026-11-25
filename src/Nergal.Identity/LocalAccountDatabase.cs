@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -33,9 +34,12 @@ public static class LocalAccountDatabase
             LocalAccountServices.ConfigureDatabase(builder, options, initializing: true);
             await using var context = new LocalAccountContext(builder.Options);
             if (!await context.Database.EnsureCreatedAsync(cancellationToken)) { throw new AccountStoreException("account.schemaCreation"); }
+            await MfaSchema.InitializeAsync(context, cancellationToken);
             await context.Database.ExecuteSqlRawAsync(AccountSchema.NoUpdate, cancellationToken);
             await context.Database.ExecuteSqlRawAsync(AccountSchema.NoDelete, cancellationToken);
-            await context.Database.ExecuteSqlRawAsync("PRAGMA application_id=0x4e524741; PRAGMA user_version=4", cancellationToken);
+            var header = string.Create(CultureInfo.InvariantCulture,
+                $"PRAGMA application_id=0x{AccountConnectionPolicy.ApplicationId:x}; PRAGMA user_version={AccountSchema.Version}");
+            await context.Database.ExecuteSqlRawAsync(header, cancellationToken);
             await context.Database.CloseConnectionAsync();
             // Reopen through normal header/integrity/private-path policy before
             // declaring initialization complete. No bootstrap bypass remains active.

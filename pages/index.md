@@ -72,13 +72,15 @@ See [Milestones to Product Code-Complete](milestones.md) for the remaining work 
 completion gates. Historical foundation releases do not establish product-wide
 code-complete status.
 
-The [appliance-style administration console](appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 user management, profiles and observation-backed charts remain in progress.
+The [appliance-style administration console](appliance-console.md) now provides persistent Firewall/Configuration/System navigation, focused host connections and state-based overview guidance. M5 also includes [agent-backed host status](overview-host-observations.md) and [display-language selection](ui-localization.md).
 
 
 [Local users and profiles](local-users-and-profiles.md) now provide explicit
 Administrator/Auditor access controls, last-administrator protection, revocation,
-atomic identity audit and personal metadata/password changes. Configurable external
-LDAP/OAuth profile adapters, email/TOTP MFA and charts remain M5 work; live OIDC connections are UI-managed. Signed [OIDC profile defaults](oidc-profile-defaults.md) and per-field overrides are implemented. New account
+atomic identity audit and personal metadata/password changes. Local and LDAP users
+share TOTP, email MFA and enrollment recovery. The OIDC connection controls signed
+assurance. [OIDC profile defaults](oidc-profile-defaults.md) and LDAP defaults support
+per-field overrides. New account
 schemas target fresh pre-release installations; no legacy upgrade path is shipped.
 
 [Configure an OIDC connection](oidc-connection.md) through a versioned dedicated

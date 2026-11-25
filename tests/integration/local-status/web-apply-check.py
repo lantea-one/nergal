@@ -340,6 +340,10 @@ with tempfile.TemporaryDirectory(prefix='nergal-web-apply-') as root_str:
 
         unix_id = unix_host['id']
         tls_id = tls_host['id']
+        overview, _ = admin.request('/manage', 200)
+        require('2 of 2 registered hosts classified by agent status' in overview and 'Baseline matches' in overview
+                and '<meter min="0" max="2" value="2"' in overview,
+                'Overview did not chart the authenticated Unix and pinned TLS agent observations')
 
         rev1_json = json.dumps({
             'schemaVersion': 1,

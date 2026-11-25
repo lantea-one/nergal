@@ -1,0 +1,9 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Recovery could not start";
+}
+<main id="main-content" tabindex="-1" class="container-narrow">
+    <h1>Recovery could not start</h1>
+    <p>Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization.</p>
+    <a href="@Url.Content("~/login/recovery")">Return to authenticator recovery</a>
+</main>

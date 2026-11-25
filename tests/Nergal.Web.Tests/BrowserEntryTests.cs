@@ -35,11 +35,11 @@ public sealed class BrowserEntryTests
     [Theory]
     [InlineData(false, "~/session", "/session")]
     [InlineData(true, "~/manage", "/manage")]
-    public void LoginAndFederatedCompletion_UseAvailableOverview(bool controller, string local, string federated)
+    public async Task LoginAndFederatedCompletion_UseAvailableOverview(bool controller, string local, string federated)
     {
         var session = new SessionController(null!, Configuration(true, controller)) { ControllerContext = Context(true) };
         Assert.Equal(local, Assert.IsType<LocalRedirectResult>(session.Login()).Url);
-        Assert.Equal(federated, Assert.IsType<ChallengeResult>(session.Federated()).Properties!.RedirectUri);
+        Assert.Equal(federated, Assert.IsType<ChallengeResult>(await session.Federated()).Properties!.RedirectUri);
         session.ControllerContext = Context(false);
         Assert.IsType<ViewResult>(session.Login());
     }

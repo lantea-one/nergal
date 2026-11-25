@@ -74,7 +74,7 @@
             <div class="form-grid">
                 <div class="field span-2">
                     <label for="top-summary">Revision summary / change note</label>
-                    <input id="top-summary" type="text" name="summary" value="@Model.Summary" placeholder="e.g. Allow HTTPS + ICMPv4 diagnostics on WAN" maxlength="256" />
+                    <input id="top-summary" type="text" name="summary" value="@Model.Summary" placeholder="e.g. Allow HTTPS + ICMPv4 diagnostics on WAN" maxlength="@Nergal.Web.PolicyEditorViewModel.MaximumSummaryLength" />
                 </div>
                 <div class="field">
                     <label for="top-compare">Compare diff against</label>
@@ -880,8 +880,8 @@
                         </select>
                     </div>
                     <div class="field span-2">
-                        <label>Summary</label>
-                        <input type="text" name="summary" value="@Model.Summary" maxlength="256" />
+                        <label for="raw-summary">Summary</label>
+                        <input id="raw-summary" type="text" name="summary" value="@Model.Summary" maxlength="@Nergal.Web.PolicyEditorViewModel.MaximumSummaryLength" />
                     </div>
                 </div>
                 <div class="field">
@@ -941,4 +941,5 @@
 
 @section Scripts {
     <script src="@Url.Content("~/js/code-editor.bundle.js")" asp-append-version="true" defer></script>
+    <script src="@Url.Content("~/js/policy-draft.js")" asp-append-version="true" defer></script>
 }

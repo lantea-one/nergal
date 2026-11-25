@@ -6,7 +6,8 @@
 
   function formatter() {
     try {
-      return new Intl.DateTimeFormat(undefined, {
+      const locale = document.documentElement.getAttribute("data-ui-locale") || undefined;
+      return new Intl.DateTimeFormat(locale, {
         year: "numeric", month: "short", day: "numeric",
         hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
       });

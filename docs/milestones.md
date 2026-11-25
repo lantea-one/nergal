@@ -30,7 +30,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
-| M5 | Everyday administration UX | In progress | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
+| M5 | Everyday administration UX | Complete for M5 acceptance | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
@@ -99,15 +99,14 @@ an explicit offline upgrade. See the source guide and testing evidence.
 Counters/logging/maps, arbitrary dynamic objects/control flow, unsupported table
 families and unused static declarations remain explicit blocking gaps; M4 does not
 claim arbitrary nft language support. Complete private-server migration acceptance
-remains M8. M5 is next: simplify first use and everyday tasks, then local users/
-profiles and observation-backed charts.
+remains M8. M6 follows the M5 console and identity acceptance.
 
 ### M5 usability acceptance
 
 The first [appliance console](appliance-console.md) slice adds persistent section
 navigation, focused host management, a compact state-based overview, draft-preserving
-firewall sections and keyboard/mobile controls. The wider first-use and everyday
-workflow acceptance below remains required; this slice does not complete M5.
+firewall sections and keyboard/mobile controls. The Chromium checkpoint suite
+exercises the first-use and everyday workflow gates below.
 
 - Give a new installation one clear starting path and an obvious next action based
   on actual setup state. Explain missing prerequisites and empty states plainly.
@@ -141,7 +140,21 @@ and a requirement policy for Administrators/all/neither. Federated bypass must b
 explicit per provider, optionally requiring a configured MFA assurance claim.
 LDAP sign-in follows local MFA requirements. Signed OIDC profile mapping and
 per-field local overrides and UI-managed live OIDC connection settings are
-implemented and verified; generic OAuth/LDAP mapping and local MFA remain open.
+implemented and verified. The [LDAP verifier and protected connection store](decisions/0061-direct-ldap-trust-boundary.md)
+establish the directory proof and trust boundaries. The
+[shared local MFA flow](decisions/0062-local-mfa-completion.md) covers TOTP
+enrollment and LDAP browser sign-in. LDAP defaults and personal overrides
+persist independently. Email MFA with verified delivery addresses, enrollment
+recovery under enforcement, and per-connection signed OIDC assurance complete
+the shared MFA scope. [Generic OAuth](oauth-connection.md) supports a confidential
+authorization-code provider with authenticated current-user JSON, independent
+profile overrides and explicit MFA trust. [Overview](overview-host-observations.md)
+charts current authenticated host status and distinguishes coverage gaps.
+[Display languages](ui-localization.md) uses English source fallback and provisional
+Spanish coverage for representative console workflows. The launch language set
+and expansion to other views remain release work. Synthetic Chromium acceptance
+covers first use, guided changes, import, apply review, restricted operations,
+keyboard use, both themes and narrow mobile layout.
 
 This project has not been released publicly. New schema work targets fresh
 installations; do not add legacy account upgrade paths or compatibility shims.
