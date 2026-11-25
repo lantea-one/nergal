@@ -114,10 +114,12 @@ local paths; the session-only host falls back to its session page. See
    A separate protected Data Protection provider now persists encrypted session
    keys, rejects partial/ambient key loading and refreshes existing protectors on
    appended revocation; see [the key contract](protected-session-keys.md).
-9. `Nergal.ControllerState` persists registered managed agent hosts, monotonic
-   policy bundle revisions, and an append-only audit log in a private `0700`/`0600`
-   SQLite WAL store (`controller.db`) separated from `accounts.db` and agent
-   `journal.db`. SQLite triggers prevent `UPDATE` or `DELETE` on `audit_log`, and
+9. `Nergal.ControllerState` persists managed agent registrations, monotonic
+   policy revisions and append-only audit. It defaults to a private `0700`/`0600`
+   SQLite WAL store (`controller.db`). [Server databases](controller-server-databases.md)
+   use the same controller contracts with engine-specific constraints and a
+   transaction-scoped writer lock. Controller state is independent of
+   `accounts.db` and the protected agent `journal.db`.
    `Nergal.Web` maps `ControllerAuthorizationPolicies` (`NergalAdministrator` and
    read-only `NergalReader`) across both local and OIDC sessions with explicit
    `local:<uuid>` and `oidc:<issuer-length>:<issuer>:<subject>` actor attribution

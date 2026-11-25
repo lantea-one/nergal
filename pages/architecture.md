@@ -25,7 +25,9 @@ explicit include resolution remain M4 work. See [the source workflow](native-sou
 - **`Nergal.Core`**: Framework-independent domain POCOs (`FilterPolicy`, `NatPolicy`, `BridgePolicy`, `FirewallPolicyBundle`, `PolicyBundleJsonCodec`, `AgentControlRequest`/`Reply`, `ApplySession`). No ASP.NET, SQLite, or shell dependencies.
 - **`Nergal.Nftables`**: Pure compilers (`NftFilterCompiler`, `NftNatCompiler`, `NftBridgeCompiler`, `NftPolicyBundleCompiler`) and strict JSON observation parsers (`NftTableObservation`, `NftReceiptVerifier`).
 - **`Nergal.LocalState`**: Owner-only SQLite apply journal (`journal.db`, schema v3) storing enrollment identity, boot/namespace-bound receipts, and operation history.
-- **`Nergal.ControllerState`**: Owner-only SQLite controller database (`controller.db`) storing managed hosts, monotonic policy revisions, and an append-only audit log.
+- **`Nergal.ControllerState`**: Controller database for managed hosts, monotonic policy revisions,
+  versioned settings and append-only audit. SQLite is the default. See
+  [controller server databases](controller-server-databases.md) for optional engines.
 - **`Nergal.LocalTransport` / `Nergal.RemoteTransport`**: Bounded length-prefixed framing over Unix domain sockets (`SO_PEERCRED` peer UID verification) and pinned TLS 1.3 mutual TLS (`AllowTlsResume = false`).
 - **`Nergal.Agent` (`nergal-agent`)**: Privileged host daemon (`CAP_NET_ADMIN`) owning kernel `nft` execution and autonomous local watchdog rollback.
 - **`Nergal.Web`**: Unprivileged ASP.NET Core MVC + Blazor controller (`CapEff == 0`).

@@ -36,3 +36,4 @@
 - [Display languages](ui-localization.md)
 
 - [Controller SQLite backup and restore](controller-sqlite-backup.md)
+- [Controller server databases](controller-server-databases.md)

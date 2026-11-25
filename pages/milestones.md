@@ -32,7 +32,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Complete for M5 acceptance | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
-| M6 | Database completion | In progress | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, verify fresh initialization, constraints and backup/restore on SQLite, PostgreSQL and MariaDB, and define the first supported migration baseline. |
+| M6 | Database completion | In progress | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, verify fresh initialization, constraints and backup/restore on SQLite, PostgreSQL, MariaDB, MySQL and SQL Server, and define the first supported migration baseline. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
 
@@ -51,10 +51,8 @@ counts masquerading as traffic. Profiles require audit, role separation, revocat
 and last-administrator protection for account-management operations. Basic operation
 must not require any particular identity provider or network layout.
 
-M6 follows logical schema stabilization. SQLite is implemented; PostgreSQL and
-MariaDB are settings intent, not existing adapters. All three are v1 code-complete targets. Additional SQL engines become
-supported only after real-engine initialization, constraints, transactional audit,
-backup and recovery are verified. Test release-forward migration from each
+M6 validates each supported engine with fresh initialization, enforced constraints,
+transactional audit and native backup and recovery. Test release-forward migration from each
 supported released schema when one exists. Generated files remain derived
 artifacts. Independently protected agent receipts and rollback decisions retain
 their trust boundary.
@@ -154,5 +152,7 @@ installations; do not add legacy account upgrade paths or compatibility shims.
 SQLite controller schema 5 adds versioned System settings with stale-write
 protection and transactional audit. The controller [backup and restore
 procedure](controller-sqlite-backup.md) is verified against committed WAL
-data and a separate writable restore. PostgreSQL and MariaDB still need
-fresh initialization, transactional constraints, and backup/restore verification.
+data and a separate writable restore. PostgreSQL, MariaDB, MySQL, and SQL Server
+have passed fresh controller initialization and independent, writable native
+restores. See [controller server databases](controller-server-databases.md)
+for engine versions and operator procedures.

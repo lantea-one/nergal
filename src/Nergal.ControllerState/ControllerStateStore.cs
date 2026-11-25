@@ -1,3 +1,5 @@
+using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.Data.Sqlite;
@@ -8,7 +10,7 @@ using Nergal.Linux;
 
 namespace Nergal.ControllerState;
 
-/// <summary>Mode-checked SQLite WAL store for registered hosts, policy revisions, and append-only audit logs.</summary>
+/// <summary>Transactional controller store for desired policy, managed settings, and append-only audit.</summary>
 [SupportedOSPlatform("linux")]
 public sealed partial class ControllerStateStore
 {
@@ -17,17 +19,17 @@ public sealed partial class ControllerStateStore
     private const string DatabaseFileName = "controller.db";
 
     private readonly ControllerStateOptions _options;
-    private readonly string _databasePath;
+    private readonly string? _databasePath;
     private readonly TimeProvider _timeProvider;
 
-    private ControllerStateStore(ControllerStateOptions options, string databasePath, TimeProvider timeProvider)
+    private ControllerStateStore(ControllerStateOptions options, string? databasePath, TimeProvider timeProvider)
     {
         _options = options;
         _databasePath = databasePath;
         _timeProvider = timeProvider;
     }
 
-    /// <summary>Creates a fresh SQLite WAL controller database in an existing owner-only <c>0700</c> directory.</summary>
+    /// <summary>Creates a fresh controller schema in a dedicated server database or a protected SQLite directory.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
     /// <exception cref="PlatformNotSupportedException">Host is not Linux.</exception>
     /// <exception cref="ControllerStateException">Database already exists, path protection fails, or initialization fails.</exception>
@@ -39,7 +41,12 @@ public sealed partial class ControllerStateStore
             throw new PlatformNotSupportedException("Controller persistence requires Linux file protection.");
         }
 
-        var databasePath = ValidatePaths(options.Directory, databaseRequired: false);
+        if (options.Provider != ControllerDatabaseProvider.Sqlite)
+        {
+            return InitializeRemote(options, timeProvider);
+        }
+
+        var databasePath = ValidatePaths(options.Directory!, databaseRequired: false);
         foreach (var suffix in new[] { "", "-wal", "-shm", "-journal" })
         {
             if (LinuxFileSystem.Read(databasePath + suffix) is not null || File.Exists(databasePath + suffix))
@@ -107,9 +114,11 @@ public sealed partial class ControllerStateStore
             throw new PlatformNotSupportedException("Controller persistence requires Linux file protection.");
         }
 
-        var databasePath = ValidatePaths(options.Directory, databaseRequired: true);
+        var databasePath = options.Provider == ControllerDatabaseProvider.Sqlite
+            ? ValidatePaths(options.Directory!, databaseRequired: true)
+            : null;
         var store = new ControllerStateStore(options, databasePath, timeProvider ?? TimeProvider.System);
-        store.Read((conn, tx) => ValidateSchemaAndIntegrity(conn, tx));
+        _ = store.Read(static (_, _) => true);
         return store;
     }
 
@@ -129,8 +138,8 @@ public sealed partial class ControllerStateStore
         Write((conn, tx) =>
         {
             var exists = ScalarLong(conn, tx,
-                "SELECT count(*) FROM hosts WHERE id = $id OR name = $name",
-                ("$id", host.Id.ToString("D")), ("$name", host.Name));
+                "SELECT count(*) FROM hosts WHERE id = @id OR name = @name",
+                ("@id", host.Id.ToString("D")), ("@name", host.Name));
             if (exists != 0)
             {
                 throw new ControllerStateException("host.duplicate");
@@ -138,17 +147,17 @@ public sealed partial class ControllerStateStore
 
             ExecuteNonQuery(conn, tx, """
                 INSERT INTO hosts (id, name, transport_kind, endpoint, expected_uid, socket_gid, pinned_thumbprint, last_known_revision, created_at_utc)
-                VALUES ($id, $name, $kind, $endpoint, $uid, $gid, $pin, $rev, $created)
+                VALUES (@id, @name, @kind, @endpoint, @uid, @gid, @pin, @rev, @created)
                 """,
-                ("$id", host.Id.ToString("D")),
-                ("$name", host.Name),
-                ("$kind", host.TransportKind == AgentTransportKind.Unix ? "unix" : "tls"),
-                ("$endpoint", host.Endpoint),
-                ("$uid", host.ExpectedServerUserId.HasValue ? (long)host.ExpectedServerUserId.Value : DBNull.Value),
-                ("$gid", host.SocketGroupId.HasValue ? (long)host.SocketGroupId.Value : DBNull.Value),
-                ("$pin", (object?)host.PinnedServerThumbprint ?? DBNull.Value),
-                ("$rev", host.LastKnownRevision.ToString(CultureInfo.InvariantCulture)),
-                ("$created", host.CreatedAtUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)));
+                ("@id", host.Id.ToString("D")),
+                ("@name", host.Name),
+                ("@kind", host.TransportKind == AgentTransportKind.Unix ? "unix" : "tls"),
+                ("@endpoint", host.Endpoint),
+                ("@uid", host.ExpectedServerUserId.HasValue ? (long)host.ExpectedServerUserId.Value : DBNull.Value),
+                ("@gid", host.SocketGroupId.HasValue ? (long)host.SocketGroupId.Value : DBNull.Value),
+                ("@pin", (object?)host.PinnedServerThumbprint ?? DBNull.Value),
+                ("@rev", host.LastKnownRevision.ToString(CultureInfo.InvariantCulture)),
+                ("@created", host.CreatedAtUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)));
 
             InsertAudit(conn, tx, _timeProvider.GetUtcNow(), actorId, actorRole, "host.register", host.Name, host.LastKnownRevision == 0 ? null : host.LastKnownRevision, "succeeded", null);
         });
@@ -165,9 +174,9 @@ public sealed partial class ControllerStateStore
         Write((conn, tx) =>
         {
             var updated = ExecuteNonQuery(conn, tx,
-                "UPDATE hosts SET last_known_revision = $rev WHERE id = $id",
-                ("$rev", revision.ToString(CultureInfo.InvariantCulture)),
-                ("$id", hostId.ToString("D")));
+                "UPDATE hosts SET last_known_revision = @rev WHERE id = @id",
+                ("@rev", revision.ToString(CultureInfo.InvariantCulture)),
+                ("@id", hostId.ToString("D")));
             if (updated != 1)
             {
                 throw new ControllerStateException("host.notFound");
@@ -193,15 +202,15 @@ public sealed partial class ControllerStateStore
         {
             using var select = conn.CreateCommand();
             select.Transaction = tx;
-            select.CommandText = "SELECT name FROM hosts WHERE id = $id";
-            select.Parameters.AddWithValue("$id", hostId.ToString("D"));
+            select.CommandText = "SELECT name FROM hosts WHERE id = @id";
+            AddParameter(select, "@id", hostId.ToString("D"));
             var name = select.ExecuteScalar() as string;
             if (name is null)
             {
                 return false;
             }
 
-            _ = ExecuteNonQuery(conn, tx, "DELETE FROM hosts WHERE id = $id", ("$id", hostId.ToString("D")));
+            _ = ExecuteNonQuery(conn, tx, "DELETE FROM hosts WHERE id = @id", ("@id", hostId.ToString("D")));
             InsertAudit(conn, tx, _timeProvider.GetUtcNow(), actorId, actorRole, "host.delete", name, null, "succeeded", null);
             return true;
         });
@@ -238,8 +247,8 @@ public sealed partial class ControllerStateStore
         {
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = "SELECT id, name, transport_kind, endpoint, expected_uid, socket_gid, pinned_thumbprint, last_known_revision, created_at_utc FROM hosts WHERE id = $id";
-            cmd.Parameters.AddWithValue("$id", hostId.ToString("D"));
+            cmd.CommandText = "SELECT id, name, transport_kind, endpoint, expected_uid, socket_gid, pinned_thumbprint, last_known_revision, created_at_utc FROM hosts WHERE id = @id";
+            AddParameter(cmd, "@id", hostId.ToString("D"));
             using var reader = cmd.ExecuteReader();
             return reader.Read() ? ReadHost(reader) : null;
         });
@@ -269,7 +278,7 @@ public sealed partial class ControllerStateStore
         return Write((conn, tx) => InsertPolicyRevision(conn, tx, policyJson, normalizedDigest, actorId, actorRole, summary));
     }
 
-    private PolicyRevisionRecord InsertPolicyRevision(SqliteConnection conn, SqliteTransaction tx, string policyJson, string normalizedDigest, string actorId, string actorRole, string? summary)
+    private PolicyRevisionRecord InsertPolicyRevision(DbConnection conn, DbTransaction tx, string policyJson, string normalizedDigest, string actorId, string actorRole, string? summary)
     {
         var decoded = PolicyBundleJsonCodec.DecodeBundle(policyJson);
         if (decoded.Value is { } bundle && ValidatePolicyObjects(conn, tx, bundle).Count != 0) { throw new ControllerStateException("object.referenceInvalid"); }
@@ -279,14 +288,14 @@ public sealed partial class ControllerStateStore
 
         ExecuteNonQuery(conn, tx, """
             INSERT INTO policy_revisions (revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary)
-            VALUES ($rev, $json, $digest, $actor, $created, $summary)
+            VALUES (@rev, @json, @digest, @actor, @created, @summary)
             """,
-            ("$rev", checked((long)nextRev)),
-            ("$json", policyJson),
-            ("$digest", normalizedDigest),
-            ("$actor", actorId),
-            ("$created", now.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)),
-            ("$summary", (object?)summary ?? DBNull.Value));
+            ("@rev", checked((long)nextRev)),
+            ("@json", policyJson),
+            ("@digest", normalizedDigest),
+            ("@actor", actorId),
+            ("@created", now.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)),
+            ("@summary", (object?)summary ?? DBNull.Value));
 
         InsertAudit(conn, tx, now, actorId, actorRole, "policy.save", "bundle", nextRev, "succeeded", null);
         return new PolicyRevisionRecord(nextRev, policyJson, normalizedDigest, actorId, now, summary);
@@ -304,8 +313,8 @@ public sealed partial class ControllerStateStore
         {
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = "SELECT revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary FROM policy_revisions ORDER BY revision DESC LIMIT $limit";
-            cmd.Parameters.AddWithValue("$limit", limit);
+            cmd.CommandText = LimitRows(conn, "SELECT revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary FROM policy_revisions ORDER BY revision DESC", "@limit");
+            AddParameter(cmd, "@limit", limit);
             using var reader = cmd.ExecuteReader();
             var list = new List<PolicyRevisionRecord>();
             while (reader.Read())
@@ -329,8 +338,8 @@ public sealed partial class ControllerStateStore
         {
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = "SELECT revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary FROM policy_revisions WHERE revision = $rev";
-            cmd.Parameters.AddWithValue("$rev", checked((long)revision));
+            cmd.CommandText = "SELECT revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary FROM policy_revisions WHERE revision = @rev";
+            AddParameter(cmd, "@rev", checked((long)revision));
             using var reader = cmd.ExecuteReader();
             return reader.Read() ? ReadPolicyRevision(reader) : null;
         });
@@ -371,13 +380,12 @@ public sealed partial class ControllerStateStore
         {
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = """
+            cmd.CommandText = LimitRows(conn, """
                 SELECT sequence, timestamp_utc, actor_id, actor_role, action, target, revision, outcome, detail_code
                 FROM audit_log
                 ORDER BY sequence DESC
-                LIMIT $limit
-                """;
-            cmd.Parameters.AddWithValue("$limit", limit);
+                """, "@limit");
+            AddParameter(cmd, "@limit", limit);
             using var reader = cmd.ExecuteReader();
             var entries = new List<ControllerAuditEntry>();
             while (reader.Read())
@@ -402,8 +410,8 @@ public sealed partial class ControllerStateStore
     }
 
     private ControllerAuditEntry InsertAudit(
-        SqliteConnection conn,
-        SqliteTransaction tx,
+        DbConnection conn,
+        DbTransaction tx,
         DateTimeOffset nowUtc,
         string actorId,
         string actorRole,
@@ -415,24 +423,25 @@ public sealed partial class ControllerStateStore
     {
         var utc = nowUtc.ToUniversalTime();
         var stamp = utc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+        var sequence = checked(ScalarLong(conn, tx, "SELECT COALESCE(MAX(sequence), 0) FROM audit_log") + 1);
         ExecuteNonQuery(conn, tx, """
-            INSERT INTO audit_log (timestamp_utc, actor_id, actor_role, action, target, revision, outcome, detail_code)
-            VALUES ($ts, $actor, $role, $action, $target, $rev, $outcome, $detail)
+            INSERT INTO audit_log (sequence, timestamp_utc, actor_id, actor_role, action, target, revision, outcome, detail_code)
+            VALUES (@sequence, @ts, @actor, @role, @action, @target, @rev, @outcome, @detail)
             """,
-            ("$ts", stamp),
-            ("$actor", actorId),
-            ("$role", actorRole),
-            ("$action", action),
-            ("$target", target),
-            ("$rev", revision.HasValue ? revision.Value.ToString(CultureInfo.InvariantCulture) : DBNull.Value),
-            ("$outcome", outcome),
-            ("$detail", (object?)detailCode ?? DBNull.Value));
+            ("@sequence", sequence),
+            ("@ts", stamp),
+            ("@actor", actorId),
+            ("@role", actorRole),
+            ("@action", action),
+            ("@target", target),
+            ("@rev", revision.HasValue ? revision.Value.ToString(CultureInfo.InvariantCulture) : DBNull.Value),
+            ("@outcome", outcome),
+            ("@detail", (object?)detailCode ?? DBNull.Value));
 
-        var sequence = ScalarLong(conn, tx, "SELECT last_insert_rowid()");
         return new ControllerAuditEntry(sequence, utc, actorId, actorRole, action, target, revision, outcome, detailCode);
     }
 
-    private static ManagedHostRecord ReadHost(SqliteDataReader reader)
+    private static ManagedHostRecord ReadHost(DbDataReader reader)
     {
         var kind = reader.GetString(2) switch
         {
@@ -459,7 +468,7 @@ public sealed partial class ControllerStateStore
             created);
     }
 
-    private static PolicyRevisionRecord ReadPolicyRevision(SqliteDataReader reader) =>
+    private static PolicyRevisionRecord ReadPolicyRevision(DbDataReader reader) =>
         new(
             checked((ulong)reader.GetInt64(0)),
             reader.GetString(1),
@@ -468,41 +477,37 @@ public sealed partial class ControllerStateStore
             DateTimeOffset.Parse(reader.GetString(4), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
             reader.IsDBNull(5) ? null : reader.GetString(5));
 
-    private T Read<T>(Func<SqliteConnection, SqliteTransaction, T> body)
+    private T Read<T>(Func<DbConnection, DbTransaction, T> body)
     {
-        _ = ValidatePaths(_options.Directory, databaseRequired: true);
+        if (_databasePath is not null) { _ = ValidatePaths(_options.Directory!, databaseRequired: true); }
         try
         {
-            using var conn = new SqliteConnection(ConnectionString(_databasePath));
-            conn.Open();
-            ConfigureConnection(conn);
-            using var tx = conn.BeginTransaction();
-            ValidateSchemaAndIntegrity(conn, tx);
+            using var conn = OpenConnection();
+            using var tx = BeginControllerTransaction(conn, writing: false);
+            ValidateSchema(conn, tx);
             return body(conn, tx);
         }
         catch (ControllerStateException)
         {
             throw;
         }
-        catch (Exception ex) when (ex is SqliteException or FormatException or ArgumentException or OverflowException or InvalidCastException)
+        catch (Exception ex) when (ex is DbException or FormatException or ArgumentException or OverflowException or InvalidCastException)
         {
             throw new ControllerStateException("controller.databaseError", ex);
         }
     }
 
-    private void Write(Action<SqliteConnection, SqliteTransaction> body) =>
+    private void Write(Action<DbConnection, DbTransaction> body) =>
         Write((conn, tx) => { body(conn, tx); return true; });
 
-    private T Write<T>(Func<SqliteConnection, SqliteTransaction, T> body)
+    private T Write<T>(Func<DbConnection, DbTransaction, T> body)
     {
-        _ = ValidatePaths(_options.Directory, databaseRequired: true);
+        if (_databasePath is not null) { _ = ValidatePaths(_options.Directory!, databaseRequired: true); }
         try
         {
-            using var conn = new SqliteConnection(ConnectionString(_databasePath));
-            conn.Open();
-            ConfigureConnection(conn);
-            using var tx = conn.BeginTransaction(deferred: false);
-            ValidateSchemaAndIntegrity(conn, tx);
+            using var conn = OpenConnection();
+            using var tx = BeginControllerTransaction(conn, writing: true);
+            ValidateSchema(conn, tx);
             var result = body(conn, tx);
             tx.Commit();
             return result;
@@ -511,7 +516,7 @@ public sealed partial class ControllerStateStore
         {
             throw;
         }
-        catch (Exception ex) when (ex is SqliteException or FormatException or ArgumentException or OverflowException or InvalidCastException)
+        catch (Exception ex) when (ex is DbException or FormatException or ArgumentException or OverflowException or InvalidCastException)
         {
             throw new ControllerStateException("controller.databaseError", ex);
         }
@@ -585,7 +590,7 @@ public sealed partial class ControllerStateStore
             DefaultTimeout = 5,
         }.ToString();
 
-    private static void ConfigureConnection(SqliteConnection conn)
+    private static void ConfigureConnection(DbConnection conn)
     {
         ExecuteNonQuery(conn, null, "PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;");
         if (!string.Equals(ScalarString(conn, null, "PRAGMA journal_mode"), "wal", StringComparison.OrdinalIgnoreCase))
@@ -594,7 +599,13 @@ public sealed partial class ControllerStateStore
         }
     }
 
-    private static bool ValidateSchemaAndIntegrity(SqliteConnection conn, SqliteTransaction tx)
+    private void ValidateSchema(DbConnection conn, DbTransaction tx)
+    {
+        if (conn is SqliteConnection) { ValidateSqliteSchema(conn, tx); }
+        else { ValidateRemoteSchema(conn, tx); }
+    }
+
+    private static void ValidateSqliteSchema(DbConnection conn, DbTransaction tx)
     {
         if (ScalarLong(conn, tx, "PRAGMA application_id") != ApplicationId ||
             ScalarLong(conn, tx, "PRAGMA user_version") != SchemaVersion ||
@@ -615,7 +626,6 @@ public sealed partial class ControllerStateStore
         ValidateNativeSourceSchema(conn, tx);
         ValidateObjectSchema(conn, tx);
         ValidateConversionPlanSchema(conn, tx);
-        return true;
     }
 
     private static void ValidateActor(string actorId, string actorRole)
@@ -639,44 +649,65 @@ public sealed partial class ControllerStateStore
         }
     }
 
-    private static int ExecuteNonQuery(SqliteConnection conn, SqliteTransaction? tx, string sql, params (string Name, object Value)[] parameters)
+    private static int ExecuteNonQuery(DbConnection conn, DbTransaction? tx, string sql, params (string Name, object Value)[] parameters)
     {
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = sql;
         foreach (var (name, value) in parameters)
         {
-            cmd.Parameters.AddWithValue(name, value);
+            AddParameter(cmd, name, value);
         }
 
         return cmd.ExecuteNonQuery();
     }
 
-    private static long ScalarLong(SqliteConnection conn, SqliteTransaction? tx, string sql, params (string Name, object Value)[] parameters)
+    private static long ScalarLong(DbConnection conn, DbTransaction? tx, string sql, params (string Name, object Value)[] parameters)
     {
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = sql;
         foreach (var (name, value) in parameters)
         {
-            cmd.Parameters.AddWithValue(name, value);
+            AddParameter(cmd, name, value);
         }
 
         return Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture);
     }
 
-    private static string ScalarString(SqliteConnection conn, SqliteTransaction? tx, string sql, params (string Name, object Value)[] parameters)
+    private static string ScalarString(DbConnection conn, DbTransaction? tx, string sql, params (string Name, object Value)[] parameters)
     {
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = sql;
         foreach (var (name, value) in parameters)
         {
-            cmd.Parameters.AddWithValue(name, value);
+            AddParameter(cmd, name, value);
         }
 
         return Convert.ToString(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) ?? "";
     }
+
+    private static void AddParameter(DbCommand command, string name, object value, DbType? type = null)
+    {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = name;
+        if (type.HasValue) { parameter.DbType = type.Value; }
+        parameter.Value = value;
+        command.Parameters.Add(parameter);
+    }
+
+    private static string LimitRows(DbConnection connection, string orderedQuery, string rows) =>
+        orderedQuery + (connection is Microsoft.Data.SqlClient.SqlConnection
+            ? $" OFFSET 0 ROWS FETCH NEXT {rows} ROWS ONLY"
+            : $" LIMIT {rows}");
+
+    private static string TextLength(DbConnection connection, string column) => connection switch
+    {
+        SqliteConnection => $"length({column})",
+        Microsoft.Data.SqlClient.SqlConnection => $"(LEN(CONCAT({column}, N'#') COLLATE Latin1_General_100_CI_AS_SC) - 1)",
+        _ => $"CHAR_LENGTH({column})",
+    };
 
     private const string SchemaSql = """
         CREATE TABLE hosts (

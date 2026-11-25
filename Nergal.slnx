@@ -8,6 +8,7 @@
     <Project Path="tests/Nergal.Core.Tests/Nergal.Core.Tests.csproj" />
     <Project Path="tests/Nergal.LocalState.Tests/Nergal.LocalState.Tests.csproj" />
     <Project Path="tests/Nergal.Web.Tests/Nergal.Web.Tests.csproj" />
+    <Project Path="tests/integration/controller-sql/Nergal.ControllerSql.Fixture.csproj" />
     <Project Path="tests/integration/enrollment/Nergal.Enrollment.Fixture.csproj" />
     <Project Path="tests/integration/isolation/Nergal.Isolation.Fixture.csproj" />
     <Project Path="tests/integration/local-status/Nergal.LocalStatus.Fixture.csproj" />

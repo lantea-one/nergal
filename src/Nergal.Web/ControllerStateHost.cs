@@ -15,7 +15,10 @@ internal static class ControllerStateHost
 {
     internal static void Configure(IServiceCollection services, IConfigurationSection config)
     {
-        var options = new ControllerStateOptions(config["Directory"] ?? "");
+        var provider = ControllerStateOptions.ParseProvider(config["Provider"]);
+        var options = provider == ControllerDatabaseProvider.Sqlite
+            ? new ControllerStateOptions(config["Directory"] ?? "")
+            : new ControllerStateOptions(provider, config["ConnectionString"] ?? "");
         var store = ControllerStateStore.Open(options);
         var tlsConfig = ControllerTlsClientConfig.FromConfiguration(config);
         services.AddSingleton(store);

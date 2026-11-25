@@ -39,9 +39,9 @@ management branding can select a default. Settings writes require Administrator
 access, CSRF, validation, and an append-only audit entry.
 
 Authentication, database, and firewall fields are **saved configuration intent**.
-Saving them does not hot-reconfigure services. LDAP, PostgreSQL, and MariaDB
-adapters are not implemented. Runtime sessions and SQLite use protected host
-configuration. The newest saved revision is not necessarily a host's active policy.
+Deployment configuration selects the runtime identity services and
+[controller database](controller-server-databases.md). Review current host
+observations to determine which policy revision is active.
 
 The following screenshots were captured from the isolated local test controller
 on November 22, 2026, with synthetic/default data. They contain no production

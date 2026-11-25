@@ -87,7 +87,7 @@ public static class SystemSettingsCodec
 
     private static readonly HashSet<string> ValidAccents = new(["blue", "emerald", "violet", "amber", "rose", "slate"], StringComparer.Ordinal);
     private static readonly HashSet<string> ValidThemes = new(["system", "light", "dark"], StringComparer.Ordinal);
-    private static readonly HashSet<string> ValidDbProviders = new(["sqlite", "postgresql", "mariadb"], StringComparer.Ordinal);
+    private static readonly HashSet<string> ValidDbProviders = new(["sqlite", "postgresql", "mariadb", "mysql", "sqlserver"], StringComparer.Ordinal);
     private static readonly HashSet<string> ValidTlsModes = new(["disable", "prefer", "require", "verify-full"], StringComparer.Ordinal);
     private static readonly HashSet<string> ValidVerdicts = new(["accept", "drop"], StringComparer.Ordinal);
 
@@ -223,7 +223,7 @@ public static class SystemSettingsCodec
             errors.Add("database.port");
         }
 
-        if (settings.Database.Provider is "postgresql" or "mariadb")
+        if (settings.Database.Provider is "postgresql" or "mariadb" or "mysql" or "sqlserver")
         {
             if (string.IsNullOrWhiteSpace(settings.Database.Host) || settings.Database.Host.Length > 253)
             {

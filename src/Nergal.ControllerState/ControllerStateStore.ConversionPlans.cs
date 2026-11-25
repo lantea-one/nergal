@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 using Nergal.Core.Controller;
 using Nergal.Core.Identity;
 using Nergal.Core.Policy;
@@ -18,17 +18,20 @@ public sealed partial class ControllerStateStore
         return Write((conn, tx) =>
         {
             ValidateConversionSources(conn, tx, content);
+            var requestLength = TextLength(conn, "request_json");
+            var reportLength = TextLength(conn, "report_json");
+            var policyLength = TextLength(conn, "policy_json");
             if (ScalarLong(conn, tx, "SELECT count(*) FROM native_conversion_plans") >= 128 ||
-                ScalarLong(conn, tx, "SELECT coalesce(sum(length(request_json)+length(report_json)+coalesce(length(policy_json),0)),0) FROM native_conversion_plans") +
+                ScalarLong(conn, tx, $"SELECT coalesce(sum({requestLength}+{reportLength}+coalesce({policyLength},0)),0) FROM native_conversion_plans") +
                 content.RequestJson.Length + content.ReportJson.Length + (content.PolicyJson?.Length ?? 0) > 67_108_864)
             { throw new ControllerStateException("conversion.capacityExceeded"); }
             var id = Guid.NewGuid(); var now = _timeProvider.GetUtcNow().ToUniversalTime();
             ExecuteNonQuery(conn, tx, """
                 INSERT INTO native_conversion_plans(id,root_source_id,request_json,report_json,policy_json,candidate_sha256,content_sha256,created_by_actor,created_at_utc)
-                VALUES($id,$source,$request,$report,$policy,$candidate,$digest,$actor,$time)
-                """, ("$id", id.ToString("D")), ("$source", content.RootSourceId.ToString("D")), ("$request", content.RequestJson),
-                ("$report", content.ReportJson), ("$policy", (object?)content.PolicyJson ?? DBNull.Value), ("$candidate", (object?)content.CandidateDigest ?? DBNull.Value),
-                ("$digest", content.Digest), ("$actor", actorId), ("$time", now.ToString("O", CultureInfo.InvariantCulture)));
+                VALUES(@id,@source,@request,@report,@policy,@candidate,@digest,@actor,@time)
+                """, ("@id", id.ToString("D")), ("@source", content.RootSourceId.ToString("D")), ("@request", content.RequestJson),
+                ("@report", content.ReportJson), ("@policy", (object?)content.PolicyJson ?? DBNull.Value), ("@candidate", (object?)content.CandidateDigest ?? DBNull.Value),
+                ("@digest", content.Digest), ("@actor", actorId), ("@time", now.ToString("O", CultureInfo.InvariantCulture)));
             InsertAudit(conn, tx, now, actorId, actorRole, "conversion.plan", id.ToString("D"), null, "succeeded", null);
             return new NativeConversionPlanRecord(id, content, actorId, now, null);
         });
@@ -41,8 +44,8 @@ public sealed partial class ControllerStateStore
     public IReadOnlyList<NativeConversionPlanRecord> ListNativeConversionPlans(Guid sourceId) => Read((conn, tx) =>
     {
         using var command = conn.CreateCommand(); command.Transaction = tx;
-        command.CommandText = "SELECT id FROM native_conversion_plans WHERE root_source_id=$source ORDER BY rowid DESC LIMIT 129";
-        command.Parameters.AddWithValue("$source", sourceId.ToString("D")); var ids = new List<Guid>();
+        command.CommandText = LimitRows(conn, "SELECT id FROM native_conversion_plans WHERE root_source_id=@source ORDER BY rowid DESC", "129");
+        AddParameter(command, "@source", sourceId.ToString("D")); var ids = new List<Guid>();
         using (var reader = command.ExecuteReader()) { while (reader.Read()) { ids.Add(Guid.ParseExact(reader.GetString(0), "D")); } }
         if (ids.Count > 128) { throw new ControllerStateException("conversion.corrupt"); }
         return Array.AsReadOnly(ids.Select(id => ReadConversionPlan(conn, tx, id) ?? throw new ControllerStateException("conversion.corrupt")).ToArray());
@@ -78,33 +81,33 @@ public sealed partial class ControllerStateStore
                     continue;
                 }
                 var content = reference.Content;
-                if (ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects") >= 128 || ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects WHERE id=$id OR name=$name", ("$id", reference.Id.ToString("D")), ("$name", content.Name)) != 0)
+                if (ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects") >= 128 || ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects WHERE id=@id OR name=@name", ("@id", reference.Id.ToString("D")), ("@name", content.Name)) != 0)
                 { throw new ControllerStateException("conversion.objectConflictOrCapacity"); }
-                ExecuteNonQuery(conn, tx, "INSERT INTO reusable_objects(id,name,kind) VALUES($id,$name,$kind)",
-                    ("$id", reference.Id.ToString("D")), ("$name", content.Name), ("$kind", content.Kind.ToString()));
+                ExecuteNonQuery(conn, tx, "INSERT INTO reusable_objects(id,name,kind) VALUES(@id,@name,@kind)",
+                    ("@id", reference.Id.ToString("D")), ("@name", content.Name), ("@kind", content.Kind.ToString()));
                 ExecuteNonQuery(conn, tx, """
                     INSERT INTO reusable_object_versions(object_id,version,description,entries_json,content_sha256,updated_by_actor,updated_at_utc)
-                    VALUES($id,1,$description,$entries,$digest,$actor,$time)
-                    """, ("$id", reference.Id.ToString("D")), ("$description", content.Description), ("$entries", JsonSerializer.Serialize(content.Entries)),
-                    ("$digest", content.Digest), ("$actor", actorId), ("$time", now.ToString("O", CultureInfo.InvariantCulture)));
+                    VALUES(@id,1,@description,@entries,@digest,@actor,@time)
+                    """, ("@id", reference.Id.ToString("D")), ("@description", content.Description), ("@entries", JsonSerializer.Serialize(content.Entries)),
+                    ("@digest", content.Digest), ("@actor", actorId), ("@time", now.ToString("O", CultureInfo.InvariantCulture)));
                 InsertAudit(conn, tx, now, actorId, actorRole, "object.create", reference.Id.ToString("D"), null, "succeeded", null);
             }
             var revision = InsertPolicyRevision(conn, tx, plan.Content.PolicyJson!, plan.Content.CandidateDigest!, actorId, actorRole, "Converted from reviewed native source plan");
-            ExecuteNonQuery(conn, tx, "INSERT INTO native_conversion_commits(plan_id,revision) VALUES($id,$revision)",
-                ("$id", id.ToString("D")), ("$revision", checked((long)revision.Revision)));
+            ExecuteNonQuery(conn, tx, "INSERT INTO native_conversion_commits(plan_id,revision) VALUES(@id,@revision)",
+                ("@id", id.ToString("D")), ("@revision", checked((long)revision.Revision)));
             InsertAudit(conn, tx, now, actorId, actorRole, "conversion.commit", id.ToString("D"), revision.Revision, "succeeded", null);
             return revision;
         });
     }
 
-    private static NativeConversionPlanRecord? ReadConversionPlan(SqliteConnection conn, SqliteTransaction tx, Guid id)
+    private static NativeConversionPlanRecord? ReadConversionPlan(DbConnection conn, DbTransaction tx, Guid id)
     {
         using var command = conn.CreateCommand(); command.Transaction = tx;
         command.CommandText = """
             SELECT p.root_source_id,p.request_json,p.report_json,p.policy_json,p.candidate_sha256,p.content_sha256,p.created_by_actor,p.created_at_utc,c.revision
-            FROM native_conversion_plans p LEFT JOIN native_conversion_commits c ON p.id=c.plan_id WHERE p.id=$id
+            FROM native_conversion_plans p LEFT JOIN native_conversion_commits c ON p.id=c.plan_id WHERE p.id=@id
             """;
-        command.Parameters.AddWithValue("$id", id.ToString("D")); NativeConversionPlanRecord record;
+        AddParameter(command, "@id", id.ToString("D")); NativeConversionPlanRecord record;
         using (var reader = command.ExecuteReader())
         {
             if (!reader.Read()) { return null; }
@@ -122,24 +125,27 @@ public sealed partial class ControllerStateStore
         ValidateConversionSources(conn, tx, record.Content); return record;
     }
 
-    private static void ValidateConversionSources(SqliteConnection conn, SqliteTransaction tx, NativeConversionPlanContent content)
+    private static void ValidateConversionSources(DbConnection conn, DbTransaction tx, NativeConversionPlanContent content)
     {
         foreach (var source in content.Sources)
         {
             using var command = conn.CreateCommand(); command.Transaction = tx;
-            command.CommandText = "SELECT name,source_text,source_sha256,byte_length FROM native_sources WHERE id=$id";
-            command.Parameters.AddWithValue("$id", source.Id.ToString("D")); using var reader = command.ExecuteReader();
+            command.CommandText = $"""
+                SELECT name, CASE WHEN {NativeSourceByteLength(conn)} = byte_length THEN source_text END, source_sha256, byte_length
+                FROM native_sources WHERE id=@id
+                """;
+            AddParameter(command, "@id", source.Id.ToString("D")); using var reader = command.ExecuteReader();
             if (!reader.Read()) { throw new ControllerStateException("conversion.sourceMissing"); }
             try
             {
-                var original = new NativeSourceContent(reader.GetString(0), reader.GetString(1));
+                var original = new NativeSourceContent(reader.GetString(0), ReadNativeSourceText(reader, 1));
                 if (original.Digest != source.Digest || original.Digest != reader.GetString(2) || original.ByteLength != reader.GetInt32(3)) { throw new ControllerStateException("conversion.sourceMismatch"); }
             }
             catch (ArgumentException) { throw new ControllerStateException("conversion.sourceMismatch"); }
         }
     }
 
-    private static void ValidateConversionPlanSchema(SqliteConnection conn, SqliteTransaction tx)
+    private static void ValidateConversionPlanSchema(DbConnection conn, DbTransaction tx)
     {
         RequireDefinition(conn, tx, "native_conversion_plans", ConversionPlansTableSql, "conversion.schemaInvalid");
         RequireDefinition(conn, tx, "native_conversion_commits", ConversionCommitsTableSql, "conversion.schemaInvalid");

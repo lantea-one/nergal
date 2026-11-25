@@ -11,9 +11,11 @@ const string usage = """
       nergal-admin account provision <absolute-directory> <username> [--role <administrator|auditor>] [--password-stdin]
       nergal-admin account recover <absolute-directory> <local-administrator-uuid>
       nergal-admin controller init <absolute-directory>
+      nergal-admin controller init --provider <postgresql|mariadb|mysql|sqlserver>
       nergal-admin --version
     Provisioning without --password-stdin prompts twice without echo on a terminal.
     The explicit stdin mode reads one UTF-8 password line to EOF (optional final LF or CRLF).
+    Server database initialization reads ControllerState__ConnectionString from the environment.
     """;
 if (args is ["--help"]) { Console.WriteLine(usage); return 0; }
 if (args is ["--version"])
@@ -26,11 +28,15 @@ if (args is ["--version"])
     return 0;
 }
 if (!OperatingSystem.IsLinux()) { Console.Error.WriteLine("platform.unsupported"); return 1; }
-if (args is ["controller", "init", var controllerDir])
+if (args is ["controller", "init", _] or ["controller", "init", "--provider", _])
 {
     try
     {
-        _ = ControllerStateStore.Initialize(new ControllerStateOptions(controllerDir));
+        var options = args.Length == 3
+            ? new ControllerStateOptions(args[2])
+            : new ControllerStateOptions(ControllerStateOptions.ParseProvider(args[3]),
+                Environment.GetEnvironmentVariable("ControllerState__ConnectionString") ?? "");
+        _ = ControllerStateStore.Initialize(options);
         Console.WriteLine("Controller state database initialized.");
         return 0;
     }

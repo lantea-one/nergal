@@ -982,3 +982,13 @@ python3 -B tests/integration/local-sessions/check-settings.py
 See the [operator procedure](controller-sqlite-backup.md). The test restores
 into a separate synthetic controller directory. Identity storage and the
 protected agent journal are outside this test.
+
+## Controller server databases
+
+After a Release build, run `python3 -B tests/integration/controller-sql/check.py`
+on a Linux host with Docker. The fixture selects pinned engine images and uses
+separate source and restore databases with generated credentials and loopback
+ports. It tests the controller store on all four engines and exercises each
+engine's native backup and restore tools. See
+[controller server databases](controller-server-databases.md) for the operator
+procedure.
