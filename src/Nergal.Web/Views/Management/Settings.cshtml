@@ -116,10 +116,8 @@
             </div>
             <div class="form-grid">
                 <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="localAuthEnabled" value="true" checked="@s.LocalAuth.Enabled" disabled="@disabledAttr" />
-                        Enable local administrator accounts
-                    </label>
+                    <span class="switch-field-label">Local administrator accounts</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("localAuthEnabled", s.LocalAuth.Enabled, "Enable local administrator accounts", Disabled: !Model.CanMutate))
                     <span class="hint">At least one authentication provider (Local, OIDC, or LDAP) must stay enabled.</span>
                 </div>
                 <div class="field">
@@ -149,10 +147,8 @@
             <p class="muted">Client secrets are managed externally via environment variables or protected secret files and are never persisted in SQLite.</p>
             <div class="form-grid">
                 <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="oidcEnabled" value="true" checked="@s.Oidc.Enabled" disabled="@disabledAttr" />
-                        Enable OIDC / OAuth 2.0 SSO
-                    </label>
+                    <span class="switch-field-label">OIDC / OAuth 2.0 sign-in</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("oidcEnabled", s.Oidc.Enabled, "Enable OIDC / OAuth 2.0 SSO", Disabled: !Model.CanMutate))
                 </div>
                 <div class="field">
                     <label for="s-oidc-maxage">Max authentication age (seconds)</label>
@@ -197,16 +193,12 @@
             <p class="muted">Directory bind passwords are managed externally via environment variables or protected secret files and are never stored in SQLite.</p>
             <div class="form-grid">
                 <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="ldapEnabled" value="true" checked="@s.Ldap.Enabled" disabled="@disabledAttr" />
-                        Enable LDAP / AD directory authentication
-                    </label>
+                    <span class="switch-field-label">LDAP / AD sign-in</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("ldapEnabled", s.Ldap.Enabled, "Enable LDAP / AD directory authentication", Disabled: !Model.CanMutate))
                 </div>
                 <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="ldapUseStartTls" value="true" checked="@s.Ldap.UseStartTls" disabled="@disabledAttr" />
-                        Require StartTLS (for ldap://)
-                    </label>
+                    <span class="switch-field-label">StartTLS requirement</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("ldapUseStartTls", s.Ldap.UseStartTls, "Require StartTLS (for ldap://)", Disabled: !Model.CanMutate))
                 </div>
                 <div class="field span-2">
                     <label for="s-ldap-uri">Directory Server URI (<code>ldaps://</code> or <code>ldap://</code>)</label>
@@ -330,10 +322,8 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label class="checkbox-row">
-                        <input type="checkbox" name="requireChangeSummary" value="true" checked="@s.FirewallDefaults.RequireChangeSummary" disabled="@disabledAttr" />
-                        Require change summaries on saved policy revisions
-                    </label>
+                    <span class="switch-field-label">Change summary requirement</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("requireChangeSummary", s.FirewallDefaults.RequireChangeSummary, "Require change summaries on saved policy revisions", Disabled: !Model.CanMutate))
                 </div>
             </div>
         </section>

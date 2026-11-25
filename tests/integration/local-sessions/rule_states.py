@@ -21,7 +21,7 @@ def check_rule_states(browser, directory):
     assert after == {**before, "enabled": False}
     assert "Bundle summary" in html and "All authored rule states" in html and "Filter v2" in html
     assert "Disabled · omitted from candidate" in html_module.unescape(html) and "Intent diff" in html
-    assert 'aria-label="Filter rule 1 enabled"' in html
+    assert 'aria-label="Filter rule 1 enabled"' in html and 'role="switch"' in html
     assert "nergal_obj_" not in html.split("Compiled nftables candidate")[1].split("</pre>")[0]
     browser.request("/manage/policies/save", 302, {"bundleJson": parsed.value, "summary": "Disable synthetic rule",
         "__RequestVerificationToken": browser.token("/manage/policies")})

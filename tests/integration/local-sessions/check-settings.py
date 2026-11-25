@@ -17,11 +17,14 @@ class Fields(HTMLParser):
     def __init__(self):
         super().__init__()
         self.fields = {}
+        self.switches = {}
         self.select = None
         self.first = True
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag == 'input' and a.get('role') == 'switch':
+            self.switches[a['name']] = a
         if tag == 'input' and a.get('name'):
             if a.get('type') in ('checkbox', 'radio') and 'checked' not in a:
                 return
@@ -66,9 +69,12 @@ def main():
         with sessions.host(root, tls, settings) as browser:
             browser.login()
             html = browser.request('/manage/settings', 200)
+            assert html.count('role="switch"') == 5
             assert 'do not reconfigure the running services' in html
             assert 'synthetic' in browser.request('/manage/sources', 200)
             fields = Fields(); fields.feed(html)
+            assert set(fields.switches) == {'localAuthEnabled', 'oidcEnabled', 'ldapEnabled', 'ldapUseStartTls', 'requireChangeSummary'}
+            assert all(a.get('aria-label') for a in fields.switches.values())
             # The login notice is optional and textarea controls have no default value here.
             fields.fields['applicationName'] = 'Synthetic Console'
             invalid = {**fields.fields, 'defaultConfirmationTimeoutSeconds': '0'}
@@ -83,7 +89,10 @@ def main():
                        input=sessions.PASSWORD.encode() + b'\n', check=True)
         with sessions.host(root, tls, {**settings, 'LocalSessions__AccountDirectory': str(auditor)}) as browser:
             browser.login()
-            browser.request('/manage/settings', 200)
+            readonly = browser.request('/manage/settings', 200)
+            readonly_fields = Fields(); readonly_fields.feed(readonly)
+            assert len(readonly_fields.switches) == 5
+            assert all('disabled' in a and a.get('aria-label') for a in readonly_fields.switches.values())
             browser.request('/manage/sources', 403)
             fields.fields['__RequestVerificationToken'] = browser.token('/manage/settings')
             assert post(browser, fields.fields)[0] == 403

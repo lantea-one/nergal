@@ -1,12 +1,12 @@
 # Enabled and disabled rules
 
 Every supported rule has a versioned enabled state. Existing documents default to
-enabled. **Policies** provides an inline **Enabled** checkbox and **Update draft
+enabled. **Policies** provides an inline **Enabled** switch and **Update draft
 state** button for primary filter, DNAT, postrouting and bridge forward rules.
 The raw/auxiliary/sub-chain section exposes the same controls for rpfilter,
 early-inet rules, bridge regular chains and the configured MSS clamp.
 
-1. Change a checkbox and choose **Update draft state**. This changes only the
+1. Change a switch and choose **Update draft state**. This changes only the
    submitted draft; it does not save a revision or contact an agent.
 2. Review the retained rule settings and **Candidate & Diff**. The intent diff
    includes enabled flags, dormant settings and pinned references; the native diff
@@ -22,8 +22,7 @@ its enabled flag. Removing a rule is a different operation.
 
 Disabling an accept rule may block traffic. Disabling a drop or return exemption
 may broaden traffic or expose a later NAT translation; disabling an MSS clamp can
-change connectivity. Chain defaults and subsequent rules remain in effect. A
-checkbox is not an immediate host switch and disabled does not mean "safe".
+change connectivity. Chain defaults and subsequent rules remain in effect. Changes reach a host only after revision review and confirmed apply.
 
 ## Validation and native observation
 
@@ -50,3 +49,9 @@ controller schema remains 3 and timestamps retain UTC storage/local display.
 
 See [ADR 0041](decisions/0041-versioned-rule-enabled-state.md) and
 [the remaining milestones](milestones.md).
+
+Enablement uses the same labelled on/off switch as local-user access and system
+settings. Tab focuses a switch; Space changes its proposed state. The knob position, green enabled/red disabled colors and
+assistive-technology switch state reflect the current form value. Switches have
+descriptive screen-reader names without visible state text. Switches work without JavaScript. Use the separate save/update action to
+submit; firewall rules still require revision review and confirmed apply.

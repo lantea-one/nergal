@@ -1,0 +1,4 @@
+@model Nergal.Web.EnablementSwitchModel
+<label class="enablement-switch">
+    <input type="checkbox" role="switch" name="@Model.Name" value="true" checked="@Model.Enabled" disabled="@Model.Disabled" form="@Model.FormId" aria-label="@(Model.AccessibleLabel ?? Model.Label)" aria-describedby="@Model.DescriptionId" />
+</label>

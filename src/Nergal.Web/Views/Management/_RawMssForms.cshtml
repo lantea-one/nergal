@@ -51,7 +51,7 @@
         <form method="post" action="@Url.Content("~/manage/policies/mss")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="set" />
-            <div class="field"><label for="mss-size">Maximum segment size (bytes)</label><input type="number" id="mss-size" name="size" value="@bundle.Filter.ForwardTcpMssClamp" placeholder="1360" min="536" max="1460" required aria-describedby="mss-hint" /><span id="mss-hint" class="hint">Valid range: 536–1460. Updating a configured clamp preserves its enabled state. Use its separate Enabled checkbox to disable while retaining this size.</span></div>
+            <div class="field"><label for="mss-size">Maximum segment size (bytes)</label><input type="number" id="mss-size" name="size" value="@bundle.Filter.ForwardTcpMssClamp" placeholder="1360" min="536" max="1460" required aria-describedby="mss-hint" /><span id="mss-hint" class="hint">Valid range: 536–1460. Updating a configured clamp preserves its enabled state. Use its separate Enabled switch to disable while retaining this size.</span></div>
             <button type="submit" class="btn btn-secondary btn-sm">Update MSS draft</button>
         </form>
         @if (bundle.Filter.ForwardTcpMssClamp is not null)
