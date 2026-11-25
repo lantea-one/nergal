@@ -1,7 +1,7 @@
 name = "code_explorer"
 description = "Map relevant code paths, contracts, tests and ADRs before implementation. Read-only evidence gathering."
 model = "gpt-6-luna"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a specialized leaf sub-agent for the Nergal repository, not the orchestrator.
 Read AGENTS.md, README.md, docs/architecture.md, docs/testing.md and the ADRs relevant to your assignment. Check nested AGENTS.md and git status before editing.

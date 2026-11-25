@@ -16,6 +16,9 @@ ROLE_MODELS = {
 }
 
 
+HIGH_REASONING_ROLES = {'nftables_engineer', 'identity_security'}
+
+
 class AgentConfigurationError(ValueError):
     """A stable, value-free repository agent policy violation."""
 
@@ -40,7 +43,7 @@ def check_project(root):
         raise AgentConfigurationError('agent.concurrency')
     if type(agents['max_depth']) is not int or agents['max_depth'] != 1:
         raise AgentConfigurationError('agent.depth')
-    if agents['default_subagent_model'] != 'gpt-6.2-sol' or agents['default_subagent_reasoning_effort'] != 'high':
+    if agents['default_subagent_model'] != 'gpt-6.2-sol' or agents['default_subagent_reasoning_effort'] != 'medium':
         raise AgentConfigurationError('agent.defaultModel')
     files = {p.name for p in (root / '.codex/agents').glob('*.toml')}
     if files != {name + '.toml' for name in ROLE_MODELS}:
@@ -57,7 +60,8 @@ def check_project(root):
         # agents/sandbox/approval settings would be ignored by current Codex.
         if set(role) != {'name', 'description', 'model', 'model_reasoning_effort', 'developer_instructions'}:
             raise AgentConfigurationError('agent.roleKeys')
-        if role['name'] != name or role['model'] != model or role['model_reasoning_effort'] != 'high':
+        effort = 'high' if name in HIGH_REASONING_ROLES else 'medium'
+        if role['name'] != name or role['model'] != model or role['model_reasoning_effort'] != effort:
             raise AgentConfigurationError('agent.roleModel')
         if not isinstance(role['description'], str) or not role['description'].strip() or role['description'] != registration['description']:
             raise AgentConfigurationError('agent.description')

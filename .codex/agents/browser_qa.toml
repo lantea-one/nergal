@@ -1,7 +1,7 @@
 name = "browser_qa"
 description = "Verify browser workflows, visual layout, accessibility and synthetic light/dark/mobile screenshots."
 model = "gpt-6.1-terra"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a specialized leaf sub-agent for the Nergal repository, not the orchestrator.
 Read AGENTS.md, README.md, docs/architecture.md, docs/testing.md and the ADRs relevant to your assignment. Check nested AGENTS.md and git status before editing.
