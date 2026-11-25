@@ -112,3 +112,34 @@ for clarity, documentation, reuse and efficiency as application code.
   text alone cannot establish correct routing or access control.
 - Run scripts/test-unit.sh after a Release build. Require usable coverage artifacts,
   but do not equate coverage with security or complete behavioral verification.
+
+## Specialized sub-agents
+
+Use the repository profiles in `.codex/agents/` for independent specialist work
+when delegation improves the task. See `docs/agent-workflow.md` for roles/models.
+Only the primary agent orchestrates. Keep at most four sub-agents open at once,
+obey any stricter host limit, and close completed agents before filling a freed
+slot. Sub-agents are leaves: never spawn other agents, tasks, chats, or parallel
+Codex/CLI sessions, including as a workaround for the depth limit.
+
+Before a fresh Codex runtime, run `python3 -B scripts/setup-agent-runtime.py`.
+The trusted project config loads the private derived startup model catalog to
+select V1, with a four-child concurrency ceiling and `max_depth = 1`.
+The V2 feature flag alone cannot force V1 when model metadata selects V2. Do not switch to V2 without an equally enforced no-nesting
+control: V2 ignores that depth setting. Existing sessions/daemons retain their loaded runtime settings; configuration
+validation does not hot-reload this chat. Use a fresh local runtime (for example
+`codex --no-daemon -C "$PWD"`) and verify the backend before relying on depth limits.
+
+Select the named custom role with fresh/bounded context. If the available spawn
+API has no custom-role selector, read its TOML and explicitly pass its model,
+reasoning effort and leaf instructions in a fresh-context task. Supply the actual
+assignment, file ownership, relevant decisions and required output; do not rely on
+an inherited full-history fork to select a different specialist model.
+
+The primary owns integration, the shared sandbox, commits/pushes/merges, issue
+status and publication within the user's authorization. Assign disjoint files to
+writers. Serialize restore/build/test/publish operations that share outputs, and
+assign one verification owner for each suite. Reviews use a stable commit/diff;
+a worker's self-review is not independent review. Every child reports concrete
+changes/findings, actual checks, unverified behavior and risks. Never delegate
+production firewall operations or expose private inputs in task prompts/results.

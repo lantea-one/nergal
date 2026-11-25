@@ -1,0 +1,49 @@
+# Repository-scoped Codex orchestration. Requires a trusted project.
+# The private derived catalog selects V1 even when shipped model metadata says V2.
+# Generate it with: python3 -B scripts/setup-agent-runtime.py
+model_catalog_json = "../artifacts/codex-agent-runtime/models.json"
+[features]
+multi_agent_v2 = false
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+max_depth = 1
+default_subagent_model = "gpt-6.2-sol"
+default_subagent_reasoning_effort = "high"
+
+[agents.code_explorer]
+description = "Map relevant code paths, contracts, tests and ADRs before implementation. Read-only evidence gathering."
+config_file = "agents/code_explorer.toml"
+
+[agents.dotnet_engineer]
+description = "Implement focused .NET 10, ASP.NET Core MVC and Blazor application/service changes."
+config_file = "agents/dotnet_engineer.toml"
+
+[agents.nftables_engineer]
+description = "Implement and review nftables policy/compiler/import and privileged-agent safety boundaries."
+config_file = "agents/nftables_engineer.toml"
+
+[agents.identity_security]
+description = "Implement or independently review authentication, authorization, MFA, secrets and session security."
+config_file = "agents/identity_security.toml"
+
+[agents.database_engineer]
+description = "Implement database contracts, transactions, schema tests and eventual SQLite/PostgreSQL/MariaDB support."
+config_file = "agents/database_engineer.toml"
+
+[agents.ui_engineer]
+description = "Implement guided MVC/Blazor UI, consistent forms, accessible navigation and observation-backed charts."
+config_file = "agents/ui_engineer.toml"
+
+[agents.browser_qa]
+description = "Verify browser workflows, visual layout, accessibility and synthetic light/dark/mobile screenshots."
+config_file = "agents/browser_qa.toml"
+
+[agents.verification_engineer]
+description = "Run focused deterministic tests and assigned integration checks; diagnose failures with reproducible evidence."
+config_file = "agents/verification_engineer.toml"
+
+[agents.docs_release]
+description = "Maintain accurate docs, matching Forgejo Pages, milestone evidence and release preparation."
+config_file = "agents/docs_release.toml"
