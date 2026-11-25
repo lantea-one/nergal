@@ -51,7 +51,7 @@
     }
     else { @RenderBody() }
 
-    <footer class="time-zone-note muted">Times shown in your browser time zone: <span data-local-time-zone>UTC (local time unavailable)</span>.</footer>
+    <footer class="time-zone-note muted @(ViewData["CenterFooter"] is true ? "time-zone-note-centered" : "")">Nergal Firewall Management - TZ: <span data-local-time-zone>UTC (local time unavailable)</span></footer>
     <script src="@Url.Content("~/js/local-time.js")" asp-append-version="true" defer></script>
     <script src="@Url.Content("~/js/nergal.js")" asp-append-version="true" defer></script>
     @if (showNav) { <script src="@Url.Content("~/js/navigation.js")" asp-append-version="true" defer></script> }
