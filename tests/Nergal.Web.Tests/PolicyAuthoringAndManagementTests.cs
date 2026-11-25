@@ -156,6 +156,11 @@ public sealed class PolicyAuthoringAndManagementTests
             var dashView = Assert.IsType<ViewResult>(await auditorController.Index());
             var dashModel = Assert.IsType<FleetDashboardViewModel>(dashView.Model);
             Assert.False(dashModel.CanMutate);
+            var hostView = Assert.IsType<ViewResult>(await auditorController.Hosts());
+            Assert.False(Assert.IsType<FleetDashboardViewModel>(hostView.Model).CanMutate);
+            Assert.IsType<BadRequestResult>(adminController.Policies(section: "unknown"));
+            var natView = Assert.IsType<ViewResult>(adminController.Policies(section: "nat"));
+            Assert.Equal("nat", Assert.IsType<PolicyEditorViewModel>(natView.Model).InitialSection);
 
             var previewView = Assert.IsType<ViewResult>(auditorController.PreviewPolicy(RichBundleJson, "Preview note", null));
             var previewModel = Assert.IsType<PolicyEditorViewModel>(previewView.Model);
@@ -187,7 +192,7 @@ public sealed class PolicyAuthoringAndManagementTests
             Assert.Contains("+ create table inet nergal_nat", editor.UnifiedDiff);
 
             var hostRedirect = Assert.IsType<LocalRedirectResult>(await adminController.AddHost("gw1", "tls", "192.0.2.10:8443", null, null, new string('a', 64)));
-            Assert.Equal("~/manage", hostRedirect.Url);
+            Assert.Equal("~/manage/hosts", hostRedirect.Url);
             Assert.Single(store.ListHosts());
 
             var auditView = Assert.IsType<ViewResult>(auditorController.Audit());

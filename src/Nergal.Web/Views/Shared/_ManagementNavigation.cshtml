@@ -1,0 +1,29 @@
+@{
+    var active = ViewData["ActiveNav"] as string ?? "";
+    var section = ViewData["PolicySection"] as string ?? "filter";
+}
+<nav class="appliance-nav" aria-label="Primary navigation">
+    <div class="nav-section"><p class="nav-section-label">Dashboard</p>
+        <a class="nav-link @(active == "fleet" ? "active" : "")" aria-current="@(active == "fleet" ? "page" : null)" href="@Url.Content("~/manage")">Overview</a>
+        <a class="nav-link @(active == "hosts" ? "active" : "")" aria-current="@(active == "hosts" ? "page" : null)" href="@Url.Content("~/manage/hosts")">Hosts</a>
+    </div>
+    <div class="nav-section"><p class="nav-section-label">Firewall</p>
+        @foreach (var item in new[] { ("filter", "Rules"), ("nat", "NAT"), ("bridge", "Bridge"), ("preview", "Review & export") })
+        {
+            var current = active == "policies" && section == item.Item1;
+            <a class="nav-link @(current ? "active" : "")" aria-current="@(current ? "page" : null)" data-policy-section="@("tab-" + item.Item1)" href="@(Url.Action("Policies", "Management", new { section = item.Item1 }) + "#tab-" + item.Item1)">@item.Item2</a>
+        }
+        <a class="nav-link @(active == "objects" ? "active" : "")" aria-current="@(active == "objects" ? "page" : null)" href="@Url.Content("~/manage/objects")">Aliases &amp; IP lists</a>
+    </div>
+    <div class="nav-section"><p class="nav-section-label">Configuration</p>
+        @if (ViewData["ShowNativeSources"] as bool? == true)
+        { <a class="nav-link @(active == "sources" ? "active" : "")" aria-current="@(active == "sources" ? "page" : null)" href="@Url.Content("~/manage/sources")">Import nftables.conf</a> }
+        <a class="nav-link @(active == "apply" ? "active" : "")" aria-current="@(active == "apply" ? "page" : null)" href="@Url.Content("~/manage/apply")">Review &amp; apply</a>
+    </div>
+    <div class="nav-section"><p class="nav-section-label">System</p>
+        <a class="nav-link @(active == "audit" ? "active" : "")" aria-current="@(active == "audit" ? "page" : null)" href="@Url.Content("~/manage/audit")">Activity &amp; audit</a>
+        <a class="nav-link @(active == "settings" ? "active" : "")" aria-current="@(active == "settings" ? "page" : null)" href="@Url.Content("~/manage/settings")">Settings</a>
+        <a class="nav-link @(active == "session" ? "active" : "")" aria-current="@(active == "session" ? "page" : null)" href="@Url.Content("~/session")">Session</a>
+    </div>
+    <p class="nav-boundary">Draft → saved revision → reviewed apply → confirmation</p>
+</nav>

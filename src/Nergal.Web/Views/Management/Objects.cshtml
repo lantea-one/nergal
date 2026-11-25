@@ -10,7 +10,7 @@
     var input = Model.Input ?? new ObjectLibraryInput(selected?.Id, selected?.Version ?? 0, selected?.Content.Name ?? "", selected?.Content.Kind switch { ReusableObjectKind.Ipv6 => "ipv6", ReusableObjectKind.Port => "port", _ => "ipv4" }, selected?.Content.Description ?? "", selected is null ? "" : string.Join("\n", selected.Content.Entries));
     var historical = selected is not null && Model.History.FirstOrDefault()?.Version != selected.Version;
 }
-<main class="container">
+<main id="main-content" tabindex="-1" class="container">
     <div class="page-header"><div><h1>Sets &amp; IP lists</h1><p class="page-subtitle">Keep typed lists in one place, with a permanent history of every saved version.</p></div>
         <a class="btn btn-secondary" href="@Url.Action("Objects")">New list</a></div>
     <p class="alert alert-info">Policies can pin a list version for source, destination or destination-port matching. Saving a new list version does not change existing policy revisions or firewalls. Update the reference in a policy draft, review, save and use confirmed apply.</p>

@@ -330,3 +330,9 @@ Meter timeout refresh is explicit intent and a distinct feature (ADR 0056). Nati
 `meter`/`update` maps to refreshed idle expiry, while legacy `add` retains creation
 expiry and unchanged historical bytes/digests. Native observation binds the operation;
 changing it alone is drift. Guided forms preserve an omitted legacy choice.
+
+The first M5 [appliance-console](appliance-console.md) slice separates presentation
+from privilege. Pure state-based guidance only chooses navigation; pending/recovery
+states outrank setup, and unknown observations never imply healthy/applied state.
+A dedicated reader Hosts page retains existing Administrator/CSRF mutation routes.
+Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.

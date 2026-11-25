@@ -54,6 +54,7 @@ internal static class ControllerStateHost
             .RequireAuthorization(ControllerAuthorizationPolicies.Administrator);
 
         app.MapControllerRoute("manage-dashboard", "manage", new { controller = "Management", action = "Index" });
+        app.MapControllerRoute("manage-hosts", "manage/hosts", new { controller = "Management", action = "Hosts" });
         app.MapControllerRoute("manage-hosts-add", "manage/hosts/add", new { controller = "Management", action = "AddHost" });
         app.MapControllerRoute("manage-hosts-delete", "manage/hosts/delete", new { controller = "Management", action = "DeleteHost" });
         app.MapControllerRoute("manage-policies", "manage/policies", new { controller = "Management", action = "Policies" });
