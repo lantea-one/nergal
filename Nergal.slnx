@@ -1,0 +1,29 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Tests/">
+    <Project Path="tests/Nergal.Core.Tests/Nergal.Core.Tests.csproj" />
+    <Project Path="tests/Nergal.LocalState.Tests/Nergal.LocalState.Tests.csproj" />
+    <Project Path="tests/Nergal.Web.Tests/Nergal.Web.Tests.csproj" />
+    <Project Path="tests/integration/enrollment/Nergal.Enrollment.Fixture.csproj" />
+    <Project Path="tests/integration/isolation/Nergal.Isolation.Fixture.csproj" />
+    <Project Path="tests/integration/local-status/Nergal.LocalStatus.Fixture.csproj" />
+    <Project Path="tests/integration/nftables/Nergal.Nftables.Fixture.csproj" />
+    <Project Path="tests/integration/ownership/Nergal.Ownership.Fixture.csproj" />
+    <Project Path="tests/integration/watchdog/Nergal.Watchdog.Fixture.csproj" />
+  </Folder>
+  <Project Path="src/Nergal.Admin/Nergal.Admin.csproj" />
+  <Project Path="src/Nergal.Agent/Nergal.Agent.csproj" />
+  <Project Path="src/Nergal.ControllerState/Nergal.ControllerState.csproj" />
+  <Project Path="src/Nergal.Core/Nergal.Core.csproj" />
+  <Project Path="src/Nergal.Identity/Nergal.Identity.csproj" />
+  <Project Path="src/Nergal.Linux/Nergal.Linux.csproj" />
+  <Project Path="src/Nergal.LocalState/Nergal.LocalState.csproj" />
+  <Project Path="src/Nergal.LocalTransport/Nergal.LocalTransport.csproj" />
+  <Project Path="src/Nergal.Nftables/Nergal.Nftables.csproj" />
+  <Project Path="src/Nergal.RemoteTransport/Nergal.RemoteTransport.csproj" />
+  <Project Path="src/Nergal.Web/Nergal.Web.csproj" />
+</Solution>

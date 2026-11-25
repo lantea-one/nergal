@@ -20,11 +20,15 @@ See [product scope](docs/product-workflow.md).
 Before proposing a change:
 
 ```sh
-dotnet restore Nergal.sln
-dotnet format Nergal.sln --verify-no-changes --no-restore
-dotnet test Nergal.sln --configuration Release --no-restore
+dotnet restore Nergal.slnx
+dotnet format Nergal.slnx --verify-no-changes --no-restore
+dotnet test Nergal.slnx --configuration Release --no-restore
 ```
 
 Privileged tests are opt-in and run only in disposable namespaces. Document the
 capabilities and resources they need. Never point them at a production agent.
 See docs/testing.md for the distinction between unit and integration tests.
+
+Use `Nergal.slnx`. Keep application projects at the solution root and all unit/test
+fixture projects in the `Tests` solution folder; source directories retain their
+existing paths.
