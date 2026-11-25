@@ -32,3 +32,13 @@ See docs/testing.md for the distinction between unit and integration tests.
 Use `Nergal.slnx`. Keep application projects at the solution root and all unit/test
 fixture projects in the `Tests` solution folder; source directories retain their
 existing paths.
+
+Repository-specific Codex roles and enforced delegation limits are documented in
+[the agent workflow](docs/agent-workflow.md). Run `python3 -B scripts/test-agent-config.py`
+and `python3 -B scripts/verify-agent-config.py` after changing those profiles.
+
+Before first opening this checkout in Codex (and after updating Codex), run
+`python3 -B scripts/setup-agent-runtime.py`, then start a fresh runtime process (for example `codex --no-daemon -C "$PWD"`).
+An existing daemon/chat does not reload startup model metadata. This creates
+the ignored private startup catalog needed for enforceable direct-child-only agents;
+it keeps the selected model identities and instructions unchanged.

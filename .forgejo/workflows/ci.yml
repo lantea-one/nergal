@@ -12,7 +12,10 @@ jobs:
         with:
           persist-credentials: false
       - name: Verify shared organization runner policy
-        run: python3 -B scripts/test-ci-runner-policy.py
+        run: |
+          python3 -B scripts/test-ci-runner-policy.py
+          python3 -B scripts/verify-agent-config.py
+          python3 -B scripts/test-agent-config.py
       - uses: https://github.com/actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           global-json-file: global.json
