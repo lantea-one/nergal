@@ -831,3 +831,10 @@ allowing the unchecked switch to be absent, and deny unknown/repeated fields. Re
 HTTPS checks exercise on/off user access, last-admin protection, revoked replay and
 invalid boolean denial; rule states retain complete draft/revision contents. Settings
 checks verify all five enablement switches and disabled Auditor presentation.
+
+Form-layout browser checks measure aligned input tops within each basic/network/
+transport row and equal 42px control heights. At a 375px viewport the rule form
+uses one column without horizontal page overflow; long badges and imported object
+identifiers wrap. Protocol changes still select the transport versus ICMP control.
+Text-free switches retain accessible names, keyboard operation and distinct
+red/green states with knob position as a non-color cue.

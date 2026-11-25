@@ -4,7 +4,8 @@
 
 - Use consistent accessible on/off switches for rule, account and settings
   enablement. Preserve explicit saves, last-administrator checks, dormant settings
-  and reviewed firewall apply.
+  and reviewed firewall apply. Use green/red states with accessible descriptions
+  and no visible toggle text; align shared forms from the top and group rule fields.
 - Add database-backed local Administrator/Auditor management, last-enabled-admin
   protection, versioned personal profiles, current-password changes, ticket revocation
   and atomic append-only identity audit (ADR 0058). Use fresh account schema 2.

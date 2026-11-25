@@ -12,7 +12,7 @@ version is adopted, migrated or reset by the application.
 - Create an explicitly named local Administrator or Auditor. Names use 1–64 ASCII
   letters, digits, dots, underscores or hyphens and are case-insensitive. Initial
   passwords use the existing Identity hasher and 15–128 Unicode-character bounds.
-- Change a role or use the **Access enabled** switch, then choose **Save access**. Disabling retains
+- Change a role or use the switch in **Access**, then choose **Save access**. Disabling retains
   the account identity, profile and history. It blocks password sign-in and
   invalidates existing tickets; reenabling cannot resurrect old tickets.
 - Keep at least one enabled local Administrator. The check runs inside the same

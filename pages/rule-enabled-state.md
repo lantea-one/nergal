@@ -22,8 +22,7 @@ its enabled flag. Removing a rule is a different operation.
 
 Disabling an accept rule may block traffic. Disabling a drop or return exemption
 may broaden traffic or expose a later NAT translation; disabling an MSS clamp can
-change connectivity. Chain defaults and subsequent rules remain in effect. A
-switch is not an immediate host switch and disabled does not mean "safe".
+change connectivity. Chain defaults and subsequent rules remain in effect. Changes reach a host only after revision review and confirmed apply.
 
 ## Validation and native observation
 
@@ -53,7 +52,7 @@ See [the remaining milestones](milestones.md) and [testing evidence](testing-and
 ![Inline enabled state and retained pinned references](assets/screenshots/rule-states-dark.jpg)
 
 Enablement uses the same labelled on/off switch as local-user access and system
-settings. Tab focuses a switch; Space changes its proposed state. The visual knob,
-On/Off text and assistive-technology switch state all reflect the current form
-value. Switches work without JavaScript. Use the separate save/update action to
+settings. Tab focuses a switch; Space changes its proposed state. The knob position, green enabled/red disabled colors and
+assistive-technology switch state reflect the current form value. Switches have
+descriptive screen-reader names without visible state text. Switches work without JavaScript. Use the separate save/update action to
 submit; firewall rules still require revision review and confirmed apply.

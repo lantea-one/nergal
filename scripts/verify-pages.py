@@ -88,6 +88,8 @@ REQUIRED_FILES = [
     "local-users-and-profiles.md",
     "assets/screenshots/m5-users-dark.jpg",
     "assets/screenshots/enablement-settings-dark.jpg",
+    "assets/screenshots/rule-form-layout-dark.jpg",
+    "assets/screenshots/rule-form-layout-mobile.jpg",
     "assets/screenshots/enablement-settings-light.jpg",
     "assets/screenshots/m5-users-light.jpg",
     "assets/screenshots/m5-profile-dark.jpg",

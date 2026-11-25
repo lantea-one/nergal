@@ -111,3 +111,14 @@ captured; use the task map above for their current location.
 Enable/disable controls use a shared labelled on/off switch throughout rules,
 local-user access and settings. Save/update actions remain explicit. Match selection
 and negation controls retain their separate selection semantics.
+
+Forms align controls from the top and use at most four columns, reducing to two
+and one at narrower widths. New filter rules group basic choices, source/destination
+networks and ports/interfaces into separate rows so wrapped hints cannot stagger
+related inputs. Switches show green for enabled and muted red for disabled, with
+knob position conveying the state as well. Screen-reader descriptions remain;
+visible field labels identify settings without repeating state text beside switches.
+
+![Aligned filter-rule form](../pages/assets/screenshots/rule-form-layout-dark.jpg)
+
+[Mobile form](../pages/assets/screenshots/rule-form-layout-mobile.jpg) uses one column without page overflow.

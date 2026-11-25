@@ -448,20 +448,25 @@
                             </select>
                         </div>
 
-                        <div class="field span-2">
+                    </div>
+                    <div class="form-grid form-grid-addresses mt-2">
+                        <div class="field">
                             <label for="r-sources">Source CIDR(s)</label>
-                            <input id="r-sources" type="text" name="sources" placeholder="192.0.2.0/24 or 192.0.2.0/24, 198.51.100.0/24" />
-                            <span class="hint">Leave blank for any; comma-separate 2+ disjoint CIDRs for an inline set.</span>
+                            <input id="r-sources" type="text" name="sources" placeholder="192.0.2.0/24" aria-describedby="r-sources-hint" />
+                            <span id="r-sources-hint" class="hint">Leave blank for any source. Separate multiple disjoint networks with commas.</span>
                         </div>
-                        <div class="field span-2">
+                        <div class="field">
                             <label for="r-dests">Destination CIDR(s)</label>
-                            <input id="r-dests" type="text" name="destinations" placeholder="203.0.113.0/24 or 2001:db8:1::/48, 2001:db8:3::/48" />
+                            <input id="r-dests" type="text" name="destinations" placeholder="203.0.113.0/24" aria-describedby="r-dests-hint" />
+                            <span id="r-dests-hint" class="hint">Leave blank for any destination. Use networks from the selected IP family.</span>
                         </div>
 
+                    </div>
+                    <div class="form-grid form-grid-route mt-2">
                         <div class="field" data-proto-group="transport">
                             <label for="r-ports">Destination port(s)</label>
-                            <input id="r-ports" type="text" name="destinationPorts" placeholder="443 or 80, 443" />
-                            <span class="hint">1 port or comma-separated set (1–65535).</span>
+                            <input id="r-ports" type="text" name="destinationPorts" placeholder="443 or 80, 443" aria-describedby="r-ports-hint" />
+                            <span id="r-ports-hint" class="hint">1 port or comma-separated set (1–65535).</span>
                         </div>
                         <div class="field" data-proto-group="icmp">
                             <label for="r-icmp">ICMP / ICMPv6 type</label>
@@ -488,7 +493,7 @@
                             <label for="r-oif">Output interface (<code>oifname</code>)</label>
                             <input id="r-oif" type="text" name="outputInterface" placeholder="wan0" maxlength="15" />
                         </div>
-                        <div class="field span-2">
+                        <div class="field form-full">
                             <label for="r-desc">Description (optional)</label>
                             <input id="r-desc" type="text" name="description" placeholder="Allow HTTPS ingress from management subnet" maxlength="160" />
                         </div>
