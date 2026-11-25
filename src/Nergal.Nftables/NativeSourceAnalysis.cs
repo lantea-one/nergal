@@ -4,15 +4,17 @@ namespace Nergal.Nftables;
 /// <remarks>The lexical document contains private source values. Use the value-masked Review for inventory reports.</remarks>
 public sealed class NativeSourceAnalysis
 {
-    internal NativeSourceAnalysis(NativeSourceLexingResult lexical, NativeMigrationReview review)
-    { Lexical = lexical; Review = review; }
+    internal NativeSourceAnalysis(NativeSourceLexingResult lexical, NativeSourceStructureResult structure, NativeMigrationReview review)
+    { Lexical = lexical; Structure = structure; Review = review; }
 
     /// <summary>Gets the complete source tokens or the exact lexical failure used by the review.</summary>
     public NativeSourceLexingResult Lexical { get; }
-    /// <summary>Gets the non-exhaustive inventory derived from this same lexical result.</summary>
+    /// <summary>Gets the complete structural tree or failure over the same token document.</summary>
+    public NativeSourceStructureResult Structure { get; }
+    /// <summary>Gets the non-exhaustive inventory derived only from this same complete structural result.</summary>
     public NativeMigrationReview Review { get; }
     /// <summary>Returns status only, never private source values.</summary>
-    public override string ToString() => Lexical.IsComplete ? "Native source analysis (tokenized; conversion blocked)" : "Native source analysis (incomplete; conversion blocked)";
+    public override string ToString() => Structure.Tree is not null ? "Native source analysis (structured; conversion blocked)" : "Native source analysis (incomplete; conversion blocked)";
 }
 
 /// <summary>The common pure analysis entry point for the combined native source viewer/import workflow.</summary>
@@ -24,6 +26,7 @@ public static class NativeSourceAnalyzer
     public static NativeSourceAnalysis Analyze(string source)
     {
         var lexical = NativeSourceLexer.Lex(source);
-        return new(lexical, NativeMigrationReviewer.Review(lexical));
+        var structure = NativeSourceStructureParser.Parse(lexical);
+        return new(lexical, structure, NativeMigrationReviewer.Review(structure));
     }
 }

@@ -26,6 +26,7 @@ public sealed class RouterAuthoringAndSourcesTests
         var source = new NativePolicySource(content.Name, content.Text, content.Digest);
         Assert.Same(source.Analysis.Review, source.Review);
         Assert.Equal(text, source.Analysis.Lexical.Document!.Source);
+        Assert.Same(source.Analysis.Lexical.Document, source.Analysis.Structure.Tree!.Document);
         Assert.Equal(new[] { 2 }, Assert.Single(source.Review.Signals).Lines);
         Assert.False(source.Review.CanConvert);
         Assert.DoesNotContain("private-source", source.ToString(), StringComparison.Ordinal);
@@ -113,6 +114,8 @@ public sealed class RouterAuthoringAndSourcesTests
             Assert.IsType<NotFoundResult>(controller.ImportStagedSource("../synthetic", catalog.Sources[0].Digest));
             using var parsed = System.Text.Json.JsonDocument.Parse(report.FileContents);
             Assert.Equal(catalog.Sources[0].Digest, parsed.RootElement.GetProperty("sourceSha256").GetString());
+            Assert.Equal(2, parsed.RootElement.GetProperty("schemaVersion").GetInt32());
+            Assert.True(parsed.RootElement.GetProperty("structure").GetProperty("isComplete").GetBoolean());
             Assert.False(parsed.RootElement.GetProperty("review").GetProperty("canConvert").GetBoolean());
             Assert.Equal(1, parsed.RootElement.GetProperty("review").GetProperty("tableDeclarations").GetInt32());
             Assert.False(parsed.RootElement.TryGetProperty("text", out _));
@@ -124,5 +127,24 @@ public sealed class RouterAuthoringAndSourcesTests
             Assert.Throws<IOException>(() => new NativePolicySourceCatalog(sources));
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    /// <summary>Reports expose only structural metadata; private source values and token trees stay out of the wire contract.</summary>
+    [Fact]
+    public void NativeReport_PreservesLegacyConstructorAndMasksStructuralFailure()
+    {
+        var source = new NativePolicySource("synthetic", "private-token { counter ]", new string('a', 64));
+        var current = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review, source.Analysis.Structure.Summary);
+        var legacy = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review);
+        Assert.Equal(2, current.SchemaVersion);
+        Assert.Equal(1, legacy.SchemaVersion);
+        Assert.Same(source.Analysis.Structure.Summary, current.Structure);
+        var json = System.Text.Json.JsonSerializer.Serialize(current);
+        Assert.DoesNotContain("private-token", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("counter", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("Document", json, StringComparison.Ordinal);
+        Assert.False(current.Structure!.IsComplete);
+        Assert.Equal("source.mismatchedDelimiter", current.Structure.Diagnostic!.Code);
+        Assert.DoesNotContain("Structure", System.Text.Json.JsonSerializer.Serialize(legacy), StringComparison.Ordinal);
     }
 }

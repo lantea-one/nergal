@@ -194,7 +194,8 @@ def exercise(temp):
         assert 'href="' + report_path + '"' in source_html and "Conversion blocked" in source_html
         source_path.write_text("changed after startup")
         report = json.loads(browser.request(report_path, 200))
-        assert report["sourceSha256"] == source_digest and report["schemaVersion"] == 1
+        assert report["sourceSha256"] == source_digest and report["schemaVersion"] == 2
+        assert report["structure"]["isComplete"] is True
         assert report["review"]["canConvert"] is False and report["review"]["tableDeclarations"] == 1
         assert {"gap.counters", "source.includes"} <= {s["code"] for s in report["review"]["signals"]}
         assert "text" not in report and "candidate" not in report

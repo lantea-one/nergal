@@ -38,6 +38,8 @@ REQUIRED_FILES = [
     "assets/screenshots/pages-mobile.jpg",
     "assets/screenshots/auxiliary-readiness.jpg",
     "native-source-library.md",
+    "assets/screenshots/source-structure-dark.jpg",
+    "assets/screenshots/source-structure-mobile-light.jpg",
     "policy-exports.md",
     "assets/screenshots/policy-exports-dark.jpg",
     "assets/screenshots/policy-exports-mobile.jpg",

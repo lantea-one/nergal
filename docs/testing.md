@@ -1,5 +1,13 @@
 # Testing standards
 
+Native structure regressions cover exact ordered token coverage, nested spans,
+opaque quoted/comment contents, unknown input, immutable nodes, inclusive 64-group
+depth and value-free missing/mismatched delimiter positions. The shared review
+returns no partial inventory on structural failure. HTTPS checks verify schema-2
+source-bound reports, matching viewer positions and exact original downloads after
+failure. The legacy report constructor remains schema 1. These checks establish
+structural contracts, not complete nft syntax or packet equivalence (ADR 0052).
+
 Saved revision export regressions cover exact native digests, every table scope,
 native/literal list projections, dormant intent, deterministic bytes, invalid or
 mismatched revision denial and Administrator authorization. The real HTTPS fixture

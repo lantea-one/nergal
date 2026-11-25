@@ -11,6 +11,12 @@ nergal separates policy authoring, compilation, identity/session handling, and k
 
 ## Solution Layering
 
+Native source viewing/import shares one bounded analysis pipeline: a lossless
+token document, immutable delimiter tree and masked inventory. Schema-2 reports
+expose counts and diagnostic positions, without private tokens or partial results.
+Structural completion does not grant conversion authority; semantic mapping and
+explicit include resolution remain M4 work. See [the source workflow](native-source-library.md).
+
 - **`Nergal.Core`**: Framework-independent domain POCOs (`FilterPolicy`, `NatPolicy`, `BridgePolicy`, `FirewallPolicyBundle`, `PolicyBundleJsonCodec`, `AgentControlRequest`/`Reply`, `ApplySession`). No ASP.NET, SQLite, or shell dependencies.
 - **`Nergal.Nftables`**: Pure compilers (`NftFilterCompiler`, `NftNatCompiler`, `NftBridgeCompiler`, `NftPolicyBundleCompiler`) and strict JSON observation parsers (`NftTableObservation`, `NftReceiptVerifier`).
 - **`Nergal.LocalState`**: Owner-only SQLite apply journal (`journal.db`, schema v3) storing enrollment identity, boot/namespace-bound receipts, and operation history.

@@ -42,6 +42,42 @@ mapping/gap plans and reviewed revision creation will extend this same workflow;
 there is no separate converter with different validation. See
 [ADR 0050](decisions/0050-lossless-native-source-tokenization.md).
 
+## Shared source structure and diagnostics
+
+The same analysis now groups braces, brackets and parentheses over the original
+token document, including all trivia and unknown input. **Source structure and
+diagnostic details** shows optional group/depth metadata. An incomplete source
+shows the failure code and physical line/column alongside the original. Quoted
+values and comments cannot introduce delimiters. Nothing is executed or resolved.
+
+Nesting is limited to 64 groups. Missing/unexpected braces retain
+`source.unbalancedBraces`; other missing/unexpected delimiters report
+`source.unbalancedDelimiter`, wrong closing kinds report
+`source.mismatchedDelimiter`, and excessive nesting reports `source.nestingTooDeep`.
+Positions identify the offending closer or unmatched opener. Columns and offsets
+count UTF-16 code units, with tabs counting as one; they are not UTF-8 byte offsets.
+Failure returns no partial tree or topic inventory. The exact original can still
+be inspected and downloaded. The viewer hides partial counts and explains that
+review topics are unavailable until the source error is resolved.
+
+Current migration-review downloads use **schema 2**: the original name/digest and
+masked `review` remain, with a value-free `structure` summary containing completion,
+token/group counts, maximum depth and an optional code/span diagnostic. Counts are
+zero on failure. The report does not serialize source values, tokens or the tree.
+Clients must check the report version. Structural completion does not establish
+native syntax validity, semantic compatibility or conversion readiness. Semantic
+parsing, explicit include mappings and persisted gap plans remain M4 work. See
+[ADR 0052](decisions/0052-bounded-native-source-structure.md).
+
+These captures use staged synthetic sources in a separate disposable controller.
+The complete structure still reports semantic work; the failed structure shows
+the exact mismatch position and omits partial counts. The mobile light view fits
+a 375-pixel viewport without page overflow.
+
+![Shared source structure in dark mode](../pages/assets/screenshots/source-structure-dark.jpg)
+
+![Source mismatch position in light mode on mobile](../pages/assets/screenshots/source-structure-mobile-light.jpg)
+
 ## Storage and authorization
 
 Source bytes, SHA-256, importing actor and UTC time live in `controller.db`. Only

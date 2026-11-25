@@ -17,7 +17,7 @@ public enum MigrationSignalKind
 public sealed record MigrationSignal(string Code, string Description, MigrationSignalKind Kind, IReadOnlyList<int> Lines);
 
 /// <summary>A bounded lexical inventory. It is never an executable or partially converted policy.</summary>
-/// <param name="InventoryComplete">Whether bounded tokenization reached the end; this is not native syntax validation.</param>
+/// <param name="InventoryComplete">Whether bounded tokenization and structural grouping completed; this is not native syntax validation.</param>
 /// <param name="Diagnostic">Stable diagnostic for incomplete inventory, or null.</param>
 /// <param name="TableDeclarations">Number of recognized declarative table headers.</param>
 /// <param name="ChainDeclarations">Number of recognized declarative chain headers.</param>
@@ -65,9 +65,10 @@ public static class NativeMigrationReviewer
     /// <exception cref="ArgumentNullException">Source is null.</exception>
     public static NativeMigrationReview Review(string source) => NativeSourceAnalyzer.Analyze(source).Review;
 
-    internal static NativeMigrationReview Review(NativeSourceLexingResult lexical)
+    internal static NativeMigrationReview Review(NativeSourceStructureResult structure)
     {
-        if (lexical.Document is not { } document) { return Incomplete(lexical.Diagnostic!.Code); }
+        if (structure.Tree is not { } tree) { return Incomplete(structure.Summary.Diagnostic!.Code); }
+        var document = tree.Document;
         var tokens = new List<Token>();
         for (var i = 0; i < document.Tokens.Count; i++)
         {
@@ -79,15 +80,11 @@ public static class NativeMigrationReviewer
         }
         var tables = 0;
         var chains = 0;
-        var braces = 0;
         for (var i = 0; i < tokens.Count; i++)
         {
-            if (tokens[i].Text == "{") { braces++; }
-            if (tokens[i].Text == "}" && --braces < 0) { return Incomplete("source.unbalancedBraces"); }
             if (Match(tokens, i, ["table"]) && i + 3 < tokens.Count && tokens[i + 1].Text is "inet" or "ip" or "ip6" or "bridge" or "arp" or "netdev" && tokens[i + 3].Text == "{") { tables++; }
             if (Match(tokens, i, ["chain"]) && i + 2 < tokens.Count && tokens[i + 2].Text == "{") { chains++; }
         }
-        if (braces != 0) { return Incomplete("source.unbalancedBraces"); }
         var signals = new List<MigrationSignal>();
         foreach (var topic in Topics)
         {

@@ -8,13 +8,26 @@
                 Review topics help locate work; they do not validate or convert the configuration.
                 Keywords may be identifiers, so inspect each occurrence in context. No policy has been created or applied.
             </div>
-            <p><strong>@source.Review.TableDeclarations</strong> declarative table headers ·
-                <strong>@source.Review.ChainDeclarations</strong> declarative chain headers ·
-                <strong>@source.Review.Signals.Count</strong> review topics</p>
+            @if (source.Review.InventoryComplete)
+            {
+                <p><strong>@source.Review.TableDeclarations</strong> declarative table headers ·
+                    <strong>@source.Review.ChainDeclarations</strong> declarative chain headers ·
+                    <strong>@source.Review.Signals.Count</strong> review topics</p>
+            }
             @if (!source.Review.InventoryComplete)
             {
-                <p class="alert alert-danger" role="alert">Inventory incomplete: <code>@source.Review.Diagnostic</code>. Review the exact source below.</p>
+                <p class="alert alert-danger" role="alert">Inventory incomplete: <code>@source.Review.Diagnostic</code>.
+                    @if (source.Analysis.Structure.Summary.Diagnostic is { } diagnostic)
+                    { <span>Check line @diagnostic.Span.Line, column @diagnostic.Span.Column.</span> }
+                    Review the exact source below.</p>
             }
+            <details class="disclosure mt-2"><summary>Source structure and diagnostic details</summary>
+                @if (source.Analysis.Structure.Summary is { IsComplete: true } structure)
+                { <p>Source structure is complete: @structure.GroupCount delimiter groups, maximum nesting @structure.MaximumDepth.</p> }
+                else
+                { <p>Source structure is incomplete. No partial tree or topic inventory is used.</p> }
+                <p>These checks retain source structure for mapping; they do not validate native rule semantics or resolve includes. Conversion remains blocked.</p>
+            </details>
             @if (source.Review.Signals.Count > 0)
             {
                 <div class="table-wrap">
@@ -34,9 +47,13 @@
                     </table>
                 </div>
             }
-            else
+            else if (source.Review.InventoryComplete)
             {
                 <p>No catalogued keywords were found. This does not establish compatibility or completeness.</p>
+            }
+            else
+            {
+                <p>Review topics are unavailable until the source error is resolved.</p>
             }
             <p>Every table still needs explicit ownership, hook and rule-order mapping. Counters, definitions,
                 named objects and control flow must be accounted for before an equivalent policy can be reviewed.</p>
