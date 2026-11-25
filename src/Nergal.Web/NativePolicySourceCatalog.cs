@@ -39,10 +39,12 @@ public sealed class NativePolicySource
 
 /// <summary>A private downloadable review bound to the exact source bytes; it contains no executable candidate.</summary>
 public sealed record NativeSourceMigrationReport(string Name, string SourceSha256, NativeMigrationReview Review,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] NativeSourceStructureSummary? Structure = null)
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] NativeSourceStructureSummary? Structure = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    NativeRuleParsingSummary? RuleParsing = null)
 {
     /// <summary>Gets the report contract version, independent of the policy schema.</summary>
-    public int SchemaVersion => Structure is null ? 1 : 2;
+    public int SchemaVersion => RuleParsing is not null ? 3 : Structure is null ? 1 : 2;
 }
 
 /// <summary>Bounded startup snapshots from an explicitly configured private import directory.</summary>

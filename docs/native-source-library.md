@@ -60,7 +60,7 @@ Failure returns no partial tree or topic inventory. The exact original can still
 be inspected and downloaded. The viewer hides partial counts and explains that
 review topics are unavailable until the source error is resolved.
 
-Current migration-review downloads use **schema 2**: the original name/digest and
+Current migration-review downloads use **schema 3** (extending schema 2): the original name/digest and
 masked `review` remain, with a value-free `structure` summary containing completion,
 token/group counts, maximum depth and an optional code/span diagnostic. Counts are
 zero on failure. The report does not serialize source values, tokens or the tree.
@@ -79,14 +79,45 @@ Object bodies and rule expressions still need semantic parsing. No statement is
 discarded, include opened or command executed; conversion remains blocked.
 See [ADR 0053](decisions/0053-native-source-declaration-partition.md).
 
+## Whole-rule expression parsing
+
+The shared analyzer now attempts every chain-local rule in a bounded literal
+grammar. It preserves ordered and repeated predicates, MAC+IP restrictions,
+negation and exact source positions. The initial slice covers numeric IPv4/IPv6
+source/destination addresses, MAC addresses, exact interface names, TCP/UDP numeric
+ports, nonempty anonymous literal sets, accept/drop/return and exactly
+`reject with icmpx type admin-prohibited`. A bare host is represented as /32 or
+/128 in the private typed result; the original file never changes.
+
+Each rule has either one complete typed result or one positioned diagnostic.
+Unknown expressions, counters/logging, references, service names, ranges, wildcard
+or escaped names and trailing input produce **no partial rule**. The optional
+**Source structure and diagnostic details** disclosure shows parsed/total counts
+and up to 20 failure code/line/column entries; all failures are in the review
+attachment. A parsed rule still needs contextual family/hook validation and policy
+mapping; it is not certified as valid native syntax or an equivalent policy.
+
+Schema 3 retains the structure summary and adds value-free `ruleParsing`:
+`isAvailable`, `totalRules`, `parsedRules`, and diagnostic code/spans. Structural
+failure makes parsing unavailable with zero counts and diagnostics. Private typed
+rules and literal values are never serialized. Legacy in-process constructors
+retain schemas 1/2. There is no database migration or new apply authority.
+
+The declared limits are 128 ordered predicates and 64 elements per anonymous set.
+Exact names use 1..15 ASCII letters/digits or `_ . : -`; port literals use decimal
+0..65535 without leading zeros. Address literals reject abbreviated/ambiguous IPv4,
+scoped/mapped IPs and explicit CIDRs with host bits. Numeric port zero remains
+source intent even though later managed-policy validation may reject it. Missing
+coverage is explicit, never approximated. See [ADR 0054](decisions/0054-native-rule-expression-slice.md).
+
 These captures use staged synthetic sources in a separate disposable controller.
-The complete structure still reports semantic work; the failed structure shows
-the exact mismatch position and omits partial counts. The mobile light view fits
-a 375-pixel viewport without page overflow.
+The example retains one completely parsed rule and an unsupported counter rule,
+showing its exact line/column without a partial typed result. The mobile light
+view fits a 375-pixel viewport without page overflow.
 
 ![Shared source structure in dark mode](../pages/assets/screenshots/source-structure-dark.jpg)
 
-![Source mismatch position in light mode on mobile](../pages/assets/screenshots/source-structure-mobile-light.jpg)
+![Whole-rule failure position in light mode on mobile](../pages/assets/screenshots/source-structure-mobile-light.jpg)
 
 ## Storage and authorization
 

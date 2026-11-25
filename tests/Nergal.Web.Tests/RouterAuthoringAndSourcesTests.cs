@@ -1,3 +1,4 @@
+using Nergal.Nftables;
 using System.Runtime.Versioning;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
@@ -114,7 +115,7 @@ public sealed class RouterAuthoringAndSourcesTests
             Assert.IsType<NotFoundResult>(controller.ImportStagedSource("../synthetic", catalog.Sources[0].Digest));
             using var parsed = System.Text.Json.JsonDocument.Parse(report.FileContents);
             Assert.Equal(catalog.Sources[0].Digest, parsed.RootElement.GetProperty("sourceSha256").GetString());
-            Assert.Equal(2, parsed.RootElement.GetProperty("schemaVersion").GetInt32());
+            Assert.Equal(3, parsed.RootElement.GetProperty("schemaVersion").GetInt32());
             Assert.True(parsed.RootElement.GetProperty("structure").GetProperty("isComplete").GetBoolean());
             Assert.False(parsed.RootElement.GetProperty("review").GetProperty("canConvert").GetBoolean());
             Assert.Equal(1, parsed.RootElement.GetProperty("review").GetProperty("tableDeclarations").GetInt32());
@@ -147,4 +148,24 @@ public sealed class RouterAuthoringAndSourcesTests
         Assert.Equal("source.mismatchedDelimiter", current.Structure.Diagnostic!.Code);
         Assert.DoesNotContain("Structure", System.Text.Json.JsonSerializer.Serialize(legacy), StringComparison.Ordinal);
     }
+    /// <summary>Schema 3 serializes only source-bound rule counts and diagnostics, preserving older report constructors.</summary>
+    [Fact]
+    public void NativeReport_RuleSummaryExcludesPrivateAstAndIsUnavailableOnStructureFailure()
+    {
+        var source = new NativePolicySource("synthetic", "table inet private_name { chain input { ip saddr 192.0.2.1 accept; counter accept; } }", new string('b', 64));
+        var report = new NativeSourceMigrationReport(source.Name, source.Digest, source.Review, source.Analysis.Structure.Summary, source.Analysis.RuleParsing);
+        Assert.Equal(3, report.SchemaVersion);
+        Assert.Same(source.Analysis.RuleParsing, report.RuleParsing);
+        Assert.Equal(2, report.RuleParsing!.TotalRules);
+        Assert.Equal(1, report.RuleParsing.ParsedRules);
+        var json = System.Text.Json.JsonSerializer.Serialize(report);
+        Assert.DoesNotContain("private_name", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("192.0.2", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("Statement", json, StringComparison.Ordinal);
+        var failed = NativeSourceAnalyzer.Analyze("{]");
+        Assert.False(failed.RuleParsing.IsAvailable);
+        Assert.Equal(0, failed.RuleParsing.TotalRules);
+        Assert.Empty(failed.RuleParsing.Diagnostics);
+    }
+
 }

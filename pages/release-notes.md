@@ -2,6 +2,16 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Unreleased whole-rule expression slice
+
+The shared viewer/import analyzer now parses a bounded numeric address/MAC/port,
+exact interface, negation and terminal-verdict grammar over ordered source rules.
+Each rule is completely consumed or has no typed result; unknown expressions,
+references and suffixes cannot become weakened partial rules. Schema-3 reports
+add value-free parsed/total counts and positioned diagnostics, also shown in the
+optional source details. Context, definitions and full mapping remain unresolved;
+conversion stays blocked. See [the source workflow](native-source-library.md).
+
 ## Unreleased contextual native declarations
 
 Shared viewer/import analysis now retains ordered contextual statements over the
@@ -9,7 +19,8 @@ original tree. Declaration counts require table/chain scope; keyword sequences i
 raw expressions cannot inflate them. Unknown heads are explicit masked review
 topics. Object bodies, directives, includes, commands and rule expressions remain
 source data requiring semantic mapping; conversion is still blocked. Existing
-schema-2 reports and source workflow screenshots remain applicable. See
+schema-2 reports remain supported by legacy in-process constructors; current
+reports are schema 3 as described above. See
 [the source workflow](native-source-library.md).
 
 ## Unreleased native source structure

@@ -13,7 +13,7 @@ def check_source_analysis(browser, upload):
     assert report["review"]["inventoryComplete"] is False
     assert report["review"]["diagnostic"] == "source.invalidCharacter"
     assert report["review"]["signals"] == [] and report["review"]["canConvert"] is False
-    assert report["schemaVersion"] == 2 and report["structure"]["isComplete"] is False
+    assert report["schemaVersion"] == 3 and report["structure"]["isComplete"] is False
     assert report["structure"]["diagnostic"]["span"]["line"] == 2
     html = browser.request("/manage/sources?sourceId=" + source_id, 200)
     assert "Inventory incomplete" in html and "source.invalidCharacter" in html and "Conversion blocked" in html
@@ -35,7 +35,7 @@ def check_source_analysis(browser, upload):
     upload("Contextual declaration accounting", contextual)
     source_id = browser.location.split("sourceId=")[1]
     report = json.loads(browser.request("/manage/sources/review?sourceId=" + source_id, 200))
-    assert report["schemaVersion"] == 2 and report["sourceSha256"] == hashlib.sha256(contextual).hexdigest()
+    assert report["schemaVersion"] == 3 and report["sourceSha256"] == hashlib.sha256(contextual).hexdigest()
     assert report["review"]["tableDeclarations"] == report["review"]["chainDeclarations"] == 1
     signal = next(s for s in report["review"]["signals"] if s["code"] == "source.unclassifiedStatements")
     assert signal["lines"] == [2] and not report["review"]["canConvert"]
@@ -43,16 +43,34 @@ def check_source_analysis(browser, upload):
     html = browser.request("/manage/sources?sourceId=" + source_id, 200)
     assert "source.unclassifiedStatements" in html and "Conversion blocked" in html
     assert browser.request("/manage/sources/download?sourceId=" + source_id, 200).encode() == contextual
+    expressions = b'table inet sample { chain input {\n ether saddr 02:00:00:00:00:01 ip saddr != 192.0.2.1 tcp dport {80,443} accept\n ip saddr 192.0.2.2 counter accept\n} }'
+    upload("Whole rule expression diagnostics", expressions)
+    source_id = browser.location.split("sourceId=")[1]
+    report = json.loads(browser.request("/manage/sources/review?sourceId=" + source_id, 200))
+    parsing = report["ruleParsing"]
+    assert report["schemaVersion"] == 3 and report["sourceSha256"] == hashlib.sha256(expressions).hexdigest()
+    assert parsing["isAvailable"] and parsing["totalRules"] == 2 and parsing["parsedRules"] == 1
+    assert len(parsing["diagnostics"]) == 1
+    diagnostic = parsing["diagnostics"][0]
+    assert diagnostic["code"] == "source.ruleExpressionUnsupported" and diagnostic["span"]["line"] == 3
+    assert diagnostic["span"]["column"] == 21
+    assert "192.0.2" not in json.dumps(report) and "02:00:00" not in json.dumps(report)
+    html = browser.request("/manage/sources?sourceId=" + source_id, 200)
+    assert "1 of 2 rule statements" in html and "line 3, column 21" in html
+    assert "entire rule remains unmapped" in html and "Conversion blocked" in html
+    assert browser.request("/manage/sources/download?sourceId=" + source_id, 200).encode() == expressions
     mismatched = b'# synthetic\r\ntable inet sample {\r\n counter ]\r\n'
     upload("Mismatched source group", mismatched)
     source_id = browser.location.split("sourceId=")[1]
     report = json.loads(browser.request("/manage/sources/review?sourceId=" + source_id, 200))
     summary = report["structure"]
-    assert report["schemaVersion"] == 2 and report["sourceSha256"] == hashlib.sha256(mismatched).hexdigest()
+    assert report["schemaVersion"] == 3 and report["sourceSha256"] == hashlib.sha256(mismatched).hexdigest()
     assert not summary["isComplete"] and summary["tokenCount"] == summary["groupCount"] == summary["maximumDepth"] == 0
     assert summary["diagnostic"]["code"] == "source.mismatchedDelimiter"
     assert summary["diagnostic"]["span"]["line"] == 3 and summary["diagnostic"]["span"]["column"] == 10
     assert report["review"]["signals"] == [] and not report["review"]["canConvert"]
+    assert not report["ruleParsing"]["isAvailable"] and report["ruleParsing"]["totalRules"] == report["ruleParsing"]["parsedRules"] == 0
+    assert report["ruleParsing"]["diagnostics"] == []
     assert "sample" not in json.dumps(report) and "counter" not in json.dumps(report)
     html = browser.request("/manage/sources?sourceId=" + source_id, 200)
     assert "Check line 3, column 10" in html and "Source structure is incomplete" in html
