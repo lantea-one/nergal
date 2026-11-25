@@ -12,16 +12,16 @@ public sealed partial class ManagementController
     [RequestSizeLimit(524288)]
     public async Task<IActionResult> EditFilterConditions(string? bundleJson, string? summary, ulong? compareToRevision, int ruleIndex,
         string? sourceMacs, string? negateSourceMac, string? negateSource, string? negateDestination,
-        string? negateInputInterface, string? negateOutputInterface, string? rateLimitKey)
+        string? negateInputInterface, string? negateOutputInterface, string? rateLimitKey, string? refreshEntryTimeout = null)
     {
         if (!SourceAdministrator(out _)) { return Forbid(); }
         var raw = bundleJson ?? "";
         var form = await Request.ReadFormAsync(HttpContext.RequestAborted);
-        if (!ValidRouterForm(form, ["ruleIndex", "sourceMacs", "negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "rateLimitKey"],
-            ["negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface"]) || !form.ContainsKey("ruleIndex"))
+        if (!ValidRouterForm(form, ["ruleIndex", "sourceMacs", "negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "rateLimitKey", "refreshEntryTimeout"],
+            ["negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "refreshEntryTimeout"]) || !form.ContainsKey("ruleIndex"))
         { return ObjectDraftFailure(raw, summary, compareToRevision, [new("rule.conditionsFormInvalid", "rule")]); }
         var valid = PolicyAuthoringService.TryUpdateFilterConditions(raw, ruleIndex,
-            new(sourceMacs, negateSourceMac == "true", negateSource == "true", negateDestination == "true", negateInputInterface == "true", negateOutputInterface == "true", rateLimitKey), out var updated, out var errors);
+            new(sourceMacs, negateSourceMac == "true", negateSource == "true", negateDestination == "true", negateInputInterface == "true", negateOutputInterface == "true", rateLimitKey, refreshEntryTimeout is null ? null : refreshEntryTimeout == "true"), out var updated, out var errors);
         return ApplyDraftMutation(NergalRoles.Administrator, raw, summary, compareToRevision, valid, updated, errors);
     }
 

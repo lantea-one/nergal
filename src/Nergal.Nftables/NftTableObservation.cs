@@ -1347,7 +1347,7 @@ public sealed partial class NftTableObservation
     {
         if (!Properties(setExpr, "op", "elem", "set", "stmt") ||
             setExpr.GetProperty("op").ValueKind != JsonValueKind.String ||
-            setExpr.GetProperty("op").GetString() != "add" ||
+            setExpr.GetProperty("op").GetString() is not ("add" or "update") ||
             setExpr.GetProperty("set").ValueKind != JsonValueKind.String ||
             setExpr.GetProperty("set").GetString() != "@" + expectedSetName)
         {
@@ -1416,7 +1416,7 @@ public sealed partial class NftTableObservation
             return null;
         }
 
-        return new(rate, unit.Value, burst, timeout, payload.GetProperty("field").GetString() == "daddr" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress);
+        return new(rate, unit.Value, burst, timeout, payload.GetProperty("field").GetString() == "daddr" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress, setExpr.GetProperty("op").GetString() == "update");
     }
 
     private static ConnectionStateFlags ParseConnectionStates(JsonElement right)
@@ -1598,7 +1598,7 @@ public sealed partial class NftTableObservation
             rateLimit.Burst.ToString(CultureInfo.InvariantCulture),
             "/",
             rateLimit.EntryTimeoutSeconds.ToString(CultureInfo.InvariantCulture),
-            "s");
+            rateLimit.RefreshEntryTimeout ? "s/update" : "s");
     }
 
     private static NftObservationResult Deny(string code) => new(null, code);

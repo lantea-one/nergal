@@ -78,7 +78,7 @@ per object and 64 entries per version; capacity errors leave no partial audit/st
 Native projection also has the stricter complete-observation budget documented in
 [the native static-set guide](native-static-lists.md#bounds-and-support-limits).
 
-New stores use controller schema 3. Existing schema-1/2 stores need a verified
+New stores use controller schema 4. Existing schema-1/2/3 stores need a verified
 SQLite backup and explicit offline `nergal-admin controller upgrade` before restart;
 the web process never migrates. See the source-library upgrade procedure. Native
 projection adds no SQL migration. Additional SQL engines remain M6 work.
@@ -86,7 +86,7 @@ projection adds no SQL migration. Additional SQL engines remain M6 work.
 Native named objects now have complete definition/content/handle/lookup receipts,
 generation-consistent collection and confirmed apply/rollback. Dynamic meters remain
 separate; maps, concatenations, named MAC sets, standalone unused declarations and
-native dynamic-list options are unsupported. Semantic `nftables.conf` conversion remains M4.
+native dynamic-list options are unsupported. The [native conversion workflow](native-source-library.md) preserves supported static sets and rejects unsupported semantics.
 [Saved revision exports](policy-exports.md) and exact original-source downloads
 are available as distinct workflows.
 

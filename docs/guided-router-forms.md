@@ -130,7 +130,7 @@ Structured forms now cover the supported policy constructs. M3 is complete for
 the declared static-list/reference scopes. M4 tracks semantic native import and its
 round-trip gates; [saved revision exports](policy-exports.md) are available. Broader navigation, performance and UX refinement remain M5.
 All enforcement still requires immutable revision review and confirmed apply. The advanced JSON editor remains available for
-advanced review. General native `nftables.conf` conversion remains M4.
+advanced review. The [native source workflow](native-source-library.md) converts the declared grammar and blocks unsupported statements.
 
 ## Verified appearance
 

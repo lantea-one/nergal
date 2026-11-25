@@ -173,6 +173,9 @@ def exercise(temp):
         browser.request("/manage/sources/download?sourceId=00000000-0000-0000-0000-000000000000", 401)
         browser.request("/manage/sources/import", 401, {"name": "denied"})
         browser.request("/manage/sources/stage", 401, {"name": "denied"})
+        browser.request("/manage/sources/conversion/plan/00000000-0000-0000-0000-000000000000/report", 401)
+        for action in ("review", "commit"):
+            browser.request("/manage/sources/conversion/" + action, 401, {})
         assert 'href="/login"' in browser.request("/", 200)
         browser.request("/login", 400, plain=True, headers={"X-Forwarded-Proto": "https"})
         browser.request("/session", 401)
@@ -273,6 +276,8 @@ def exercise(temp):
         check_dnat_addresses(browser, ctrl_state)
         from policy_exports import check_policy_exports
         check_policy_exports(browser, ctrl_state)
+        from native_conversion import check_native_conversion
+        conversion_plan_id = check_native_conversion(browser, upload, ctrl_state)
         session = browser.cookies[ADMIN]
         browser.request("/logout", 400, {})
         assert 'href="/agent/status"' not in browser.request("/session", 200)
@@ -334,7 +339,10 @@ def exercise(temp):
             "__RequestVerificationToken": auditor_browser.token("/session"),
         })
         assert "Register agent host" not in auditor_browser.request("/manage", 200)
-        read_only = auditor_browser.request("/manage/policies", 200)
+        # Conversion adds a later filter-only revision. Select the earlier bridge fixture explicitly.
+        with sqlite3.connect(ctrl_state / "controller.db") as db:
+            bridge_revision = next(revision for revision, policy in db.execute("SELECT revision,policy_json FROM policy_revisions ORDER BY revision DESC") if json.loads(policy).get("bridge"))
+        read_only = auditor_browser.request("/manage/policies?revision=" + str(bridge_revision), 200)
         assert "Export a saved revision" not in read_only
         for kind in ("native", "intent"):
             auditor_browser.request("/manage/policies/export/" + kind + "?revision=1", 403)
@@ -370,6 +378,9 @@ def exercise(temp):
         auditor_browser.request("/manage/sources/stage", 403, {"name": "synthetic", "digest": source_digest,
                                 "__RequestVerificationToken": auditor_browser.token("/session")})
         auditor_browser.request("/manage/sources/import", 403, {"name": "denied", "__RequestVerificationToken": auditor_browser.token("/session")})
+        auditor_browser.request("/manage/sources/conversion/plan/" + conversion_plan_id + "/report", 403)
+        for action in ("review", "commit"):
+            auditor_browser.request("/manage/sources/conversion/" + action, 403, {"__RequestVerificationToken": auditor_browser.token("/session")})
         assert "Append-only audit log" in auditor_browser.request("/manage/audit", 200)
 
     print("PASS: database source ingestion, exact original downloads, restart persistence, XSS/CSRF/UTF-8/size denial and anonymous/auditor boundaries")

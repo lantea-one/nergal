@@ -192,11 +192,41 @@ for family, hook, port in [('inet', 'input', 19000), ('bridge', 'forward', 18081
 foreign = {f: run('nft', '--stateless', 'list', 'table', f, 'foreign_probe') for f in ('inet', 'bridge')}
 blocked = json.loads(run('dotnet', compiler, 'native-static-sets-json' if named else 'auxiliary-acceptance-json'))
 opened = json.loads(run('dotnet', compiler, 'native-static-open-json' if named else 'auxiliary-open-json'))
+if os.environ.get('NERGAL_NATIVE_IMPORT_ACCEPTANCE') == '1':
+    # Convert complete native snapshots before the existing independent packet/agent assertions.
+    def imported_intent(value):
+        # Exercise refreshed-expiry receipt reconstruction and rollback as well as legacy add.
+        for policy in (value['filter'], value.get('auxiliaryFilter', {}).get('filter', {})):
+            for rule in policy.get('rules', []):
+                if rule.get('rateLimit'):
+                    rule['rateLimit']['refreshEntryTimeout'] = True
+        # The full named-set matrix already approaches the protected observation
+        # budget. Keep every named lookup/drift case intact; exercise both refresh
+        # families in the separate agent matrix without raising that safety limit.
+        for family in (() if named else ('ipv4', 'ipv6')):
+            value['filter']['rules'].append({'family': family, 'protocol': 'udp', 'verdict': 'accept',
+                'destinationPort': 19111, 'rateLimit': {'packetsPerWindow': 1, 'windowUnit': 'minute',
+                'burst': 1, 'entryTimeoutSeconds': 60, 'keyKind': 'destinationAddress', 'refreshEntryTimeout': True}})
+        with tempfile.TemporaryDirectory(prefix='nergal-import-acceptance-') as directory:
+            native = Path(directory) / 'source.nft'
+            # The fixture compiler's synthetic JSON input mode emits native text without touching a host.
+            payload = Path(directory) / 'policy.json'
+            payload.write_text(json.dumps(value))
+            native.write_text(run('dotnet', compiler, 'compile-import-json', str(payload)))
+            return json.loads(run('dotnet', compiler, 'import-native', str(native), 'json',
+                'Filter=inet/nergal_filter;Nat=inet/nergal_nat;Auxiliary=inet/nergal_aux;Bridge=bridge/nergal_bridge'))
+    blocked, opened = imported_intent(blocked), imported_intent(opened)
 children = topology() if scenario in ('native', 'lifecycle') else []
 process = None
 try:
     if scenario == 'native':
-        artifact = run('dotnet', compiler, 'native-static-sets' if named else 'auxiliary-acceptance-native')
+        if os.environ.get('NERGAL_NATIVE_IMPORT_ACCEPTANCE') == '1':
+            with tempfile.TemporaryDirectory(prefix='nergal-import-native-') as directory:
+                payload = Path(directory) / 'policy.json'
+                payload.write_text(json.dumps(blocked))
+                artifact = run('dotnet', compiler, 'compile-import-json', str(payload))
+        else:
+            artifact = run('dotnet', compiler, 'native-static-sets' if named else 'auxiliary-acceptance-native')
         run('nft', '--check', '-f', '-', text=artifact)
         nft(artifact)
         for family in (socket.AF_INET, socket.AF_INET6):

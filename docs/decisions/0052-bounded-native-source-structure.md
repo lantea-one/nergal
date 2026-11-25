@@ -1,6 +1,10 @@
 # ADR 0052: Bounded native source structure
 
-Status: Accepted for structural parsing; semantic conversion remains blocked.
+Status: Accepted for structural parsing. Later semantic conversion follows ADR 0055.
+
+The inspection slice below remains unchanged. Source-bound semantic conversion
+now extends this frontend under [ADR 0055](0055-source-bound-native-conversion-plans.md);
+its separately saved plan determines revision readiness, not inventory counts.
 
 ## Decision
 

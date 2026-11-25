@@ -1,0 +1,12 @@
+# Independent syntax: an inline meter refreshes expiry, while add retains creation expiry.
+table inet expiry_source {
+    set creation4 { type ipv4_addr; flags dynamic,timeout; size 65535; }
+    set creation6 { type ipv6_addr; flags dynamic,timeout; size 65535; }
+    chain input {
+        type filter hook input priority 0; policy drop;
+        udp dport 19101 meter refresh4 { ip saddr timeout 2s limit rate 1/minute burst 1 packets } accept
+        udp dport 19102 add @creation4 { ip saddr timeout 2s limit rate 1/minute burst 1 packets } accept
+        udp dport 19103 meter refresh6 { ip6 saddr timeout 2s limit rate 1/minute burst 1 packets } accept
+        udp dport 19104 add @creation6 { ip6 saddr timeout 2s limit rate 1/minute burst 1 packets } accept
+    }
+}

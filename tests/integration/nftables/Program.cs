@@ -25,6 +25,38 @@ var routerIdentity = new NftTableIdentity(
     Guid.Parse("00000000-0000-0000-0000-000000000010"),
     Guid.Parse("00000000-0000-0000-0000-000000000020"));
 
+if (mode == "compile-import-json" && args.Length == 2)
+{
+    var policy = PolicyBundleJsonCodec.DecodeBundle(File.ReadAllText(args[1])).Value ?? throw new InvalidOperationException("Invalid synthetic import policy.");
+    var result = NftPolicyBundleCompiler.Compile(policy);
+    if (!result.IsSuccess) { throw new InvalidOperationException("Synthetic import compilation failed."); }
+    Console.Write(result.Candidate); return 0;
+}
+if (mode == "import-native" && args.Length == 4)
+{
+    var content = new Nergal.Core.Controller.NativeSourceContent("synthetic-import", File.ReadAllText(args[1]));
+    var sourceId = Guid.Parse("00000000-0000-0000-0000-000000000061");
+    var source = new Nergal.Core.Controller.NativeSourceSnapshot(new(sourceId, content.Name, content.Digest, content.ByteLength, "synthetic", DateTimeOffset.UnixEpoch), content);
+    var bindings = args[3].Split(';').Select(item =>
+    {
+        var parts = item.Split('='); var name = parts[1].Split('/');
+        return new NativeImportTableBinding(name[0], name[1], Enum.Parse<NativeImportTableRole>(parts[0]));
+    }).ToArray();
+    var plan = NativeImportPlanner.Plan(new(sourceId, bindings, []), [source]);
+    if (!plan.CanCreateRevision) { throw new InvalidOperationException("Native conversion blocked: " + string.Join(",", plan.Gaps.Select(g => g.Code))); }
+    var bundle = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!;
+    var output = args[2] switch
+    {
+        "json" => plan.PolicyJson,
+        "filter" => NftFilterCompiler.Compile(bundle.Filter, routerIdentity).Candidate,
+        "nat" => NftNatCompiler.Compile(bundle.Nat!, routerIdentity).Candidate,
+        "bridge" => NftBridgeCompiler.Compile(bundle.Bridge!, routerIdentity).Candidate,
+        "bundle" => NftPolicyBundleCompiler.Compile(bundle, routerIdentity).Candidate,
+        _ => throw new ArgumentException("Unknown synthetic import output."),
+    };
+    Console.Write(output); return 0;
+}
+
 if (mode == "native-low-ipv6" && args.Length == 2)
 {
     Console.Write(NftFilterCompiler.Compile(LowIpv6(args[1]), routerIdentity).Candidate); return 0;

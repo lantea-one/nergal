@@ -157,6 +157,6 @@
     {
         if (rl is null) { return "—"; }
         var unit = rl.WindowUnit == RateLimitTimeUnit.Second ? "s" : "m";
-        return $"{rl.PacketsPerWindow}/{unit} per {(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "destination" : "source")} (burst {rl.Burst}, {rl.EntryTimeoutSeconds}s)";
+        return $"{rl.PacketsPerWindow}/{unit} per {(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "destination" : "source")} (burst {rl.Burst}, {rl.EntryTimeoutSeconds}s, {(rl.RefreshEntryTimeout ? "refresh idle expiry" : "creation expiry")})";
     }
 }

@@ -1,0 +1,118 @@
+@model Nergal.Web.NativeConversionPage
+@{
+    var form = Model.Form;
+    var selected = Model.Selected;
+}
+<section aria-labelledby="conversion-heading">
+    <h3 id="conversion-heading">Convert to a managed policy</h3>
+    <p>Map every source table and resolve uploaded includes, then review a saved conversion plan. Unsupported content blocks the whole candidate. Nothing here applies firewall rules.</p>
+    @if (Model.Error is not null) { <p class="alert alert-danger" role="alert">@Model.Error</p> }
+    <form method="post" action="@Url.Action("ReviewNativeConversion")">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Conversion.SourceId" value="@form.SourceId" />
+        <fieldset><legend>1. Choose each table's destination role</legend>
+            <p class="hint">Source names do not grant ownership. Primary filtering uses priority 0; auxiliary filtering preserves an independent priority; NAT supports prerouting/postrouting; bridge supports forward and regular subchains. Unmapped or incompatible tables block conversion.</p>
+            @if (form.Tables.Count == 0) { <p>No table headers found in the selected files. Resolve includes and refresh choices first.</p> }
+            @for (var i = 0; i < form.Tables.Count; i++)
+            {
+                var table = form.Tables[i];
+                <div class="field">
+                    <input type="hidden" name="Conversion.Tables[@i].Family" value="@table.Family" /><input type="hidden" name="Conversion.Tables[@i].Name" value="@table.Name" />
+                    <label for="conversion-role-@i">@table.Family @table.Name</label>
+                    <select id="conversion-role-@i" name="Conversion.Tables[@i].Role">
+                        <option value="">Choose a role</option>
+                        @foreach (var role in new[] { ("Filter", "Primary inet filter"), ("Nat", "Inet NAT"), ("Auxiliary", "Auxiliary inet filter"), ("Bridge", "Bridge filter") })
+                        { <option value="@role.Item1" selected="@(table.Role == role.Item1)">@role.Item2</option> }
+                    </select>
+                </div>
+            }
+        </fieldset>
+        @if (form.Includes.Count > 0)
+        {
+            <fieldset><legend>2. Bind includes to uploaded snapshots</legend>
+                <p class="hint">Include paths are labels only; the server never opens them. Select uploaded snapshots in expansion order, top to bottom. Use the move buttons to reorder files, then refresh to discover nested includes or table headers.</p>
+                @for (var i = 0; i < form.Includes.Count; i++)
+                {
+                    var include = form.Includes[i];
+                    var selectedIds = include.Sources.Where(id => id != Guid.Empty).ToArray();
+                    <div class="field native-include-order" data-include-label="@include.Path">
+                        <input type="hidden" name="Conversion.Includes[@i].SourceId" value="@include.SourceId" />
+                        <input type="hidden" name="Conversion.Includes[@i].Path" value="@include.Path" />
+                        <p><strong>@include.Path</strong> in @(Model.AvailableSources.FirstOrDefault(s => s.Id == (include.SourceId == Guid.Empty ? form.SourceId : include.SourceId))?.Name ?? "source")</p>
+                        <div class="native-include-rows">
+                        @for (var j = 0; j <= selectedIds.Length; j++)
+                        {
+                            var chosen = j < selectedIds.Length ? selectedIds[j] : Guid.Empty;
+                            <div class="native-include-row mt-2">
+                                <select aria-label="@include.Path file @(j + 1)" name="Conversion.Includes[@i].Sources">
+                                    <option value="@Guid.Empty">No additional file</option>
+                                    @foreach (var source in Model.AvailableSources.Where(s => s.Id != form.SourceId))
+                                    { <option value="@source.Id" selected="@(source.Id == chosen)">@source.Name · @source.Id.ToString("D")[..8]</option> }
+                                </select>
+                                <button type="button" class="btn btn-secondary" data-include-move="up">Move file up</button>
+                                <button type="button" class="btn btn-secondary" data-include-move="down">Move file down</button>
+                            </div>
+                        }
+                        </div>
+                        <button type="button" class="btn btn-secondary mt-2" data-include-add>Add another file</button>
+                        @if (include.Path.IndexOfAny(['*', '?', '[']) >= 0)
+                        {
+                            <label><input type="checkbox" name="Conversion.Includes[@i].EmptyWildcard" value="true" checked="@include.EmptyWildcard" /> This wildcard intentionally expands to no files.</label>
+                        }
+                    </div>
+                }
+            </fieldset>
+        }
+        <details class="disclosure mt-2"><summary>Source-wide operations and ownership scope</summary>
+            <label><input type="checkbox" name="Conversion.RestrictGlobalOperations" value="true" checked="@form.RestrictGlobalOperations" /> Restrict any source-wide flush to the selected managed resources.</label>
+            <p class="hint">The original remains intact. A global flush is never executed; foreign tables are preserved. This decision is recorded in the plan. Unsupported commands and rules cannot be approved away.</p>
+        </details>
+        <div class="mt-2"><button type="submit" name="operation" value="refresh" class="btn btn-secondary">Refresh include and table choices</button> <button type="submit" name="operation" value="review" class="btn">Save conversion plan for review</button></div>
+    </form>
+    @if (selected is not null)
+    {
+        <section class="mt-2" aria-labelledby="conversion-result-heading">
+            <h3 id="conversion-result-heading">Saved conversion review</h3>
+            <p>Created @await Html.PartialAsync("_LocalTime", selected.CreatedAtUtc). This plan uses immutable database originals.</p>
+            @if (selected.Revision is { } revision)
+            { <p class="alert alert-success">Revision @revision was created from this plan. <a href="@Url.Action("Policies", new { revision })">Open revision review</a>. No firewall apply was requested.</p> }
+            else if (selected.Content.IsReady)
+            {
+                <p class="alert alert-success">Ready to create a saved revision. Every source statement is accounted for in the supported grammar. Review the mappings and candidate below; confirmed apply remains a separate workflow.</p>
+                <form method="post" action="@Url.Action("CommitNativeConversion")">
+                    @Html.AntiForgeryToken()<input type="hidden" name="planId" value="@selected.Id" /><input type="hidden" name="digest" value="@selected.Content.Digest" />
+                    <p class="hint">Creates one immutable revision and its pinned reusable lists atomically. Future list edits cannot change this revision.</p>
+                    <button type="submit" class="btn">Create reviewed policy revision</button>
+                </form>
+            }
+            else
+            { <p class="alert alert-warning">Conversion blocked: @selected.Content.GapCount gaps. No partial policy or reusable list was created. Resolve the source or choices and review a new plan.</p> }
+            @if (Model.Gaps.Count > 0)
+            {
+                <div class="table-wrap"><table><caption>Blocking conversion gaps</caption><thead><tr><th>Source</th><th>Position</th><th>Reason</th></tr></thead><tbody>
+                @foreach (var gap in Model.Gaps.Take(100))
+                { <tr><td><a href="@Url.Action("Sources", new { sourceId = gap.SourceId })">@(Model.AvailableSources.FirstOrDefault(s => s.Id == gap.SourceId)?.Name ?? "Source")</a></td><td>Line @gap.Span.Line, column @gap.Span.Column</td><td><code>@gap.Code</code><br />This statement must be represented completely; it cannot be skipped.</td></tr> }
+                </tbody></table></div>
+                @if (Model.Gaps.Count > 100) { <p class="hint">Showing the first 100 gaps. Download the report for all @Model.Gaps.Count gaps.</p> }
+            }
+            <details class="disclosure mt-2"><summary>Source-to-policy mappings (@Model.Mappings.Count)</summary>
+                <div class="table-wrap"><table><thead><tr><th>Source</th><th>Source position</th><th>Disposition</th><th>Destination</th></tr></thead><tbody>
+                @foreach (var mapping in Model.Mappings.Take(200))
+                { <tr><td><a href="@Url.Action("Sources", new { sourceId = mapping.SourceId })">@(Model.AvailableSources.FirstOrDefault(s => s.Id == mapping.SourceId)?.Name ?? "Source")</a></td><td>Line @mapping.Span.Line, column @mapping.Span.Column</td><td>@mapping.Disposition</td><td><code>@mapping.Target</code></td></tr> }
+                </tbody></table></div>
+                @if (Model.Mappings.Count > 200) { <p class="hint">Showing the first 200 mappings. Download the report for all @Model.Mappings.Count mappings.</p> }
+            </details>
+            @if (Model.Candidate is not null)
+            { <details class="disclosure mt-2"><summary>Complete generated candidate</summary><pre><code>@Model.Candidate</code></pre></details> }
+            <a class="btn btn-secondary mt-2" href="@Url.Action("DownloadNativeConversionPlan", new { planId = selected.Id })">Download mapping and gap report</a>
+        </section>
+    }
+    @if (Model.History.Count > 0)
+    {
+        <details class="disclosure mt-2"><summary>Conversion plan history (@Model.History.Count)</summary><ul>
+            @foreach (var plan in Model.History)
+            { <li><a href="@Url.Action("Sources", new { sourceId = form.SourceId, planId = plan.Id })">@plan.Id.ToString("D")[..8]</a> · @await Html.PartialAsync("_LocalTime", plan.CreatedAtUtc) · @(plan.Revision.HasValue ? "Revision created" : plan.Content.IsReady ? "Ready for revision" : $"Blocked: {plan.Content.GapCount} gaps")</li> }
+        </ul></details>
+    }
+</section>
+<script src="~/js/native-includes.js" asp-append-version="true" defer></script>

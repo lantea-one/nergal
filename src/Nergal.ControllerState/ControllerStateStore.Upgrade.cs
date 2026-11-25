@@ -18,6 +18,14 @@ public sealed partial class ControllerStateStore
             using var tx = conn.BeginTransaction(deferred: false);
             var version = ScalarLong(conn, tx, "PRAGMA user_version");
             if (version == SchemaVersion) { ValidateSchemaAndIntegrity(conn, tx); }
+            else if (version == 3)
+            {
+                ValidateSchemaAndIntegrity(conn, tx, 3);
+                if (ScalarLong(conn, tx, "SELECT count(*) FROM sqlite_master WHERE name LIKE 'native_conversion_%'") != 0) { throw new ControllerStateException("controller.upgradeUnsupported"); }
+                ExecuteNonQuery(conn, tx, ConversionPlansSchemaSql);
+                ExecuteNonQuery(conn, tx, "PRAGMA user_version=4;");
+                ValidateSchemaAndIntegrity(conn, tx);
+            }
             else if (version is 1 or 2 && ScalarLong(conn, tx, "PRAGMA application_id") == ApplicationId &&
                 ScalarString(conn, tx, "PRAGMA quick_check") == "ok" &&
                 ScalarLong(conn, tx, "SELECT count(*) FROM sqlite_master WHERE name LIKE 'reusable_object%'") == 0)
@@ -31,7 +39,8 @@ public sealed partial class ControllerStateStore
                 }
                 else { ValidateNativeSourceSchema(conn, tx); }
                 ExecuteNonQuery(conn, tx, ObjectsSchemaSql);
-                ExecuteNonQuery(conn, tx, "PRAGMA user_version=3;");
+                ExecuteNonQuery(conn, tx, ConversionPlansSchemaSql);
+                ExecuteNonQuery(conn, tx, "PRAGMA user_version=4;");
                 ValidateSchemaAndIntegrity(conn, tx);
             }
             else { throw new ControllerStateException("controller.upgradeUnsupported"); }

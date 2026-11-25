@@ -84,14 +84,16 @@ public enum RateLimitKeyKind
 /// <param name="PacketsPerWindow">Positive packet allowance per <paramref name="WindowUnit"/> (1–1000000).</param>
 /// <param name="WindowUnit">Rate time unit (<see cref="RateLimitTimeUnit.Second"/> or <see cref="RateLimitTimeUnit.Minute"/>).</param>
 /// <param name="Burst">Positive token-bucket burst size in packets (1–10000).</param>
-/// <param name="EntryTimeoutSeconds">Idle timeout in seconds before evicting per-address state (1–86400).</param>
+/// <param name="EntryTimeoutSeconds">Entry lifetime in seconds (1–86400); refresh behavior is selected explicitly by RefreshEntryTimeout.</param>
 /// <param name="KeyKind">Whether the meter keys on source address (<c>saddr</c>) or destination address (<c>daddr</c>).</param>
+/// <param name="RefreshEntryTimeout">True preserves native update/meter idle-expiry semantics; false retains legacy add creation-expiry behavior.</param>
 public sealed record PerSourceRateLimit(
     int PacketsPerWindow,
     RateLimitTimeUnit WindowUnit,
     int Burst,
     int EntryTimeoutSeconds = 60,
-    RateLimitKeyKind KeyKind = RateLimitKeyKind.SourceAddress);
+    RateLimitKeyKind KeyKind = RateLimitKeyKind.SourceAddress,
+    bool RefreshEntryTimeout = false);
 
 /// <summary>An ordered rule evaluated in the raw prerouting <c>rpfilter</c> base chain (<c>hook prerouting priority raw</c>).</summary>
 /// <param name="Verdict">Terminal decision (<see cref="FilterVerdict.Accept"/> or <see cref="FilterVerdict.Drop"/>).</param>
@@ -403,6 +405,7 @@ public sealed class FilterPolicy
         }
 
         if (Rules.Any(rule => rule?.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)) { features.Add(FirewallFeature.PerDestinationRateLimiting); }
+        if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
         if (RpFilter is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&
             (r.SourceMac is not null || r.SourceMacs is not null || r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface || r.Verdict == FilterVerdict.Reject)))
         { features.Add(FirewallFeature.RouterFiltering); }

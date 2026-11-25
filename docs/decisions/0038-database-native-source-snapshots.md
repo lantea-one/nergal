@@ -45,3 +45,7 @@ operation and establishes no source-to-policy equivalence.
 Controller schema 3 under [ADR 0039](0039-versioned-typed-object-library.md) now
 retains these source protections and extends the explicit offline upgrade from
 schemas 1 and 2. New stores initialize at schema 3.
+
+Controller schema 4 now retains these protections and adds immutable conversion
+plans under [ADR 0055](0055-source-bound-native-conversion-plans.md). New stores
+initialize at 4; schemas 1/2/3 require the same explicit offline upgrade boundary.

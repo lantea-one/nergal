@@ -1,12 +1,21 @@
 # Changelog
 
-## Unreleased — router authoring and settings review
+## Unreleased — router authoring and source conversion
 
+- Add exhaustive source-bound native conversion plans, explicit table/include
+  choices, original-coordinate mapping/gaps and separate atomic reviewed revision/
+  pinned-list creation. Any unsupported statement blocks the complete candidate;
+  imports never execute source or dispatch applies. Add explicit controller schema
+  4 upgrades and immutable audited plan lineage (ADR 0055).
+- Preserve native meter update/add expiry semantics in intent, capabilities,
+  compilation, complete observation and guided forms. Verify expiry through
+  continued real dual-stack traffic; legacy false/default artifacts stay unchanged
+  (ADR 0056).
 - Parse bounded native source structure over the shared lossless token document.
   Retain unknown/trivia tokens and exact group spans, reject mismatched/missing
   delimiters or nesting beyond 64 without partial trees/inventories, and expose
   the same value-free schema-2 summary/positions in source viewing and reports.
-  Semantic conversion remains blocked (ADR 0052).
+  This inventory is separate from conversion readiness under ADR 0055.
 - Make native nftables on Linux the sole firewall/platform target. Remove the
   future-adapter roadmap, retain explicit native support limits and framework-free
   policy contracts, and align application/Pages guidance and agent rules (ADR 0051).
@@ -14,7 +23,7 @@
   Retain exact token spans, physical source positions, quoted/reference values and
   unknown syntax; handle continuations and CRLF/CR/LF without lossy normalization.
   Bound bytes and both significant/total tokens, reject controls without partial
-  output, and keep conversion blocked pending semantic mapping (ADR 0050).
+  output, supplying the shared conversion frontend (ADR 0050).
 - Add Administrator-only exports of selected saved revisions: exact create-only
   native candidates and separate canonical complete intent. Verify every saved
   candidate digest before either download; retain dormant rules and pinned

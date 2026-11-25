@@ -27,8 +27,9 @@ conversion. See [ADR 0053](decisions/0053-native-source-declaration-partition.md
 The same declaration catalog now supplies whole-rule expression results for a
 bounded literal grammar. Every considered rule has one complete private typed
 result or one positioned diagnostic; no successful prefix survives failure.
-Schema-3 reports serialize only rule counts/failures. Context, definitions, object
-resolution and complete policy mapping remain unresolved; conversion stays blocked.
+Schema-3 reports serialize only rule counts/failures. This basic inventory remains separate from conversion readiness. Source-bound
+conversion below resolves context, definitions and supported objects before granting
+revision-creation readiness.
 See [ADR 0054](decisions/0054-native-rule-expression-slice.md).
 
 The first milestone is an independently implemented, native nftables management
@@ -223,7 +224,7 @@ never a request-supplied path. Directory snapshots are optional staging inputs. 
 conversion. Exact sources and exported reports remain private.
 
 Native source ingestion now persists immutable exact UTF-8 snapshots and attributed
-audit entries transactionally (introduced in controller schema 2, retained in schema 3). The optional operator file
+audit entries transactionally (introduced in controller schema 2, retained in schema 4). The optional operator file
 catalog is staging only. Web uploads never execute source text, and original-file
 downloads use the verified database snapshot. Existing controllers require explicit
 offline `controller upgrade`; no additional SQL adapter is introduced. See
@@ -234,7 +235,7 @@ markup and a local browser formatter display the viewer's timezone without using
 the server timezone or mutating stored data; see [time display](time-display.md).
 
 The [typed object library](reusable-object-library.md) stores stable identities and
-immutable IPv4/IPv6/port-list versions under controller schema 3 (ADR 0039). Library
+immutable IPv4/IPv6/port-list versions introduced in controller schema 3 and retained in schema 4 (ADR 0039). Library
 edits require Administrator authorization, CSRF and exact expected-version checks,
 with transactional audit. Auditors can inspect history. Pinned references under ADR 0040 embed immutable object versions in saved inet
 filter rules. Compilation projects those snapshots onto existing matchers; no
@@ -306,3 +307,26 @@ listings can complete nft creation-echo element omissions only when creation
 handles agree and the reconstructed artifact exactly matches protected intent.
 Missing provenance or conflicting data remains denied. The journal repeats exact
 artifact verification; dynamic meter runtime contents retain their separate boundary.
+
+## Source-bound native conversion boundary
+
+`NativeImportPlanner` consumes the same lossless source tree and contextual
+partition as the viewer. Explicit table roles and ordered, including-source-bound
+uploaded include dependencies are immutable choices. Every source statement gets
+a mapping or blocking gap; any gap removes the complete candidate. No source
+command, ambient path, resolver or shell is executed. Supported static sets become
+pinned reusable objects; unknown semantics cannot be approved away.
+
+Controller schema 4 adds immutable conversion plans and unique plan/revision links.
+Review stores choices, original digests, mappings/gaps and optional complete intent
+with transactional audit. Separate Administrator/CSRF commit recomputes against
+database originals, verifies the full saved content binding, then atomically creates
+one revision and missing pinned list history. Replay, changed logic, source mismatch
+and failed audit leave no partial write. Import never contacts an agent; existing
+revision review and confirmed apply remain mandatory. Explicit offline upgrades
+preserve schema-1/2/3 data; web startup never migrates. See ADR 0055.
+
+Meter timeout refresh is explicit intent and a distinct feature (ADR 0056). Native
+`meter`/`update` maps to refreshed idle expiry, while legacy `add` retains creation
+expiry and unchanged historical bytes/digests. Native observation binds the operation;
+changing it alone is drift. Guided forms preserve an omitted legacy choice.

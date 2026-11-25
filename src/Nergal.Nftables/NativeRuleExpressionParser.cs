@@ -121,43 +121,8 @@ public static class NativeRuleExpressionParser
             NativeRuleParseEntry Fail(string code, NativeSourceNode node) => new(statement, null, new(code, node.Span));
         }
 
-        private NativeRuleLiteral? Literal(NativeRuleField field, NativeSourceNode node)
-        {
-            if (node.Kind != NativeSourceNodeKind.Token) { return null; }
-            var token = document.Tokens[node.StartTokenIndex]; var text = Text(node);
-            if (Interface(field))
-            {
-                if (token.Kind == NativeSourceTokenKind.DoubleQuoted) { text = text[1..^1]; }
-                else if (token.Kind != NativeSourceTokenKind.Bare) { return null; }
-                return text.Length is >= 1 and <= 15 && text.All(c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_' or '.' or ':' or '-')
-                    ? new NativeInterfaceLiteral(node.Span, text) : null;
-            }
-            if (token.Kind != NativeSourceTokenKind.Bare) { return null; }
-            if (field is NativeRuleField.EtherSource or NativeRuleField.EtherDestination)
-            { return MacAddress.TryParse(text, out var mac) ? new NativeMacLiteral(node.Span, mac!) : null; }
-            if (field is NativeRuleField.TcpSourcePort or NativeRuleField.TcpDestinationPort or NativeRuleField.UdpSourcePort or NativeRuleField.UdpDestinationPort)
-            {
-                return Decimal(text) && ushort.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var port)
-                    ? new NativePortLiteral(node.Span, port) : null;
-            }
-            var family = field is NativeRuleField.IpSource or NativeRuleField.IpDestination ? IpFamily.IPv4 : IpFamily.IPv6;
-            var parts = text.Split('/');
-            if (parts.Length > 2 || (parts.Length == 2 && !Decimal(parts[1])) || parts[0].Contains('%') ||
-                !IPAddress.TryParse(parts[0], out var address) || address.IsIPv4MappedToIPv6) { return null; }
-            var actualFamily = address.AddressFamily == AddressFamily.InterNetwork ? IpFamily.IPv4 : IpFamily.IPv6;
-            if (family != actualFamily || (family == IpFamily.IPv4 && !Dotted(parts[0]))) { return null; }
-            if (family == IpFamily.IPv6 && parts[0].Contains('.') && !Dotted(parts[0][(parts[0].LastIndexOf(':') + 1)..])) { return null; }
-            try
-            {
-                var prefix = new NetworkPrefix(parts.Length == 1 ? text + (family == IpFamily.IPv4 ? "/32" : "/128") : text);
-                return new NativeAddressLiteral(node.Span, prefix);
-            }
-            catch (ArgumentException) { return null; }
-        }
+        private NativeRuleLiteral? Literal(NativeRuleField field, NativeSourceNode node) => ReadLiteral(document, field, node);
 
-        private static bool Interface(NativeRuleField field) => field is NativeRuleField.InputInterface or NativeRuleField.OutputInterface or NativeRuleField.InputBridge or NativeRuleField.OutputBridge;
-        private static bool Decimal(string value) => value.Length > 0 && (value.Length == 1 || value[0] != '0') && value.All(c => c is >= '0' and <= '9');
-        private static bool Dotted(string value) => value.Split('.') is { Length: 4 } parts && parts.All(p => Decimal(p) && byte.TryParse(p, NumberStyles.None, CultureInfo.InvariantCulture, out _));
         private static NativeRuleVerdict? Verdict(string word) => word switch
         {
             "accept" => NativeRuleVerdict.Accept,
@@ -173,4 +138,42 @@ public static class NativeRuleExpressionParser
         private string Word(NativeSourceNode node) => node.Kind == NativeSourceNodeKind.Token && document.Tokens[node.StartTokenIndex].Kind == NativeSourceTokenKind.Bare ? Text(node) : "";
         private static NativeSourceSpan Cover(NativeSourceSpan start, NativeSourceSpan end) => start with { Length = end.Offset + end.Length - start.Offset };
     }
+    internal static NativeRuleLiteral? ReadLiteral(NativeSourceDocument document, NativeRuleField field, NativeSourceNode node)
+    {
+        if (node.Kind != NativeSourceNodeKind.Token) { return null; }
+        var token = document.Tokens[node.StartTokenIndex]; var text = document.GetText(node.StartTokenIndex);
+        if (Interface(field))
+        {
+            if (token.Kind == NativeSourceTokenKind.DoubleQuoted) { text = text[1..^1]; }
+            else if (token.Kind != NativeSourceTokenKind.Bare) { return null; }
+            return text.Length is >= 1 and <= 15 && text.All(c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_' or '.' or ':' or '-')
+                ? new NativeInterfaceLiteral(node.Span, text) : null;
+        }
+        if (token.Kind != NativeSourceTokenKind.Bare) { return null; }
+        if (field is NativeRuleField.EtherSource or NativeRuleField.EtherDestination)
+        { return MacAddress.TryParse(text, out var mac) ? new NativeMacLiteral(node.Span, mac!) : null; }
+        if (field is NativeRuleField.TcpSourcePort or NativeRuleField.TcpDestinationPort or NativeRuleField.UdpSourcePort or NativeRuleField.UdpDestinationPort)
+        {
+            return Decimal(text) && ushort.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var port)
+                ? new NativePortLiteral(node.Span, port) : null;
+        }
+        var family = field is NativeRuleField.IpSource or NativeRuleField.IpDestination ? IpFamily.IPv4 : IpFamily.IPv6;
+        var parts = text.Split('/');
+        if (parts.Length > 2 || (parts.Length == 2 && !Decimal(parts[1])) || parts[0].Contains('%') ||
+            !IPAddress.TryParse(parts[0], out var address) || address.IsIPv4MappedToIPv6) { return null; }
+        var actualFamily = address.AddressFamily == AddressFamily.InterNetwork ? IpFamily.IPv4 : IpFamily.IPv6;
+        if (family != actualFamily || (family == IpFamily.IPv4 && !Dotted(parts[0]))) { return null; }
+        if (family == IpFamily.IPv6 && parts[0].Contains('.') && !Dotted(parts[0][(parts[0].LastIndexOf(':') + 1)..])) { return null; }
+        try
+        {
+            var prefix = new NetworkPrefix(parts.Length == 1 ? text + (family == IpFamily.IPv4 ? "/32" : "/128") : text);
+            return new NativeAddressLiteral(node.Span, prefix);
+        }
+        catch (ArgumentException) { return null; }
+    }
+
+    private static bool Interface(NativeRuleField field) => field is NativeRuleField.InputInterface or NativeRuleField.OutputInterface or NativeRuleField.InputBridge or NativeRuleField.OutputBridge;
+    private static bool Decimal(string value) => value.Length > 0 && (value.Length == 1 || value[0] != '0') && value.All(c => c is >= '0' and <= '9');
+    private static bool Dotted(string value) => value.Split('.') is { Length: 4 } parts && parts.All(p => Decimal(p) && byte.TryParse(p, NumberStyles.None, CultureInfo.InvariantCulture, out _));
+
 }

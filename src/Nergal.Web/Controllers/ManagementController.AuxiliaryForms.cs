@@ -29,18 +29,18 @@ public sealed partial class ManagementController
         string? chain, string? family, string? protocol, string? verdict, string? sources, string? destinations, string? destinationPorts,
         string? icmpType, string? inputInterface, string? outputInterface, string? connectionStates, string? matchOriginalDestinationDnat,
         int? rateLimitPackets, string? rateLimitUnit, int? rateLimitBurst, int? rateLimitTimeout, string? description, string? sourceMacs,
-        string? negateSourceMac, string? negateSource, string? negateDestination, string? negateInputInterface, string? negateOutputInterface, string? rateLimitKey)
+        string? negateSourceMac, string? negateSource, string? negateDestination, string? negateInputInterface, string? negateOutputInterface, string? rateLimitKey, string? refreshEntryTimeout = null)
     {
         if (!SourceAdministrator(out _)) { return Forbid(); }
         var raw = bundleJson ?? "";
         var form = await Request.ReadFormAsync(HttpContext.RequestAborted);
-        if (!ValidRouterForm(form, ["operation", "ruleIndex", "chain", "family", "protocol", "verdict", "sources", "destinations", "destinationPorts", "icmpType", "inputInterface", "outputInterface", "connectionStates", "matchOriginalDestinationDnat", "rateLimitPackets", "rateLimitUnit", "rateLimitBurst", "rateLimitTimeout", "description", "sourceMacs", "negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "rateLimitKey"],
-            ["matchOriginalDestinationDnat", "negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface"]) || (form.ContainsKey("ruleIndex") && ruleIndex is null))
+        if (!ValidRouterForm(form, ["operation", "ruleIndex", "chain", "family", "protocol", "verdict", "sources", "destinations", "destinationPorts", "icmpType", "inputInterface", "outputInterface", "connectionStates", "matchOriginalDestinationDnat", "rateLimitPackets", "rateLimitUnit", "rateLimitBurst", "rateLimitTimeout", "description", "sourceMacs", "negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "rateLimitKey", "refreshEntryTimeout"],
+            ["matchOriginalDestinationDnat", "negateSourceMac", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "refreshEntryTimeout"]) || (form.ContainsKey("ruleIndex") && ruleIndex is null))
         { return ObjectDraftFailure(raw, summary, compareToRevision, [new("auxiliary.formInvalid", "auxiliaryFilter")]); }
         var valid = PolicyAuthoringService.TrySetAuxiliaryRule(raw, operation, ruleIndex,
             new(chain, family, protocol, verdict, sources, destinations, destinationPorts, icmpType, inputInterface, outputInterface, connectionStates,
                 matchOriginalDestinationDnat == "true", rateLimitPackets, rateLimitUnit, rateLimitBurst, rateLimitTimeout, description),
-            new(sourceMacs, negateSourceMac == "true", negateSource == "true", negateDestination == "true", negateInputInterface == "true", negateOutputInterface == "true", rateLimitKey), out var updated, out var errors);
+            new(sourceMacs, negateSourceMac == "true", negateSource == "true", negateDestination == "true", negateInputInterface == "true", negateOutputInterface == "true", rateLimitKey, refreshEntryTimeout is null ? null : refreshEntryTimeout == "true"), out var updated, out var errors);
         return ApplyDraftMutation(NergalRoles.Administrator, raw, summary, compareToRevision, valid, updated, errors);
     }
 }

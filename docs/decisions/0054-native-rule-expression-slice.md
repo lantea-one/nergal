@@ -1,6 +1,10 @@
 # ADR 0054: Complete-statement native rule expression slice
 
-Status: Accepted for a bounded expression grammar; policy conversion remains blocked.
+Status: Accepted for a bounded expression grammar. Later semantic conversion follows ADR 0055.
+
+The inspection slice below remains unchanged. Source-bound semantic conversion
+now extends this frontend under [ADR 0055](0055-source-bound-native-conversion-plans.md);
+its separately saved plan determines revision readiness, not inventory counts.
 
 ## Decision
 

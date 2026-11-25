@@ -128,10 +128,10 @@ On remote managed hosts:
 - Two-phase agent control (`prepare-apply`, `confirm`, `rollback`) supports the owned filter, NAT, bridge and early inet bundle slice under [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md), with complete native receipt verification and coordinated rollback. Unsupported native semantics still fail closed; imported source text is not an agent payload.
 - Run `nergal-agent reconcile /var/lib/nergal/agent` manually or from a pre-start dependency after host reboots when explicit new-boot reconciliation of owned tables is required.
 
-## Unreleased controller schema 3
+## Unreleased controller schema 4
 
-The native source and typed object libraries require controller schema 3. Existing
-schema-1/2 controllers need an explicit offline `nergal-admin controller upgrade`
-after a verified backup and stopping writers. New stores initialize at schema 3.
+The source, typed object and conversion-plan libraries require controller schema 4. Existing
+schema-1/2/3 controllers need an explicit offline `nergal-admin controller upgrade`
+after a verified backup and stopping writers. New stores initialize at schema 4.
 This upgrade does not change account or agent journal schemas. See
 [the source library upgrade procedure](native-source-library.md).

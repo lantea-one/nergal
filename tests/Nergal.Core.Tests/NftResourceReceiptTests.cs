@@ -576,6 +576,26 @@ public sealed class NftResourceReceiptTests
         Reject(wrongOrder.ToJsonString(), "observation.rule");
     }
 
+    /// <summary>Changing only dynamic-set add/update is observable drift, not a harmless syntax variation.</summary>
+    [Fact]
+    public void MeterRefresh_ObservationBindsOperationAndRejectsUnknownOperations()
+    {
+        var original = Schema2RateLimitListing(false);
+        var before = NftTableObservation.Parse(original.ToJsonString());
+        foreach (var entry in original["nftables"]!.AsArray())
+        {
+            if (entry?["rule"]?["expr"] is not JsonArray expressions) { continue; }
+            foreach (var expression in expressions)
+            { if (expression?["set"] is JsonObject set) { set["op"] = "update"; } }
+        }
+        var after = NftTableObservation.Parse(original.ToJsonString());
+        Assert.True(before.IsSuccess); Assert.True(after.IsSuccess);
+        Assert.NotEqual(before.Observation!.StateDigest, after.Observation!.StateDigest);
+        Assert.All(after.Observation.Policy.Rules, r => Assert.True(r!.RateLimit!.RefreshEntryTimeout));
+        Assert.Contains("update @", NftFilterCompiler.Compile(after.Observation.Policy, after.Observation.Identity).Candidate!);
+        Assert.False(NftTableObservation.Parse(original.ToJsonString().Replace("\"update\"", "\"delete\"", StringComparison.Ordinal)).IsSuccess);
+    }
+
     private static JsonNode Schema2RateLimitListing(bool includeRuntimeElems)
     {
         var set0 = includeRuntimeElems

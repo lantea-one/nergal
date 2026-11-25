@@ -1,161 +1,144 @@
-# Native source library
+# Native source library and conversion
 
-Administrators can open **Native sources** on an authenticated controller to import
-an `nftables.conf` or other UTF-8 native configuration snapshot into controller
-SQLite history. Supply a display name and select a file. Contextual hints explain
-encoding, size, storage and conversion limits. Importing stores an immutable source
-and an attributed audit entry atomically; it never executes nft, resolves includes,
-creates a managed policy or changes a firewall.
+Administrators use **Native sources** to upload `nftables.conf`, inspect exact
+originals and convert the supported native grammar into a reviewed policy. The
+viewer and planner share the same bounded lossless token document, delimiter tree
+and contextual statement partition. No source command is executed, no server
+include path is opened, and no import action contacts an agent.
 
-Each import has an independent identity, even when names or contents repeat. The
-metadata list shows import time in the viewer's local timezone and size. Timestamps
-remain stored in UTC, with the original instant available in the tooltip. Select **Review** for one source's exact
-content, digest and non-exhaustive lexical migration review. **Download original**
-returns its exact UTF-8 bytes, including BOM and line endings, as an attachment
-named `nftables.conf`. Reports select a stored source by identity, not a server path
-or ambiguous digest. This replaces the previous unreleased staging-digest selector.
-[Generated policy exports](policy-exports.md) are separate downloads from saved
-database revisions. Semantic native source conversion remains future work.
+## Guided workflow
 
-## One viewer and import workflow
+1. Upload each required UTF-8 source with a display name. Each upload receives an
+   independent immutable identity, exact byte length, SHA-256, actor and UTC time.
+   **Download original** preserves the exact bytes, including BOM and line endings.
+2. Select a source and choose each table's destination role: primary inet filter,
+   inet NAT, independent auxiliary inet filter or bridge filter. Source names never
+   confer ownership. Conversion targets new managed resources, without adopting
+   source table identities or altering foreign tables.
+3. Bind each include literal to uploaded snapshots in expansion order. The same
+   relative literal in different including files has separate bindings. Move files
+   up/down, then **Refresh include and table choices** to discover nested includes
+   and tables. An explicitly empty expansion is allowed only for a wildcard label.
+   Includes never search a filesystem, expand a server glob or skip missing files.
+4. Choose **Save conversion plan for review**. This stores immutable source/digest
+   dependencies, choices, statement mappings and blocking gaps. Any unsupported or
+   unaccounted statement blocks the complete candidate. A successful prefix cannot
+   produce a weaker partial policy. Review alone creates no policy or reusable list.
+5. For a ready plan, inspect its mappings and complete generated candidate, then
+   choose **Create reviewed policy revision**. The server recomputes the plan from
+   database originals and atomically saves one linked revision, pinned reusable
+   lists and audit entries. Changed, blocked or replayed plans are denied. List edits
+   cannot change that revision. No apply is requested.
+6. Open the saved revision to review intent, native differences and compatibility.
+   Download [native and complete intent exports](policy-exports.md) there. Native
+   exports contain the selected managed scope; complete intent also preserves
+   disabled rules and pinned snapshots. Host ownership and runtime state are not
+   exported. Applying and confirming remain separate authorized workflows.
 
-Source viewing, review and later semantic import use the same analysis pipeline,
-not separate parsers. Upload or select one immutable source here, inspect its exact
-contents and diagnostics, and retain that identity for mapping/conversion review.
-The frontend tokenizes once and retains exact UTF-16 offsets, physical line/column
-positions, comments, BOM, CRLF/CR/LF, quoted values, references and continuations.
-The displayed inventory and downloadable report derive from those same tokens.
-Unknown tokens remain present for explicit semantic accounting; values inside
-quotes and references cannot masquerade as review keywords.
+A source-wide `flush ruleset` before table definitions requires a recorded choice
+restricting it to the selected managed-resource scope. The source stays intact;
+a global flush is never generated or executed. A later flush, other deletion/live
+commands, or unsupported expressions remain blocking gaps, without an approval
+option that discards them.
 
-Tokenization is bounded to 512 KiB of strict UTF-8, 65,536 non-trivia/non-newline
-tokens and 131,072 total tokens including trivia. Invalid encoding, unsupported
-control characters, unterminated quoted chunks or exhausted bounds return stable
-diagnostics without partial tokens or copied source values. Only ASCII space/tab
-are horizontal trivia; unfamiliar Unicode whitespace is retained as unknown input.
-Success is lexical accounting, not native syntax validation or semantic conversion.
-The original remains downloadable even when analysis fails. Include paths are
-retained as source text and never opened by the viewer/import frontend.
+## Declared conversion grammar
 
-The existing review always reports conversion blocked. Semantic parsing, persisted
-mapping/gap plans and reviewed revision creation will extend this same workflow;
-there is no separate converter with different validation. See
-[ADR 0050](decisions/0050-lossless-native-source-tokenization.md).
+This is a bounded v1 grammar, not support for arbitrary nftables language.
 
-## Shared source structure and diagnostics
+| Area | Supported contract |
+| --- | --- |
+| Tables and chains | Explicit unique role mapping for `inet` filter/NAT/auxiliary and `bridge` filter; supported base hooks, priorities/defaults, ordered rules and bridge regular subchains. Primary filter priority is 0, raw prerouting is -300, NAT prerouting/postrouting are -100/100. |
+| Matching and actions | Numeric IPv4/IPv6 prefixes/hosts and anonymous sets, exact interfaces, MAC+IP restrictions, supported equality/negation, numeric TCP/UDP ports, supported conntrack states/status, ICMP/ICMPv6, accept/drop/explicit ICMPx reject, bridge jump/return. Unsupported scope combinations fail full policy validation. |
+| Router constructs | Raw prerouting reverse-path FIB drop and UDP source ports; forward SYN MSS clamp; source/destination keyed bounded meters; dual-stack DNAT/SNAT, masquerade and ordered postrouting return exemptions; early auxiliary filtering and bridge L2/L3/L4 matching. |
+| Named sets | Nonempty static IPv4/IPv6/port sets in supported reference slots become immutable version-1 pinned library objects with shared native definitions. Unused declarations and unsupported flags/options remain blocking. |
+| Definitions/includes | Ordered lexical `define`/`redefine`/`undefine`, with values captured at definition time; exact uploaded include bindings, cycle/depth and expansion bounds. No host/service name resolution. |
+| Native commands | Supported create/add table definitions and add chain/set/rule statements can describe the complete candidate. They are parsed as data and never executed. |
 
-The same analysis now groups braces, brackets and parentheses over the original
-token document, including all trivia and unknown input. **Source structure and
-diagnostic details** shows optional group/depth metadata. An incomplete source
-shows the failure code and physical line/column alongside the original. Quoted
-values and comments cannot introduce delimiters. Nothing is executed or resolved.
+Counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
+control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
+repeated restrictions and trailing input are explicit gaps. The narrowly supported
+dynamic set form is a private implementation of one bounded meter, with exact
+flags/size, key, per-entry timeout, rate and burst; shared arbitrary dynamic sets
+are unsupported. Conversion does not claim that every private server export is
+supported. Full private migration acceptance remains M8.
 
-Nesting is limited to 64 groups. Missing/unexpected braces retain
-`source.unbalancedBraces`; other missing/unexpected delimiters report
-`source.unbalancedDelimiter`, wrong closing kinds report
-`source.mismatchedDelimiter`, and excessive nesting reports `source.nestingTooDeep`.
-Positions identify the offending closer or unmatched opener. Columns and offsets
-count UTF-16 code units, with tabs counting as one; they are not UTF-8 byte offsets.
-Failure returns no partial tree or topic inventory. The exact original can still
-be inspected and downloaded. The viewer hides partial counts and explains that
-review topics are unavailable until the source error is resolved.
+Native inline `meter` and explicit `update @set` refresh an entry's expiry on
+matching attempts; explicit `add @set` retains creation-based expiry. Conversion
+preserves this difference. Existing intent defaults to creation expiry; new refresh
+intent carries an explicit capability and JSON field. Guided meter controls expose
+and preserve the choice. Controller and agent must both understand refresh intent;
+older strict codecs reject it. Operation-only native drift is detected.
 
-Current migration-review downloads use **schema 3** (extending schema 2): the original name/digest and
-masked `review` remain, with a value-free `structure` summary containing completion,
-token/group counts, maximum depth and an optional code/span diagnostic. Counts are
-zero on failure. The report does not serialize source values, tokens or the tree.
-Clients must check the report version. Structural completion does not establish
-native syntax validity, semantic compatibility or conversion readiness. Semantic
-parsing, explicit include mappings and persisted gap plans remain M4 work. See
-[ADR 0052](decisions/0052-bounded-native-source-structure.md).
+## Diagnostics, originals and bounds
 
-The shared analysis also partitions original nodes into ordered contextual
-statements, retaining all trivia and raw expressions. It recognizes root table
-headers and table-local chain/object headers; table/chain counts come from those
-scopes rather than keyword sequences inside definitions or rules. Definitions,
-includes and native commands remain source data. Unclassified heads appear as
-`source.unclassifiedStatements` review topics with value-free line positions.
-Object bodies and rule expressions still need semantic parsing. No statement is
-discarded, include opened or command executed; conversion remains blocked.
-See [ADR 0053](decisions/0053-native-source-declaration-partition.md).
+Optional **Source inventory and exact original** details retain the original and
+legacy masked inventory. Its schema-3 structure/basic-expression report is an
+inspection aid, not the conversion readiness gate. The saved conversion plan uses
+a separate schema-1 mapping/gap envelope with source IDs, digests, positions and
+stable codes. It excludes source values and executable candidate text. Plan history
+and downloads retain every gap; the page bounds the displayed rows.
 
-## Whole-rule expression parsing
+Coordinates use UTF-16 offsets and physical line/column positions; tabs count as
+one column. CRLF, CR, LF, BOM, comments and continuations remain exact in originals.
+Malformed lexical/structural input produces no partial tree or candidate. The
+original remains available even when conversion is blocked.
 
-The shared analyzer now attempts every chain-local rule in a bounded literal
-grammar. It preserves ordered and repeated predicates, MAC+IP restrictions,
-negation and exact source positions. The initial slice covers numeric IPv4/IPv6
-source/destination addresses, MAC addresses, exact interface names, TCP/UDP numeric
-ports, nonempty anonymous literal sets, accept/drop/return and exactly
-`reject with icmpx type admin-prohibited`. A bare host is represented as /32 or
-/128 in the private typed result; the original file never changes.
+Bounds are 512 KiB strict UTF-8 per source, 65,536 significant and 131,072 total
+tokens per document, 64 delimiter groups deep; conversion permits 32 distinct
+snapshots, 2 MiB combined source bytes, 8 include levels and 131,072 expanded terms.
+Literal collections are bounded to 64 entries. Exhausted bounds fail explicitly.
 
-Each rule has either one complete typed result or one positioned diagnostic.
-Unknown expressions, counters/logging, references, service names, ranges, wildcard
-or escaped names and trailing input produce **no partial rule**. The optional
-**Source structure and diagnostic details** disclosure shows parsed/total counts
-and up to 20 failure code/line/column entries; all failures are in the review
-attachment. A parsed rule still needs contextual family/hook validation and policy
-mapping; it is not certified as valid native syntax or an equivalent policy.
+## Storage, authorization and upgrades
 
-Schema 3 retains the structure summary and adds value-free `ruleParsing`:
-`isAvailable`, `totalRules`, `parsedRules`, and diagnostic code/spans. Structural
-failure makes parsing unavailable with zero counts and diagnostics. Private typed
-rules and literal values are never serialized. Legacy in-process constructors
-retain schemas 1/2. There is no database migration or new apply authority.
+Originals, plans, mappings/gaps, immutable revisions, reusable lists and attributed
+audit live in the controller database. Files are derived artifacts. Source and plan
+history have checked no-update/no-delete SQLite protections. Anonymous and Auditor
+requests cannot inspect private sources, download reports or perform conversion.
+Administrator actions require CSRF; malformed, duplicate and unknown form input
+is denied. Review/commit failures leave no partial object/revision/audit writes.
 
-The declared limits are 128 ordered predicates and 64 elements per anonymous set.
-Exact names use 1..15 ASCII letters/digits or `_ . : -`; port literals use decimal
-0..65535 without leading zeros. Address literals reject abbreviated/ambiguous IPv4,
-scoped/mapped IPs and explicit CIDRs with host bits. Numeric port zero remains
-source intent even though later managed-policy validation may reject it. Missing
-coverage is explicit, never approximated. See [ADR 0054](decisions/0054-native-rule-expression-slice.md).
+The source library permits 128 records and 32 MiB retained bytes. Conversion history
+permits 128 plans and 64 MiB total content, with bounded request/report/intent fields.
+No deletion/retention UI is implemented. UTC instants display in the browser's local
+timezone with an explicit indication and the stored UTC instant in the tooltip.
 
-These captures use staged synthetic sources in a separate disposable controller.
-The example retains one completely parsed rule and an unsupported counter rule,
-showing its exact line/column without a partial typed result. The mobile light
-view fits a 375-pixel viewport without page overflow.
+New controller stores use **schema 4**. Existing schema-1/2/3 stores require an
+explicit offline upgrade; web startup never silently migrates them:
 
-![Shared source structure in dark mode](../pages/assets/screenshots/source-structure-dark.jpg)
-
-![Whole-rule failure position in light mode on mobile](../pages/assets/screenshots/source-structure-mobile-light.jpg)
-
-## Storage and authorization
-
-Source bytes, SHA-256, importing actor and UTC time live in `controller.db`. Only
-metadata is loaded for the list; selected content is verified against its persisted
-byte length and digest before inspection or download. Database triggers reject source updates/deletes. Their definitions and append-only
-audit protections are checked on each store operation.
-No source deletion/retention UI is implemented in this slice.
-
-Anonymous and Auditor requests cannot inspect, import or download private sources.
-Import actions require Administrator role and CSRF protection. Display names never
-select filesystem paths; uploaded client filenames are ignored. Bounds are 512 KiB
-per UTF-8 source, 128 records and 32 MiB retained content. The upload request bound
-is 600,000 bytes including multipart overhead, with bounded multipart buffering in
-memory. Invalid encoding, names, duplicate/unknown form fields, extra files and
-capacity exhaustion fail without a partial source/audit transaction.
-
-`NativeSources:Directory` is now optional operator staging. Existing bounded file
-snapshots can be explicitly copied through **Import staged …**. The database copy
-is canonical after import; a later file change cannot alter it. Staging is never
-automatically reapplied or used to overwrite history. A basic installation needs
-no staging directory or particular deployment topology.
-
-## Existing controller databases
-
-New controller stores use schema 3, including the typed object library. Existing schema-1/2 stores require an explicit
-offline upgrade; the web process never upgrades them automatically:
-
-1. Stop the controller and take a verified backup of its SQLite store using an
-   appropriate SQLite backup procedure, including any uncheckpointed WAL state.
+1. Stop all controller writers and take a verified SQLite backup, including any
+   uncheckpointed WAL state.
 2. Run `nergal-admin controller upgrade ABSOLUTE_CONTROLLER_DIRECTORY` under the
-   controller store's owner identity. The directory and database protection rules
-   are unchanged. No agent journal or account database is migrated by this command.
-3. Restart the controller and verify retained hosts, revisions, settings and audit
-   history. The upgrade is atomic and idempotent; unknown versions, source-table
-   collisions and invalid protection definitions are rejected without repair.
+   store's owner identity.
+3. Restart and verify retained sources, objects, hosts, settings, revisions and
+   audit. The atomic idempotent operation rejects unknown versions, collisions and
+   invalid protection definitions without repair. Agent/account stores are separate.
 
-The isolated development stack stops its own web writer and runs this command via
-its disposable provisioning container. This is not a production upgrade operation.
-Migrations for additional SQL backends remain deferred until the logical schema
-stabilizes. See [ADR 0038](decisions/0038-database-native-source-snapshots.md).
+The isolated local sandbox stops its own writer for this upgrade. It does not
+perform a production upgrade. Other SQL backends remain deferred to M6.
+`NativeSources:Directory` is optional staging: **Import staged …** makes a new
+immutable database copy; later file changes cannot overwrite it. A basic
+installation requires no staging directory or particular topology.
+
+## Verification and appearance
+
+Unit/real-SQLite/HTTPS checks cover complete consumption, definitions/includes,
+immutable plans, denied roles/CSRF/malformed inputs, restart, concurrent replay and
+transaction rollback. Independent native inputs and imported candidates receive
+real dual-stack routed/raw/MAC/MSS/meter/NAT checks in disposable namespaces.
+Continued-traffic checks distinguish creation and refresh expiry. Imported intent
+also passes complete native receipt, bridge, confirm and independent watchdog
+rollback scenarios. These synthetic checks do not establish arbitrary production
+conversion equivalence. See [testing](testing.md).
+
+These authentic captures use an isolated controller with synthetic uploaded files.
+They show a complete plan in dark/light mode, the separately committed revision on
+a 375-pixel mobile viewport, and an unsupported counter producing a blocking gap.
+No private source or topology appears.
+
+![Ready source conversion in dark mode](../pages/assets/screenshots/native-conversion-dark.jpg)
+
+![Ready source conversion in light mode](../pages/assets/screenshots/native-conversion-light.jpg)
+
+![Committed conversion on mobile](../pages/assets/screenshots/native-conversion-mobile.jpg)
+
+![Unsupported statement blocks conversion](../pages/assets/screenshots/native-conversion-blocked.jpg)

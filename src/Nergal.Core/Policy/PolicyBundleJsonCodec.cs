@@ -210,7 +210,7 @@ public static partial class PolicyBundleJsonCodec
             if (item.TryGetProperty("rateLimit", out var rlEl) && rlEl.ValueKind != JsonValueKind.Null)
             {
                 if (rlEl.ValueKind != JsonValueKind.Object ||
-                    !HasOnlyProperties(rlEl, "packetsPerWindow", "windowUnit", "burst", "entryTimeoutSeconds", "keyKind") ||
+                    !HasOnlyProperties(rlEl, "packetsPerWindow", "windowUnit", "burst", "entryTimeoutSeconds", "keyKind", "refreshEntryTimeout") ||
                     !rlEl.TryGetProperty("packetsPerWindow", out var ppwEl) || ppwEl.ValueKind != JsonValueKind.Number || !ppwEl.TryGetInt32(out var ppw) ||
                     !rlEl.TryGetProperty("windowUnit", out var unitEl) || unitEl.ValueKind != JsonValueKind.String ||
                     !rlEl.TryGetProperty("burst", out var burstEl) || burstEl.ValueKind != JsonValueKind.Number || !burstEl.TryGetInt32(out var burst))
@@ -247,7 +247,8 @@ public static partial class PolicyBundleJsonCodec
                         { return new(null, [new("filter.rateLimitKey", $"filter.rules[{index}].rateLimit.keyKind")]); }
                         key = keyEl.GetString() == "destinationAddress" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress;
                     }
-                    rateLimit = new PerSourceRateLimit(ppw, unit.Value, burst, timeout, key);
+                    if (!TryReadBool(rlEl, "refreshEntryTimeout", out var refresh)) { return new(null, [new("filter.rateLimitRefresh", $"filter.rules[{index}].rateLimit")]); }
+                    rateLimit = new PerSourceRateLimit(ppw, unit.Value, burst, timeout, key, refresh);
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -662,6 +663,7 @@ public static partial class PolicyBundleJsonCodec
                 writer.WriteNumber("entryTimeoutSeconds", rl.EntryTimeoutSeconds);
                 if (!Enum.IsDefined(rl.KeyKind)) { throw new ArgumentOutOfRangeException(nameof(policy)); }
                 if (rl.KeyKind == RateLimitKeyKind.DestinationAddress) { writer.WriteString("keyKind", "destinationAddress"); }
+                if (rl.RefreshEntryTimeout) { writer.WriteBoolean("refreshEntryTimeout", true); }
                 writer.WriteEndObject();
             }
 

@@ -741,3 +741,43 @@ HTTPS checks retain native projection through ordinary edits, history, immutable
 saves and inline disable/re-enable, including omission/restoration of unused native
 objects. Existing literal-projection tests remain for older revisions. See
 [the native static-set guide](native-static-lists.md) and ADR 0048 for support limits.
+
+## Source-bound semantic conversion
+
+`NativeImportPlannerTests` covers explicit table roles, whole-candidate round trips,
+MAC/IP restrictions, named-set pins, definitions capturing prior values, exact
+uploaded includes (including identical relative labels in different source files),
+cycle denial, immutable choices, whole-rule suffix rejection and source-wide flush
+scope/order restrictions. `NativeConversionPlanContentTests` rejects ambiguous or
+unknown envelopes, unbound diagnostics, invalid positions and partial candidates.
+
+`NativeConversionStoreTests` uses real SQLite for immutable review/restart, role
+and digest denial, blocked plans, one-revision concurrent replay, atomic list/revision/
+audit rollback, checked triggers and explicit schema-3-to-4 upgrade preservation.
+The HTTPS fixture submits guided choices and separate commit actions, checks
+CSRF/unknown/duplicate/malformed input, exact source/report/export bindings,
+Administrator/Auditor/anonymous separation and unchanged state after denial.
+
+After the Release build, run:
+
+```sh
+bash tests/integration/nftables/check-native-import.sh
+NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --agent
+NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --named-sets
+```
+
+The first fixture applies independently handwritten native router input and its
+converted candidate in separate disposable user/network namespaces. The same real
+packet assertions cover dual-stack NAT sources/negated exemptions, MAC+IP denial,
+SYN MSS, destination buckets, FIB/rpfilter and UDP source-port exceptions. A second
+independent input distinguishes add/update entry expiry under continued dual-stack
+UDP attempts: refreshed buckets remain exhausted while creation-expiry buckets
+expire and grant a new burst. The bounded driver fails if it misses an expiry
+window; the test never falls back to a parent namespace.
+
+Imported intent also runs the existing complete auxiliary/bridge native observation,
+with explicit dual-stack refreshed-expiry rules in the agent matrix, then
+agent confirm, explicit rollback, independent timed rollback, restart, collision and
+drift-denial scenarios, including named sets. These fixtures use synthetic data and
+isolated namespaces. They establish the declared conversion slice, not arbitrary
+nft language support, private-server migration completeness or production authority.

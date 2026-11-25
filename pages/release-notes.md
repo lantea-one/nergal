@@ -2,6 +2,18 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Source conversion and controller schema 4
+
+Source viewing and conversion share one bounded lossless frontend. Guided table
+roles and ordered uploaded include bindings lead to immutable source/digest-bound
+plans with complete mappings and blocking gaps. Separate reviewed commit atomically
+creates one revision and pinned lists; imports never apply firewall changes. Unknown
+semantics cannot be discarded. Explicit offline schema-1/2/3 upgrades retain history.
+Native meter refresh and creation expiry are preserved separately in compiler and
+complete receipts, with real continued-traffic expiry and imported rollback checks.
+See the [source guide](native-source-library.md) for support limits and workflow.
+
+
 ## Unreleased whole-rule expression slice
 
 The shared viewer/import analyzer now parses a bounded numeric address/MAC/port,
@@ -9,8 +21,8 @@ exact interface, negation and terminal-verdict grammar over ordered source rules
 Each rule is completely consumed or has no typed result; unknown expressions,
 references and suffixes cannot become weakened partial rules. Schema-3 reports
 add value-free parsed/total counts and positioned diagnostics, also shown in the
-optional source details. Context, definitions and full mapping remain unresolved;
-conversion stays blocked. See [the source workflow](native-source-library.md).
+optional source details. Inventory counts alone grant no conversion authority;
+source-bound plans now resolve context, definitions and supported mapping. See [the source workflow](native-source-library.md).
 
 ## Unreleased contextual native declarations
 
@@ -18,7 +30,7 @@ Shared viewer/import analysis now retains ordered contextual statements over the
 original tree. Declaration counts require table/chain scope; keyword sequences in
 raw expressions cannot inflate them. Unknown heads are explicit masked review
 topics. Object bodies, directives, includes, commands and rule expressions remain
-source data requiring semantic mapping; conversion is still blocked. Existing
+source data; the later source-bound planner performs supported semantic mapping. Existing
 schema-2 reports remain supported by legacy in-process constructors; current
 reports are schema 3 as described above. See
 [the source workflow](native-source-library.md).
@@ -136,7 +148,7 @@ schema-2 records, review one source, download its exact original bytes and obtai
 source-bound lexical report. Optional file-directory snapshots are staging only.
 Imports and their audit records are atomic; no configuration is executed or
 converted. Existing controllers require an explicit offline `controller upgrade`.
-Additional SQL providers and semantic native conversion remain future work.
+Additional SQL providers remain M6 work. Source-bound native conversion now supports the [declared grammar](native-source-library.md).
 Saved revision exports are now available as described above. See [the source library guide](native-source-library.md).
 
 ## Local timestamp display (unreleased)
@@ -207,7 +219,7 @@ and broader UX/operations/database work remain separate product milestones.
 
 M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
 filtering. Table scope is explicit, existing API submissions remain primary-only,
-and saved usage paths include auxiliary references. Native static support now follows [the current contract](native-static-lists.md); semantic import remains open.
+and saved usage paths include auxiliary references. Native static support now follows [the current contract](native-static-lists.md); source conversion follows the [declared grammar](native-source-library.md).
 
 Postrouting NAT and bridge destination-port rules, including regular chains, can
 now pin immutable Port-list versions through contextual UI selectors. Ordinary

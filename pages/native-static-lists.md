@@ -74,7 +74,7 @@ This slice supports generated static IPv4/IPv6/port objects referenced by suppor
 rules. Standalone unused declarations, arbitrary native identifiers/types, maps,
 concatenations, dynamic flags/timeouts and named MAC sets are not added. Existing
 MAC literals/anonymous sets and dynamic rate-limit meters retain their own support.
-Semantic source conversion remains M4. [Saved revision exports](policy-exports.md)
+The [source conversion workflow](native-source-library.md) supports declared static sets; unsupported source objects block conversion. [Saved revision exports](policy-exports.md)
 provide native candidates and complete intent as separate files. Native support
 does not turn source inspection or original-file download into semantic conversion.
 

@@ -13,7 +13,7 @@ namespace Nergal.ControllerState;
 public sealed partial class ControllerStateStore
 {
     private const int ApplicationId = 0x4e524743; // 'NRGC'
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
     private const string DatabaseFileName = "controller.db";
 
     private readonly ControllerStateOptions _options;
@@ -67,7 +67,7 @@ public sealed partial class ControllerStateStore
                 PRAGMA synchronous=FULL;
                 PRAGMA foreign_keys=ON;
                 PRAGMA application_id=0x4e524743;
-                PRAGMA user_version=3;
+                PRAGMA user_version=4;
                 """);
 
             using (var tx = connection.BeginTransaction())
@@ -75,6 +75,7 @@ public sealed partial class ControllerStateStore
                 ExecuteNonQuery(connection, tx, SchemaSql);
                 ExecuteNonQuery(connection, tx, NativeSourcesSchemaSql);
                 ExecuteNonQuery(connection, tx, ObjectsSchemaSql);
+                ExecuteNonQuery(connection, tx, ConversionPlansSchemaSql);
                 tx.Commit();
             }
 
@@ -264,28 +265,30 @@ public sealed partial class ControllerStateStore
             throw new ArgumentException("Policy revision summary must be at most 256 non-control characters.", nameof(summary));
         }
 
-        return Write((conn, tx) =>
-        {
-            var decoded = PolicyBundleJsonCodec.DecodeBundle(policyJson);
-            if (decoded.Value is { } bundle && ValidatePolicyObjects(conn, tx, bundle).Count != 0) { throw new ControllerStateException("object.referenceInvalid"); }
-            var maxRaw = ScalarString(conn, tx, "SELECT COALESCE(MAX(revision), 0) FROM policy_revisions");
-            var nextRev = ulong.Parse(maxRaw, CultureInfo.InvariantCulture) + 1;
-            var now = _timeProvider.GetUtcNow().ToUniversalTime();
+        return Write((conn, tx) => InsertPolicyRevision(conn, tx, policyJson, normalizedDigest, actorId, actorRole, summary));
+    }
 
-            ExecuteNonQuery(conn, tx, """
-                INSERT INTO policy_revisions (revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary)
-                VALUES ($rev, $json, $digest, $actor, $created, $summary)
-                """,
-                ("$rev", checked((long)nextRev)),
-                ("$json", policyJson),
-                ("$digest", normalizedDigest),
-                ("$actor", actorId),
-                ("$created", now.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)),
-                ("$summary", (object?)summary ?? DBNull.Value));
+    private PolicyRevisionRecord InsertPolicyRevision(SqliteConnection conn, SqliteTransaction tx, string policyJson, string normalizedDigest, string actorId, string actorRole, string? summary)
+    {
+        var decoded = PolicyBundleJsonCodec.DecodeBundle(policyJson);
+        if (decoded.Value is { } bundle && ValidatePolicyObjects(conn, tx, bundle).Count != 0) { throw new ControllerStateException("object.referenceInvalid"); }
+        var maxRaw = ScalarString(conn, tx, "SELECT COALESCE(MAX(revision), 0) FROM policy_revisions");
+        var nextRev = ulong.Parse(maxRaw, CultureInfo.InvariantCulture) + 1;
+        var now = _timeProvider.GetUtcNow().ToUniversalTime();
 
-            InsertAudit(conn, tx, now, actorId, actorRole, "policy.save", "bundle", nextRev, "succeeded", null);
-            return new PolicyRevisionRecord(nextRev, policyJson, normalizedDigest, actorId, now, summary);
-        });
+        ExecuteNonQuery(conn, tx, """
+            INSERT INTO policy_revisions (revision, policy_json, candidate_digest, created_by_actor, created_at_utc, summary)
+            VALUES ($rev, $json, $digest, $actor, $created, $summary)
+            """,
+            ("$rev", checked((long)nextRev)),
+            ("$json", policyJson),
+            ("$digest", normalizedDigest),
+            ("$actor", actorId),
+            ("$created", now.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)),
+            ("$summary", (object?)summary ?? DBNull.Value));
+
+        InsertAudit(conn, tx, now, actorId, actorRole, "policy.save", "bundle", nextRev, "succeeded", null);
+        return new PolicyRevisionRecord(nextRev, policyJson, normalizedDigest, actorId, now, summary);
     }
 
     /// <summary>Returns persisted policy revisions ordered newest-first up to <paramref name="limit"/>.</summary>
@@ -662,10 +665,10 @@ public sealed partial class ControllerStateStore
         }
     }
 
-    private static bool ValidateSchemaAndIntegrity(SqliteConnection conn, SqliteTransaction tx)
+    private static bool ValidateSchemaAndIntegrity(SqliteConnection conn, SqliteTransaction tx, int expectedVersion = SchemaVersion)
     {
         if (ScalarLong(conn, tx, "PRAGMA application_id") != ApplicationId ||
-            ScalarLong(conn, tx, "PRAGMA user_version") != SchemaVersion ||
+            ScalarLong(conn, tx, "PRAGMA user_version") != expectedVersion ||
             !string.Equals(ScalarString(conn, tx, "PRAGMA quick_check"), "ok", StringComparison.Ordinal))
         {
             throw new ControllerStateException("controller.corrupt");
@@ -681,6 +684,7 @@ public sealed partial class ControllerStateStore
         ValidateAuditDefinitions(conn, tx);
         ValidateNativeSourceSchema(conn, tx);
         ValidateObjectSchema(conn, tx);
+        if (expectedVersion >= 4) { ValidateConversionPlanSchema(conn, tx); }
         return true;
     }
 
