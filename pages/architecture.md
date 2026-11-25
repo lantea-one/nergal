@@ -142,3 +142,10 @@ from privilege. Pure state-based guidance only chooses navigation; pending/recov
 states outrank setup, and unknown observations never imply healthy/applied state.
 A dedicated reader Hosts page retains existing Administrator/CSRF mutation routes.
 Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.
+
+## Live OIDC connection settings
+
+The private identity database now holds versioned OIDC connection settings and a
+purpose-protected write-only client secret. Each authentication request uses an
+immutable generation; replacing settings retires old challenges and sessions without
+changing local access. See [the connection guide](oidc-connection.md).

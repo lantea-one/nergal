@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGES = ROOT / "pages"
 
 REQUIRED_FILES = [
+    "oidc-connection.md",
+    "assets/screenshots/oidc-connection-dark.jpg",
     ".nojekyll",
     "index.html",
     "index.md",

@@ -70,6 +70,7 @@ class Issuer(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         op = self.server
+        op.token_requests += 1
         form = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode())
         code = form.get("code", [""])[0]
         authorization = op.codes.pop(code, None)
@@ -102,6 +103,7 @@ def provider(temp):
         server.jwk = {"kty": "RSA", "alg": "RS256", "use": "sig", "kid": "fixture-key", "e": "AQAB", "n": encode(bytes.fromhex(modulus))}
         server.signing_key, server.client, server.secret = key, "fixture-client", secrets.token_urlsafe(32)
         server.codes, server.overrides = {}, {}
+        server.token_requests = 0
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
@@ -417,3 +419,7 @@ if __name__ == "__main__":
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="nergal-oidc-") as directory:
         exercise(Path(directory))
+
+    from connection_settings import exercise_connections
+    with tempfile.TemporaryDirectory(prefix="nergal-oidc-connection-") as directory:
+        exercise_connections(Path(directory), sessions, provider, host_settings, RelyingParty)

@@ -8,8 +8,8 @@
 <main id="main-content" tabindex="-1" class="container">
     <h1>OIDC profile defaults</h1>
     <p>Map signed ID-token fields to optional profile defaults. Local edits stay separate and take precedence.</p>
-    <p><a href="@Url.Content("~/profile")">Back to my profile</a></p>
-    <div class="alert alert-info" id="mapping-hint">These settings do not activate sign-in, change roles or link accounts. The exact issuer must match the running OIDC provider's protected configuration. A changed or disabled mapping immediately retires its old defaults; users sign in again to refresh. Profile email is not a verified delivery address.</div>
+    <p><a href="@Url.Content("~/profile")">Back to my profile</a> · <a href="@Url.Content("~/manage/identity/connection")">Provider connection</a></p>
+    <div class="alert alert-info" id="mapping-hint">These settings do not activate sign-in, change roles or link accounts. The exact issuer must match the active OIDC connection. A changed or disabled mapping immediately retires its old defaults; users sign in again to refresh. Profile email is not a verified delivery address.</div>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
     @if (Model.Mappings.Count == 0) { <p>No profile mappings saved. Create one for your configured OIDC issuer.</p> }
     @foreach (var entry in Model.Mappings.Select((value, index) => (value, index)))

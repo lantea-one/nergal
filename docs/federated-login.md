@@ -6,7 +6,12 @@ their own exact issuer and subject. The local account, password, security stamp 
 provisioning database are independent. No local enrollment is required for group
 members. User names, emails and display names cannot link identities or grant access.
 
-| Configuration key | Meaning |
+Use the [UI-managed connection](oidc-connection.md) for normal administration.
+The following protected startup keys are optional bootstrap inputs only, before
+a database-managed connection exists. A saved disabled connection never falls back
+to these inputs.
+
+| Bootstrap configuration key | Meaning |
 | --- | --- |
 | `Oidc:Enabled` | Enable the external login button and callback on the direct HTTPS local session host |
 | `Oidc:Issuer` | Exact HTTPS issuer identifier, including its realm path where applicable |
@@ -18,7 +23,7 @@ members. User names, emails and display names cannot link identities or grant ac
 
 Configure the provider for code flow with S256 PKCE, form-post responses, a
 confidential client secret and RS256-signed ID tokens. Put the group array in the
-ID token for the requested `openid` scope. Discovery, signing-key and token
+ID token for the requested `openid profile email` scopes. Discovery, signing-key and token
 backchannels stay on the configured issuer's HTTPS origin and refuse HTTP
 redirects. An external authorization endpoint must use the same origin. A provider
 installation with split endpoint origins or a different signing algorithm needs
@@ -29,11 +34,14 @@ validates state, correlation, nonce, signing key, token lifetime, issuer and
 audience. The callback URI is fixed in configuration and must match the actual
 request. Authorization also checks duplicate claims, exact audience (including
 authorized party if present), bounded subject and group values, issuance time
-and expiry. At least one configured group must match. The controller retains
-only the issuer, subject, identity derived from that pair and session identifier.
+and expiry. At least one configured group must match. The authentication ticket retains bounded issuer/subject identity, role, actor,
+session identifier, connection generation and deadline. Optional descriptive
+profile defaults are stored separately after complete protocol validation; see
+[profile mapping](oidc-profile-defaults.md).
 It never requests downstream API access or stores access/refresh/ID tokens in
 the session. Subject and issuer are available to application code for individual
-attribution. This milestone introduces no durable access audit log.
+attribution. Identity/profile changes and configuration saves use the identity-store audit;
+controller actions use their separate controller audit boundary.
 
 The protected federated cookie is nonpersistent, Secure, HttpOnly, host-only and
 SameSite=Strict. Framework correlation and nonce cookies support the cross-site

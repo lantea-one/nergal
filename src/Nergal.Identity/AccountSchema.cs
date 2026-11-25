@@ -78,3 +78,18 @@ internal sealed class OidcProfileObservation
     public string ObservedUtc { get; set; } = "";
     public string Diagnostics { get; set; } = "";
 }
+
+internal sealed class OidcConnection
+{
+    public int Id { get; set; } = 1;
+    public long Version { get; set; }
+    public bool Enabled { get; set; }
+    public string Issuer { get; set; } = "";
+    public string ClientId { get; set; } = "";
+    public string CallbackUri { get; set; } = "";
+    public string GroupClaim { get; set; } = "";
+    public string AdministratorGroups { get; set; } = "";
+    public string AuditorGroups { get; set; } = "";
+    public string ProtectedSecret { get; set; } = "";
+    public string UpdatedUtc { get; set; } = "";
+}

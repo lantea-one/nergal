@@ -2,6 +2,12 @@
 
 ## Unreleased — router authoring and source conversion
 
+- Add UI-managed live OIDC connections, purpose-protected write-only secrets,
+  version-bound challenges/sessions and local-Administrator trust replacement.
+- Use `Nergal.slnx`, with application projects at the solution root and every
+  unit/integration fixture project in the `Tests` solution folder.
+
+
 - Add audited exact-issuer OIDC profile mapping, signed provider defaults and
   per-field personal overrides for names and descriptive email. Retire old defaults
   immediately on mapping edits; refresh only after full protocol validation. Keep

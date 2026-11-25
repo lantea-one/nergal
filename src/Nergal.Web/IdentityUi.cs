@@ -76,6 +76,10 @@ public abstract class IdentityUiController(LocalAdministratorAccounts accounts, 
         "password.bounds" => "Use a password of 15–128 characters.",
         "account.credentialsDenied" => "Current password verification failed. Try again or wait for the account lockout to expire.",
         "profile.metadata" => "Use at most 80 characters for each name and a valid profile email address, without control characters.",
+        "provider.invalid" => "Enter a valid HTTPS issuer and callback, client ID, literal groups claim and distinct role groups. Secrets must be 1–4096 characters without controls.",
+        "provider.stale" => "These connection settings changed. Reload the page before saving again.",
+        "provider.secretRequired" => "Enter a client secret when creating a connection or changing its issuer or client ID.",
+        "provider.localAdministratorRequired" => "Sign in as a local Administrator to change provider trust.",
         "profile.mappingInvalid" => "Use an exact HTTPS issuer and literal claim names. Identity, role and MFA claims cannot be mapped as metadata.",
         "profile.mappingStale" => "This mapping changed. Review its current version and submit again.",
         "profile.mappingCapacity" => "This installation supports up to 16 issuer profile mappings.",
@@ -103,6 +107,7 @@ internal static class IdentityUiLabels
         "account.passwordChanged" => "Password changed",
         "account.passwordDenied" => "Password verification denied",
         "profile.updated" => "Profile updated",
+        "provider.connectionSaved" => "OIDC connection settings replaced",
         "profile.mappingSaved" => "Profile mapping saved",
         "profile.providerRefreshed" => "Provider profile refreshed",
         _ => action,
@@ -122,6 +127,7 @@ internal static class IdentityUiLabels
     internal static string Account(string identity, IReadOnlyList<LocalUserSnapshot> users)
     {
         if (identity.StartsWith("https://", StringComparison.Ordinal)) { return identity; }
+        if (identity == "oidc") { return "OIDC connection"; }
         if (identity == "operator:offline") { return "Offline operator"; }
         var value = identity.StartsWith("local:", StringComparison.Ordinal) ? identity[6..] : identity;
         return Guid.TryParseExact(value, "D", out var id)

@@ -19,7 +19,7 @@ keyboard and assistive-technology support; submission remains explicit.
 Personal profiles and current-password changes use versioned database state;
 last-enabled-admin checks and identity audit commit with the account change.
 The fresh unreleased account schema is version 3. Signed OIDC metadata mapping and per-field overrides
-are implemented; runtime provider setup, LDAP/OAuth adapters and email/TOTP MFA
+are implemented; LDAP/OAuth adapters and email/TOTP MFA
 remain open M5 gates. See [users and profiles](local-users-and-profiles.md).
 
 Browser challenges return to sign-in, and themed errors retain their HTTP status
@@ -287,3 +287,11 @@ advanced sections. Preserve unsaved draft fields during local firewall navigatio
 provide accessible keyboard tabs/mobile Menu, and retain authorization, pinned
 references and confirmed-apply boundaries. Shared application/Pages styling stays
 identical. See the [console guide](appliance-console.md); local people/profiles and observation-backed charts remain M5 work.
+
+## UI-managed OIDC connection and solution organization
+
+[OIDC connection settings](oidc-connection.md) now take effect without restart,
+with encrypted write-only secrets and retired sessions/callbacks after replacement.
+Local sign-in remains independent. LDAP/OAuth adapters and MFA remain M5 work.
+The solution is `Nergal.slnx`; application projects are at root and unit/integration
+fixture projects share the `Tests` solution folder.

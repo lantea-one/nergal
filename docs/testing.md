@@ -57,7 +57,7 @@ evidence of tested behavior.
 
 ## Unit tests
 
-Run `dotnet test Nergal.sln --configuration Release`. Unit tests must not need
+Run `dotnet test Nergal.slnx --configuration Release`. Unit tests must not need
 root, Docker, network access, an identity provider or a live firewall. The Linux
 local-state suite uses real SQLite databases in private temporary directories and
 explicit test clocks; it needs no host-service access. Test
@@ -850,3 +850,12 @@ verify unknown/repeated input, expected versions, switch-off submission and CSRF
 The real disposable OIDC issuer checks signed metadata and escaping, independent
 local overrides, nonce-failure non-persistence, refresh and atomic audit failure
 sign-in denial. No browser claim overlay or UserInfo request supplies metadata.
+
+OIDC connection checks (ADR 0060) cover UI-only activation without startup provider
+configuration, encrypted write-only secret retention, strict/CSRF/current local
+Administrator checks, stale saves, audit rollback, retired cookies and in-flight
+callbacks, disabled-button state and database persistence across restart. Unit
+tests deny ambiguous trust/group configurations, wrong keys, tampered ciphertext
+and deletion of a previously saved connection. All 20 projects remain present in
+`Nergal.slnx`, with application projects at root and nine test/fixture projects
+in the `Tests` solution folder.

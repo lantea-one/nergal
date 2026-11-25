@@ -17,6 +17,9 @@ class FingerprintTests(unittest.TestCase):
             previous_root = watch.ROOT
             watch.ROOT = Path(root)
             try:
+                before = watch.fingerprint()
+                (Path(root) / 'Example.slnx').write_text('<Solution />')
+                self.assertNotEqual(before, watch.fingerprint())
                 for directory in ('src', 'tests', 'tools/dev-stack'):
                     folder = Path(root) / directory
                     folder.mkdir(parents=True, exist_ok=True)

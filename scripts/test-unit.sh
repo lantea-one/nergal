@@ -11,7 +11,7 @@ mkdir -m 700 "$XDG_RUNTIME_DIR"
 trap 'rmdir "$XDG_RUNTIME_DIR" 2>/dev/null || true' EXIT
 
 # A single MSBuild node avoids cross-invocation worker pipe collisions in isolated runners.
-dotnet test Nergal.sln --configuration Release --no-build --no-restore -m:1 -nr:false \
+dotnet test Nergal.slnx --configuration Release --no-build --no-restore -m:1 -nr:false \
     --collect:"XPlat Code Coverage" --results-directory "$result_directory"
 mapfile -t test_projects < <(find tests -name '*.Tests.csproj' -type f)
 mapfile -t reports < <(find "$result_directory" -name coverage.cobertura.xml -type f)

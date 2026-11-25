@@ -67,7 +67,7 @@ class Browser:
             self.last_headers = {k.lower(): v for k, v in response.getheaders()}
             self.location = response.getheader("Location")
             if expected == 302:
-                assert self.location in ("/login", "/session", "/manage", "/profile", "/manage/users", "/manage/identity/profiles") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
+                assert self.location in ("/login", "/session", "/manage", "/profile", "/manage/users", "/manage/identity/profiles", "/manage/identity/connection") or self.location.startswith(("/manage/sources?sourceId=", "/manage/objects?objectId=", "/manage/policies?revision=", "/manage/hosts"))
             assert PASSWORD not in body
             return body
         finally:
