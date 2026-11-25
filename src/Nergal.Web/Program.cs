@@ -53,9 +53,19 @@ if (builder.Configuration["NativeSources:Directory"] is { Length: > 0 } sourceDi
     builder.Services.AddSingleton(new NativePolicySourceCatalog(sourceDirectory));
 }
 var app = builder.Build();
+app.UseStatusCodePages(BrowserResponses.StatusPageAsync);
+app.UseExceptionHandler(handler => handler.Run(context =>
+{
+    var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+    var status = error is Nergal.Identity.AccountStoreException or Nergal.ControllerState.ControllerStateException ? 503 : 500;
+    context.Response.StatusCode = status;
+    return BrowserResponses.RenderAsync(context, status);
+}));
 if (enabled && OperatingSystem.IsLinux()) { await LocalSessionHost.EnableAsync(app); }
 app.UseAntiforgery();
-app.MapStaticAssets().AllowAnonymous();
+// Public build assets must remain available when credential/profile storage is
+// unavailable, so sign-in and error pages do not inherit that dependency.
+app.MapStaticAssets().AllowAnonymous().ShortCircuit();
 app.MapHealthChecks("/healthz").AllowAnonymous();
 app.MapControllers();
 if (oidcEnabled)

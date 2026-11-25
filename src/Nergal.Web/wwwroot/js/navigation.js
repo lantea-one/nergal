@@ -13,9 +13,11 @@
     toggle.setAttribute('aria-expanded', String(opening));
     if (opening) sidebar.setAttribute('data-open', 'true'); else close();
   });
-  sidebar.addEventListener('keydown', event => {
+  const dismiss = event => {
     if (event.key === 'Escape') { close(); toggle.focus(); }
-  });
+  };
+  toggle.addEventListener('keydown', dismiss);
+  sidebar.addEventListener('keydown', dismiss);
   document.addEventListener('click', event => {
     const link = event.target.closest('[data-open-details]');
     const href = link?.getAttribute('href');

@@ -53,6 +53,10 @@ extended bridge jump/return support confirmed apply after complete native verifi
 Rules also have [versioned inline enable/disable controls](docs/rule-enabled-state.md).
 See [the ordered product workflow](docs/product-workflow.md) for the remaining work.
 
+[Local user management and personal profiles](docs/local-users-and-profiles.md)
+provide explicit roles, last-administrator protection, revocation and atomic
+identity-store audit. Provider mapping and local MFA remain M5 work.
+
 For a persistent, isolated local controller and check-only source containers, see
 [the local sandbox guide](docs/local-sandbox.md). Private exports and credentials
 stay under ignored `artifacts/dev-stack/`; the public tests and screenshots use
@@ -92,7 +96,7 @@ Bind this development build to loopback; it is not a secured administration endp
 - `Nergal.RemoteTransport`: TLS 1.3 pinned mTLS control listener/client (`TlsControlServer`,
   `TlsControlClient`) validating client/server leaf certificates by SHA-256 thumbprint,
   EKU OID (`serverAuth`/`clientAuth`), and validity window without ambient CA trust.
-- `Nergal.Admin`: offline initialization and singleton account provisioning (`account init`,
+- `Nergal.Admin`: offline initialization and one-time account bootstrap (`account init`,
   `account provision [--role administrator|auditor]`, `controller init`)
   for private account and controller stores. See [operator commands](docs/local-administrator-accounts.md).
 - `Nergal.ControllerState`: mode-checked `0700`/`0600` SQLite WAL store for registered agent
@@ -104,7 +108,7 @@ Bind this development build to loopback; it is not a secured administration endp
   (`prepare`, `watch`, `apply`, `confirm`), and explicit new-boot reconciliation (`reconcile`)
   for `inet nergal_filter`, serialized with `ResourceExecutionLock` using native echo
   handles and complete listing reconciliation.
-- `Nergal.Identity`: explicitly provisioned private singleton administrator store
+- `Nergal.Identity`: explicitly provisioned private local account store
   using standard Identity hashing/lockout and serialized SQLite decisions, plus
   certificate-encrypted persistent session keys and revocable local sessions.
 - `Nergal.Web`: MVC controllers/views and Blazor components providing fleet dashboards,

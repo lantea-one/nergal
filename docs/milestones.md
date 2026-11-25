@@ -30,7 +30,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
-| M5 | Everyday administration UX | In progress | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
+| M5 | Everyday administration UX | In progress | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states. |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
@@ -129,3 +129,16 @@ Retain the complete native detail for expert review. Simplifying the default vie
 must preserve explicit change review, authorization, ownership and confirmed-apply
 safety. M7 still owns installation/trust-bootstrap integration; M5 must guide the
 operator through that boundary without exposing host privileges to the browser.
+
+M5 identity scope now also includes direct LDAP sign-in and profile mapping,
+configurable OIDC/OAuth profile defaults with local overrides, local email and
+TOTP/authenticator MFA, administrator email-delivery screens, optional enrollment
+and a requirement policy for Administrators/all/neither. Federated bypass must be
+explicit per provider, optionally requiring a configured MFA assurance claim.
+LDAP sign-in follows local MFA requirements. These remain open until verified;
+the local-user/profile storage slice alone does not satisfy them.
+
+This project has not been released publicly. New schema work targets fresh
+installations; do not add legacy account upgrade paths or compatibility shims.
+Preserve disposable development data separately. M6 still requires fresh-schema,
+transactional constraints and backup/restore verification on all three engines.

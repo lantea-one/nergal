@@ -1,0 +1,13 @@
+@model Nergal.Web.BrowserErrorModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Title;
+}
+<main id="main-content" tabindex="-1" class="container-narrow">
+    <section class="card" aria-labelledby="error-heading">
+        <p class="eyebrow">Request @Model.Status</p>
+        <h1 id="error-heading">@Model.Title</h1>
+        <p>@Model.Message</p>
+        <a class="btn" href="@Url.Content("~" + Model.ActionPath)">@Model.ActionText</a>
+    </section>
+</main>

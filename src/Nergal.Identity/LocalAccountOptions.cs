@@ -36,11 +36,11 @@ public sealed class LocalCredentialResult
     public Guid? AdministratorId { get; }
 }
 
-/// <summary>Explicit provisioning outcome containing only stable validation codes, never supplied secrets.</summary>
+/// <summary>Explicit account/profile mutation outcome containing only stable validation codes, never supplied secrets.</summary>
 public sealed class LocalProvisionResult
 {
     internal LocalProvisionResult(IEnumerable<string> codes) => ErrorCodes = Array.AsReadOnly(codes.ToArray());
-    /// <summary>Gets whether the sole administrator was created.</summary>
+    /// <summary>Gets whether the requested mutation succeeded.</summary>
     public bool Succeeded => ErrorCodes.Count == 0;
     /// <summary>Gets immutable validation codes; descriptions and caller input are not retained.</summary>
     public IReadOnlyList<string> ErrorCodes { get; }

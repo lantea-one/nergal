@@ -26,7 +26,7 @@ public sealed class FederatedAdministratorPolicy
         IEnumerable<string>? auditorGroups)
     {
         if (!Uri.TryCreate(issuer, UriKind.Absolute, out var uri) || uri.Scheme != "https" ||
-            uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0 || issuer.Length > 2048 || issuer.Any(char.IsWhiteSpace))
+            uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0 || issuer.Length > 512 || issuer.Any(char.IsWhiteSpace))
         { throw new ArgumentException("An absolute HTTPS issuer is required.", nameof(issuer)); }
         if (!Bounded(clientId, 256)) { throw new ArgumentException("An explicit client identifier is required.", nameof(clientId)); }
         if (!Bounded(groupClaim, 128) || groupClaim is "iss" or "sub" or "aud" or "azp" or "nonce" or "exp" or "iat" or "nbf" or "auth_time")

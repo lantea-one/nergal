@@ -33,6 +33,11 @@ internal static class LocalSessionHost
 
         services.Replace(ServiceDescriptor.Singleton<IDataProtectionProvider>(ring));
         services.AddLocalAdministratorAccounts(accounts).AddLocalAdministratorSessions(ring);
+        services.Configure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(
+            Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme,
+            options => options.Events.OnRedirectToLogin = BrowserResponses.LoginChallenge);
+        services.AddScoped<UserPresentationFilter>();
+        services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(options => options.Filters.AddService<UserPresentationFilter>());
         services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         services.AddAntiforgery(options =>
         {
@@ -46,6 +51,12 @@ internal static class LocalSessionHost
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.AddFixedWindowLimiter("local-login", limiter =>
+            {
+                limiter.PermitLimit = 10;
+                limiter.Window = TimeSpan.FromMinutes(1);
+                limiter.QueueLimit = 0;
+            });
+            options.AddFixedWindowLimiter("local-password", limiter =>
             {
                 limiter.PermitLimit = 10;
                 limiter.Window = TimeSpan.FromMinutes(1);
@@ -65,11 +76,6 @@ internal static class LocalSessionHost
             if (protector.Unprotect(protector.Protect("ready")) != "ready")
             { throw new InvalidOperationException("Session key readiness failed."); }
         }
-        app.UseExceptionHandler(handler => handler.Run(context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            return Task.CompletedTask;
-        }));
         app.Use(async (context, next) =>
         {
             if (!context.Request.IsHttps || context.Features.Get<ITlsConnectionFeature>() is null)
@@ -99,5 +105,11 @@ internal static class LocalSessionHost
         app.MapControllerRoute("local-authenticate", "login", new { controller = "Session", action = "Authenticate" });
         app.MapControllerRoute("local-session", "session", new { controller = "Session", action = "Index" });
         app.MapControllerRoute("local-logout", "logout", new { controller = "Session", action = "Logout" });
+        app.MapControllerRoute("local-users", "manage/users", new { controller = "Users", action = "Index" });
+        foreach (var action in new[] { "Create", "Update", "Revoke" })
+        { app.MapControllerRoute("local-users-" + action, "manage/users/" + action.ToLowerInvariant(), new { controller = "Users", action }); }
+        app.MapControllerRoute("user-profile", "profile", new { controller = "Profile", action = "Index" });
+        foreach (var action in new[] { "Save", "Password" })
+        { app.MapControllerRoute("user-profile-" + action, "profile/" + action.ToLowerInvariant(), new { controller = "Profile", action }); }
     }
 }

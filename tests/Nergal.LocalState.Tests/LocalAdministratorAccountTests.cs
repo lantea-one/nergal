@@ -51,9 +51,8 @@ public sealed class LocalAdministratorAccountTests
             Assert.DoesNotContain(Password, Encoding.Latin1.GetString(File.ReadAllBytes(file)));
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
         }
-        // The database itself, not just the provisioning count check, rejects another administrator.
-        var denied = Assert.Throws<SqliteException>(() => fixture.Sql("INSERT INTO AspNetUsers (Id,EmailConfirmed,PhoneNumberConfirmed,TwoFactorEnabled,LockoutEnabled,AccessFailedCount) VALUES('second-fixture',0,0,0,1,0)"));
-        Assert.Equal(19, denied.SqliteErrorCode);
+        // Additional accounts now require the independently authorized management
+        // boundary; the offline bootstrap still cannot replace or add an account.
     }
 
     /// <summary>Unknown, wrong and locked-out credentials expose the same result, and failure/reset accounting persists.</summary>
@@ -193,7 +192,7 @@ public sealed class LocalAdministratorAccountTests
 
     /// <summary>Unexpected account schema identity/version is never silently migrated, even when the credential itself is valid.</summary>
     [Theory]
-    [InlineData("PRAGMA user_version=2")]
+    [InlineData("PRAGMA user_version=99")]
     [InlineData("PRAGMA application_id=0x4e52474c")]
     public async Task Storage_RefusesUnknownSchemaIdentityOrVersion(string damage)
     {
@@ -213,7 +212,9 @@ public sealed class LocalAdministratorAccountTests
     {
         await using var fixture = await Fixture.Create();
         Assert.True((await fixture.Provision(Name, Password)).Succeeded);
-        fixture.Sql("UPDATE AspNetUsers SET Id=$id", ("$id", identifier));
+        // Deliberately inject a consistent corrupt identifier past SQLite's FK
+        // guard so this case still exercises supported-identity validation.
+        fixture.Sql("PRAGMA foreign_keys=OFF; UPDATE AspNetUsers SET Id=$id; UPDATE LocalAccountState SET UserId=$id; UPDATE AspNetUserClaims SET UserId=$id", ("$id", identifier));
         await Reject("account.corrupt", () => fixture.Verify(Name, Password));
     }
 

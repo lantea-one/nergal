@@ -120,7 +120,7 @@ local paths; the session-only host falls back to its session page. See
    `journal.db`. SQLite triggers prevent `UPDATE` or `DELETE` on `audit_log`, and
    `Nergal.Web` maps `ControllerAuthorizationPolicies` (`NergalAdministrator` and
    read-only `NergalReader`) across both local and OIDC sessions with explicit
-   `local:<uuid>` and `oidc:<issuer>:<subject>` actor attribution
+   `local:<uuid>` and `oidc:<issuer-length>:<issuer>:<subject>` actor attribution
    ([ADR 0029](decisions/0029-controller-persistence-rbac-and-audit.md)).
 10. When `ControllerState:Enabled` and `LocalSessions:Enabled` are active, `Nergal.Web`
    provides the RBAC-gated fleet dashboard, typed policy bundle editor with
@@ -341,3 +341,12 @@ from privilege. Pure state-based guidance only chooses navigation; pending/recov
 states outrank setup, and unknown observations never imply healthy/applied state.
 A dedicated reader Hosts page retains existing Administrator/CSRF mutation routes.
 Allowlisted firewall sections switch locally without changing the draft. See ADR 0057.
+
+
+Account schema 2 separates local security state, personal metadata and identity
+history inside the protected credential store. Expected-version mutations recheck
+local actor authority inside serialized transactions, protect the last enabled
+local Administrator and rotate affected security stamps with transactional audit.
+Profiles never link users by names/email or grant roles. No cross-database atomic
+audit is claimed. Only a fresh pre-release account schema is supported; no legacy
+upgrade path is shipped. See [local users](local-users-and-profiles.md) and ADR 0058.

@@ -3,19 +3,19 @@
 `Nergal.Identity` is Linux application-account infrastructure built on ASP.NET Core
 Identity and EF Core SQLite. It does not depend on policy, compiler, privileged
 journal or transport. The user selected local account/password authentication for
-basic installations, with optional OIDC later; ADR 0012 records that direction.
+basic installations, with optional OIDC; ADR 0012 records that direction.
 
 This document covers credential storage and verification. Web optionally adds
 [local browser sessions](local-sessions.md). No public registration endpoint, default
 account, automatic initialization or password reset exists.
 Application accounts are not Linux users: no host account/group changes occur.
 
-## Explicit creation and singleton provisioning
+## Explicit creation and bootstrap provisioning
 
 A trusted operator must first provision an existing nonsymlink service-owned 0700
 local directory. `LocalAccountOptions` requires its explicit absolute NUL-free path;
 it creates nothing. `LocalAccountDatabase.InitializeAsync` creates only a **new**
-0600 `accounts.db`, schema 1 and application ID `0x4e524741`. Any existing database
+0600 `accounts.db`, schema 2 and application ID `0x4e524741`. Any existing database
 or sidecar is refused. It creates no administrator and never adopts, upgrades or
 repairs existing/partial state. A canceled/failed initialization can leave an
 incomplete new file; subsequent access fails closed pending explicit offline repair.
@@ -55,9 +55,9 @@ store registration is refused. Each operation needs a fresh DI scope. The librar
 registers no browser authentication scheme. `ProvisionAsync` is an explicit trusted
 local operation for the first administrator. It returns stable validation codes
 without descriptions, supplied input or credentials. An immediate serialized
-transaction and a database singleton constraint prevent competing initial accounts.
-No second account/replacement, public signup or unattended bootstrap credential is
-accepted. Normal verification never creates a missing database.
+transaction prevents competing bootstrap accounts. Bootstrap cannot add a second
+account or replace one; additional accounts use authenticated Administrator
+management. Public signup and unattended credentials are not accepted. Normal verification never creates a missing database.
 
 ## Password and lockout behavior
 
@@ -105,7 +105,7 @@ outside the prototype contract. Connection strings/queries are parameterized and
 sensitive-data logging is not enabled.
 
 Unit tests use real Identity hashing and private SQLite files for explicit creation,
-concurrent singleton provisioning, concurrent failures, persisted lockout/reset,
+concurrent bootstrap provisioning, concurrent failures, persisted lockout/reset,
 Unicode/input bounds, pre-reservation cancellation, schema mismatch, unsafe files
 and absence of plaintext credentials. The distinct-UID isolation fixture exercises
 both stores independently: namespace UID 0 represents each store's service owner
@@ -117,3 +117,11 @@ Separate [protected Data Protection key storage](protected-session-keys.md) is n
 implemented as a library. The optional session host now implements HTTPS login/logout, CSRF, rate limiting
 and revocation. Authenticated agent status remains a separate milestone.
 Optional [federated login](federated-login.md) uses separate issuer/subject identities and exact configured groups.
+
+
+Authenticated Administrators now manage additional local accounts through
+[Local users](local-users-and-profiles.md). Offline provisioning remains a
+one-time bootstrap and cannot add or replace an existing account. Fresh account
+schema 2 removes the singleton constraint and requires explicit role claims,
+per-account state and atomic identity audit. Prior unreleased account stores are
+not supported by the web host; it never auto-migrates or resets them.

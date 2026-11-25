@@ -201,6 +201,17 @@ def exercise(temp):
             rp = RelyingParty(browser)
             rp.exchange(op, cert, 302, lambda form: form.update(continue_button="Continue", groups="untrusted-form-value"))
             assert "synthetic-external-subject" in rp.request("/session", 200)[0]
+            external_profile = rp.request("/profile", 200)[0]
+            assert "Identity provider" in external_profile and 'action="/profile/password"' not in external_profile
+            _, profile_destination = rp.request("/profile/save", 302, {
+                "version": "0", "displayName": "External <script>profile</script>",
+                "__RequestVerificationToken": rp.token("/profile"),
+            })
+            assert profile_destination == "/profile"
+            saved_profile = rp.request("/profile", 200)[0]
+            assert "External &lt;script&gt;profile&lt;/script&gt;" in saved_profile
+            assert "synthetic-external-subject" in saved_profile
+            assert "<script>profile</script>" not in saved_profile
             other = RelyingParty(browser)
             other.exchange(op, cert, 302)
             independent = other.cookies["__Host-nergal-federated"]
@@ -236,7 +247,7 @@ def exercise(temp):
             auditor_rp.exchange(op, cert, 302, destination="/manage")
             audit_view = json.loads(auditor_rp.request("/controller/audit", 200)[0])
             assert audit_view["role"] == "nergal:auditor"
-            assert audit_view["actorId"] == f"oidc:{op.issuer}:oidc-auditor-sub"
+            assert audit_view["actorId"] == f"oidc:{len(op.issuer)}:{op.issuer}:oidc-auditor-sub"
             auditor_rp.request("/controller/hosts", 200)
             auditor_rp.request("/controller/hosts", 403, {
                 "name": "auditor-blocked",
@@ -288,8 +299,8 @@ def exercise(temp):
 
             entries = json.loads(auditor_rp.request("/controller/audit", 200)[0])["entries"]
             actions = [(e["action"], e["target"], e["actorId"], e["actorRole"]) for e in entries]
-            assert ("host.register", "edge-gw", f"oidc:{op.issuer}:oidc-admin-sub", "nergal:administrator") in actions
-            assert ("host.delete", "edge-gw", f"oidc:{op.issuer}:oidc-admin-sub", "nergal:administrator") in actions
+            assert ("host.register", "edge-gw", f"oidc:{len(op.issuer)}:{op.issuer}:oidc-admin-sub", "nergal:administrator") in actions
+            assert ("host.delete", "edge-gw", f"oidc:{len(op.issuer)}:{op.issuer}:oidc-admin-sub", "nergal:administrator") in actions
             assert any(a == "host.register" and t == "local-agent" and act.startswith("local:") and r == "nergal:administrator"
                        for a, t, act, r in actions)
 

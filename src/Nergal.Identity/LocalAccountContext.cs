@@ -16,10 +16,11 @@ internal sealed class LocalAccountContext : IdentityUserContext<LocalAdministrat
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        var account = builder.Entity<LocalAdministrator>();
-        account.Property<int>("AdministratorSlot").HasDefaultValue(1);
-        account.HasIndex("AdministratorSlot").IsUnique();
-        account.ToTable("AspNetUsers", table => table.HasCheckConstraint("CK_AdministratorSlot", "AdministratorSlot = 1"));
+        builder.Entity<LocalAccountState>().HasKey(state => state.UserId);
+        builder.Entity<LocalAccountState>().HasOne<LocalAdministrator>().WithOne()
+            .HasForeignKey<LocalAccountState>(state => state.UserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<LocalProfile>().HasKey(profile => profile.ActorId);
+        builder.Entity<IdentityAudit>().HasKey(entry => entry.Sequence);
     }
 }
 
@@ -50,9 +51,10 @@ internal sealed class AccountConnectionPolicy(LocalAccountOptions options, bool 
     }
     internal static void RequireSchema(DbConnection connection, DbTransaction? transaction = null)
     {
-        if (Scalar(connection, "PRAGMA application_id", transaction) != ApplicationId || Scalar(connection, "PRAGMA user_version", transaction) != 1 ||
+        if (Scalar(connection, "PRAGMA application_id", transaction) != ApplicationId || Scalar(connection, "PRAGMA user_version", transaction) != 2 ||
             Text(connection, "PRAGMA quick_check", transaction) != "ok" || Value(connection, "PRAGMA foreign_key_check", transaction) is not null)
         { throw new AccountStoreException("account.schemaOrIntegrity"); }
+        AccountSchema.RequireAudit(connection, transaction);
     }
     private static long Scalar(DbConnection connection, string sql, DbTransaction? transaction = null) => Convert.ToInt64(Value(connection, sql, transaction), System.Globalization.CultureInfo.InvariantCulture);
     private static string? Text(DbConnection connection, string sql, DbTransaction? transaction = null) => Value(connection, sql, transaction) as string;
