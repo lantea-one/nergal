@@ -15,6 +15,8 @@ def exercise_connections(temp, sessions, provider, host_settings, RelyingParty):
         with sessions.host(temp, tls, settings) as browser:
             admin = RelyingParty(browser)
             admin.request('/login/oidc', 404, {})
+            for route in ['/login/oidc/', '/LOGIN/OIDC/']:
+                admin.request(route, 404, {'__RequestVerificationToken': admin.token('/login')})
             assert 'Sign in with identity provider' not in admin.request('/login', 200)[0]
             admin.request('/login', 302, {'username': 'fixture-admin', 'password': sessions.PASSWORD,
                 '__RequestVerificationToken': admin.token('/login')})

@@ -105,7 +105,7 @@ internal static class LocalSessionHost
             var connection = context.RequestServices.GetRequiredService<OidcRequestConnection>();
             await connection.LoadAsync();
             // Reject disabled challenges before the framework can perform discovery.
-            if (!connection.Enabled && context.Request.Path == "/login/oidc")
+            if (!connection.Enabled && context.Request.Path.StartsWithSegments("/login/oidc", StringComparison.OrdinalIgnoreCase))
             { context.Response.StatusCode = 404; return; }
             await next();
         });
