@@ -12,12 +12,14 @@ public sealed partial class ManagementController
 {
     /// <summary>Lists immutable database sources and optionally inspects one selected snapshot.</summary>
     [HttpGet, Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
-    public IActionResult Sources(Guid? sourceId = null)
+    public IActionResult Sources(Guid? sourceId = null, Guid? planId = null)
     {
         if (!SourceAdministrator(out _)) { return Forbid(); }
         var selected = sourceId.HasValue ? store.ReadNativeSource(sourceId.Value) : null;
         if (sourceId.HasValue && selected is null) { return NotFound(); }
-        return View(new NativeSourcesPageModel(store.ListNativeSources(), selected, nativeSources?.Sources ?? []));
+        if (planId.HasValue && (selected is null || store.ReadNativeConversionPlan(planId.Value)?.Content.RootSourceId != selected.Summary.Id)) { return NotFound(); }
+        return View(new NativeSourcesPageModel(store.ListNativeSources(), selected, nativeSources?.Sources ?? [], Conversion:
+            selected is null ? null : new NativeConversionWorkflow(store).Page(selected.Summary.Id, planId)));
     }
 
     /// <summary>Accepts bounded UTF-8 source bytes as an audited database snapshot; no conversion or execution occurs.</summary>

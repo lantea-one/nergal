@@ -2,6 +2,10 @@
 
 Status: Accepted for structural parsing; semantic conversion remains blocked.
 
+The inspection slice below remains unchanged. Source-bound semantic conversion
+now extends this frontend under [ADR 0055](0055-source-bound-native-conversion-plans.md);
+its separately saved plan determines revision readiness, not inventory counts.
+
 ## Decision
 
 Extend the shared viewer/import analysis with one immutable delimiter tree over

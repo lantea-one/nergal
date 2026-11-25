@@ -28,4 +28,6 @@ public enum FirewallFeature
     MasqueradeAndNatExemptions,
     /// <summary>Independent early filter tables and extended bridge jump/return control flow.</summary>
     AuxiliaryFiltering,
+    /// <summary>Refresh dynamic meter entry expiry on matching packets rather than only on creation.</summary>
+    MeterEntryTimeoutRefresh,
 }

@@ -83,6 +83,8 @@ def controller_upgrade(directory):
     directory.mkdir(mode=0o700)
     invoke(["controller", "init", str(directory)], 0)
     with sqlite3.connect(directory / "controller.db") as db:
+        db.execute("DROP TABLE native_conversion_commits")
+        db.execute("DROP TABLE native_conversion_plans")
         db.execute("DROP TABLE reusable_object_versions")
         db.execute("DROP TABLE reusable_objects")
         db.execute("DROP TABLE native_sources")
@@ -90,7 +92,7 @@ def controller_upgrade(directory):
     invoke(["controller", "upgrade", str(directory)], 0)
     invoke(["controller", "upgrade", str(directory)], 0)
     with sqlite3.connect(directory / "controller.db") as db:
-        assert db.execute("PRAGMA user_version").fetchone() == (3,)
+        assert db.execute("PRAGMA user_version").fetchone() == (4,)
         assert db.execute("SELECT count(*) FROM native_sources").fetchone() == (0,)
         db.execute("PRAGMA user_version=99")
     assert b"controller.upgradeUnsupported" in invoke(["controller", "upgrade", str(directory)], 1)

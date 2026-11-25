@@ -32,6 +32,18 @@ public sealed class RouterFormAuthoringTests
         Assert.Contains("ip daddr timeout", candidate);
     }
 
+    /// <summary>Legacy forms retain refreshed expiry and dormant state; only an explicit choice changes semantics.</summary>
+    [Fact]
+    public void MeterRefresh_OmittedChoicePreservesIdleExpiryUntilExplicitlyChanged()
+    {
+        Assert.True(PolicyAuthoringService.TryUpdateFilterConditions(Bundle(), 0, Conditions() with { RefreshEntryTimeout = true }, out var refreshed, out _));
+        Assert.True(PolicyAuthoringService.TryUpdateFilterConditions(refreshed!, 0, Conditions(), out var preserved, out _));
+        var rule = PolicyBundleJsonCodec.DecodeBundle(preserved!).Value!.Filter.Rules[0]!;
+        Assert.True(rule.RateLimit!.RefreshEntryTimeout); Assert.False(rule.Enabled);
+        Assert.True(PolicyAuthoringService.TryUpdateFilterConditions(preserved!, 0, Conditions() with { RefreshEntryTimeout = false }, out var changed, out _));
+        Assert.False(PolicyBundleJsonCodec.DecodeBundle(changed!).Value!.Filter.Rules[0]!.RateLimit!.RefreshEntryTimeout);
+    }
+
     /// <summary>Unknown keys, invalid MACs and unbound negation fail even for disabled rules.</summary>
     [Fact]
     public void FilterConditions_RejectInvalidEditsWithoutProducingDraft()

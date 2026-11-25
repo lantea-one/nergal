@@ -27,8 +27,9 @@ conversion. See [ADR 0053](decisions/0053-native-source-declaration-partition.md
 The same declaration catalog now supplies whole-rule expression results for a
 bounded literal grammar. Every considered rule has one complete private typed
 result or one positioned diagnostic; no successful prefix survives failure.
-Schema-3 reports serialize only rule counts/failures. Context, definitions, object
-resolution and complete policy mapping remain unresolved; conversion stays blocked.
+Schema-3 reports serialize only rule counts/failures. This basic inventory remains separate from conversion readiness. Source-bound
+conversion below resolves context, definitions and supported objects before granting
+revision-creation readiness.
 See [ADR 0054](decisions/0054-native-rule-expression-slice.md).
 
 The first milestone is an independently implemented, native nftables management
@@ -306,3 +307,26 @@ listings can complete nft creation-echo element omissions only when creation
 handles agree and the reconstructed artifact exactly matches protected intent.
 Missing provenance or conflicting data remains denied. The journal repeats exact
 artifact verification; dynamic meter runtime contents retain their separate boundary.
+
+## Source-bound native conversion boundary
+
+`NativeImportPlanner` consumes the same lossless source tree and contextual
+partition as the viewer. Explicit table roles and ordered, including-source-bound
+uploaded include dependencies are immutable choices. Every source statement gets
+a mapping or blocking gap; any gap removes the complete candidate. No source
+command, ambient path, resolver or shell is executed. Supported static sets become
+pinned reusable objects; unknown semantics cannot be approved away.
+
+Controller schema 4 adds immutable conversion plans and unique plan/revision links.
+Review stores choices, original digests, mappings/gaps and optional complete intent
+with transactional audit. Separate Administrator/CSRF commit recomputes against
+database originals, verifies the full saved content binding, then atomically creates
+one revision and missing pinned list history. Replay, changed logic, source mismatch
+and failed audit leave no partial write. Import never contacts an agent; existing
+revision review and confirmed apply remain mandatory. Explicit offline upgrades
+preserve schema-1/2/3 data; web startup never migrates. See ADR 0055.
+
+Meter timeout refresh is explicit intent and a distinct feature (ADR 0056). Native
+`meter`/`update` maps to refreshed idle expiry, while legacy `add` retains creation
+expiry and unchanged historical bytes/digests. Native observation binds the operation;
+changing it alone is drift. Guided forms preserve an omitted legacy choice.

@@ -112,7 +112,7 @@ public sealed class NativeSourceStoreTests
             store.RegisterHost(host, Actor, NergalRoles.Administrator);
             store.SaveSystemSettings(SystemSettingsSnapshot.Default, Actor, NergalRoles.Administrator);
             var audits = store.ListAuditEntries();
-            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
+            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
             Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path)));
             var upgraded = ControllerStateStore.Upgrade(new(path));
             Assert.Equal(revision, upgraded.GetPolicyRevision(revision.Revision));
@@ -128,7 +128,7 @@ public sealed class NativeSourceStoreTests
     {
         WithStore((_, path) =>
         {
-            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=99;");
+            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=99;");
             Assert.Equal("controller.upgradeUnsupported", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path))).Code);
             using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
             cmd.CommandText = "PRAGMA user_version"; Assert.Equal(99L, cmd.ExecuteScalar());
@@ -144,7 +144,7 @@ public sealed class NativeSourceStoreTests
     {
         WithStore((_, path) =>
         {
-            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
+            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
             if (collision) { Sql(path, "CREATE TABLE native_sources(foreign_value TEXT); INSERT INTO native_sources VALUES('preserve');"); }
             else { Sql(path, "DROP TRIGGER audit_no_update; CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_log BEGIN SELECT 1; END;"); }
             Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path)));

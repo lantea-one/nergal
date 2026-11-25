@@ -136,7 +136,7 @@ schema-2 records, review one source, download its exact original bytes and obtai
 source-bound lexical report. Optional file-directory snapshots are staging only.
 Imports and their audit records are atomic; no configuration is executed or
 converted. Existing controllers require an explicit offline `controller upgrade`.
-Additional SQL providers and semantic native conversion remain future work.
+Additional SQL providers remain M6 work. Source-bound native conversion now supports the [declared grammar](native-source-library.md).
 Saved revision exports are now available as described above. See [the source library guide](native-source-library.md).
 
 ## Local timestamp display (unreleased)
@@ -207,7 +207,7 @@ and broader UX/operations/database work remain separate product milestones.
 
 M3 now exposes immutable list selectors for auxiliary inet rules alongside primary
 filtering. Table scope is explicit, existing API submissions remain primary-only,
-and saved usage paths include auxiliary references. Native static support now follows [the current contract](native-static-lists.md); semantic import remains open.
+and saved usage paths include auxiliary references. Native static support now follows [the current contract](native-static-lists.md); source conversion follows the [declared grammar](native-source-library.md).
 
 Postrouting NAT and bridge destination-port rules, including regular chains, can
 now pin immutable Port-list versions through contextual UI selectors. Ordinary
@@ -241,3 +241,14 @@ set-element drift, actual dynamic-meter packets and capability denial. This guar
 collection consistency; competing privileged writers remain unsupported and native
 static references are now implemented; semantic import remains M4. No UI or screenshot changes accompany
 this internal observation boundary.
+
+## Source conversion and controller schema 4
+
+Source viewing and conversion share one bounded lossless frontend. Guided table
+roles and ordered uploaded include bindings lead to immutable source/digest-bound
+plans with complete mappings and blocking gaps. Separate reviewed commit atomically
+creates one revision and pinned lists; imports never apply firewall changes. Unknown
+semantics cannot be discarded. Explicit offline schema-1/2/3 upgrades retain history.
+Native meter refresh and creation expiry are preserved separately in compiler and
+complete receipts, with real continued-traffic expiry and imported rollback checks.
+See the [source guide](native-source-library.md) for support limits and workflow.

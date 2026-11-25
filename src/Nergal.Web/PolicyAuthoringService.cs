@@ -255,7 +255,7 @@ internal static partial class PolicyAuthoringService
             SourceMac = previous.SourceMac,
             SourceMacs = previous.SourceMacs,
             NegateSourceMac = previous.NegateSourceMac,
-            RateLimit = rule.RateLimit is null ? null : rule.RateLimit with { KeyKind = previous.RateLimit?.KeyKind ?? RateLimitKeyKind.SourceAddress },
+            RateLimit = rule.RateLimit is null ? null : rule.RateLimit with { KeyKind = previous.RateLimit?.KeyKind ?? RateLimitKeyKind.SourceAddress, RefreshEntryTimeout = previous.RateLimit?.RefreshEntryTimeout ?? false },
         };
         var nextSchema = bundle.Filter.SchemaVersion;
         if (nextSchema < 2 && RequiresSchema2(rule))

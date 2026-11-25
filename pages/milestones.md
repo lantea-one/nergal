@@ -30,7 +30,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M1 | Rule lifecycle | Complete | Inline enable/disable for every supported rule, retained contents/order/references, intent review and confirmed apply, packet/rollback acceptance. |
 | M2 | Complete structured authoring | Complete | Guided forms for every supported filter/raw/MSS/MAC/meter/negation/NAT/auxiliary/bridge construct, accessible hints/errors, complete review, no required JSON editing. |
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
-| M4 | Semantic native import/export | Open | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
+| M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Open | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation, meaningful charts with observation provenance and missing-data states. |
 | M6 | Database completion | Open; SQL migrations deferred | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, then verify versioned migrations and backup/restore on SQLite, PostgreSQL and MariaDB. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
@@ -80,21 +80,28 @@ low IPv6 echo omissions, real dual-stack/routed/bridge packets, dynamic-meter
 coexistence, lookup/content/handle drift denial and Unix/mTLS/web confirmation and
 independent rollback. See [native static lists](native-static-lists.md).
 
-M4 remains open for semantic source conversion. Deterministic native and complete
-intent exports from explicitly selected saved revisions are implemented, with
-saved artifact verification and Administrator-only downloads. See [policy exports](policy-exports.md).
-The source viewer/import workflow shares one lossless bounded tokenization and
-structural parsing/review pipeline, with exact nested spans, bounded depth and
-value-free schema-3 diagnostics. Semantic parsing, explicit include mappings and
-persisted gap plans remain open; structural success grants no conversion authority.
-Ordered contextual statement partitioning now retains all original nodes and raw
-expressions, derives declaration counts from legal header scopes, and reports
-unclassified heads explicitly. Whole-statement rule parsing now covers a bounded literal matcher/verdict slice,
-with no partial rule results and explicit diagnostics. Remaining expression
-grammars, contextual validation and typed policy mapping are still open.
-Maps, concatenations, arbitrary native object types, standalone unused declarations
-and native dynamic-list options are not claimed by M3. Their treatment must be
-explicit in the supported import grammar and gap reports.
+M4 is complete for the [declared native conversion grammar](native-source-library.md).
+The viewer/planner share the original lossless tree and contextual partition;
+explicit table roles, captured lexical definitions and ordered uploaded includes
+produce immutable source-bound mapping/gap plans. Any unsupported statement removes
+the complete candidate. Separate reviewed commit atomically creates one revision
+and pinned list history, with replay/change denial and transactional audit. Native
+and complete intent exports retain their explicit saved scope; originals stay exact.
+
+Acceptance includes independent native/imported dual-stack raw/FIB/DHCP, MAC+IP,
+SYN MSS, destination meters, NAT exemption/negation packets; creation/update expiry
+under continued traffic; imported auxiliary/bridge complete receipts, confirmation
+and independent rollback, including named sets. Unit/real-SQLite/HTTPS tests cover
+source positions, includes/cycles, denied input/roles, restart, concurrent replay and
+failed-commit rollback. Browser checks cover ordered includes, separate review/commit,
+exports, blocked gaps and light/dark/mobile screenshots. Controller schema 4 requires
+an explicit offline upgrade. See the source guide and testing evidence.
+
+Counters/logging/maps, arbitrary dynamic objects/control flow, unsupported table
+families and unused static declarations remain explicit blocking gaps; M4 does not
+claim arbitrary nft language support. Complete private-server migration acceptance
+remains M8. M5 is next: simplify first use and everyday tasks, then local users/
+profiles and observation-backed charts.
 
 ### M5 usability acceptance
 

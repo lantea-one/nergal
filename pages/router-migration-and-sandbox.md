@@ -176,7 +176,7 @@ the UI. Import retains the original source, reports semantic mapping and gaps, a
 separates review from revision creation and confirmed apply. [Export](policy-exports.md)
 downloads a selected saved revision as an exact native candidate or separate
 complete typed intent; original-source download is a separate operation. Round-trip and isolated packet acceptance
-must precede equivalence claims. Semantic conversion remains planned.
+must precede equivalence claims. The [source conversion workflow](native-source-library.md) supports the declared grammar; unsupported statements block the complete candidate.
 Database source ingestion and exact original downloads are implemented; lexical
 reviews do not establish policy equivalence.
 
@@ -198,7 +198,7 @@ with protected agent receipts and independent rollback decisions preserved.
 The [native source library](native-source-library.md) now stores uploaded and
 explicitly imported staging snapshots in the controller database. Remaining mapping
 and authoring workflows still require further implementation. Typed lists now also
-persist immutable versions and audit history in controller schema 3. Migrations for additional
+persist immutable versions and audit history in controller schema 4. Migrations for additional
 supported SQL backends are deferred until the logical schema stabilizes; each
 engine will require versioned upgrade and failure/recovery tests. Saved backend
 settings are not evidence of an implemented adapter. Bootstrap trust and protected

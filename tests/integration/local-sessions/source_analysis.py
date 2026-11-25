@@ -76,4 +76,4 @@ def check_source_analysis(browser, upload):
     assert "Check line 3, column 10" in html and "Source structure is incomplete" in html
     assert "Review topics are unavailable" in html and "No catalogued keywords were found" not in html
     assert browser.request("/manage/sources/download?sourceId=" + source_id, 200).encode() == mismatched
-    print("PASS: shared structured viewer/import analysis, schema-2 diagnostics, exact originals, physical source positions and no partial tree/inventory")
+    print("PASS: shared structured viewer/import analysis, schema-3 diagnostics, exact originals, physical source positions and no partial tree/inventory")

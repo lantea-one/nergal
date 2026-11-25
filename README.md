@@ -164,8 +164,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Original code
 is licensed under MIT. No FWCloud implementation or assets are included.
 
 The native source library supports bounded file uploads, immutable database
-snapshots, source-bound reviews and exact original-file downloads. These are source
-ingestion/review workflows; semantic conversion remains unfinished. Generated
+snapshots, source-bound reviews and exact original-file downloads. Source-bound conversion plans now support the declared native grammar, explicit
+include/table choices and separately reviewed revision creation. Unsupported content
+blocks the complete candidate; arbitrary nft language is not claimed. Generated
 native and complete intent exports are available for selected saved revisions.
 See [source library](docs/native-source-library.md), [policy exports](docs/policy-exports.md)
 and [migration status](docs/router-constructs.md).

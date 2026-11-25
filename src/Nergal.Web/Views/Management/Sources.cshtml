@@ -52,7 +52,10 @@
         <section class="card mt-2" aria-labelledby="selected-source-heading">
             <h2 id="selected-source-heading">@selected.Summary.Name <span class="badge badge-neutral">Stored · not applied</span></h2>
             <p class="muted">Snapshot <code>@selected.Summary.Id</code>. This review uses immutable database content.</p>
-            @await Html.PartialAsync("_NativeSourceReview", selected)
+            @if (Model.Conversion is { } conversion) { @await Html.PartialAsync("_NativeConversion", conversion) }
+            <details class="disclosure mt-2"><summary>Source inventory and exact original</summary>
+                @await Html.PartialAsync("_NativeSourceReview", selected)
+            </details>
         </section>
     }
     @if (Model.Staged.Count > 0)

@@ -121,7 +121,7 @@ public sealed class ReusableObjectStoreTests
         WithStore((store, path) =>
         {
             var source = store.ImportNativeSource(new("synthetic", "accept"), Actor, NergalRoles.Administrator);
-            Sql(path, "DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; PRAGMA user_version=2;");
+            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; PRAGMA user_version=2;");
             Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path)));
             if (collision)
             {

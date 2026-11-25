@@ -23,12 +23,12 @@ into immutable database history and downloads exact originals. The [typed sets/I
 library](reusable-object-library.md) supports creation, edits, search and immutable
 history, with pinned references across the declared rule scopes and saved revision
 impact visibility. [Native static sets](native-static-lists.md) now retain named
-lookups and complete receipts. Semantic conversion remains planned; [saved revision exports](policy-exports.md)
+lookups and complete receipts. Source-bound plans now convert the declared grammar with explicit include/table choices and separate revision review; [saved revision exports](policy-exports.md)
 provide separate native and complete intent downloads. Shared object changes require visible reference/impact review and
 immutable saved revisions. File import must report unsupported semantics explicitly;
 source ingestion and lexical inspection are not semantic policy conversion. Generated export identifies the
 selected managed revision and scope. Per-rule inline enable/disable controls and
-contextual accessible form hints are also planned authoring requirements. The database
+contextual accessible form hints are implemented for supported constructs. The database
 is intended to be the rolling source of truth for application-managed state and
 history; additional SQL backend migrations follow logical schema stabilization. See [migration and authoring status](router-migration-and-sandbox.md).
 

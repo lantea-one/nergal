@@ -2,6 +2,10 @@
 
 Status: Accepted for source-head classification; typed semantic conversion remains blocked.
 
+The inspection slice below remains unchanged. Source-bound semantic conversion
+now extends this frontend under [ADR 0055](0055-source-bound-native-conversion-plans.md);
+its separately saved plan determines revision readiness, not inventory counts.
+
 ## Decision
 
 Partition the existing immutable structural tree into ordered source statements.

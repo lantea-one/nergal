@@ -143,6 +143,21 @@ public sealed class RouterConstructTests
         Assert.Equal(nat.Observation!.StateDigest, NftNatTableObservation.ParseReplacementEcho(Read("nat-echo.json")).Observation!.StateDigest);
     }
 
+    /// <summary>Refresh intent survives strict serialization, requires its semantic capability and preserves legacy defaults.</summary>
+    [Fact]
+    public void MeterRefresh_CodecRequiresExplicitBooleanAndCapability()
+    {
+        var filter = new FilterPolicy(2, FilterVerdict.Drop, [new(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept,
+            DestinationPort: 53, RateLimit: new(1, RateLimitTimeUnit.Second, 1, RefreshEntryTimeout: true))]);
+        var json = PolicyBundleJsonCodec.EncodeBundle(new(1, filter));
+        Assert.Contains("refreshEntryTimeout", json);
+        Assert.True(PolicyBundleJsonCodec.DecodeBundle(json).Value!.Filter.Rules[0]!.RateLimit!.RefreshEntryTimeout);
+        Assert.Contains(Nergal.Core.FirewallFeature.MeterEntryTimeoutRefresh, filter.GetRequiredFeatures());
+        Assert.False(PolicyBundleJsonCodec.DecodeBundle(json.Replace("\"refreshEntryTimeout\": true", "\"refreshEntryTimeout\": \"true\"", StringComparison.Ordinal)).IsSuccess);
+        var legacy = filter.Rules[0]! with { RateLimit = filter.Rules[0]!.RateLimit! with { RefreshEntryTimeout = false } };
+        Assert.DoesNotContain("refreshEntryTimeout", PolicyBundleJsonCodec.EncodeBundle(new(1, new(2, FilterVerdict.Drop, [legacy]))));
+    }
+
     /// <summary>Stored settings corruption must not silently reset security-related intent.</summary>
     [Theory]
     [InlineData("null")]

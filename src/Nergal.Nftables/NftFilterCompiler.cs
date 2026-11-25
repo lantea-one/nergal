@@ -465,7 +465,7 @@ public static class NftFilterCompiler
                 RateLimitTimeUnit.Minute => "minute",
                 _ => throw new InvalidOperationException("Unvalidated rate-limit unit."),
             };
-            text.Append("add @").Append(rateLimitSetName)
+            text.Append(rateLimit.RefreshEntryTimeout ? "update @" : "add @").Append(rateLimitSetName)
                 .Append(" { ").Append(family).Append(rateLimit.KeyKind == RateLimitKeyKind.DestinationAddress ? " daddr timeout " : " saddr timeout ")
                 .Append(rateLimit.EntryTimeoutSeconds.ToString(CultureInfo.InvariantCulture)).Append("s limit rate ")
                 .Append(rateLimit.PacketsPerWindow.ToString(CultureInfo.InvariantCulture)).Append('/').Append(unit)

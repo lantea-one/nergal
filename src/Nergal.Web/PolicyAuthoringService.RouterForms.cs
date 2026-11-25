@@ -5,7 +5,7 @@ namespace Nergal.Web;
 
 /// <summary>Explicit matcher-only edit; existing addresses, ports, list pins and lifecycle state are retained.</summary>
 internal sealed record VisualFilterConditionsInput(string? SourceMacs, bool NegateSourceMac, bool NegateSource,
-    bool NegateDestination, bool NegateInputInterface, bool NegateOutputInterface, string? RateLimitKey);
+    bool NegateDestination, bool NegateInputInterface, bool NegateOutputInterface, string? RateLimitKey, bool? RefreshEntryTimeout = null);
 
 /// <summary>Complete postrouting form. Empty optional matchers mean any; translation is allowed only for explicit SNAT.</summary>
 internal sealed record VisualPostroutingInput(string? Family, string? Action, string? Source, string? Destination,
@@ -42,7 +42,7 @@ internal static partial class PolicyAuthoringService
         if (input.RateLimitKey is not ("sourceAddress" or "destinationAddress"))
         { diagnostics = [new("rateLimit.keyUnknown", "rule.rateLimit.keyKind")]; return false; }
         var key = input.RateLimitKey == "destinationAddress" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress;
-        if (previous.RateLimit is null && key != RateLimitKeyKind.SourceAddress)
+        if (previous.RateLimit is null && (key != RateLimitKeyKind.SourceAddress || input.RefreshEntryTimeout == true))
         { diagnostics = [new("rateLimit.required", "rule.rateLimit")]; return false; }
         rule = previous with
         {
@@ -53,7 +53,7 @@ internal static partial class PolicyAuthoringService
             NegateDestination = input.NegateDestination,
             NegateInputInterface = input.NegateInputInterface,
             NegateOutputInterface = input.NegateOutputInterface,
-            RateLimit = previous.RateLimit is null ? null : previous.RateLimit with { KeyKind = key },
+            RateLimit = previous.RateLimit is null ? null : previous.RateLimit with { KeyKind = key, RefreshEntryTimeout = input.RefreshEntryTimeout ?? previous.RateLimit.RefreshEntryTimeout },
         };
         diagnostics = [];
         return true;

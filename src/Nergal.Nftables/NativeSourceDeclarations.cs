@@ -121,6 +121,10 @@ public static class NativeSourceDeclarationParser
         return new(structure, new Parser(structure.Document).Read(structure.Nodes, Context.Root));
     }
 
+    // Includes and command bodies reuse the original partitioner in their actual lexical context.
+    internal static IReadOnlyList<NativeSourceStatement> Partition(NativeSourceDocument document, IReadOnlyList<NativeSourceNode> nodes, bool chain) =>
+        new Parser(document).Read(nodes, chain ? Context.Chain : Context.Table).AsReadOnly();
+
     private enum Context { Root, Table, Chain }
 
     private sealed class Parser(NativeSourceDocument document)
