@@ -34,3 +34,5 @@
 - [Host observations in Overview](overview-host-observations.md)
 
 - [Display languages](ui-localization.md)
+
+- [Controller SQLite backup and restore](controller-sqlite-backup.md)

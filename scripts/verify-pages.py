@@ -13,6 +13,7 @@ REQUIRED_FILES = [
     "oauth-connection.md",
     "overview-host-observations.md",
     "ui-localization.md",
+    "controller-sqlite-backup.md",
     "assets/screenshots/oidc-connection-dark.jpg",
     "assets/screenshots/oidc-connection-light.jpg",
     "assets/screenshots/oidc-connection-mobile.jpg",

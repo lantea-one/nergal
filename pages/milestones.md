@@ -96,7 +96,7 @@ and independent rollback, including named sets. Unit/real-SQLite/HTTPS tests cov
 source positions, includes/cycles, denied input/roles, restart, concurrent replay and
 failed-commit rollback. Browser checks cover ordered includes, separate review/commit,
 exports, blocked gaps and light/dark/mobile screenshots. Current controller stores
-initialize offline at schema 4. See the source guide and testing evidence.
+initialize offline at schema 5. See the source guide and testing evidence.
 
 Counters/logging/maps, arbitrary dynamic objects/control flow, unsupported table
 families and unused static declarations remain explicit blocking gaps; M4 does not
@@ -151,6 +151,8 @@ keyboard use, both themes and narrow mobile layout.
 
 This project has not been released publicly. New schema work targets fresh
 installations; do not add legacy account upgrade paths or compatibility shims.
-M6 has started with the fresh SQLite controller baseline. Existing development
-data can be preserved separately. M6 still requires fresh-schema,
-transactional constraints and backup/restore verification on all three engines.
+SQLite controller schema 5 adds versioned System settings with stale-write
+protection and transactional audit. The controller [backup and restore
+procedure](controller-sqlite-backup.md) is verified against committed WAL
+data and a separate writable restore. PostgreSQL and MariaDB still need
+fresh initialization, transactional constraints, and backup/restore verification.

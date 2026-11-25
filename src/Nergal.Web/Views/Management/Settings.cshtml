@@ -69,6 +69,11 @@
 
     <form method="post" action="@Url.Content("~/manage/settings/save")">
         @Html.AntiForgeryToken()
+        <input type="hidden" name="settingsToken" value="@Model.SavedVersion.FormToken" />
+        @if (Model.SavedVersion.UpdatedAtUtc is DateTimeOffset updated)
+        {
+            <p class="hint">Saved version @Model.SavedVersion.Version · @await Html.PartialAsync("_LocalTime", updated)</p>
+        }
 
         <section class="card" data-tab-panel="branding">
             <div class="card-header">

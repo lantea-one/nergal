@@ -961,3 +961,24 @@ and real apply/rollback. That fixture also asserts both authenticated host
 connections appear in Overview. A passing chart check verifies observations
 and display, while packet and timed rollback verification belong to the full
 native conformance fixture.
+
+## System settings and controller backup
+
+`SystemSettingsVersionTests` uses fresh SQLite stores to check concurrent
+writers, immutable settings history, transactional audit rollback, and denial
+when a settings-only restore leaves newer or mismatched settings audit behind.
+It also checks that settings which exceed the serialized size bound cannot be saved.
+`check-settings.py` exercises the HTTPS settings form and copies a real
+controller database using the SQLite backup API. It checks committed WAL data,
+restored settings and audit, and subsequent saves. A token from another
+database history with the same numerical version must still be rejected.
+
+After a Release build, run:
+
+```sh
+python3 -B tests/integration/local-sessions/check-settings.py
+```
+
+See the [operator procedure](controller-sqlite-backup.md). The test restores
+into a separate synthetic controller directory. Identity storage and the
+protected agent journal are outside this test.

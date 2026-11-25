@@ -28,6 +28,7 @@ public sealed class SystemSettingsAndInlineEditTests
         {
             var options = new ControllerStateOptions(directory);
             var store = ControllerStateStore.Initialize(options);
+            var original = store.ReadSystemSettingsVersion();
             var actor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("11111111-1111-1111-1111-111111111111"));
             using var connection = new SqliteConnection($"Data Source={Path.Combine(directory, "controller.db")};Pooling=False");
             connection.Open();
@@ -47,7 +48,7 @@ public sealed class SystemSettingsAndInlineEditTests
             Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(options)).Code);
             Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() => store.ReadSystemSettings()).Code);
             Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() =>
-                store.SaveSystemSettings(SystemSettingsSnapshot.Default, actor, NergalRoles.Administrator)).Code);
+                store.SaveSystemSettings(SystemSettingsSnapshot.Default, original.FormToken, actor, NergalRoles.Administrator)).Code);
             command.CommandText = "SELECT count(*) FROM sqlite_master WHERE name='system_settings'";
             Assert.Equal(recreateWithoutConstraint ? 1L : 0L, command.ExecuteScalar());
             command.CommandText = "SELECT count(*) FROM audit_log WHERE action='settings.update'";
@@ -163,13 +164,13 @@ public sealed class SystemSettingsAndInlineEditTests
                 false, null, null, null, null, null, null, null, 3600,
                 false, null, true, null, null, null, null, null, null,
                 "sqlite", null, null, null, null, "require",
-                30, 2, "drop", "drop", "accept", false);
+                30, 2, "drop", "drop", "accept", false, store.ReadSystemSettingsVersion().FormToken);
             Assert.IsType<ForbidResult>(denied);
             Assert.Equal("nergal", store.ReadSystemSettings().Branding.ApplicationName);
 
             // Store-level RBAC check also denies Auditor.
             var ex = Assert.Throws<ControllerStateException>(() =>
-                store.SaveSystemSettings(SystemSettingsSnapshot.Default, auditorActor, NergalRoles.Auditor));
+                store.SaveSystemSettings(SystemSettingsSnapshot.Default, store.ReadSystemSettingsVersion().FormToken, auditorActor, NergalRoles.Auditor));
             Assert.Equal("rbac.denied", ex.Code);
 
             // Administrator invalid settings return 400 with validation errors.
@@ -179,7 +180,7 @@ public sealed class SystemSettingsAndInlineEditTests
                 true, "http://insecure.example.test", "", null, null, null, null, null, 3600,
                 false, null, true, null, null, null, null, null, null,
                 "sqlite", null, null, null, null, "require",
-                30, 2, "drop", "drop", "accept", false));
+                30, 2, "drop", "drop", "accept", false, store.ReadSystemSettingsVersion().FormToken));
             Assert.Equal(StatusCodes.Status400BadRequest, admin.Response.StatusCode);
             var invalidModel = Assert.IsType<SystemSettingsViewModel>(invalidRes.Model);
             Assert.Contains("branding.applicationName", invalidModel.ValidationErrors);
@@ -193,7 +194,7 @@ public sealed class SystemSettingsAndInlineEditTests
                 true, "https://idp.example.test/realms/net", "nergal-web", "openid profile email groups", null, "groups", "admins", "auditors", 1800,
                 true, "ldaps://dir.example.test:636", true, "dc=example,dc=test", null, "(uid={0})", "memberOf", null, null,
                 "sqlite", null, null, null, null, "require",
-                60, 2, "drop", "drop", "accept", true);
+                60, 2, "drop", "drop", "accept", true, store.ReadSystemSettingsVersion().FormToken);
             var redirect = Assert.IsType<LocalRedirectResult>(saveRes);
             Assert.Equal("~/manage/settings?notice=saved", redirect.Url);
 

@@ -7,9 +7,13 @@ store from its current schema. Reject an obsolete or unknown schema under the
 store's ordinary integrity checks. Remove the controller's offline conversions
 from development schemas 1 through 3. Initialization refuses to overwrite an
 existing database. The current schema requires the settings table and its
-singleton constraint. A settings request cannot recreate a missing table.
-Existing development data can be preserved or used with the
-build that created it. This decision authorizes no data reset or live operation.
+integrity constraints. A settings request cannot recreate a missing table.
+
+Schema 5 appends one immutable settings version per accepted save and commits
+its audit event in the same transaction. A unique token identifies each recorded
+version across controller databases and divergent restores. This decision
+authorizes no data reset or live operation. Existing development data can be
+preserved or used with the build that created it.
 
 The controller, account store and protected agent journal keep separate owners.
 The controller stores desired policy, exact native-source inputs, pinned reusable

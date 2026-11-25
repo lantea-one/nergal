@@ -13,7 +13,7 @@ namespace Nergal.ControllerState;
 public sealed partial class ControllerStateStore
 {
     private const int ApplicationId = 0x4e524743; // 'NRGC'
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
     private const string DatabaseFileName = "controller.db";
 
     private readonly ControllerStateOptions _options;
@@ -67,13 +67,13 @@ public sealed partial class ControllerStateStore
                 PRAGMA synchronous=FULL;
                 PRAGMA foreign_keys=ON;
                 PRAGMA application_id=0x4e524743;
-                PRAGMA user_version=4;
                 """);
 
             using (var tx = connection.BeginTransaction())
             {
+                ExecuteNonQuery(connection, tx, $"PRAGMA user_version={SchemaVersion};");
                 ExecuteNonQuery(connection, tx, SchemaSql);
-                ExecuteNonQuery(connection, tx, SystemSettingsTableSql);
+                InitializeSystemSettings(connection, tx);
                 ExecuteNonQuery(connection, tx, NativeSourcesSchemaSql);
                 ExecuteNonQuery(connection, tx, ObjectsSchemaSql);
                 ExecuteNonQuery(connection, tx, ConversionPlansSchemaSql);
@@ -401,62 +401,6 @@ public sealed partial class ControllerStateStore
         });
     }
 
-    /// <summary>Reads the persisted system settings snapshot, returning <see cref="SystemSettingsSnapshot.Default"/> when not yet configured.</summary>
-    public SystemSettingsSnapshot ReadSystemSettings()
-    {
-        return Read((conn, tx) =>
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.Transaction = tx;
-            cmd.CommandText = "SELECT settings_json FROM system_settings WHERE singleton = 1";
-            var value = cmd.ExecuteScalar();
-            if (value is null) { return SystemSettingsSnapshot.Default; }
-            if (value is not string raw || string.IsNullOrWhiteSpace(raw)) { throw new ControllerStateException("settings.corrupt"); }
-
-            try { return SystemSettingsCodec.Deserialize(raw); }
-            catch (System.Text.Json.JsonException) { throw new ControllerStateException("settings.corrupt"); }
-        });
-    }
-
-    /// <summary>Validates and persists system settings and appends an immutable <c>settings.update</c> audit record.</summary>
-    /// <exception cref="ArgumentNullException">Required argument is null.</exception>
-    /// <exception cref="ArgumentException">Actor identity or role is invalid.</exception>
-    /// <exception cref="ControllerStateException">Actor is not an administrator or settings fail validation.</exception>
-    public void SaveSystemSettings(SystemSettingsSnapshot settings, string actorId, string actorRole)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        ValidateActor(actorId, actorRole);
-        if (actorRole != NergalRoles.Administrator)
-        {
-            throw new ControllerStateException("rbac.denied");
-        }
-
-        var errors = SystemSettingsCodec.Validate(settings);
-        if (errors.Count > 0)
-        {
-            throw new ControllerStateException("settings.invalid");
-        }
-
-        var json = SystemSettingsCodec.Serialize(settings);
-        Write((conn, tx) =>
-        {
-            var nowUtc = _timeProvider.GetUtcNow();
-            ExecuteNonQuery(conn, tx, """
-                INSERT INTO system_settings (singleton, settings_json, updated_by_actor, updated_at_utc)
-                VALUES (1, $json, $actor, $updated)
-                ON CONFLICT(singleton) DO UPDATE SET
-                    settings_json = excluded.settings_json,
-                    updated_by_actor = excluded.updated_by_actor,
-                    updated_at_utc = excluded.updated_at_utc
-                """,
-                ("$json", json),
-                ("$actor", actorId),
-                ("$updated", nowUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)));
-
-            InsertAudit(conn, tx, nowUtc, actorId, actorRole, "settings.update", "system", null, "succeeded", null);
-        });
-    }
-
     private ControllerAuditEntry InsertAudit(
         SqliteConnection conn,
         SqliteTransaction tx,
@@ -667,7 +611,7 @@ public sealed partial class ControllerStateStore
         }
 
         ValidateAuditDefinitions(conn, tx);
-        RequireDefinition(conn, tx, "system_settings", SystemSettingsTableSql, "controller.corrupt");
+        ValidateSystemSettingsSchema(conn, tx);
         ValidateNativeSourceSchema(conn, tx);
         ValidateObjectSchema(conn, tx);
         ValidateConversionPlanSchema(conn, tx);
@@ -777,14 +721,5 @@ public sealed partial class ControllerStateStore
         BEGIN
             SELECT RAISE(ABORT, 'audit log is append-only');
         END;
-        """;
-
-    private const string SystemSettingsTableSql = """
-        CREATE TABLE system_settings (
-            singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
-            settings_json TEXT NOT NULL,
-            updated_by_actor TEXT NOT NULL,
-            updated_at_utc TEXT NOT NULL
-        ) STRICT;
         """;
 }
