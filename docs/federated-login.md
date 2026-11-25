@@ -34,8 +34,10 @@ validates state, correlation, nonce, signing key, token lifetime, issuer and
 audience. The callback URI is fixed in configuration and must match the actual
 request. Authorization also checks duplicate claims, exact audience (including
 authorized party if present), bounded subject and group values, issuance time
-and expiry. At least one configured group must match. The controller retains
-only the issuer, subject, identity derived from that pair and session identifier.
+and expiry. At least one configured group must match. The authentication ticket retains bounded issuer/subject identity, role, actor,
+session identifier, connection generation and deadline. Optional descriptive
+profile defaults are stored separately after complete protocol validation; see
+[profile mapping](oidc-profile-defaults.md).
 It never requests downstream API access or stores access/refresh/ID tokens in
 the session. Subject and issuer are available to application code for individual
 attribution. Identity/profile changes and configuration saves use the identity-store audit;
