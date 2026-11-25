@@ -10,7 +10,7 @@ for independent single-host and multi-host installations with different network
 layouts. Site-specific infrastructure is optional configuration, not a core
 requirement. See [product scope and workflow](docs/product-workflow.md).
 
-**Release `2026.11.21`** implements the complete single-table controller and host
+**The `2026.11.21` development baseline** implements the complete single-table controller and host
 agent workflow across verified privilege boundaries:
 
 - **Typed policy & native nftables compiler**: schema-1 input filtering and

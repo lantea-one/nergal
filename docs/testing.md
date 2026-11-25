@@ -457,16 +457,15 @@ and exclusion of generated build artifacts from the sandbox supervisor.
 `NativeSourceContentTests` and `NativeSourceStoreTests` verify strict UTF-8 byte
 bounds, rejected names, exact BOM/CRLF content, independent duplicate identities,
 reopen persistence, atomic audit failure, role denial, retained-byte/record caps,
-immutability trigger definitions and digest corruption denial. Offline SQLite
-upgrade tests preserve hosts, settings, revisions/audit and reject unknown versions,
-source-table collisions or forged legacy protections without partial changes.
+immutability trigger definitions and digest corruption denial. SQLite tests
+reject retired and unknown versions without overwriting persisted inputs or audit.
 
 The local-session HTTPS fixture exercises staged import and multipart upload,
 original attachment downloads, database persistence across restart without an
 operator staging directory, source escaping,
 CSRF, invalid UTF-8, maximum valid file size, request/file size rejection and
-anonymous/Auditor boundaries. The admin fixture checks explicit idempotent schema
-upgrade and unknown-version denial. These checks add no native firewall operation;
+anonymous/Auditor boundaries. The admin fixture checks fresh initialization
+and denial when the target already holds a retired schema. These checks add no native firewall operation;
 conversion equivalence remains unverified. Saved revision exports have separate
 unit/HTTPS checks described above; original-source ingestion is not conversion.
 
@@ -485,8 +484,7 @@ viewer timezone. Server-local time is never the display default.
 `ReusableObjectContentTests` verifies defensive snapshots, canonical normalization,
 family/type/entry bounds and unsupported-input denial. `ReusableObjectStoreTests`
 uses real SQLite for immutable history, stale-edit/duplicate-name/type-change/RBAC
-denial, transactional audit failure, capacity, digest/protection tampering and
-explicit schema-2 upgrade. The existing UTC test includes object version storage.
+denial, transactional audit failure, capacity, digest/protection tampering checks. The existing UTC test includes object version storage.
 The local-session HTTPS fixture exercises all three types, invalid/duplicate/unknown
 fields, retained stale input, escaping, history/search, restart persistence, CSRF
 and anonymous/Auditor boundaries. No native set or packet behavior is added by this
@@ -758,7 +756,7 @@ unknown envelopes, unbound diagnostics, invalid positions and partial candidates
 
 `NativeConversionStoreTests` uses real SQLite for immutable review/restart, role
 and digest denial, blocked plans, one-revision concurrent replay, atomic list/revision/
-audit rollback, checked triggers and explicit schema-3-to-4 upgrade preservation.
+audit rollback and checked immutability triggers.
 The HTTPS fixture submits guided choices and separate commit actions, checks
 CSRF/unknown/duplicate/malformed input, exact source/report/export bindings,
 Administrator/Auditor/anonymous separation and unchanged state after denial.

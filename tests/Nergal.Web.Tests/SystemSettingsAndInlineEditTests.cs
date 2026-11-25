@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Nergal.ControllerState;
 using Nergal.Core.Controller;
 using Nergal.Core.Identity;
@@ -15,6 +16,46 @@ namespace Nergal.Web.Tests;
 [SupportedOSPlatform("linux")]
 public sealed class SystemSettingsAndInlineEditTests
 {
+    /// <summary>A settings save cannot repair or accept missing singleton protection in a current store.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SystemSettings_RejectsMissingOrIncompatibleTable(bool recreateWithoutConstraint)
+    {
+        if (!OperatingSystem.IsLinux()) { return; }
+        var directory = CreateOwnerOnlyTempDirectory();
+        try
+        {
+            var options = new ControllerStateOptions(directory);
+            var store = ControllerStateStore.Initialize(options);
+            var actor = ControllerActorIdentity.FromLocalAccount(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+            using var connection = new SqliteConnection($"Data Source={Path.Combine(directory, "controller.db")};Pooling=False");
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "DROP TABLE system_settings;";
+            if (recreateWithoutConstraint)
+            {
+                command.CommandText += """
+                    CREATE TABLE system_settings (
+                        singleton INTEGER PRIMARY KEY, settings_json TEXT NOT NULL,
+                        updated_by_actor TEXT NOT NULL, updated_at_utc TEXT NOT NULL
+                    ) STRICT;
+                    """;
+            }
+            command.ExecuteNonQuery();
+
+            Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(options)).Code);
+            Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() => store.ReadSystemSettings()).Code);
+            Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() =>
+                store.SaveSystemSettings(SystemSettingsSnapshot.Default, actor, NergalRoles.Administrator)).Code);
+            command.CommandText = "SELECT count(*) FROM sqlite_master WHERE name='system_settings'";
+            Assert.Equal(recreateWithoutConstraint ? 1L : 0L, command.ExecuteScalar());
+            command.CommandText = "SELECT count(*) FROM audit_log WHERE action='settings.update'";
+            Assert.Equal(0L, command.ExecuteScalar());
+        }
+        finally { TryDelete(directory); }
+    }
+
     /// <summary>Administrators can edit Filter, DNAT, SNAT, and Bridge rules in place with descriptions while Auditors are denied.</summary>
     [Fact]
     public void InlineEdit_UpdatesFilterDnatSnatBridgeRulesInPlaceAndDeniesAuditors()

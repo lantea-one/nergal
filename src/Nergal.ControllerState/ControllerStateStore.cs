@@ -73,6 +73,7 @@ public sealed partial class ControllerStateStore
             using (var tx = connection.BeginTransaction())
             {
                 ExecuteNonQuery(connection, tx, SchemaSql);
+                ExecuteNonQuery(connection, tx, SystemSettingsTableSql);
                 ExecuteNonQuery(connection, tx, NativeSourcesSchemaSql);
                 ExecuteNonQuery(connection, tx, ObjectsSchemaSql);
                 ExecuteNonQuery(connection, tx, ConversionPlansSchemaSql);
@@ -405,13 +406,6 @@ public sealed partial class ControllerStateStore
     {
         return Read((conn, tx) =>
         {
-            var tableExists = ScalarLong(conn, tx,
-                "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'system_settings'");
-            if (tableExists == 0)
-            {
-                return SystemSettingsSnapshot.Default;
-            }
-
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
             cmd.CommandText = "SELECT settings_json FROM system_settings WHERE singleton = 1";
@@ -446,15 +440,6 @@ public sealed partial class ControllerStateStore
         var json = SystemSettingsCodec.Serialize(settings);
         Write((conn, tx) =>
         {
-            ExecuteNonQuery(conn, tx, """
-                CREATE TABLE IF NOT EXISTS system_settings (
-                    singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
-                    settings_json TEXT NOT NULL,
-                    updated_by_actor TEXT NOT NULL,
-                    updated_at_utc TEXT NOT NULL
-                ) STRICT;
-                """);
-
             var nowUtc = _timeProvider.GetUtcNow();
             ExecuteNonQuery(conn, tx, """
                 INSERT INTO system_settings (singleton, settings_json, updated_by_actor, updated_at_utc)
@@ -665,10 +650,10 @@ public sealed partial class ControllerStateStore
         }
     }
 
-    private static bool ValidateSchemaAndIntegrity(SqliteConnection conn, SqliteTransaction tx, int expectedVersion = SchemaVersion)
+    private static bool ValidateSchemaAndIntegrity(SqliteConnection conn, SqliteTransaction tx)
     {
         if (ScalarLong(conn, tx, "PRAGMA application_id") != ApplicationId ||
-            ScalarLong(conn, tx, "PRAGMA user_version") != expectedVersion ||
+            ScalarLong(conn, tx, "PRAGMA user_version") != SchemaVersion ||
             !string.Equals(ScalarString(conn, tx, "PRAGMA quick_check"), "ok", StringComparison.Ordinal))
         {
             throw new ControllerStateException("controller.corrupt");
@@ -682,9 +667,10 @@ public sealed partial class ControllerStateStore
         }
 
         ValidateAuditDefinitions(conn, tx);
+        RequireDefinition(conn, tx, "system_settings", SystemSettingsTableSql, "controller.corrupt");
         ValidateNativeSourceSchema(conn, tx);
         ValidateObjectSchema(conn, tx);
-        if (expectedVersion >= 4) { ValidateConversionPlanSchema(conn, tx); }
+        ValidateConversionPlanSchema(conn, tx);
         return true;
     }
 
@@ -782,13 +768,6 @@ public sealed partial class ControllerStateStore
             detail_code TEXT
         ) STRICT;
 
-        CREATE TABLE IF NOT EXISTS system_settings (
-            singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
-            settings_json TEXT NOT NULL,
-            updated_by_actor TEXT NOT NULL,
-            updated_at_utc TEXT NOT NULL
-        ) STRICT;
-
         CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_log
         BEGIN
             SELECT RAISE(ABORT, 'audit log is append-only');
@@ -798,5 +777,14 @@ public sealed partial class ControllerStateStore
         BEGIN
             SELECT RAISE(ABORT, 'audit log is append-only');
         END;
+        """;
+
+    private const string SystemSettingsTableSql = """
+        CREATE TABLE system_settings (
+            singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
+            settings_json TEXT NOT NULL,
+            updated_by_actor TEXT NOT NULL,
+            updated_at_utc TEXT NOT NULL
+        ) STRICT;
         """;
 }

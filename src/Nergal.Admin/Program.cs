@@ -11,7 +11,6 @@ const string usage = """
       nergal-admin account provision <absolute-directory> <username> [--role <administrator|auditor>] [--password-stdin]
       nergal-admin account recover <absolute-directory> <local-administrator-uuid>
       nergal-admin controller init <absolute-directory>
-      nergal-admin controller upgrade <absolute-directory>
       nergal-admin --version
     Provisioning without --password-stdin prompts twice without echo on a terminal.
     The explicit stdin mode reads one UTF-8 password line to EOF (optional final LF or CRLF).
@@ -27,12 +26,12 @@ if (args is ["--version"])
     return 0;
 }
 if (!OperatingSystem.IsLinux()) { Console.Error.WriteLine("platform.unsupported"); return 1; }
-if (args is ["controller", var controllerOperation, var controllerDir] && controllerOperation is "init" or "upgrade")
+if (args is ["controller", "init", var controllerDir])
 {
     try
     {
-        _ = controllerOperation == "init" ? ControllerStateStore.Initialize(new ControllerStateOptions(controllerDir)) : ControllerStateStore.Upgrade(new ControllerStateOptions(controllerDir));
-        Console.WriteLine(controllerOperation == "init" ? "Controller state database initialized." : "Controller state database upgraded.");
+        _ = ControllerStateStore.Initialize(new ControllerStateOptions(controllerDir));
+        Console.WriteLine("Controller state database initialized.");
         return 0;
     }
     catch (ControllerStateException error) { Console.Error.WriteLine(error.Code); }

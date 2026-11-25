@@ -120,13 +120,13 @@ have immutable database history and pinned primary inet filter references; seman
 records and other planned state remain future work.
 Deployment/bootstrap trust remains a separate boundary.
 
-Stabilize the logical schema before implementing migrations for additional SQL
-backends. Each supported backend needs explicit schema versions, ordered upgrade
-migrations, compatibility checks and tested failure/recovery behavior, including
-existing data, constraints, audit integrity and revision history. Document backup
-and recovery requirements and test on the actual database engine. Avoid announcing
-an adapter as supported merely because it appears in saved settings. Keep backend
-persistence details outside framework-independent domain contracts.
+Stabilize the logical schema on SQLite before implementing additional SQL
+backends. The prerelease contract requires fresh initialization and checks each
+backend's schema, constraints, concurrent writes, audit integrity and backup/restore
+on that engine. Establish release-forward migrations from the first supported
+baseline. Database options in the Settings UI describe deployment intent.
+Keep backend persistence details outside framework-independent domain contracts.
+See [ADR 0065](decisions/0065-fresh-prerelease-database-schemas.md).
 
 ## Reusable sets and IP lists
 

@@ -111,23 +111,6 @@ public sealed class NativeConversionStoreTests
         });
     }
 
-    /// <summary>Schema 3 needs an explicit offline upgrade and preserves prior source/object/revision history.</summary>
-    [Fact]
-    public void Upgrade_FromSchema3_IsExplicitAndPreservesHistory()
-    {
-        WithStore((store, path) =>
-        {
-            var content = Plan(store, Input); var sourceId = content.RootSourceId;
-            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; PRAGMA user_version=3;");
-            Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path)));
-            var upgraded = ControllerStateStore.Upgrade(new(path));
-            Assert.Equal(Input, upgraded.ReadNativeSource(sourceId)!.Content.Text);
-            Assert.Empty(upgraded.ListNativeConversionPlans(sourceId));
-            Assert.Single(upgraded.ListAuditEntries());
-            Assert.True(upgraded.SaveNativeConversionPlan(content, Actor, NergalRoles.Administrator).Content.IsReady);
-        });
-    }
-
     private static NativeConversionPlanContent Plan(ControllerStateStore store, string text)
     {
         var source = store.ImportNativeSource(new("synthetic", text), Actor, NergalRoles.Administrator);

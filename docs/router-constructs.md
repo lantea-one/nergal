@@ -122,5 +122,5 @@ The [native source library](native-source-library.md) now accepts authenticated
 bounded UTF-8 uploads into immutable controller database records and downloads their
 exact original bytes. Operator directory snapshots are optional staging inputs;
 reports and selected detail use stored source identities. This is source ingestion,
-not semantic conversion or generated policy export. Existing controller schemas 1 and 2
-require the explicit offline upgrade described in the library guide.
+distinct from semantic conversion and generated policy export. Initialize a fresh
+store using the current controller schema.

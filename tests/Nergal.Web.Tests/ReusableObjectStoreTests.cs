@@ -112,34 +112,6 @@ public sealed class ReusableObjectStoreTests
         });
     }
 
-    /// <summary>An explicit schema-2 upgrade preserves source bytes/revisions and refuses colliding object tables.</summary>
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Upgrade_PreservesSourcesOrRejectsCollision(bool collision)
-    {
-        WithStore((store, path) =>
-        {
-            var source = store.ImportNativeSource(new("synthetic", "accept"), Actor, NergalRoles.Administrator);
-            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; PRAGMA user_version=2;");
-            Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path)));
-            if (collision)
-            {
-                Sql(path, "CREATE TABLE reusable_objects(foreign_value TEXT); INSERT INTO reusable_objects VALUES('preserve');");
-                Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path)));
-                using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT foreign_value FROM reusable_objects"; Assert.Equal("preserve", cmd.ExecuteScalar());
-                cmd.CommandText = "PRAGMA user_version"; Assert.Equal(2L, cmd.ExecuteScalar());
-            }
-            else
-            {
-                var upgraded = ControllerStateStore.Upgrade(new(path));
-                Assert.Equal("accept", upgraded.ReadNativeSource(source.Id)!.Content.Text); Assert.Empty(upgraded.ListReusableObjects());
-                Assert.Empty(ControllerStateStore.Upgrade(new(path)).ListReusableObjects());
-            }
-        });
-    }
-
     private static void WithStore(Action<ControllerStateStore, string> action)
     {
         if (!OperatingSystem.IsLinux()) { return; }

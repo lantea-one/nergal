@@ -101,57 +101,31 @@ public sealed class NativeSourceStoreTests
         });
     }
 
-    /// <summary>Explicit upgrade retains old audit/settings/revisions, is idempotent, and never occurs during ordinary open.</summary>
-    [Fact]
-    public void Upgrade_PreservesLegacyDataAndRequiresExplicitOperation()
+    /// <summary>Retired and unknown versions cannot open or be overwritten by fresh initialization.</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(99)]
+    public void ObsoleteSchema_IsRejectedAndKeptIntact(int version)
     {
         WithStore((store, path) =>
         {
-            var revision = store.SavePolicyRevision("{}", new string('a', 64), Actor, NergalRoles.Administrator, "before upgrade");
-            var host = new ManagedHostRecord(Guid.NewGuid(), "synthetic-host", AgentTransportKind.Unix, "/run/nergal/control.sock", expectedServerUserId: 1001);
-            store.RegisterHost(host, Actor, NergalRoles.Administrator);
-            store.SaveSystemSettings(SystemSettingsSnapshot.Default, Actor, NergalRoles.Administrator);
-            var audits = store.ListAuditEntries();
-            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
-            Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path)));
-            var upgraded = ControllerStateStore.Upgrade(new(path));
-            Assert.Equal(revision, upgraded.GetPolicyRevision(revision.Revision));
-            Assert.Equal(audits, upgraded.ListAuditEntries()); Assert.Empty(upgraded.ListNativeSources());
-            Assert.Equal(host, upgraded.GetHost(host.Id)); Assert.Equal(SystemSettingsSnapshot.Default, upgraded.ReadSystemSettings());
-            Assert.Empty(ControllerStateStore.Upgrade(new(path)).ListNativeSources());
-        });
-    }
-
-    /// <summary>An unknown version cannot be upgraded or partially acquire new source tables.</summary>
-    [Fact]
-    public void Upgrade_UnknownVersionRemainsUnchanged()
-    {
-        WithStore((_, path) =>
-        {
-            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=99;");
-            Assert.Equal("controller.upgradeUnsupported", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path))).Code);
-            using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
-            cmd.CommandText = "PRAGMA user_version"; Assert.Equal(99L, cmd.ExecuteScalar());
-            cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE name='native_sources'"; Assert.Equal(0L, cmd.ExecuteScalar());
-        });
-    }
-
-    /// <summary>A legacy resource collision or forged audit protection cannot be upgraded or overwritten.</summary>
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Upgrade_RejectsForeignSourceTableAndForgedLegacyTrigger(bool collision)
-    {
-        WithStore((_, path) =>
-        {
-            Sql(path, "DROP TABLE native_conversion_commits; DROP TABLE native_conversion_plans; DROP TABLE reusable_object_versions; DROP TABLE reusable_objects; DROP TABLE native_sources; PRAGMA user_version=1;");
-            if (collision) { Sql(path, "CREATE TABLE native_sources(foreign_value TEXT); INSERT INTO native_sources VALUES('preserve');"); }
-            else { Sql(path, "DROP TRIGGER audit_no_update; CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_log BEGIN SELECT 1; END;"); }
-            Assert.Throws<ControllerStateException>(() => ControllerStateStore.Upgrade(new(path)));
-            using var conn = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"); conn.Open(); using var cmd = conn.CreateCommand();
-            cmd.CommandText = "PRAGMA user_version"; Assert.Equal(1L, cmd.ExecuteScalar());
-            if (collision) { cmd.CommandText = "SELECT foreign_value FROM native_sources"; Assert.Equal("preserve", cmd.ExecuteScalar()); }
-            else { cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE name='native_sources'"; Assert.Equal(0L, cmd.ExecuteScalar()); }
+            var source = store.ImportNativeSource(new("synthetic", "accept"), Actor, NergalRoles.Administrator);
+            Sql(path, $"PRAGMA user_version={version};");
+            Assert.Equal("controller.corrupt", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Open(new(path))).Code);
+            Assert.Equal("controller.exists", Assert.Throws<ControllerStateException>(() => ControllerStateStore.Initialize(new(path))).Code);
+            using (var connection = new SqliteConnection($"Data Source={Path.Combine(path, "controller.db")};Pooling=False"))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "PRAGMA user_version";
+                Assert.Equal((long)version, command.ExecuteScalar());
+            }
+            Sql(path, "PRAGMA user_version=4;");
+            var reopened = ControllerStateStore.Open(new(path));
+            Assert.Equal("accept", reopened.ReadNativeSource(source.Id)!.Content.Text);
+            Assert.Single(reopened.ListAuditEntries());
         });
     }
 
