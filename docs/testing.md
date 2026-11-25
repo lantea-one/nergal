@@ -793,3 +793,8 @@ registration/removal, CSRF and anonymous/Auditor restrictions. Browser QA verifi
 draft JSON/change-note/unfinished-field retention across local sidebar sections,
 arrow-key tabs, actual CodeMirror, mobile Menu/Escape and empty/populated light/dark
 layouts. These checks add no packet semantics; no privileged boundary changes.
+
+`BrowserEntryTests` and the local-session HTTPS fixture verify anonymous root to
+sign-in, authenticated root/sign-in to Overview, fixed destinations despite
+external return URLs, and logout returning to sign-in with revoked ticket replay
+denied. Session-only installations retain their protected session destination.

@@ -33,3 +33,10 @@ M5 authoring redesign remain required before declaring M5 complete.
 
 References: [OPNsense GUI](https://docs.opnsense.org/manual/gui.html),
 [pfSense rule configuration](https://docs.netgate.com/pfsense/en/latest/firewall/configure.html).
+
+The configured console entry point now routes anonymous visitors to sign-in and
+validated sessions to Overview. Both local and federated completion use that
+fixed overview destination; logout returns to sign-in. The session-only host
+retains `/session`, and the explicitly unauthenticated development scaffold
+remains separate. This changes navigation only, not session validation, cookie
+lifetimes, CSRF or the existing revocation boundary.
