@@ -3,7 +3,6 @@
 @{
     var branding = ViewData["Branding"] as Nergal.Core.Controller.BrandingSettings ?? Nergal.Core.Controller.SystemSettingsSnapshot.Default.Branding;
     var appName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "nergal" : branding.ApplicationName;
-    var brandMark = char.ToUpperInvariant(appName[0]);
     var title = ViewData["Title"] as string ?? appName;
     var activeNav = ViewData["ActiveNav"] as string ?? "";
     var actorRole = ViewData["ActorRole"] as string;
@@ -23,7 +22,7 @@
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="@Url.Content(showNav ? "~/manage" : "~/")">
-                <span class="brand-mark" aria-hidden="true">@brandMark</span>
+                <span class="guardian-mark" aria-hidden="true"></span>
                 <span>@appName</span>
             </a>
 
