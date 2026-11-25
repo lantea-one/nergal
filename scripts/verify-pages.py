@@ -87,6 +87,8 @@ REQUIRED_FILES = [
     "appliance-console.md",
     "local-users-and-profiles.md",
     "assets/screenshots/m5-users-dark.jpg",
+    "assets/screenshots/enablement-settings-dark.jpg",
+    "assets/screenshots/enablement-settings-light.jpg",
     "assets/screenshots/m5-users-light.jpg",
     "assets/screenshots/m5-profile-dark.jpg",
     "assets/screenshots/m5-profile-light.jpg",

@@ -21,10 +21,7 @@
                     <option value="@NergalRoles.Administrator" selected="@(account.Role == NergalRoles.Administrator)">Administrator</option>
                     <option value="@NergalRoles.Auditor" selected="@(account.Role == NergalRoles.Auditor)">Auditor</option>
                 </select></td>
-                <td><select name="enabled" form="@formId" aria-label="Access for @account.UserName" aria-describedby="access-hint">
-                    <option value="true" selected="@account.Enabled">Enabled</option>
-                    <option value="false" selected="@(!account.Enabled)">Disabled</option>
-                </select></td>
+                <td>@await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", account.Enabled, "Access enabled", "Access for " + account.UserName, "access-hint", formId))</td>
                 <td><time data-local-time datetime="@account.CreatedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @account.CreatedUtc.UtcDateTime.ToString("O")">@account.CreatedUtc.UtcDateTime.ToString("u") UTC</time></td>
                 <td><div class="btn-group">
                     <form id="@formId" method="post" action="@Url.Content("~/manage/users/update")">

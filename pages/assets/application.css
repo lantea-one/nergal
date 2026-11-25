@@ -526,6 +526,22 @@ textarea {
 input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 1; }
 textarea:not(.code-editor) { min-height: 7rem; resize: vertical; }
 input[type="checkbox"], input[type="radio"] { width: 1rem; height: 1rem; margin: 0; flex: 0 0 auto; accent-color: var(--link, var(--primary)); }
+.enablement-switch { display: inline-flex; align-items: center; gap: .55rem; min-height: 2.75rem; margin: 0; color: var(--text); font-size: .9rem; cursor: pointer; }
+.enablement-switch input[role="switch"] { appearance: none; position: relative; width: 2.5rem; height: 1.5rem; border: 2px solid var(--text-muted); border-radius: 999px; background: var(--surface-subtle); cursor: pointer; }
+.enablement-switch input[role="switch"]::after { content: ""; position: absolute; width: 1rem; height: 1rem; left: .125rem; top: .125rem; border-radius: 50%; background: var(--text-muted); }
+.enablement-switch input[role="switch"]:checked { border-color: var(--primary); background: var(--primary); }
+.enablement-switch input[role="switch"]:checked::after { transform: translateX(1rem); background: var(--surface); }
+.enablement-switch input[role="switch"]:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.enablement-switch input[role="switch"]:disabled { cursor: not-allowed; }
+.switch-state { color: var(--text-muted); font-size: .8rem; min-width: 1.5rem; }
+.switch-on, .enablement-switch input:checked ~ .switch-state .switch-off { display: none; }
+.enablement-switch input:checked ~ .switch-state .switch-on { display: inline; }
+@media (forced-colors: active) {
+  .enablement-switch input[role="switch"] { border-color: ButtonText; }
+  .enablement-switch input[role="switch"]::after { background: ButtonText; }
+  .enablement-switch input[role="switch"]:checked { border-color: Highlight; background: Highlight; }
+  .enablement-switch input[role="switch"]:checked::after { background: HighlightText; }
+}
 input:disabled, select:disabled, textarea:disabled { opacity: .65; cursor: not-allowed; }
 input[readonly], textarea[readonly] { background: var(--surface-subtle); }
 input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"], .input-validation-error,

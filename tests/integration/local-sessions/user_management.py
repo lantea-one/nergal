@@ -40,6 +40,7 @@ def check_user_management(host, browser_type, root, tls, admin_tool, password, c
         assert 'Local users' in html and 'User and profile activity' in html
         assert 'fixture-admin' in html and 'account.bootstrap' in html
         assert password not in html
+        assert 'role="switch"' in html and '<select name="enabled"' not in html
         admin.request('/profile?id=another-user', 400)
         admin.request('/manage/users?role=admin', 400)
         version = state('fixture-admin')[1]
@@ -81,9 +82,16 @@ def check_user_management(host, browser_type, root, tls, admin_tool, password, c
         assert 'Administrator &lt;script&gt;fixture&lt;/script&gt;' not in admin.request('/profile', 200)
         auditor.request('/profile/password', 400, {'version': str(state('fixture-auditor')[1]),
                                                   'currentPassword': password, 'newPassword': password})
+        # Native off switches omit the field. Ambiguous/forged values still cannot change access.
         target, target_version = state('fixture-auditor')
+        base = {'id': target, 'version': str(target_version), 'role': 'nergal:auditor'}
+        for invalid in ('on', '', 'TRUE'):
+            post(admin, '/manage/users/update', {**base, 'enabled': invalid}, 400)
+        admin.request('/manage/users/update', 400, [*base.items(), ('enabled', 'true'), ('enabled', 'false'),
+                      ('__RequestVerificationToken', admin.token('/manage/users'))])
+        assert state('fixture-auditor')[1] == target_version
         post(admin, '/manage/users/update', {'id': target, 'version': str(target_version),
-             'role': 'nergal:auditor', 'enabled': 'false'})
+             'role': 'nergal:auditor'})
         auditor.request('/profile', 401)
         auditor.cookies.clear()
         login(auditor, 'fixture-auditor', expected=401)

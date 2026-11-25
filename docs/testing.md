@@ -825,3 +825,9 @@ then proves that account-store unavailability does not break the error view.
 and sidebar, return of focus, and unrelated-key behavior. Browser QA checks actual
 SVG icons, matching 42px profile fields, footer removal, full-width desktop cards
 and a 375px mobile layout without horizontal page overflow.
+
+Enablement-switch form tests require mandatory access/version/CSRF fields while
+allowing the unchecked switch to be absent, and deny unknown/repeated fields. Real
+HTTPS checks exercise on/off user access, last-admin protection, revoked replay and
+invalid boolean denial; rule states retain complete draft/revision contents. Settings
+checks verify all five enablement switches and disabled Auditor presentation.

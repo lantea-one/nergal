@@ -12,7 +12,7 @@ version is adopted, migrated or reset by the application.
 - Create an explicitly named local Administrator or Auditor. Names use 1–64 ASCII
   letters, digits, dots, underscores or hyphens and are case-insensitive. Initial
   passwords use the existing Identity hasher and 15–128 Unicode-character bounds.
-- Change a role or enable/disable access with **Save access**. Disabling retains
+- Change a role or use the **Access enabled** switch, then choose **Save access**. Disabling retains
   the account identity, profile and history. It blocks password sign-in and
   invalidates existing tickets; reenabling cannot resurrect old tickets.
 - Keep at least one enabled local Administrator. The check runs inside the same
@@ -107,3 +107,6 @@ server exports, credentials or production accounts.
 [mobile profile](../pages/assets/screenshots/m5-profile-mobile.jpg),
 [mobile navigation](../pages/assets/screenshots/m5-navigation-mobile.jpg) and
 [error recovery](../pages/assets/screenshots/m5-error-dark.jpg) show the shared UI.
+
+The same control appears in [dark settings](../pages/assets/screenshots/enablement-settings-dark.jpg)
+and [light settings](../pages/assets/screenshots/enablement-settings-light.jpg).

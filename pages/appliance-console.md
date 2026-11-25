@@ -107,3 +107,7 @@ captured; use the task map above for their current location.
 ![Mobile first-use guidance](assets/screenshots/console-mobile.jpg)
 
 ![Mobile appliance navigation](assets/screenshots/console-navigation-mobile.jpg)
+
+Enable/disable controls use a shared labelled on/off switch throughout rules,
+local-user access and settings. Save/update actions remain explicit. Match selection
+and negation controls retain their separate selection semantics.

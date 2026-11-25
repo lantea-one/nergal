@@ -31,9 +31,9 @@ public sealed class UsersController(LocalAdministratorAccounts accounts, IConfig
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Update()
     {
-        var form = await ReadFieldsAsync("id", "version", "role", "enabled");
+        var form = await ReadFieldsWithOptionalSwitchAsync("enabled", "id", "version", "role");
         if (form is null || !Guid.TryParseExact(form["id"], "D", out var id) || id == Guid.Empty ||
-            !Version(form["version"], out var version) || form["enabled"].ToString() is not ("true" or "false")) { return BadRequest(); }
+            !Version(form["version"], out var version) || (form.ContainsKey("enabled") && form["enabled"].ToString() is not ("true" or "false"))) { return BadRequest(); }
         var result = await Accounts.UpdateUserAsync(User, id, version, form["role"].ToString(), form["enabled"] == "true");
         return await CompleteAsync(result, id, form["enabled"] != "true" || form["role"] != User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value);
     }

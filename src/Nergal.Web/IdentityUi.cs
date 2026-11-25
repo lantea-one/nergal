@@ -46,12 +46,21 @@ public abstract class IdentityUiController(LocalAdministratorAccounts accounts, 
 
     /// <summary>Rejects unknown, omitted and repeated form fields instead of letting default binding broaden a mutation.</summary>
     protected async Task<IFormCollection?> ReadFieldsAsync(params string[] names)
+        => await ReadFieldsCoreAsync(null, names);
+
+    /// <summary>Accepts one optional native boolean switch; every other field remains mandatory and all duplicates remain denied.</summary>
+    protected async Task<IFormCollection?> ReadFieldsWithOptionalSwitchAsync(string optionalSwitch, params string[] names)
+        => await ReadFieldsCoreAsync(optionalSwitch, names);
+
+    private async Task<IFormCollection?> ReadFieldsCoreAsync(string? optionalSwitch, string[] names)
     {
         if (!string.Equals(Request.ContentType?.Split(';')[0].Trim(), "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
         { return null; }
         var form = await Request.ReadFormAsync(HttpContext.RequestAborted);
         var allowed = names.Append("__RequestVerificationToken").ToHashSet(StringComparer.Ordinal);
-        return form.Count == allowed.Count && form.All(field => allowed.Contains(field.Key) && field.Value.Count == 1) ? form : null;
+        var requiredPresent = allowed.All(form.ContainsKey);
+        if (optionalSwitch is not null) { allowed.Add(optionalSwitch); }
+        return requiredPresent && form.All(field => allowed.Contains(field.Key) && field.Value.Count == 1) ? form : null;
     }
 
     /// <summary>Parses an explicit bounded expected version without accepting signs, whitespace or overflow.</summary>

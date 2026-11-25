@@ -6,7 +6,7 @@
 @if (states.Length > 0)
 {
     <section class="card" aria-labelledby="advanced-state-heading"><h2 id="advanced-state-heading">Raw, auxiliary and sub-chain rule states</h2>
-        <p class="hint">Each checkbox changes only this draft. Disabled rules retain their settings and position. Review intent/native diffs, save a revision and use confirmed apply. Disabling a drop, return exemption or clamp can broaden traffic or change connectivity.</p>
+        <p class="hint">Each switch changes only this draft. Disabled rules retain their settings and position. Review intent/native diffs, save a revision and use confirmed apply. Disabling a drop, return exemption or clamp can broaden traffic or change connectivity.</p>
         <div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">State</th></tr></thead><tbody>
             @foreach (var state in states) { <tr><td>@state.Label</td><td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, state))</td></tr> }
         </tbody></table></div>

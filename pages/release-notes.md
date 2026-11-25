@@ -5,6 +5,8 @@ nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day re
 ## Unreleased local users and resilient console navigation
 
 Administrators can manage local roles, enabled access and session revocation.
+Rule, account and settings enablement use shared labelled on/off switches with
+keyboard and assistive-technology support; submission remains explicit.
 Personal profiles and current-password changes use versioned database state;
 last-enabled-admin checks and identity audit commit with the account change.
 The fresh unreleased account schema is version 2. Provider mapping and email/TOTP

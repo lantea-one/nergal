@@ -1,0 +1,6 @@
+@model Nergal.Web.EnablementSwitchModel
+<label class="enablement-switch">
+    <input type="checkbox" role="switch" name="@Model.Name" value="true" checked="@Model.Enabled" disabled="@Model.Disabled" form="@Model.FormId" aria-label="@Model.AccessibleLabel" aria-describedby="@Model.DescriptionId" />
+    <span>@Model.Label</span>
+    <span class="switch-state" aria-hidden="true"><span class="switch-on">On</span><span class="switch-off">Off</span></span>
+</label>

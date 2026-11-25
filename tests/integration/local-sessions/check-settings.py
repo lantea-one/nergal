@@ -66,6 +66,7 @@ def main():
         with sessions.host(root, tls, settings) as browser:
             browser.login()
             html = browser.request('/manage/settings', 200)
+            assert html.count('role="switch"') == 5
             assert 'do not reconfigure the running services' in html
             assert 'synthetic' in browser.request('/manage/sources', 200)
             fields = Fields(); fields.feed(html)
@@ -83,7 +84,10 @@ def main():
                        input=sessions.PASSWORD.encode() + b'\n', check=True)
         with sessions.host(root, tls, {**settings, 'LocalSessions__AccountDirectory': str(auditor)}) as browser:
             browser.login()
-            browser.request('/manage/settings', 200)
+            readonly = browser.request('/manage/settings', 200)
+            from re import findall
+            switches = findall(r'<input[^>]*role="switch"[^>]*>', readonly)
+            assert len(switches) == 5 and all('disabled="disabled"' in value for value in switches)
             browser.request('/manage/sources', 403)
             fields.fields['__RequestVerificationToken'] = browser.token('/manage/settings')
             assert post(browser, fields.fields)[0] == 403
