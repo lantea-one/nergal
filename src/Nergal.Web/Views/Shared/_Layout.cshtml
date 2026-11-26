@@ -11,8 +11,7 @@
     var locale = System.Globalization.CultureInfo.CurrentUICulture;
     var culture = locale.Name;
     var english = Nergal.Web.UiLocalization.DefaultCulture.Name;
-    var bodyLanguage = Nergal.Web.UiLocalization.HasLocalizedBody(locale, ViewData["LocalizedContent"] is true,
-        ViewData["LocalizedForAllLanguages"] is true) ? null : english;
+    var bodyLanguage = Nergal.Web.UiLocalization.HasLocalizedBody(locale, ViewData["LocalizedContent"] is true) ? null : english;
     var direction = locale.TextInfo.IsRightToLeft ? "rtl" : "ltr";
     Context.Response.Headers.ContentLanguage = culture;
     Context.Response.Headers.Append("Vary", "Cookie");

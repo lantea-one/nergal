@@ -5,6 +5,7 @@
 @using Nergal.Core.Policy
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Firewall";
     ViewData["ActiveNav"] = "policies";
     ViewData["ActorRole"] = Model.ActorRole;
@@ -897,7 +898,7 @@
                 <div class="field">
                     <label for="raw-bundle-json">@L["Bundle JSON"]</label>
                     <p id="bundle-editor-help" class="muted">@L["JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics."]</p>
-                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json"
+                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json" dir="ltr"
                               aria-describedby="bundle-editor-help" data-editor-label="@L["Policy bundle JSON"]"
                               data-editor-indent-lines="@L["Indent lines"]"
                               data-editor-indentation-updated="@L["Indentation updated. Preview checks policy compatibility."]"

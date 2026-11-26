@@ -4,6 +4,7 @@
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Sets & IP lists";
     ViewData["ActiveNav"] = "objects";
     ViewData["ShowManageNav"] = true;

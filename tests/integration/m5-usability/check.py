@@ -367,14 +367,24 @@ def right_to_left_navigation(browser, origin, capture):
     browser.select("#ui-culture", "ar")
     browser.click(submit("/language"))
     browser.wait_for(lambda: browser.evaluate("return document.documentElement.lang;") == "ar", "Expected Arabic")
-    expect_text(browser, "Register agent host", '.appliance-content[lang="en-US"][dir="ltr"]')
+    expect_text(browser, "تسجيل مضيف الوكيل", ".appliance-content")
     assert browser.evaluate("""
         const sidebar = document.querySelector('#management-navigation');
         const content = document.querySelector('.appliance-content');
         return document.documentElement.dir === 'rtl' && getComputedStyle(sidebar).direction === 'rtl'
+            && getComputedStyle(content).direction === 'rtl'
             && sidebar.getBoundingClientRect().left >= content.getBoundingClientRect().right;
-    """), "Arabic navigation did not move to the right of the English fallback content"
+    """), "Arabic navigation or Hosts content did not follow right-to-left layout"
     capture("hosts-desktop-ar")
+
+    browser.post("/url", url=origin + "/manage/policies?section=json")
+    browser.click('[data-tab-target="tab-json"]')
+    browser.wait_for(lambda: browser.visible(".cm-content"), "Expected the JSON editor in Arabic")
+    assert browser.evaluate("""
+        return document.documentElement.dir === 'rtl'
+            && getComputedStyle(document.querySelector('.cm-content')).direction === 'ltr';
+    """), "JSON punctuation and tokens must keep left-to-right order in Arabic"
+    browser.post("/url", url=origin + "/manage/hosts")
 
     set_viewport(browser, mobile=True)
     toggle = "[data-sidebar-toggle]"
@@ -514,7 +524,7 @@ def main():
                         ("identity and settings", identity_settings, (capture,)),
                         ("dark theme and browser-local time", desktop_dark, (capture,)),
                         ("Spanish Hosts, native sources, and JSON editor", mobile_localization, (origin, temp, capture)),
-                        ("right-to-left navigation and English fallback", right_to_left_navigation, (origin, capture)),
+                        ("right-to-left navigation and Hosts content", right_to_left_navigation, (origin, capture)),
                         ("mobile navigation and sign-out", mobile_and_sign_out, (origin, capture)),
                         ("auditor navigation and denial", read_only, (origin, state, capture)),
                     ):

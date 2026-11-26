@@ -93,16 +93,22 @@ def exercise(temp):
         assert "Biblioteca de fuentes nativas" in sources and 'class="appliance-content" lang=' not in sources
         apply = unescape(browser.request("/manage/apply", 200))
         assert 'lang="es-ES"' in apply and "Aplicación confirmada en dos fases" in apply
-        assert 'class="appliance-content" lang="en-US" dir="ltr"' in apply
+        assert 'class="appliance-content" lang=' not in apply
 
-        for locale, direction in (("fr-FR", "ltr"), ("ja-JP", "ltr"), ("ar", "rtl"), ("he-IL", "rtl")):
+        labels = (
+            ("fr-FR", "ltr", "Enregistrer un hôte d’agent"),
+            ("ja-JP", "ltr", "エージェントホストを登録"),
+            ("ar", "rtl", "تسجيل مضيف الوكيل"),
+            ("he-IL", "rtl", "רישום מארח סוכן"),
+        )
+        for locale, direction, label in labels:
             assert select_language(browser, {"culture": locale, "returnPath": HOSTS,
                                              "__RequestVerificationToken": browser.token(HOSTS)}, 302) == HOSTS
             current = unescape(browser.request(HOSTS, 200))
             assert f'<html lang="{locale}" dir="{direction}"' in current
-            assert 'class="appliance-content" lang="en-US" dir="ltr"' in current
+            assert 'class="appliance-content" lang=' not in current
             assert f'<h1 lang="{locale}" dir="auto">' in current
-            assert 'Register agent host' in current and 'aria-label="Primary navigation"' not in current
+            assert label in current and 'aria-label="Primary navigation"' not in current
             assert browser.last_headers["content-language"] == locale
 
         assert select_language(browser, {"culture": "en-US", "returnPath": HOSTS,

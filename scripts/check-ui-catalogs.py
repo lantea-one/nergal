@@ -16,6 +16,10 @@ SOURCE_LOCALE = "en-US"
 CULTURE = re.compile(r'CultureInfo\.GetCultureInfo\("([A-Za-z]+(?:-[A-Za-z]+)?)"\)')
 LOOKUP = re.compile(r'\b(?:L|localizer|strings)\??\[\s*("(?:[^"\\]|\\.)*")')
 PLACEHOLDER = re.compile(r"(?<!\{)\{[0-9]+(?:[, :][^{}]+)?\}(?!\})|(?<!\$)\$(?!\$)")
+TECHNICAL_EXAMPLE = re.compile(r"\b(?:lan[0-9]+|wan[0-9]+|br[0-9]+|eth[0-9]+|meta ibrname|trusted_clients)\b")
+INVARIANT_LABELS = frozenset(("LDAP", "NAT", "UTC"))
+TRANSLATION_ARTIFACTS = ("\ufffd", "\u2047", "\u2581", "<unk>")
+BIDI_OVERRIDES = frozenset("\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069")
 
 
 def placeholders(message):
@@ -33,6 +37,13 @@ def load_catalog(path):
             raise ValueError(f"{path.name}: invalid, empty or duplicate resource {key!r}")
         if placeholders(key) != placeholders(text):
             raise ValueError(f"{path.name}: placeholders differ for {key!r}")
+        if not BIDI_OVERRIDES.isdisjoint(text) or any(artifact in text for artifact in TRANSLATION_ARTIFACTS):
+            raise ValueError(f"{path.name}: invalid control character or translation artifact for {key!r}")
+        if key in INVARIANT_LABELS and text != key:
+            raise ValueError(f"{path.name}: modified protocol or time label {key!r}")
+        for example in TECHNICAL_EXAMPLE.findall(key):
+            if example not in text:
+                raise ValueError(f"{path.name}: missing literal example {example!r} for {key!r}")
         folded.add(key.casefold())
         entries[key] = text
     return entries

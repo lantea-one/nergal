@@ -33,10 +33,9 @@ internal static class UiLocalization
         (CultureInfo.GetCultureInfo("ko-KR"), "한국어"),
     });
 
-    // Most localized management views currently have a complete Spanish catalog.
-    // Mark the main content as English for other locales until its catalog is ready.
-    internal static bool HasLocalizedBody(CultureInfo locale, bool extendedView, bool sharedView) =>
-        locale.Equals(DefaultCulture) || sharedView || (extendedView && locale.Name == "es-ES");
+    // The view declares whether its body uses the resource catalogs.
+    internal static bool HasLocalizedBody(CultureInfo locale, bool localizedView) =>
+        locale.Equals(DefaultCulture) || localizedView;
 
     internal static string MessageLanguage(LocalizedString message) =>
         message.ResourceNotFound ? DefaultCulture.Name : CultureInfo.CurrentUICulture.Name;

@@ -1,24 +1,21 @@
 # MVC display languages
 
-The console offers 20 display languages. Every language covers the shared shell,
-navigation, local and federated sign-in, the authenticator challenge and
-recovery, verification-code emails, and the primary firewall verdict and
-confirmed-apply buttons. Arabic
-and Hebrew render shared and fully translated screens right to left. Recovery
-keys and numeric authenticator codes retain left-to-right order.
+The console offers 20 display languages. Each catalog covers the registered
+console messages, including management forms, local and federated sign-in,
+authenticator recovery, verification-code emails, policy review, confirmed apply,
+and the JSON editor's controls. Arabic and Hebrew render localized pages right to
+left. JSON, recovery keys, and numeric authenticator codes retain left-to-right order.
 
 The choices are English, Arabic, Chinese (Simplified and Traditional), Dutch,
 French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish,
 Portuguese (Brazil), Russian, Spanish, Turkish, Ukrainian and Vietnamese.
 
-Spanish also covers Overview and host observations, Hosts registration and
-validation, the OAuth connection form, audit history, browser errors, native
-source import and conversion review, and portions of identity management,
-settings, policy authoring and confirmed apply. The JSON editor's toolbar,
-search, folding and status announcements have Spanish text. English is the fallback for views and
-messages outside a catalog's coverage. Untranslated main content explicitly
-declares English and left-to-right direction so assistive technology can interpret
-it correctly.
+The catalogs combine authored and machine-assisted translations. Placeholders and
+technical literals were checked, and consequential firewall and identity messages
+received additional review. Independent native-speaker review across the full
+catalogs is pending. Native source, diagnostic identifiers, operator-provided
+values, and browser or parser diagnostics retain their original representations. English is the fallback for
+messages outside the resource catalogs.
 
 Open **Language** in the top bar, choose a language, and select **Set language**.
 The control works before sign-in and with JavaScript disabled. It saves a
@@ -37,20 +34,18 @@ Resource keys must be unique regardless of casing. Use one key for each message
 and keep positional placeholders so translators can reorder their arguments.
 Let Razor HTML-encode translated strings and arguments. Use the same convention
 for visible text, document titles, accessible names, and hints. Set
-`ViewData["LocalizedContent"] = true` in a view covered by the extended Spanish
-catalog. Use `ViewData["LocalizedForAllLanguages"] = true` only for views fully
-covered by every supported language. Mark individual translated regions with
-their language when working on a view incrementally. Use logical CSS properties
-for placement that follows the writing direction.
+`ViewData["LocalizedContent"] = true` in a view that renders its body from the
+resource catalogs. Use logical CSS properties for placement that follows the
+writing direction and isolate machine-readable values where their order matters.
 
 To add a language, add its exact culture and native display name to `UiLocalization`
-and create a matching `UiStrings.<culture>.resx` with the shared navigation and
-sign-in messages from a shipped catalog. Preserve placeholders and protocol names.
-Run the localization tests before making the language available in the selector.
+and translate a matching `UiStrings.<culture>.resx` for the full message set.
+Preserve placeholders and protocol names. Run the localization tests before
+making the language available in the selector.
 
 Run `python3 -B scripts/check-ui-catalogs.py` for per-locale counts and structural
-validation. `--json` reports the exact missing messages, and `--require-complete`
-exits unsuccessfully while any catalog has gaps. The inventory counts literal
+validation. `--json` reports the exact missing messages. CI uses
+`--require-complete` to reject gaps across supported locales. The inventory counts literal
 resource lookups and catalog entries. Review computed messages, plain text in
 templates, and dependency-provided text as well. Review firewall and identity
 instructions for meaning in each language before publishing translations.

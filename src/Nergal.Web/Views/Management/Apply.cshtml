@@ -2,6 +2,7 @@
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Confirmed apply";
     ViewData["ActiveNav"] = "apply";
     ViewData["ActorRole"] = Model.ActorRole;

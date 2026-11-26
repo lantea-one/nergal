@@ -2,6 +2,7 @@
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Recovery authorization";
 }
 <main id="main-content" tabindex="-1" class="container-narrow">

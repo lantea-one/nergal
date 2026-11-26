@@ -77,6 +77,9 @@ public sealed class UiLocalizationTests
 
                 Assert.Contains("synthetic-user", strings["My profile for {0}", "synthetic-user"].Value, StringComparison.Ordinal);
                 Assert.Contains("123456", strings["Your Nergal verification code is {0}. Use it only for the request you initiated.", "123456"].Value, StringComparison.Ordinal);
+                Assert.NotEqual("Start confirmed apply", strings["Start confirmed apply"].Value);
+                Assert.NotEqual("Immediate rollback", strings["Immediate rollback"].Value);
+                Assert.Equal("NAT", strings["NAT"].Value);
                 Assert.True(strings["Missing test message"].ResourceNotFound);
             }
         }
@@ -85,14 +88,14 @@ public sealed class UiLocalizationTests
 
     /// <summary>English fallback and the selected shell language have separate coverage.</summary>
     [Theory]
-    [InlineData("en-US", false, false, true)]
-    [InlineData("es-ES", true, false, true)]
-    [InlineData("es-ES", false, false, false)]
-    [InlineData("ar", true, false, false)]
-    [InlineData("ja-JP", false, true, true)]
-    public void LocalizedBodyRequiresCoverageForTheSelectedLocale(string locale, bool extended, bool shared, bool expected)
+    [InlineData("en-US", false, true)]
+    [InlineData("es-ES", true, true)]
+    [InlineData("es-ES", false, false)]
+    [InlineData("ar", true, true)]
+    [InlineData("ja-JP", false, false)]
+    public void LocalizedBodyRequiresTranslationWiring(string locale, bool localizedView, bool expected)
     {
-        Assert.Equal(expected, UiLocalization.HasLocalizedBody(CultureInfo.GetCultureInfo(locale), extended, shared));
+        Assert.Equal(expected, UiLocalization.HasLocalizedBody(CultureInfo.GetCultureInfo(locale), localizedView));
     }
 
     /// <summary>Spanish validation and status text are available, with an English fallback for missing messages.</summary>
@@ -110,9 +113,9 @@ public sealed class UiLocalizationTests
             Assert.Equal("Pendiente de confirmación", strings["pending"].Value);
             Assert.Equal("Mi perfil de Synthetic", strings["My profile for {0}", "Synthetic"].Value);
 
-            var missing = strings["NAT"];
+            var missing = strings["Missing fixture message"];
             Assert.True(missing.ResourceNotFound);
-            Assert.Equal("NAT", missing.Value);
+            Assert.Equal("Missing fixture message", missing.Value);
             return Task.CompletedTask;
         }, Options.Create(UiLocalization.CreateRequestOptions()), NullLoggerFactory.Instance);
 

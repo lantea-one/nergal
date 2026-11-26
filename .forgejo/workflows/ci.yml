@@ -43,14 +43,15 @@ jobs:
       - name: Verify local administrator sessions on loopback HTTPS
         run: |
           python3 tests/integration/local-sessions/check.py
+          python3 -B tests/integration/local-sessions/check-localization.py
           python3 -B tests/integration/local-sessions/check-settings.py
           python3 -B tests/integration/local-sessions/check-wrapping-recovery.py
       - name: Verify optional OIDC with a disposable HTTPS issuer
         run: python3 -B tests/integration/oidc/check.py
       - name: Verify Forgejo Pages documentation portal
         run: python3 -B scripts/verify-pages.py
-      - name: Verify localization catalogs and report translation coverage
-        run: python3 -B scripts/check-ui-catalogs.py
+      - name: Verify complete console localization catalogs
+        run: python3 -B scripts/check-ui-catalogs.py --require-complete
       - name: Assemble and verify the Linux release archive
         run: |
           bash scripts/package-release.sh --format tar --verify

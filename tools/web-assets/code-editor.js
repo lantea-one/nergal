@@ -34,7 +34,7 @@ for (const field of document.querySelectorAll("textarea[data-code-editor='json']
     doc: field.value,
     extensions: [basicSetup, json(), linter(jsonParseLinter()), appearance, syntaxHighlighting(colors),
       EditorState.phrases.of(editorPhrases(field.dataset)),
-      EditorView.contentAttributes.of({ "aria-label": field.dataset.editorLabel || "JSON code editor", "aria-describedby": field.getAttribute("aria-describedby") || "", spellcheck: "false" }),
+      EditorView.contentAttributes.of({ "aria-label": field.dataset.editorLabel || "JSON code editor", "aria-describedby": field.getAttribute("aria-describedby") || "", dir: "ltr", spellcheck: "false" }),
       EditorView.updateListener.of(update => {
         if (update.docChanged) field.value = update.state.doc.toString();
       }),

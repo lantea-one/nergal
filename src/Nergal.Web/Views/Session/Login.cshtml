@@ -2,7 +2,7 @@
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["LocalizedForAllLanguages"] = true;
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Sign in";
     var ldapGeneration = await Model.ReadLdapGenerationAsync();
     var oauthGeneration = await Model.ReadOAuthGenerationAsync();
