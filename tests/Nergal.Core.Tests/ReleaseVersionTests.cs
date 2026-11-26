@@ -9,12 +9,17 @@ namespace Nergal.Core.Tests;
 /// <summary>Verifies CalVer release metadata stamped uniformly across shipped assemblies.</summary>
 public sealed class ReleaseVersionTests
 {
-    private const string ExpectedCalVer = "2026.11.21.1";
-
-    /// <summary>Core, compiler, and transport assemblies report exact CalVer <c>2026.11.21.1</c> metadata.</summary>
+    /// <summary>Core, compiler, and transport assemblies report the current project CalVer.</summary>
     [Fact]
     public void ShippedLibraries_ReportExpectedCalVerMetadata()
     {
+        var project = typeof(ReleaseVersionTests).Assembly;
+        var expectedCalVer = project.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        Assert.NotNull(expectedCalVer);
+        Assert.Matches(@"^[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2}(\.[0-9]+)?$", expectedCalVer);
+        var release = Version.Parse(expectedCalVer);
+        var expectedVersion = new Version(release.Major, release.Minor, release.Build, Math.Max(0, release.Revision));
+
         Assembly[] assemblies =
         [
             typeof(FilterPolicy).Assembly,
@@ -26,8 +31,8 @@ public sealed class ReleaseVersionTests
         foreach (var assembly in assemblies)
         {
             var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-            Assert.Equal(ExpectedCalVer, info);
-            Assert.Equal(new Version(2026, 11, 21, 1), assembly.GetName().Version);
+            Assert.Equal(expectedCalVer, info);
+            Assert.Equal(expectedVersion, assembly.GetName().Version);
         }
     }
 }
