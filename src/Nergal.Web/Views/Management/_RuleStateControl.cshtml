@@ -1,4 +1,5 @@
 @model Nergal.Web.RuleStateControlModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @if (Model.Editor.CanMutate)
 {
     <form method="post" action="@Url.Content("~/manage/policies/rules/state")" class="rule-state-control">
@@ -9,10 +10,10 @@
         <input type="hidden" name="scope" value="@Model.State.Scope" />
         <input type="hidden" name="ruleIndex" value="@Model.State.Index" />
         @if (Model.State.Chain is not null) { <input type="hidden" name="chain" value="@Model.State.Chain" /> }
-        @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", Model.State.Enabled, "Enabled", Model.State.Label + " enabled"))
-        <span class="hint">@(Model.State.Enabled ? "Included in candidate" : "Disabled · omitted from candidate")</span>
-        <button type="submit" class="btn btn-secondary btn-sm">Update draft state</button>
+        @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", Model.State.Enabled, L["Enabled"].Value, L["{0} enabled", Model.State.Label].Value))
+        <span class="hint">@(Model.State.Enabled ? L["Included in candidate"] : L["Disabled · omitted from candidate"])</span>
+        <button type="submit" class="btn btn-secondary btn-sm">@L["Update draft state"]</button>
     </form>
 }
 else
-{ <span class="badge badge-neutral">@(Model.State.Enabled ? "Enabled" : "Disabled · omitted")</span> }
+{ <span class="badge badge-neutral">@(Model.State.Enabled ? L["Enabled"] : L["Disabled · omitted"])</span> }

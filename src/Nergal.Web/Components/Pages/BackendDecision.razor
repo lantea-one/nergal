@@ -1,7 +1,8 @@
 @page "/backend-decision"
 @using Nergal.Core
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 
-<PageTitle>Backend decision · nergal</PageTitle>
+<PageTitle>@L["Backend decision · nergal"]</PageTitle>
 
 <header class="topbar">
     <div class="topbar-inner">
@@ -10,8 +11,10 @@
             <span>nergal</span>
         </a>
         <div class="topbar-meta">
-            <a class="nav-link" href="/">Home</a>
-            <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle>Theme</button>
+            <a class="nav-link" href="/">@L["Home"]</a>
+            <button type="button" class="btn btn-secondary btn-sm" data-theme-toggle
+                    data-light-label="@(L["Light mode"].Value)" data-light-action="@(L["Switch to light theme"].Value)"
+                    data-dark-label="@(L["Dark mode"].Value)" data-dark-action="@(L["Switch to dark theme"].Value)">@L["Theme"]</button>
         </div>
     </div>
 </header>
@@ -19,26 +22,25 @@
 <main class="container">
     <div class="page-header">
         <div>
-            <h1>Native nftables on Linux</h1>
-            <p class="page-subtitle">Native <code>nftables</code> is Nergal’s sole firewall engine. Controller and agent services target Linux.</p>
+            <h1>@L["Native nftables on Linux"]</h1>
+            <p class="page-subtitle">@L["Native"] <code>nftables</code> @L["is Nergal’s sole firewall engine. Controller and agent services target Linux."]</p>
         </div>
         <span class="badge badge-primary">ADR 0051</span>
     </div>
 
     <div class="card">
-        <h2>Backend design &amp; guarantees</h2>
+        <h2>@L["Backend design & guarantees"]</h2>
         <p class="muted">
-            nergal compiles typed policy bundles directly into owned <code>inet nergal_filter</code>,
-            <code>inet nergal_nat</code>, <code>bridge nergal_bridge</code>, and early <code>inet nergal_aux</code> tables with atomic candidate validation
-            and independent local watchdog rollback. Foreign tables are never flushed or modified.
+            @L["nergal compiles typed policy bundles directly into owned"] <code>inet nergal_filter</code>,
+            <code>inet nergal_nat</code>, <code>bridge nergal_bridge</code>, @L["and early"] <code>inet nergal_aux</code> @L["tables with atomic candidate validation and independent local watchdog rollback. Foreign tables are never flushed or modified."]
         </p>
         <div class="btn-group mt-2">
-            <span class="badge badge-success">Dual-stack inet filtering</span>
-            <span class="badge badge-success">Explicit DNAT / SNAT</span>
-            <span class="badge badge-success">L2 Bridge filtering</span>
-            <span class="badge badge-success">Inline CIDR &amp; port sets</span>
-            <span class="badge badge-success">Per-source dynamic rate limits</span>
-            <span class="badge badge-success">Foreign table preservation</span>
+            <span class="badge badge-success">@L["Dual-stack inet filtering"]</span>
+            <span class="badge badge-success">@L["Explicit DNAT / SNAT"]</span>
+            <span class="badge badge-success">@L["L2 Bridge filtering"]</span>
+            <span class="badge badge-success">@L["Inline CIDR & port sets"]</span>
+            <span class="badge badge-success">@L["Per-source dynamic rate limits"]</span>
+            <span class="badge badge-success">@L["Foreign table preservation"]</span>
         </div>
     </div>
 </main>

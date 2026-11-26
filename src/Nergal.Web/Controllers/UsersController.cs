@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -12,7 +13,7 @@ namespace Nergal.Web.Controllers;
 /// <summary>Administrator-only local accounts and identity audit. No route creates Linux users or grants agent authority.</summary>
 [SupportedOSPlatform("linux")]
 [Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
-public sealed class UsersController(LocalAdministratorAccounts accounts, IConfiguration configuration, IDataProtectionProvider keys) : IdentityUiController(accounts, configuration)
+public sealed class UsersController(LocalAdministratorAccounts accounts, IConfiguration configuration, IDataProtectionProvider keys, IStringLocalizer<UiStrings> L) : IdentityUiController(accounts, configuration)
 {
     /// <summary>Lists credential-free accounts and the latest independent identity-store audit events.</summary>
     [HttpGet]
@@ -26,7 +27,7 @@ public sealed class UsersController(LocalAdministratorAccounts accounts, IConfig
         var form = await ReadFieldsAsync("userName", "password", "role");
         if (form is null) { return BadRequest(); }
         var result = await Accounts.CreateUserAsync(User, form["userName"].ToString(), form["password"].ToString(), form["role"].ToString());
-        return result.Succeeded ? LocalRedirect("~/manage/users") : await PageAsync(Explain(result));
+        return result.Succeeded ? LocalRedirect("~/manage/users") : await PageAsync(Explain(result, L));
     }
 
     /// <summary>Changes role/enabled state with explicit versioning and last-administrator protection.</summary>
@@ -52,7 +53,7 @@ public sealed class UsersController(LocalAdministratorAccounts accounts, IConfig
 
     private async Task<IActionResult> CompleteAsync(LocalProvisionResult result, Guid target, bool revokeOwnSession = true)
     {
-        if (!result.Succeeded) { return await PageAsync(Explain(result)); }
+        if (!result.Succeeded) { return await PageAsync(Explain(result, L)); }
         if (revokeOwnSession && User.FindFirst(ControllerActorIdentity.ActorClaimType)?.Value == ControllerActorIdentity.FromLocalAccount(target))
         {
             await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);

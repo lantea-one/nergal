@@ -1,24 +1,25 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @if (Model.CanMutate && Model.Bundle?.Nat is { } nat && nat.DnatRules.Count > 0)
 {
     <section class="card" aria-labelledby="dnat-conditions-heading">
-        <h2 id="dnat-conditions-heading">DNAT negation conditions</h2>
-        <p class="hint">“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source.</p>
+        <h2 id="dnat-conditions-heading">@L["DNAT negation conditions"]</h2>
+        <p class="hint">@L["“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source."]</p>
         @for (var i = 0; i < nat.DnatRules.Count; i++)
         {
             var r = nat.DnatRules[i]; if (r is null) { continue; }
             var destination = r.DestinationObject is { } pin ? pin.Content.Name + " v" + pin.Version : r.OriginalDestination?.Value ?? string.Join(", ", r.DestinationPrefixes!.Select(p => p.Value));
             <details class="router-form-details">
-                <summary>DNAT rule @(i + 1) · @r.Family · @destination → @r.TranslatedAddress</summary>
+                <summary>@L["DNAT rule {0} · {1} · {2} → {3}", i + 1, r.Family, destination, r.TranslatedAddress]</summary>
                 <div class="router-form-body">
                     <form class="router-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/conditions")">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="ruleIndex" value="@i" />
-                        <label class="checkbox-row"><input type="checkbox" name="negateSource" value="true" checked="@r.NegateSource" /> Except source @(r.Source?.Value ?? "(not configured)")</label>
-                        <label class="checkbox-row"><input type="checkbox" name="negateDestination" value="true" checked="@r.NegateDestination" /> Except destination @destination</label>
-                        <label class="checkbox-row"><input type="checkbox" name="negateInputInterface" value="true" checked="@r.NegateInputInterface" /> Except input interface @(r.InputInterface ?? "(not configured)")</label>
-                        <button type="submit" class="btn btn-secondary btn-sm">Update DNAT conditions draft</button>
+                        <label class="checkbox-row"><input type="checkbox" name="negateSource" value="true" checked="@r.NegateSource" /> @L["Except source {0}", r.Source?.Value ?? L["(not configured)"].Value]</label>
+                        <label class="checkbox-row"><input type="checkbox" name="negateDestination" value="true" checked="@r.NegateDestination" /> @L["Except destination {0}", destination]</label>
+                        <label class="checkbox-row"><input type="checkbox" name="negateInputInterface" value="true" checked="@r.NegateInputInterface" /> @L["Except input interface {0}", r.InputInterface ?? L["(not configured)"].Value]</label>
+                        <button type="submit" class="btn btn-secondary btn-sm">@L["Update DNAT conditions draft"]</button>
                     </form>
                 </div>
             </details>

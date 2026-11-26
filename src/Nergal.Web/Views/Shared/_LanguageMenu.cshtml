@@ -15,7 +15,7 @@
         <select id="ui-culture" name="culture">
             @foreach (var (culture, nativeName) in Nergal.Web.UiLocalization.Languages)
             {
-                <option value="@culture.Name" lang="@culture.Name" selected="@(culture.Equals(current))">@nativeName</option>
+                <option value="@culture.Name" lang="@culture.Name" dir="@(culture.TextInfo.IsRightToLeft ? "rtl" : "ltr")" selected="@(culture.Equals(current))">@nativeName</option>
             }
         </select>
         <button type="submit" class="btn btn-sm">@L["Set language"]</button>

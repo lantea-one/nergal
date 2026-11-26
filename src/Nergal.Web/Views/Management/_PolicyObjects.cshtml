@@ -1,22 +1,23 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @if (Model.Bundle is { } bundle)
 {
     <section class="card" aria-labelledby="policy-objects-heading">
-        <h2 id="policy-objects-heading">Reusable list references</h2>
-        <p class="hint">Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary and auxiliary inet filter source, destination and destination-port matchers. Postrouting NAT and bridge source, destination and port selectors are beside their rule editors; DNAT source, original-destination and original-port lists have a separate selector. New attachments share a static native set within each table. Earlier saved references retain their representation.</p>
+        <h2 id="policy-objects-heading">@L["Reusable list references"]</h2>
+        <p class="hint">@L["Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary and auxiliary inet filter source, destination and destination-port matchers. Postrouting NAT and bridge source, destination and port selectors are beside their rule editors; DNAT source, original-destination and original-port lists have a separate selector. New attachments share a static native set within each table. Earlier saved references retain their representation."]</p>
         @if (PolicyObjectReferences.Enumerate(bundle) is { Count: > 0 } bindings)
-        { <ul>@foreach (var binding in bindings) { <li><strong>@binding.Reference.Content.Name v@(binding.Reference.Version)</strong> · <code>@binding.Path</code> · @string.Join(", ", binding.Reference.Content.Entries) · <a href="@Url.Action("Objects", new { objectId = binding.Reference.Id, compareToVersion = binding.Reference.Version })" target="_blank" rel="noopener">Compare current library version with this pin (opens a new tab)</a></li> }</ul> }
-        else { <p class="muted">No pinned list references in this draft.</p> }
+        { <ul>@foreach (var binding in bindings) { <li><strong>@binding.Reference.Content.Name v@(binding.Reference.Version)</strong> · <code>@binding.Path</code> · @string.Join(", ", binding.Reference.Content.Entries) · <a href="@Url.Action("Objects", new { objectId = binding.Reference.Id, compareToVersion = binding.Reference.Version })" target="_blank" rel="noopener">@L["Compare current library version with this pin (opens a new tab)"]</a></li> }</ul> }
+        else { <p class="muted">@L["No pinned list references in this draft."]</p> }
         @if (Model.ObjectBrowseSelection is { } browse)
-        { <p class="alert alert-info">Saved versions loaded for <strong>@Model.LibraryObjects.First(o => o.Id == browse.ObjectId).Content.Name</strong>. Choose a displayed version, then attach it explicitly. Browsing left the draft unchanged.</p> }
-        @foreach (var target in new[] { (Scope: "primary", Label: "Primary inet", Filter: (FilterPolicy?)bundle.Filter), (Scope: "auxiliary", Label: "Auxiliary inet", Filter: bundle.AuxiliaryFilter?.Filter) })
+        { <p class="alert alert-info">@L["Saved versions loaded for"] <strong>@Model.LibraryObjects.First(o => o.Id == browse.ObjectId).Content.Name</strong>@L[". Choose a displayed version, then attach it explicitly. Browsing left the draft unchanged."]</p> }
+        @foreach (var target in new[] { (Scope: "primary", Label: L["Primary inet references"], Filter: (FilterPolicy?)bundle.Filter), (Scope: "auxiliary", Label: L["Auxiliary inet references"], Filter: bundle.AuxiliaryFilter?.Filter) })
         {
         if (Model.CanMutate && target.Filter is { Rules.Count: > 0 } filter)
         {
             var prefix = "reference-" + target.Scope;
             var retained = Model.ObjectBrowseSelection?.Scope == target.Scope ? Model.ObjectBrowseSelection : null;
-            <h3>@target.Label references</h3>
+            <h3>@target.Label</h3>
             <form method="post" action="@Url.Content("~/manage/policies/objects")" aria-describedby="@(prefix)-change-hint">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="scope" value="@target.Scope" />
@@ -24,17 +25,17 @@
                 <input type="hidden" name="summary" value="@Model.Summary" />
                 <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                 <div class="form-grid object-form-grid">
-                    <div class="field"><label for="@(prefix)-rule">Filter rule</label><select id="@(prefix)-rule" name="ruleIndex">
-                        @for (var i = 0; i < filter.Rules.Count; i++) { var rule = filter.Rules[i]; if (rule is not null) { <option value="@i" selected="@(retained?.RuleIndex == i)">Rule @(i + 1) · @rule.Chain · @rule.Family · @rule.Protocol · @rule.Verdict</option> } }
+                    <div class="field"><label for="@(prefix)-rule">@L["Filter rule"]</label><select id="@(prefix)-rule" name="ruleIndex">
+                        @for (var i = 0; i < filter.Rules.Count; i++) { var rule = filter.Rules[i]; if (rule is not null) { <option value="@i" selected="@(retained?.RuleIndex == i)">@L["Rule {0} · {1} · {2} · {3} · {4}", i + 1, rule.Chain, rule.Family, rule.Protocol, rule.Verdict]</option> } }
                     </select></div>
-                    <div class="field"><label for="@(prefix)-slot">Matcher to change</label><select id="@(prefix)-slot" name="slot"><option value="source" selected="@(retained?.Slot == "source")">Source address</option><option value="destination" selected="@(retained?.Slot == "destination")">Destination address</option><option value="ports" selected="@(retained?.Slot == "ports")">Destination ports</option></select></div>
-                    <div class="field"><label for="@(prefix)-selection">List version</label><select id="@(prefix)-selection" name="selection" aria-describedby="@(prefix)-version-hint">
-                        <option value="">Choose a list for attachment</option>
-                        @foreach (var item in Model.LibraryObjects) { <option value="@item.Id/@item.Version" selected="@(retained?.ObjectId == item.Id && retained.Version == item.Version)">@item.Content.Name · v@(item.Version) · @(item.Content.Kind switch { Nergal.Core.Controller.ReusableObjectKind.Ipv4 => "IPv4", Nergal.Core.Controller.ReusableObjectKind.Ipv6 => "IPv6", _ => "Ports" }) · @item.Content.Entries.Count entries</option> }
-                    </select><span class="hint" id="@(prefix)-version-hint">Choose a list, then browse its history to select an older version. Only one list history is loaded at a time. The displayed version is pinned even if a newer version is saved before you submit. Address family and protocol must match the rule; unsupported overlaps/adjacency are rejected.</span></div>
+                    <div class="field"><label for="@(prefix)-slot">@L["Matcher to change"]</label><select id="@(prefix)-slot" name="slot"><option value="source" selected="@(retained?.Slot == "source")">@L["Source address"]</option><option value="destination" selected="@(retained?.Slot == "destination")">@L["Destination address"]</option><option value="ports" selected="@(retained?.Slot == "ports")">@L["Destination ports"]</option></select></div>
+                    <div class="field"><label for="@(prefix)-selection">@L["List version"]</label><select id="@(prefix)-selection" name="selection" aria-describedby="@(prefix)-version-hint">
+                        <option value="">@L["Choose a list for attachment"]</option>
+                        @foreach (var item in Model.LibraryObjects) { <option value="@item.Id/@item.Version" selected="@(retained?.ObjectId == item.Id && retained.Version == item.Version)">@item.Content.Name · v@(item.Version) · @(item.Content.Kind switch { Nergal.Core.Controller.ReusableObjectKind.Ipv4 => "IPv4", Nergal.Core.Controller.ReusableObjectKind.Ipv6 => "IPv6", _ => L["Ports"].Value }) · @L["{0} entries", item.Content.Entries.Count]</option> }
+                    </select><span class="hint" id="@(prefix)-version-hint">@L["Choose a list, then browse its history to select an older version. Only one list history is loaded at a time. The displayed version is pinned even if a newer version is saved before you submit. Address family and protocol must match the rule; unsupported overlaps/adjacency are rejected."]</span></div>
                 </div>
-                <p id="@(prefix)-change-hint" class="hint">Attach replaces the selected matcher's literal restriction or prior reference. Remove clears that reference and its restriction, which can broaden the rule. Both actions change only this draft: inspect the summary and native diff before saving a revision and confirmed apply.</p>
-                <div class="btn-group mt-2"><button type="submit" name="operation" value="history" class="btn btn-secondary">Browse selected list history</button><button type="submit" name="operation" value="attach" class="btn">Attach selected version to draft</button><button type="submit" name="operation" value="remove" class="btn btn-secondary">Remove reference from draft</button><a href="@Url.Content("~/manage/objects")" class="btn btn-secondary">Manage lists</a></div>
+                <p id="@(prefix)-change-hint" class="hint">@L["Attach replaces the selected matcher's literal restriction or prior reference. Remove clears that reference and its restriction, which can broaden the rule. Both actions change only this draft: inspect the summary and native diff before saving a revision and confirmed apply."]</p>
+                <div class="btn-group mt-2"><button type="submit" name="operation" value="history" class="btn btn-secondary">@L["Browse selected list history"]</button><button type="submit" name="operation" value="attach" class="btn">@L["Attach selected version to draft"]</button><button type="submit" name="operation" value="remove" class="btn btn-secondary">@L["Remove reference from draft"]</button><a href="@Url.Content("~/manage/objects")" class="btn btn-secondary">@L["Manage lists"]</a></div>
             </form>
         }
         }

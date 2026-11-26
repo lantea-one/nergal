@@ -309,7 +309,7 @@ def set_viewport(browser, *, mobile=False):
     browser.cdp("Emulation.setDeviceMetricsOverride", width=width, height=height, deviceScaleFactor=1, mobile=mobile)
 
 
-def mobile_localization(browser, origin, capture):
+def mobile_localization(browser, origin, temp, capture):
     set_viewport(browser, mobile=True)
     browser.post("/url", url=origin + "/manage/hosts")
     assert browser.evaluate("return window.innerWidth;") == 375
@@ -329,7 +329,29 @@ def mobile_localization(browser, origin, capture):
 
     browser.post("/url", url=origin + "/manage/sources")
     assert browser.evaluate("return document.documentElement.lang;") == "es-ES"
-    expect_text(browser, "Native source library", '.appliance-content[lang="en-US"] h1')
+    expect_text(browser, "Biblioteca de fuentes nativas", ".appliance-content h1")
+    assert not browser.evaluate("return document.querySelector('.appliance-content').hasAttribute('lang');")
+    fixture = temp / "locale-include.conf"
+    fixture.write_text('include "synthetic-include.nft"\n', encoding="utf-8")
+    browser.fill("#source-name", "Synthetic include")
+    browser.upload("#source-file", fixture)
+    browser.click(submit("/manage/sources/import"))
+    expect_text(browser, "Synthetic include", "#selected-source-heading")
+    browser.click("[data-include-add]")
+    assert browser.evaluate("""
+        return [...document.querySelectorAll('.native-include-rows select')].map(select => select.ariaLabel);
+    """) == ["synthetic-include.nft, archivo 1", "synthetic-include.nft, archivo 2"]
+    browser.click('.native-include-row:last-child [data-include-move="up"]')
+    assert browser.evaluate("""
+        return document.querySelector('.native-include-row:first-child select').ariaLabel;
+    """) == "synthetic-include.nft, archivo 1"
+    capture("native-sources-mobile-es")
+    set_viewport(browser)
+    browser.post("/url", url=origin + "/manage/policies?section=json")
+    browser.click('[data-tab-target="tab-json"]')
+    expect_text(browser, "Aplicar sangría", ".code-editor-toolbar button")
+    browser.click(".code-editor-toolbar button")
+    expect_text(browser, "Se ha actualizado la sangría.", '.code-editor-toolbar [role="status"]')
     browser.post("/url", url=origin + "/manage/hosts")
     browser.click(".language-menu > summary")
     browser.select("#ui-culture", "en-US")
@@ -340,6 +362,46 @@ def mobile_localization(browser, origin, capture):
     expect_text(browser, "Hosts", "h1")
     expect_text(browser, "Register agent host")
     expect_text(browser, "Host name", 'label[for="host-name"]')
+    set_viewport(browser)
+
+
+def right_to_left_navigation(browser, origin, capture):
+    browser.post("/url", url=origin + "/manage/hosts")
+    browser.click(".language-menu > summary")
+    browser.select("#ui-culture", "ar")
+    browser.click(submit("/language"))
+    browser.wait_for(lambda: browser.evaluate("return document.documentElement.lang;") == "ar", "Expected Arabic")
+    expect_text(browser, "تسجيل مضيف الوكيل", ".appliance-content")
+    assert browser.evaluate("""
+        const sidebar = document.querySelector('#management-navigation');
+        const content = document.querySelector('.appliance-content');
+        return document.documentElement.dir === 'rtl' && getComputedStyle(sidebar).direction === 'rtl'
+            && getComputedStyle(content).direction === 'rtl'
+            && sidebar.getBoundingClientRect().left >= content.getBoundingClientRect().right;
+    """), "Arabic navigation or Hosts content did not follow right-to-left layout"
+    capture("hosts-desktop-ar")
+
+    browser.post("/url", url=origin + "/manage/policies?section=json")
+    browser.click('[data-tab-target="tab-json"]')
+    browser.wait_for(lambda: browser.visible(".cm-content"), "Expected the JSON editor in Arabic")
+    assert browser.evaluate("""
+        return document.documentElement.dir === 'rtl'
+            && getComputedStyle(document.querySelector('.cm-content')).direction === 'ltr';
+    """), "JSON punctuation and tokens must keep left-to-right order in Arabic"
+    browser.post("/url", url=origin + "/manage/hosts")
+
+    set_viewport(browser, mobile=True)
+    toggle = "[data-sidebar-toggle]"
+    browser.click(toggle)
+    assert browser.visible(NAV)
+    assert browser.evaluate("return document.documentElement.scrollWidth <= document.documentElement.clientWidth;")
+    capture("navigation-mobile-ar")
+    browser.key(ESCAPE)
+    assert not browser.visible(NAV) and browser.visible(toggle + '[aria-expanded="false"]')
+    browser.click(".language-menu > summary")
+    browser.select("#ui-culture", "en-US")
+    browser.click(submit("/language"))
+    browser.wait_for(lambda: browser.evaluate("return document.documentElement.lang;") == "en-US", "Expected English")
     set_viewport(browser)
 
 
@@ -465,7 +527,8 @@ def main():
                         ("administrator apply surface", apply_surface, (state, capture)),
                         ("identity and settings", identity_settings, (capture,)),
                         ("dark theme and browser-local time", desktop_dark, (capture,)),
-                        ("mobile Hosts localization and source fallback", mobile_localization, (origin, capture)),
+                        ("Spanish Hosts, native sources, and JSON editor", mobile_localization, (origin, temp, capture)),
+                        ("right-to-left navigation and Hosts content", right_to_left_navigation, (origin, capture)),
                         ("mobile navigation and sign-out", mobile_and_sign_out, (origin, capture)),
                         ("auditor navigation and denial", read_only, (origin, state, capture)),
                     ):

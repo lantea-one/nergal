@@ -1,7 +1,9 @@
 @using Nergal.Core.Identity
 @model Nergal.Web.ProfilePageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "My profile";
     ViewData["ActiveNav"] = "profile";
     var profile = Model.Profile;
@@ -11,77 +13,80 @@
     var proposed = Model.Proposed ?? new ProfileMetadata(profile.DisplayName, profile.GivenName, profile.FamilyName, profile.Email);
 }
 <main id="main-content" tabindex="-1" class="container">
-    <h1>My profile</h1>
+    <h1>@L["My profile"]</h1>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
     <div class="profile-grid">
-    <section class="card"><h2>Identity</h2>
-        <dl class="profile-details"><dt>Signed in as</dt><dd>@profile.LoginName</dd><dt>Role</dt><dd>@(profile.Role == NergalRoles.Administrator ? "Administrator" : "Auditor")</dd><dt>Authentication</dt><dd>@(ldap ? "LDAP" : profile.LocalAccountId is null ? "Identity provider" : "Local password")</dd>@if (ldap) { <dt>Directory actor ID</dt><dd><code>@profile.ActorId</code></dd> }</dl>
-        <p class="hint">Your display name appears in the header. Sign-in and permissions use your verified account.</p>
+    <section class="card"><h2>@L["Identity"]</h2>
+        <dl class="profile-details"><dt>@L["Signed in as"]</dt><dd>@profile.LoginName</dd><dt>@L["Role"]</dt><dd>@(profile.Role == NergalRoles.Administrator ? L["Administrator"] : L["Auditor"])</dd><dt>@L["Authentication"]</dt><dd>@(ldap ? L["LDAP"] : profile.LocalAccountId is null ? L["Identity provider"] : L["Local password"])</dd>@if (ldap) { <dt>@L["Directory actor ID"]</dt><dd><code>@profile.ActorId</code></dd> }</dl>
+        <p class="hint">@L["Your display name appears in the header. Sign-in and permissions use your verified account."]</p>
         <form class="form-stack" method="post" action="@Url.Content("~/profile/save")">
             @Html.AntiForgeryToken()<input type="hidden" name="version" value="@profile.Version" />
-            <div class="field"><label for="profile-name">Display name</label><input id="profile-name" name="displayName" type="text" value="@proposed.DisplayName" maxlength="160" autocomplete="name" aria-describedby="profile-name-hint" /><p class="hint" id="profile-name-hint">Optional, up to 80 characters. Leave blank to use current provider defaults, then the verified sign-in name.</p></div>
-            <div class="field"><label for="profile-given">Given name</label><input id="profile-given" name="givenName" type="text" value="@proposed.GivenName" maxlength="160" autocomplete="given-name" aria-describedby="profile-metadata-hint" /></div>
-            <div class="field"><label for="profile-family">Family name</label><input id="profile-family" name="familyName" type="text" value="@proposed.FamilyName" maxlength="160" autocomplete="family-name" aria-describedby="profile-metadata-hint" /></div>
-            <div class="field"><label for="profile-email">Profile email</label><input id="profile-email" name="email" type="email" value="@proposed.Email" maxlength="254" autocomplete="email" aria-describedby="profile-email-hint" /><p class="hint" id="profile-email-hint">Descriptive contact information only. This does not verify email delivery or configure account recovery or MFA.</p></div>
-            <p class="hint" id="profile-metadata-hint">Names allow up to 80 characters. Blank fields use current provider defaults. Saving local edits never changes your identity or permissions.</p>
-            <button type="submit" class="btn">Save profile</button>
+            <div class="field"><label for="profile-name">@L["Display name"]</label><input id="profile-name" name="displayName" type="text" value="@proposed.DisplayName" maxlength="160" autocomplete="name" aria-describedby="profile-name-hint" /><p class="hint" id="profile-name-hint">@L["Optional, up to 80 characters. Leave blank to use current provider defaults, then the verified sign-in name."]</p></div>
+            <div class="field"><label for="profile-given">@L["Given name"]</label><input id="profile-given" name="givenName" type="text" value="@proposed.GivenName" maxlength="160" autocomplete="given-name" aria-describedby="profile-metadata-hint" /></div>
+            <div class="field"><label for="profile-family">@L["Family name"]</label><input id="profile-family" name="familyName" type="text" value="@proposed.FamilyName" maxlength="160" autocomplete="family-name" aria-describedby="profile-metadata-hint" /></div>
+            <div class="field"><label for="profile-email">@L["Profile email"]</label><input id="profile-email" name="email" type="email" value="@proposed.Email" maxlength="254" autocomplete="email" aria-describedby="profile-email-hint" /><p class="hint" id="profile-email-hint">@L["Descriptive contact information only. This does not verify email delivery or configure account recovery or MFA."]</p></div>
+            <p class="hint" id="profile-metadata-hint">@L["Names allow up to 80 characters. Blank fields use current provider defaults. Saving local edits never changes your identity or permissions."]</p>
+            <button type="submit" class="btn">@L["Save profile"]</button>
         </form>
-        @if (profile.UpdatedUtc is DateTimeOffset updated) { <p class="hint">Updated <time data-local-time datetime="@updated.UtcDateTime.ToString("O")" title="Stored UTC: @updated.UtcDateTime.ToString("O")">@updated.UtcDateTime.ToString("u") UTC</time>.</p> }
+        @if (profile.UpdatedUtc is DateTimeOffset updated) { <p class="hint">@L["Updated"] <time data-local-time datetime="@updated.UtcDateTime.ToString("O")" title="@L["Stored UTC: {0}", updated.UtcDateTime.ToString("O")]">@updated.UtcDateTime.ToString("u") @L["UTC"]</time>.</p> }
     </section>
     @if (profile.LocalAccountId is null)
     {
-        <section class="card"><h2>Provider defaults</h2>
+        <section class="card"><h2>@L["Provider defaults"]</h2>
         @if (profile.Provider is { } provider)
         {
-            <p class="hint">@(oauth ? "Current OAuth profile endpoint defaults" : "Current signed OIDC defaults"), mapping version @provider.MappingVersion. Local nonempty fields override these values.</p>
-            <dl class="profile-details"><dt>Issuer</dt><dd>@provider.Issuer</dd><dt>Display name</dt><dd>@(provider.Metadata.DisplayName.Length == 0 ? "Not supplied" : provider.Metadata.DisplayName)</dd><dt>Given name</dt><dd>@(provider.Metadata.GivenName.Length == 0 ? "Not supplied" : provider.Metadata.GivenName)</dd><dt>Family name</dt><dd>@(provider.Metadata.FamilyName.Length == 0 ? "Not supplied" : provider.Metadata.FamilyName)</dd><dt>Profile email</dt><dd>@(provider.Metadata.Email.Length == 0 ? "Not supplied" : provider.Metadata.Email)</dd></dl>
-            <p class="hint">Observed <time data-local-time datetime="@provider.ObservedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @provider.ObservedUtc.UtcDateTime.ToString("O")">@provider.ObservedUtc.UtcDateTime.ToString("u") UTC</time>.</p>
-            @if (provider.Diagnostics.Count > 0) { <ul class="hint">@foreach (var diagnostic in provider.Diagnostics) { <li>@Nergal.Web.IdentityUiLabels.ProfileDiagnostic(diagnostic)</li> }</ul> }
+            <p class="hint">@(oauth
+                ? L["Current OAuth profile endpoint defaults, mapping version {0}. Local nonempty fields override these values.", provider.MappingVersion]
+                : L["Current signed OIDC defaults, mapping version {0}. Local nonempty fields override these values.", provider.MappingVersion])</p>
+            <dl class="profile-details"><dt>@L["Issuer"]</dt><dd>@provider.Issuer</dd><dt>@L["Display name"]</dt><dd>@(provider.Metadata.DisplayName.Length == 0 ? L["Not supplied"].Value : provider.Metadata.DisplayName)</dd><dt>@L["Given name"]</dt><dd>@(provider.Metadata.GivenName.Length == 0 ? L["Not supplied"].Value : provider.Metadata.GivenName)</dd><dt>@L["Family name"]</dt><dd>@(provider.Metadata.FamilyName.Length == 0 ? L["Not supplied"].Value : provider.Metadata.FamilyName)</dd><dt>@L["Profile email"]</dt><dd>@(provider.Metadata.Email.Length == 0 ? L["Not supplied"].Value : provider.Metadata.Email)</dd></dl>
+            <p class="hint">@L["Observed"] <time data-local-time datetime="@provider.ObservedUtc.UtcDateTime.ToString("O")" title="@L["Stored UTC: {0}", provider.ObservedUtc.UtcDateTime.ToString("O")]">@provider.ObservedUtc.UtcDateTime.ToString("u") @L["UTC"]</time>.</p>
+            @if (provider.Diagnostics.Count > 0) { <ul class="hint">@foreach (var diagnostic in provider.Diagnostics) { <li>@Nergal.Web.IdentityUiLabels.ProfileDiagnostic(diagnostic, L)</li> }</ul> }
         }
         else if (profile.LdapProvider is { } ldapProvider)
         {
-            <p class="hint">Current LDAP defaults, mapping version @ldapProvider.MappingVersion. Local nonempty fields override these values.</p>
-            <dl class="profile-details"><dt>Display name</dt><dd>@(ldapProvider.Metadata.DisplayName.Length == 0 ? "Not supplied" : ldapProvider.Metadata.DisplayName)</dd><dt>Given name</dt><dd>@(ldapProvider.Metadata.GivenName.Length == 0 ? "Not supplied" : ldapProvider.Metadata.GivenName)</dd><dt>Family name</dt><dd>@(ldapProvider.Metadata.FamilyName.Length == 0 ? "Not supplied" : ldapProvider.Metadata.FamilyName)</dd><dt>Profile email</dt><dd>@(ldapProvider.Metadata.Email.Length == 0 ? "Not supplied" : ldapProvider.Metadata.Email)</dd></dl>
-            <p class="hint">Observed <time data-local-time datetime="@ldapProvider.ObservedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @ldapProvider.ObservedUtc.UtcDateTime.ToString("O")">@ldapProvider.ObservedUtc.UtcDateTime.ToString("u") UTC</time>.</p>
-            @if (ldapProvider.Diagnostics.Count > 0) { <ul class="hint">@foreach (var diagnostic in ldapProvider.Diagnostics) { <li>@Nergal.Web.IdentityUiLabels.ProfileDiagnostic(diagnostic)</li> }</ul> }
+            <p class="hint">@L["Current LDAP defaults, mapping version {0}. Local nonempty fields override these values.", ldapProvider.MappingVersion]</p>
+            <dl class="profile-details"><dt>@L["Display name"]</dt><dd>@(ldapProvider.Metadata.DisplayName.Length == 0 ? L["Not supplied"].Value : ldapProvider.Metadata.DisplayName)</dd><dt>@L["Given name"]</dt><dd>@(ldapProvider.Metadata.GivenName.Length == 0 ? L["Not supplied"].Value : ldapProvider.Metadata.GivenName)</dd><dt>@L["Family name"]</dt><dd>@(ldapProvider.Metadata.FamilyName.Length == 0 ? L["Not supplied"].Value : ldapProvider.Metadata.FamilyName)</dd><dt>@L["Profile email"]</dt><dd>@(ldapProvider.Metadata.Email.Length == 0 ? L["Not supplied"].Value : ldapProvider.Metadata.Email)</dd></dl>
+            <p class="hint">@L["Observed"] <time data-local-time datetime="@ldapProvider.ObservedUtc.UtcDateTime.ToString("O")" title="@L["Stored UTC: {0}", ldapProvider.ObservedUtc.UtcDateTime.ToString("O")]">@ldapProvider.ObservedUtc.UtcDateTime.ToString("u") @L["UTC"]</time>.</p>
+            @if (ldapProvider.Diagnostics.Count > 0) { <ul class="hint">@foreach (var diagnostic in ldapProvider.Diagnostics) { <li>@Nergal.Web.IdentityUiLabels.ProfileDiagnostic(diagnostic, L)</li> }</ul> }
         }
-        else { <p class="hint">No current provider defaults. An Administrator can configure a mapping; sign in again after changes to refresh the mapped fields.</p> }
-        <p class="hint">Provider information never links accounts or verifies a delivery address.</p>
+        else { <p class="hint">@L["No current provider defaults. An Administrator can configure a mapping; sign in again after changes to refresh the mapped fields."]</p> }
+        <p class="hint">@L["Provider information never links accounts or verifies a delivery address."]</p>
         </section>
     }
-    @if (User.IsInRole(NergalRoles.Administrator)) { <section class="card"><h2>Profile configuration</h2><p class="hint">Choose how signed OIDC claims supply profile defaults. Mappings do not activate authentication providers.</p><a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">Manage OIDC profile defaults</a></section> }
+    @if (User.IsInRole(NergalRoles.Administrator)) { <section class="card"><h2>@L["Profile configuration"]</h2><p class="hint">@L["Choose how signed OIDC claims supply profile defaults. Mappings do not activate authentication providers."]</p><a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">@L["Manage OIDC profile defaults"]</a></section> }
     @if (profile.LocalAccountId is not null)
     {
-        <section class="card"><h2>Change password</h2><p class="hint" id="password-hint">Verify your current password, then choose 15–128 characters. A successful change signs out all your local sessions and returns to sign-in. Incorrect current passwords count toward account lockout.</p>
+        <section class="card"><h2>@L["Change password"]</h2><p class="hint" id="password-hint">@L["Verify your current password, then choose 15–128 characters. A successful change signs out all your local sessions and returns to sign-in. Incorrect current passwords count toward account lockout."]</p>
             <form class="form-stack" method="post" action="@Url.Content("~/profile/password")">
                 @Html.AntiForgeryToken()<input type="hidden" name="version" value="@profile.AccountVersion" />
-                <div class="field"><label for="current-password">Current password</label><input id="current-password" name="currentPassword" type="password" required maxlength="256" autocomplete="current-password" /></div>
-                <div class="field"><label for="new-password">New password</label><input id="new-password" name="newPassword" type="password" required minlength="15" maxlength="256" autocomplete="new-password" aria-describedby="password-hint" /></div>
-                <button type="submit" class="btn">Change password and sign out</button>
+                <div class="field"><label for="current-password">@L["Current password"]</label><input id="current-password" name="currentPassword" type="password" required maxlength="256" autocomplete="current-password" /></div>
+                <div class="field"><label for="new-password">@L["New password"]</label><input id="new-password" name="newPassword" type="password" required minlength="15" maxlength="256" autocomplete="new-password" aria-describedby="password-hint" /></div>
+                <button type="submit" class="btn">@L["Change password and sign out"]</button>
             </form>
         </section>
     }
-    else { <section class="card"><h2>External credentials</h2><p class="hint">Manage external credentials at your identity provider.</p></section> }
+    else { <section class="card"><h2>@L["External credentials"]</h2><p class="hint">@L["Manage external credentials at your identity provider."]</p></section> }
     @if (profile.LocalAccountId is not null || ldap)
     {
         <section class="card">
-            <h2>Authenticator app</h2>
-            <p class="hint">Set up time-based verification codes for your sign-ins.</p>
+            <h2>@L["Authenticator app"]</h2>
+            <p class="hint">@L["Set up time-based verification codes for your sign-ins."]</p>
             <div class="btn-group">
-                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa")">My authenticator</a>
-                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa/email")">Email factor</a>
+                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa")">@L["My authenticator"]</a>
+                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa/email")">@L["Email factor"]</a>
                 @if (localAdministrator)
                 {
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">Manage MFA policy</a>
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa/recovery")">Issue MFA recovery authorization</a>
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/ldap")">Configure LDAP connection</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">@L["Manage MFA policy"]</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa/recovery")">@L["Issue MFA recovery authorization"]</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/ldap")">@L["Configure LDAP connection"]</a>
                 }
             </div>
         </section>
     }
-    <section class="card"><h2>Session</h2>
-        <p class="hint">Signing out revokes @(ldap ? "this LDAP session" : profile.LocalAccountId is null ? "this federated ticket" : "all sessions for your local account").</p>
-        <form method="post" action="@Url.Content("~/logout")">@Html.AntiForgeryToken()<button type="submit" class="btn btn-danger">Sign out</button></form>
+    <section class="card"><h2>@L["Session"]</h2>
+        <p class="hint">@(ldap ? L["Signing out revokes this LDAP session."] : profile.LocalAccountId is null
+            ? L["Signing out revokes this federated ticket."] : L["Signing out revokes all sessions for your local account."])</p>
+        <form method="post" action="@Url.Content("~/logout")">@Html.AntiForgeryToken()<button type="submit" class="btn btn-danger">@L["Sign out"]</button></form>
     </section>
     </div>
 </main>

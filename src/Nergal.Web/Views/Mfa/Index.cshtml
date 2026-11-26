@@ -1,45 +1,47 @@
 @model Nergal.Web.Controllers.MfaEnrollmentPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Authenticator app";
     ViewData["ActiveNav"] = "profile";
 }
 <main id="main-content" tabindex="-1" class="container">
     <div class="page-header">
-        <div><h1>Authenticator app</h1><p class="page-subtitle">Use time-based codes to verify your sign-ins.</p></div>
-        <a class="btn btn-secondary" href="@Url.Content("~/profile")">Back to my profile</a>
+        <div><h1>@L["Authenticator app"]</h1><p class="page-subtitle">@L["Use time-based codes to verify your sign-ins."]</p></div>
+        <a class="btn btn-secondary" href="@Url.Content("~/profile")">@L["Back to my profile"]</a>
     </div>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
     <section class="card">
         @if (Model.Setup is { } setup)
         {
-            <h2>Set up your app</h2>
-            <p>Add a time-based account named Nergal in your authenticator app and enter this setup key. Keep the key private.</p>
+            <h2>@L["Set up your app"]</h2>
+            <p>@L["Add a time-based account named Nergal in your authenticator app and enter this setup key. Keep the key private."]</p>
             <p><code>@setup.ManualKey</code></p>
             <form class="form-stack" method="post" action="@Url.Content("~/profile/mfa/confirm")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="enrollmentId" value="@setup.Id" />
                 <div class="field">
-                    <label for="enrollment-code">Authenticator code</label>
+                    <label for="enrollment-code">@L["Authenticator code"]</label>
                     <input id="enrollment-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" aria-describedby="enrollment-code-hint enrollment-session-hint" required />
-                    <span id="enrollment-code-hint" class="hint">Enter the current six-digit code from the account you just added.</span>
+                    <span id="enrollment-code-hint" class="hint">@L["Enter the current six-digit code from the account you just added."]</span>
                 </div>
-                <p id="enrollment-session-hint" class="hint">When setup completes, you’ll sign in again with your password and an authenticator code.</p>
-                <div><button type="submit">Confirm authenticator</button></div>
+                <p id="enrollment-session-hint" class="hint">@L["When setup completes, you’ll sign in again with your password and an authenticator code."]</p>
+                <div><button type="submit">@L["Confirm authenticator"]</button></div>
             </form>
         }
         else if (Model.Enrolled)
         {
-            <h2>Authenticator enrolled</h2>
-            <p>Your authenticator app supplies the additional code you need to sign in.</p>
+            <h2>@L["Authenticator enrolled"]</h2>
+            <p>@L["Your authenticator app supplies the additional code you need to sign in."]</p>
         }
         else
         {
-            <h2>Set up your app</h2>
-            <p>Have a time-based authenticator app ready. Setup generates a private key and asks you to verify a code before activation.</p>
+            <h2>@L["Set up your app"]</h2>
+            <p>@L["Have a time-based authenticator app ready. Setup generates a private key and asks you to verify a code before activation."]</p>
             <form method="post" action="@Url.Content("~/profile/mfa/begin")">
                 @Html.AntiForgeryToken()
-                <button type="submit">Start authenticator setup</button>
+                <button type="submit">@L["Start authenticator setup"]</button>
             </form>
         }
     </section>

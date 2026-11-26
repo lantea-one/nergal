@@ -1,73 +1,75 @@
 @model Nergal.Web.NativeSourcesPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Native sources";
     ViewData["ActiveNav"] = "sources";
     ViewData["ShowManageNav"] = true;
+    ViewData["LocalizedContent"] = true;
 }
 <main id="main-content" tabindex="-1" class="container">
     <div class="page-header">
-        <div><h1>Native source library</h1><p class="page-subtitle">Import configuration snapshots into database history, review migration work, and download original files.</p></div>
-        <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">Policy builder</a>
+        <div><h1>@L["Native source library"]</h1><p class="page-subtitle">@L["Import configuration snapshots into database history, review migration work, and download original files."]</p></div>
+        <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">@L["Policy builder"]</a>
     </div>
-    <p class="muted">Import stores a private source snapshot. It does not convert a policy or apply firewall rules.</p>
+    <p class="muted">@L["Import stores a private source snapshot. It does not convert a policy or apply firewall rules."]</p>
     @if (Model.Error is not null)
-    { <p class="alert alert-danger" role="alert">@Model.Error</p> }
+    { <p class="alert alert-danger" role="alert">@L[Model.Error]</p> }
     <section class="card" aria-labelledby="import-heading">
-        <div class="card-header"><h2 id="import-heading">Import nftables.conf</h2></div>
+        <div class="card-header"><h2 id="import-heading" lang="@Nergal.Web.UiLocalization.MessageLanguage(L["Import nftables.conf"])" dir="auto">@L["Import nftables.conf"]</h2></div>
         <form method="post" enctype="multipart/form-data" action="@Url.Action("ImportSource")">
             @Html.AntiForgeryToken()
             <div class="form-grid">
-            <div class="field"><label for="source-name">Display name</label>
+            <div class="field"><label for="source-name">@L["Display name"]</label>
                 <input id="source-name" type="text" autocomplete="off" name="name" maxlength="120" required aria-describedby="source-name-hint" />
-                <span id="source-name-hint" class="hint">Use a descriptive label, such as “Gateway baseline”. Names may repeat; each import has its own identity and history.</span>
+                <span id="source-name-hint" class="hint">@L["Use a descriptive label, such as “Gateway baseline”. Names may repeat; each import has its own identity and history."]</span>
             </div>
-            <div class="field"><label for="source-file">Configuration file</label>
+            <div class="field"><label for="source-file">@L["Configuration file"]</label>
                 <input id="source-file" name="sourceFile" type="file" accept=".conf,.nft,text/plain" required aria-describedby="source-file-hint" />
-                <span id="source-file-hint" class="hint">Choose UTF-8 text, up to 512 KiB. Original bytes and line endings are retained. Includes are not opened and the file is not executed.</span>
+                <span id="source-file-hint" class="hint">@L["Choose UTF-8 text, up to 512 KiB. Original bytes and line endings are retained. Includes are not opened and the file is not executed."]</span>
             </div>
             </div>
-            <div class="mt-2"><button type="submit" class="btn">Import source snapshot</button></div>
+            <div class="mt-2"><button type="submit" class="btn">@L["Import source snapshot"]</button></div>
         </form>
-        <p class="muted">Capacity: @Model.Sources.Count / 128 immutable snapshots, up to 32 MiB total source bytes. Importing the same file again creates another snapshot.</p>
+        <p class="muted">@L["Capacity: {0} / 128 immutable snapshots, up to 32 MiB total source bytes. Importing the same file again creates another snapshot.", Model.Sources.Count]</p>
     </section>
-    <h2>Database snapshots</h2>
+    <h2>@L["Database snapshots"]</h2>
     @if (Model.Sources.Count == 0)
-    { <p class="empty-state">No imported snapshots yet. Upload a configuration or import an operator-staged source below.</p> }
+    { <p class="empty-state">@L["No imported snapshots yet. Upload a configuration or import an operator-staged source below."]</p> }
     else
     {
         <div class="table-wrap"><table>
-            <caption>Immutable imported sources — no firewall changes</caption>
-            <thead><tr><th scope="col">Name</th><th scope="col">Imported (local time)</th><th scope="col">Size</th><th scope="col">Actions</th></tr></thead>
+            <caption>@L["Immutable imported sources — no firewall changes"]</caption>
+            <thead><tr><th scope="col">@L["Name"]</th><th scope="col">@L["Imported (local time)"]</th><th scope="col">@L["Size"]</th><th scope="col">@L["Actions"]</th></tr></thead>
             <tbody>@foreach (var source in Model.Sources)
             {
-                <tr><td>@source.Name</td><td>@await Html.PartialAsync("_LocalTime", source.ImportedAtUtc)</td><td>@source.ByteLength bytes</td>
-                    <td><a href="@Url.Action("Sources", new { sourceId = source.Id })">Review @source.Name</a> ·
-                        <a aria-label="Download original @source.Name" href="@Url.Action("DownloadSource", new { sourceId = source.Id })">Download original</a></td></tr>
+                <tr><td>@source.Name</td><td>@await Html.PartialAsync("_LocalTime", source.ImportedAtUtc)</td><td>@L["{0} bytes", source.ByteLength]</td>
+                    <td><a href="@Url.Action("Sources", new { sourceId = source.Id })">@L["Review {0}", source.Name]</a> ·
+                        <a aria-label="@L["Download original {0}", source.Name]" href="@Url.Action("DownloadSource", new { sourceId = source.Id })">@L["Download original"]</a></td></tr>
             }</tbody>
         </table></div>
     }
     @if (Model.Selected is { } selected)
     {
         <section class="card mt-2" aria-labelledby="selected-source-heading">
-            <h2 id="selected-source-heading">@selected.Summary.Name <span class="badge badge-neutral">Stored · not applied</span></h2>
-            <p class="muted">Snapshot <code>@selected.Summary.Id</code>. This review uses immutable database content.</p>
+            <h2 id="selected-source-heading">@selected.Summary.Name <span class="badge badge-neutral">@L["Stored · not applied"]</span></h2>
+            <p class="muted">@L["Snapshot"] <code>@selected.Summary.Id</code>. @L["This review uses immutable database content."]</p>
             @if (Model.Conversion is { } conversion) { @await Html.PartialAsync("_NativeConversion", conversion) }
-            <details class="disclosure mt-2"><summary>Source inventory and exact original</summary>
+            <details class="disclosure mt-2"><summary>@L["Source inventory and exact original"]</summary>
                 @await Html.PartialAsync("_NativeSourceReview", selected)
             </details>
         </section>
     }
     @if (Model.Staged.Count > 0)
     {
-        <details class="disclosure mt-2"><summary>Operator-staged sources (@Model.Staged.Count)</summary>
-            <p class="muted">These optional file snapshots are staging inputs. Import explicitly to retain a database record; later file changes cannot alter an imported snapshot.</p>
+        <details class="disclosure mt-2"><summary>@L["Operator-staged sources ({0})", Model.Staged.Count]</summary>
+            <p class="muted">@L["These optional file snapshots are staging inputs. Import explicitly to retain a database record; later file changes cannot alter an imported snapshot."]</p>
             @foreach (var staged in Model.Staged)
             {
                 <form method="post" action="@Url.Action("ImportStagedSource")" class="mt-2">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="name" value="@staged.Name" /><input type="hidden" name="digest" value="@staged.Digest" />
-                    <button type="submit" class="btn btn-secondary">Import staged @staged.Name</button>
+                    <button type="submit" class="btn btn-secondary">@L["Import staged {0}", staged.Name]</button>
                     <span class="muted">SHA-256 <code>@staged.Digest</code></span>
                 </form>
             }

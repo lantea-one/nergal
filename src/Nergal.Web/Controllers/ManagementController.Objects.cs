@@ -33,7 +33,7 @@ public sealed partial class ManagementController
         var form = await Request.ReadFormAsync(HttpContext.RequestAborted);
         if (!ModelState.IsValid || form.Files.Count != 0 || form.Keys.Any(k => k is not ("id" or "expectedVersion" or "name" or "kind" or "description" or "entries" or "__RequestVerificationToken")) ||
             form.Any(kv => kv.Value.Count != 1) || new[] { "expectedVersion", "name", "kind", "description", "entries" }.Any(k => !form.ContainsKey(k)))
-        { return ObjectFailure(input, "Submit each field once. Check the list name, type, description and entries."); }
+        { return ObjectFailure(input, L["Submit each field once. Check the list name, type, description and entries."].Value); }
         try
         {
             var type = kind switch { "ipv4" => ReusableObjectKind.Ipv4, "ipv6" => ReusableObjectKind.Ipv6, "port" => ReusableObjectKind.Port, _ => throw new ArgumentException("object.kindInvalid") };
@@ -58,22 +58,22 @@ public sealed partial class ManagementController
         Response.StatusCode = status;
         return View("Objects", ObjectModel(input.Id.HasValue ? store.ReadReusableObject(input.Id.Value) : null, true, input: input, error: error));
     }
-    private static string ObjectError(string code) => code switch
+    private string ObjectError(string code) => code switch
     {
-        "object.nameInvalid" => "Use a name of 1–64 lowercase letters, digits or underscores, starting with a letter.",
-        "object.kindInvalid" => "Choose IPv4 addresses, IPv6 addresses or transport ports.",
-        "object.descriptionInvalid" => "Use a plain-text description of at most 500 characters.",
-        "object.entryCountInvalid" => "Enter 1–64 entries, one per line.",
-        "object.duplicateEntry" => "Remove duplicate entries. An address and its /32 or /128 prefix identify the same entry.",
-        "object.portInvalid" => "Enter individual numeric ports from 1 to 65535. Port ranges are not supported.",
-        "object.familyMismatch" => "Every address must match the selected IPv4 or IPv6 type.",
-        "object.addressInvalid" or "object.prefixInvalid" or "object.entryInvalid" => "Use numeric addresses or CIDRs with zero host bits. Names, ranges, scoped and mapped addresses are not supported.",
-        "object.staleVersion" => "Another edit was saved first. Your input is retained; open the current version in another tab and compare before editing again.",
-        "object.duplicateName" => "That name already exists. Choose a different identifier or edit the existing list.",
-        "object.identityImmutable" => "An existing list's name and type cannot change. Create a separate list instead.",
-        "object.notFound" => "The selected list or expected version is invalid. Open the library and select the list again.",
-        "object.capacityExceeded" => "The library has reached its limit of 128 lists. No list or audit entry was added.",
-        "object.versionCapacityExceeded" => "This list has reached its limit of 64 immutable versions. No change was saved.",
-        _ => "Check the list name, type, description and entries. No change was saved."
+        "object.nameInvalid" => L["Use a name of 1–64 lowercase letters, digits or underscores, starting with a letter."].Value,
+        "object.kindInvalid" => L["Choose IPv4 addresses, IPv6 addresses or transport ports."].Value,
+        "object.descriptionInvalid" => L["Use a plain-text description of at most 500 characters."].Value,
+        "object.entryCountInvalid" => L["Enter 1–64 entries, one per line."].Value,
+        "object.duplicateEntry" => L["Remove duplicate entries. An address and its /32 or /128 prefix identify the same entry."].Value,
+        "object.portInvalid" => L["Enter individual numeric ports from 1 to 65535. Port ranges are not supported."].Value,
+        "object.familyMismatch" => L["Every address must match the selected IPv4 or IPv6 type."].Value,
+        "object.addressInvalid" or "object.prefixInvalid" or "object.entryInvalid" => L["Use numeric addresses or CIDRs with zero host bits. Names, ranges, scoped and mapped addresses are not supported."].Value,
+        "object.staleVersion" => L["Another edit was saved first. Your input is retained; open the current version in another tab and compare before editing again."].Value,
+        "object.duplicateName" => L["That name already exists. Choose a different identifier or edit the existing list."].Value,
+        "object.identityImmutable" => L["An existing list's name and type cannot change. Create a separate list instead."].Value,
+        "object.notFound" => L["The selected list or expected version is invalid. Open the library and select the list again."].Value,
+        "object.capacityExceeded" => L["The library has reached its limit of 128 lists. No list or audit entry was added."].Value,
+        "object.versionCapacityExceeded" => L["This list has reached its limit of 64 immutable versions. No change was saved."].Value,
+        _ => L["Check the list name, type, description and entries. No change was saved."].Value
     };
 }

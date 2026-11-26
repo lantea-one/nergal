@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -11,7 +12,7 @@ namespace Nergal.Web.Controllers;
 
 /// <summary>Authenticator enrollment for local or LDAP identities and shared policy for local Administrators.</summary>
 [SupportedOSPlatform("linux"), Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
-public sealed class MfaController(LocalAdministratorAccounts accounts, IConfiguration configuration, IDataProtectionProvider keys)
+public sealed class MfaController(LocalAdministratorAccounts accounts, IConfiguration configuration, IDataProtectionProvider keys, IStringLocalizer<UiStrings> L)
     : IdentityUiController(accounts, configuration)
 {
     private bool CanEnroll => User.Identity?.AuthenticationType == IdentityConstants.ApplicationScheme ||
@@ -36,7 +37,7 @@ public sealed class MfaController(LocalAdministratorAccounts accounts, IConfigur
 
         var enrollment = await Accounts.BeginTotpEnrollmentAsync(User, keys);
         return enrollment is null
-            ? await EnrollmentPageAsync("Authenticator setup could not start. Review your current enrollment status.")
+            ? await EnrollmentPageAsync(L["Authenticator setup could not start. Review your current enrollment status."].Value)
             : View("Index", new MfaEnrollmentPageModel(false, enrollment));
     }
 
@@ -53,7 +54,7 @@ public sealed class MfaController(LocalAdministratorAccounts accounts, IConfigur
 
         var result = await Accounts.ConfirmTotpEnrollmentAsync(User, id, code, keys);
         return result.Succeeded ? LocalRedirect("~/login")
-            : await EnrollmentPageAsync("Authenticator setup could not be confirmed. Check your device time and start setup again.");
+            : await EnrollmentPageAsync(L["Authenticator setup could not be confirmed. Check your device time and start setup again."].Value);
     }
 
     /// <summary>Shows the current versioned local and LDAP MFA requirements.</summary>
@@ -85,9 +86,9 @@ public sealed class MfaController(LocalAdministratorAccounts accounts, IConfigur
         if (result.Succeeded) { return LocalRedirect("~/manage/identity/mfa"); }
         return await PolicyPageAsync(result.ErrorCodes.FirstOrDefault() switch
         {
-            "mfa.stale" => "The policy changed. Review the current requirement and submit again.",
-            "account.lastAdministrator" => "Enroll an authenticator for at least one enabled local Administrator before requiring MFA.",
-            _ => Explain(result),
+            "mfa.stale" => L["The policy changed. Review the current requirement and submit again."].Value,
+            "account.lastAdministrator" => L["Enroll an authenticator for at least one enabled local Administrator before requiring MFA."].Value,
+            _ => Explain(result, L),
         });
     }
 

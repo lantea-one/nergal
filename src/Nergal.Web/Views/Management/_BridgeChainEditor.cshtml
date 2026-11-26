@@ -1,20 +1,21 @@
 @model Nergal.Web.BridgeChainEditorModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @{
     var bridge = Model.Editor.Bundle!.Bridge!;
     var rules = Model.Chain is null ? bridge.Rules : (bridge.SubChains.FirstOrDefault(c => c.Name == Model.Chain)?.Rules ?? []);
 }
 <section class="card">
-    <h3>@(Model.Chain is null ? "Forward base chain" : "Regular chain: " + Model.Chain)</h3>
-    @if (Model.Chain is not null) { <p class="hint">Called only by local jumps. Return or reaching the end resumes the calling chain. Remove incoming jumps and all rules before deleting this chain.</p> }
-    @if (rules.Count == 0) { <p class="muted">No rules in this chain.</p> }
+    <h3>@(Model.Chain is null ? L["Forward base chain"] : L["Regular chain: {0}", Model.Chain])</h3>
+    @if (Model.Chain is not null) { <p class="hint">@L["Called only by local jumps. Return or reaching the end resumes the calling chain. Remove incoming jumps and all rules before deleting this chain."]</p> }
+    @if (rules.Count == 0) { <p class="muted">@L["No rules in this chain."]</p> }
     @for (var i = 0; i < rules.Count; i++)
     {
         var r = rules[i]; if (r is null) { continue; }
-        var label = (Model.Chain ?? "Forward") + " bridge rule " + (i + 1);
+        var label = L["{0} bridge rule {1}", Model.Chain ?? L["Forward"].Value, i + 1].Value;
         <div><strong>@label</strong> @await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model.Editor, new(Model.Chain is null ? PolicyRuleScope.Bridge : PolicyRuleScope.BridgeChain, i, Model.Chain, r.Enabled, label)))</div>
         <details class="router-form-details">
-            <summary>@label · @r.EtherType · @(r.JumpTarget is not null ? "Jump → " + r.JumpTarget : r.Return ? "Return" : r.Verdict.ToString()) · @(r.Enabled ? "Enabled" : "Disabled") · @(r.Description ?? "No description")</summary>
+            <summary>@label · @r.EtherType · @(r.JumpTarget is not null ? L["Jump → {0}", r.JumpTarget].Value : r.Return ? L["Return"].Value : r.Verdict.ToString()) · @(r.Enabled ? L["Enabled"] : L["Disabled"]) · @(r.Description ?? L["No description"].Value)</summary>
             <div class="router-form-body">
                 @await Html.PartialAsync("_BridgeRuleForm", new Nergal.Web.BridgeRuleFormModel(Model.Editor, Model.Chain, i))
                 @if (Model.Editor.CanMutate)
@@ -26,7 +27,7 @@
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" /><input type="hidden" name="summary" value="@Model.Editor.Summary" /><input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" /><input type="hidden" name="operation" value="@operation" /><input type="hidden" name="ruleIndex" value="@i" />
                                 @if (Model.Chain is not null) { <input type="hidden" name="chain" value="@Model.Chain" /> }
-                                <button type="submit" class="btn btn-secondary btn-sm" disabled="@((operation == "up" && i == 0) || (operation == "down" && i == rules.Count - 1))">@(operation == "remove" ? "Remove bridge rule from draft" : "Move bridge rule " + operation)</button>
+                                <button type="submit" class="btn btn-secondary btn-sm" disabled="@((operation == "up" && i == 0) || (operation == "down" && i == rules.Count - 1))">@(operation == "remove" ? L["Remove bridge rule from draft"] : operation == "up" ? L["Move bridge rule up"] : L["Move bridge rule down"])</button>
                             </form>
                         }
                     </div>
@@ -36,15 +37,15 @@
     }
     @if (Model.Editor.CanMutate)
     {
-        <details class="router-form-details"><summary>Add rule to @(Model.Chain ?? "forward")</summary><div class="router-form-body">@await Html.PartialAsync("_BridgeRuleForm", new Nergal.Web.BridgeRuleFormModel(Model.Editor, Model.Chain, null))</div></details>
+        <details class="router-form-details"><summary>@L["Add rule to {0}", Model.Chain ?? "forward"]</summary><div class="router-form-body">@await Html.PartialAsync("_BridgeRuleForm", new Nergal.Web.BridgeRuleFormModel(Model.Editor, Model.Chain, null))</div></details>
         @if (Model.Chain is not null && rules.Count == 0)
         {
             <form method="post" action="@Url.Content("~/manage/policies/bridge/chain")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" /><input type="hidden" name="summary" value="@Model.Editor.Summary" /><input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" /><input type="hidden" name="operation" value="remove" /><input type="hidden" name="name" value="@Model.Chain" />
-                <button type="submit" class="btn btn-secondary btn-sm">Remove empty regular chain @Model.Chain</button>
+                <button type="submit" class="btn btn-secondary btn-sm">@L["Remove empty regular chain {0}", Model.Chain]</button>
             </form>
         }
-        @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model.Editor, Model.Chain is null ? "bridge" : "bridgeChain", Model.Chain, rules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, "Rule " + (i + 1) + " · " + (r?.Family?.ToString() ?? r?.EtherType.ToString()) + " · " + r?.Protocol)).ToArray()))
+        @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model.Editor, Model.Chain is null ? "bridge" : "bridgeChain", Model.Chain, rules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, L["Rule {0} · {1} · {2}", i + 1, r?.Family?.ToString() ?? r?.EtherType.ToString() ?? "", r?.Protocol.ToString() ?? ""].Value)).ToArray()))
     }
 </section>

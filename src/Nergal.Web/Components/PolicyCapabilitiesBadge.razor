@@ -1,14 +1,15 @@
 @using Nergal.Core
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 <aside class="compatibility-summary">
     @if (Report is not null)
     {
-        <p>Backend <code>@Report.BackendId</code>: @(Report.IsCompatible ? "compatible" : "incompatible")</p>
+        <p>@L["Backend"] <code>@Report.BackendId</code>: @(Report.IsCompatible ? L["compatible"] : L["incompatible"])</p>
         @if (!Report.IsCompatible)
         {
             <ul>
                 @foreach (var missing in Report.UnsupportedFeatures)
                 {
-                    <li>Missing capability: <code>@missing</code></li>
+                    <li>@L["Missing capability:"] <code>@missing</code></li>
                 }
             </ul>
         }

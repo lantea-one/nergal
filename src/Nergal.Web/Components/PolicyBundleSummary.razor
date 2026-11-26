@@ -1,33 +1,34 @@
 @using Nergal.Core.Policy
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 
 @if (Bundle is not null)
 {
-    <section class="card" aria-label="Structured policy bundle summary">
+    <section class="card" aria-label="@(L["Structured policy bundle summary"].Value)">
         <div class="card-header">
-            <h2>Bundle summary</h2>
+            <h2>@L["Bundle summary"]</h2>
             <div class="btn-group">
-                <span class="badge badge-primary">Filter v@(Bundle.Filter.SchemaVersion) (@Bundle.Filter.Rules.Count rules)</span>
+                <span class="badge badge-primary">@L["Filter v{0} ({1} rules)", Bundle.Filter.SchemaVersion, Bundle.Filter.Rules.Count]</span>
                 @if (Bundle.Nat is { } natBadge)
                 {
-                    <span class="badge badge-warning">NAT (@(natBadge.DnatRules.Count + natBadge.SnatRules.Count) rules)</span>
+                    <span class="badge badge-warning">@L["NAT ({0} rules)", natBadge.DnatRules.Count + natBadge.SnatRules.Count]</span>
                 }
                 @if (Bundle.Bridge is { } brBadge)
                 {
-                    <span class="badge badge-neutral">Bridge (@brBadge.Rules.Count rules)</span>
+                    <span class="badge badge-neutral">@L["Bridge ({0} rules)", brBadge.Rules.Count]</span>
                 }
             </div>
         </div>
 
-        <p class="muted">Disabled rules below retain intent but do not enforce traffic policy. Native observations contain active rules only.</p>
+        <p class="muted">@L["Disabled rules below retain intent but do not enforce traffic policy. Native observations contain active rules only."]</p>
         <p class="muted" style="margin-top: 0;">
-            Filter defaults — Input: <code>@Bundle.Filter.InputDefaultVerdict.ToString().ToLowerInvariant()</code> ·
-            Forward: <code>@Bundle.Filter.ForwardDefaultVerdict.ToString().ToLowerInvariant()</code> ·
-            Output: <code>@Bundle.Filter.OutputDefaultVerdict.ToString().ToLowerInvariant()</code>
+            @L["Filter defaults — Input:"] <code>@Bundle.Filter.InputDefaultVerdict.ToString().ToLowerInvariant()</code> ·
+            @L["Forward:"] <code>@Bundle.Filter.ForwardDefaultVerdict.ToString().ToLowerInvariant()</code> ·
+            @L["Output:"] <code>@Bundle.Filter.OutputDefaultVerdict.ToString().ToLowerInvariant()</code>
         </p>
 
         @if (Bundle.Filter.Rules.Count == 0)
         {
-            <p class="muted">No filter rules defined.</p>
+            <p class="muted">@L["No filter rules defined."]</p>
         }
         else
         {
@@ -36,16 +37,16 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Chain</th>
-                            <th>Family</th>
-                            <th>Protocol / ICMP</th>
-                            <th>Source</th>
-                            <th>Destination</th>
-                            <th>Ports</th>
-                            <th>Interfaces</th>
-                            <th>States / Match</th>
-                            <th>Rate Limit</th>
-                            <th>Enabled state</th><th>Verdict</th>
+                            <th>@L["Chain"]</th>
+                            <th>@L["Family"]</th>
+                            <th>@L["Protocol / ICMP"]</th>
+                            <th>@L["Source"]</th>
+                            <th>@L["Destination"]</th>
+                            <th>@L["Ports"]</th>
+                            <th>@L["Interfaces"]</th>
+                            <th>@L["States / Match"]</th>
+                            <th>@L["Rate Limit"]</th>
+                            <th>@L["Enabled state"]</th><th>@L["Verdict"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,7 +72,7 @@
                                 <td><code>@(rule.NegateDestination ? "!= " : "")@(ObjectLabel(rule.DestinationObject) ?? FormatPrefixes(rule.Destination, rule.DestinationPrefixes))</code></td>
                                 <td><code>@(ObjectLabel(rule.DestinationPortObject) ?? FormatPorts(rule.DestinationPort, rule.DestinationPorts))</code></td>
                                 <td><code>@FormatInterfaces(FormatInterfaceMatch(rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface), FormatInterfaceMatch(rule.OutputInterface, rule.OutputInterfaceSelector, rule.NegateOutputInterface))</code>
-                                    @if (rule.BindInputInterfaceIndex) { <span class="rule-desc">Input interface bound by index</span> }
+                                    @if (rule.BindInputInterfaceIndex) { <span class="rule-desc">@L["Input interface bound by index"]</span> }
                                 </td>
                                 <td>
                                     <code>@FormatStates(rule.ConnectionStates)</code>
@@ -80,17 +81,17 @@
                                         <span class="badge badge-warning">ct dnat</span>
                                     }
                                     @if (rule.OriginalSourcePrefixes is { } originalSources)
-                                    { <span class="rule-desc">Original source @string.Join(", ", originalSources.Select(p => p.Value))</span> }
+                                    { <span class="rule-desc">@L["Original source: {0}", string.Join(", ", originalSources.Select(p => p.Value))]</span> }
                                     @if (rule.OriginalDestinationPrefixes is { } originalDestinations)
-                                    { <span class="rule-desc">Original destination @string.Join(", ", originalDestinations.Select(p => p.Value))</span> }
+                                    { <span class="rule-desc">@L["Original destination: {0}", string.Join(", ", originalDestinations.Select(p => p.Value))]</span> }
                                 </td>
                                 <td><code>@FormatRateLimit(rule.RateLimit)</code></td>
-                                <td>@(rule.Enabled ? "Enabled" : "Disabled · omitted")</td>
+                                <td>@(rule.Enabled ? L["Enabled"] : L["Disabled · omitted"])</td>
                                 <td>
                                     <span class="badge @(rule.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                        @(rule.Verdict == FilterVerdict.ClampRouteMss ? "Clamp MSS to route MTU" : rule.Verdict.ToString().ToLowerInvariant())
+                                        @FormatVerdict(rule)
                                     </span>
-                                    @if (rule.CountPackets) { <span class="muted">counter</span> }
+                                    @if (rule.CountPackets) { <span class="muted">@L["Inline counter"]</span> }
                                 </td>
                             </tr>
                         }
@@ -99,27 +100,27 @@
             </div>
         }
 
-        <details class="disclosure"><summary>All authored rule states</summary>
-            <ul>@foreach (var state in PolicyRuleStates.Enumerate(Bundle)) { <li>@state.Label: <strong>@(state.Enabled ? "Enabled" : "Disabled · omitted")</strong></li> }</ul>
+        <details class="disclosure"><summary>@L["All authored rule states"]</summary>
+            <ul>@foreach (var state in PolicyRuleStates.Enumerate(Bundle)) { <li>@FormatRuleLabel(state): <strong>@(state.Enabled ? L["Enabled"] : L["Disabled · omitted"])</strong></li> }</ul>
         </details>
         @if (Bundle.Filter.RpFilter is { } rp)
-        { <p>Raw rpfilter: @rp.Rules.Count rules.</p> }
+        { <p>@L["Raw rpfilter: {0} rules.", rp.Rules.Count]</p> }
         @if (Bundle.Filter.RawOutput is { } rawOutput)
-        { <p>Raw output: @rawOutput.Rules.Count rules.</p> }
+        { <p>@L["Raw output: {0} rules.", rawOutput.Rules.Count]</p> }
         @if (Bundle.Filter.ForwardTcpMssClamp is { } mss)
-        { <p>Forward TCP SYN MSS clamp: @mss bytes · @(Bundle.Filter.ForwardTcpMssClampEnabled ? "Enabled" : "Disabled · omitted").</p> }
+        { <p>@L["Forward TCP SYN MSS clamp: {0} bytes · {1}.", mss, Bundle.Filter.ForwardTcpMssClampEnabled ? L["Enabled"].Value : L["Disabled · omitted"].Value]</p> }
         @if (Bundle.RequiresExtendedApplySupport)
-        { <p class="alert alert-info">Auxiliary/extended bridge scope requires complete bundle receipts. Confirmed apply and local rollback cover all owned tables; unexpected drift requires recovery.</p> }
+        { <p class="alert alert-info">@L["Auxiliary/extended bridge scope requires complete bundle receipts. Confirmed apply and local rollback cover all owned tables; unexpected drift requires recovery."]</p> }
         @if (Bundle.Nat is { } nat)
         {
-            <h3>NAT (<code>inet nergal_nat</code>)</h3>
-            <p class="muted">Prerouting DNAT rules: <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Prerouting)</strong> · Output DNAT rules: <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Output)</strong> · Postrouting rules: <strong>@nat.SnatRules.Count</strong></p>
+            <h3>@L["NAT"] (<code>inet nergal_nat</code>)</h3>
+            <p class="muted">@L["Prerouting DNAT rules:"] <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Prerouting)</strong> · @L["Output DNAT rules:"] <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Output)</strong> · @L["Postrouting rules:"] <strong>@nat.SnatRules.Count</strong></p>
         }
 
         @if (Bundle.Bridge is { } bridge)
         {
-            <h3>Bridge (<code>bridge nergal_bridge</code>)</h3>
-            <p class="muted mb-0">Default verdict: <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · Forward rules: <strong>@bridge.Rules.Count</strong> · Priority: <code>@bridge.Priority</code> · Regular chains: <strong>@bridge.SubChains.Count</strong></p>
+            <h3>@L["Bridge"] (<code>bridge nergal_bridge</code>)</h3>
+            <p class="muted mb-0">@L["Default verdict:"] <code>@bridge.DefaultVerdict.ToString().ToLowerInvariant()</code> · @L["Forward rules:"] <strong>@bridge.Rules.Count</strong> · @L["Priority:"] <code>@bridge.Priority</code> · @L["Regular chains:"] <strong>@bridge.SubChains.Count</strong></p>
         }
     </section>
 }
@@ -130,18 +131,56 @@
     [Parameter]
     public FirewallPolicyBundle? Bundle { get; set; }
 
-    private static string FormatPrefixes(NetworkPrefix? single, IReadOnlyList<NetworkPrefix>? set)
+    private string FormatRuleLabel(PolicyRuleState state)
+    {
+        var number = (state.Index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return state.Scope switch
+        {
+            PolicyRuleScope.Filter => L["Filter rule {0}", number].Value,
+            PolicyRuleScope.Raw => L["Raw prerouting rule {0}", number].Value,
+            PolicyRuleScope.RawOutput => L["Raw output rule {0}", number].Value,
+            PolicyRuleScope.AuxiliaryRaw => L["Auxiliary raw {0} rule {1}", state.Chain!, number].Value,
+            PolicyRuleScope.Mss => L["Forward SYN MSS clamp"].Value,
+            PolicyRuleScope.Auxiliary => L["Early inet filter rule {0}", number].Value,
+            PolicyRuleScope.Dnat => L["DNAT rule {0}", number].Value,
+            PolicyRuleScope.Postrouting => L["Postrouting rule {0}", number].Value,
+            PolicyRuleScope.Bridge => L["Bridge forward rule {0}", number].Value,
+            PolicyRuleScope.BridgeChain => L["Bridge {0} rule {1}", state.Chain!, number].Value,
+            _ => state.Label,
+        };
+    }
+
+    private string FormatVerdict(FilterRule rule) => rule.Verdict switch
+    {
+        FilterVerdict.RejectPortUnreachable => L["Reject — ICMP port unreachable"].Value,
+        FilterVerdict.Continue => L["Count and continue"].Value,
+        FilterVerdict.ClampRouteMss => L["Clamp MSS to route MTU"].Value,
+        FilterVerdict.Jump => L["Jump → {0}", rule.JumpTarget!].Value,
+        FilterVerdict.Return => L["Return"].Value,
+        _ => rule.Verdict.ToString().ToLowerInvariant(),
+    };
+
+    private string AnyLabel
+    {
+        get
+        {
+            var label = L["Any"];
+            return label.ResourceNotFound ? "any" : label.Value;
+        }
+    }
+
+    private string FormatPrefixes(NetworkPrefix? single, IReadOnlyList<NetworkPrefix>? set)
     {
         if (single is not null) { return single.Value; }
         if (set is { Count: > 0 }) { return "{ " + string.Join(", ", set.Select(p => p.Value)) + " }"; }
-        return "any";
+        return AnyLabel;
     }
 
-    private static string FormatPorts(int? single, IReadOnlyList<int>? set)
+    private string FormatPorts(int? single, IReadOnlyList<int>? set)
     {
         if (single.HasValue) { return single.Value.ToString(System.Globalization.CultureInfo.InvariantCulture); }
         if (set is { Count: > 0 }) { return "{ " + string.Join(", ", set) + " }"; }
-        return "any";
+        return AnyLabel;
     }
 
     private static string? FormatInterfaceMatch(string? name, InterfaceNameSelector? selector, bool negate)
@@ -150,16 +189,18 @@
         return match is null ? null : (negate ? "!= " : "") + match;
     }
 
-    private static string FormatInterfaces(string? iif, string? oif)
+    private string FormatInterfaces(string? iif, string? oif)
     {
-        if (iif is null && oif is null) { return "any"; }
-        if (iif is not null && oif is not null) { return $"in:{iif} out:{oif}"; }
-        return iif is not null ? $"in:{iif}" : $"out:{oif}";
+        if (iif is not null)
+        {
+            return oif is not null ? L["in:{0} out:{1}", iif, oif].Value : L["in:{0}", iif].Value;
+        }
+        return oif is not null ? L["out:{0}", oif].Value : AnyLabel;
     }
 
-    private static string FormatStates(ConnectionStateFlags states)
+    private string FormatStates(ConnectionStateFlags states)
     {
-        if (states == ConnectionStateFlags.None) { return "stateless"; }
+        if (states == ConnectionStateFlags.None) { return L["stateless"].Value; }
         var parts = new List<string>(4);
         if ((states & ConnectionStateFlags.New) != 0) { parts.Add("new"); }
         if ((states & ConnectionStateFlags.Established) != 0) { parts.Add("established"); }
@@ -169,10 +210,13 @@
         return string.Join(", ", parts);
     }
 
-    private static string FormatRateLimit(PerSourceRateLimit? rl)
+    private string FormatRateLimit(PerSourceRateLimit? rl)
     {
         if (rl is null) { return "—"; }
         var unit = rl.WindowUnit == RateLimitTimeUnit.Second ? "s" : "m";
-        return $"{rl.PacketsPerWindow}/{unit} per {(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "destination" : "source")} (burst {rl.Burst}, {rl.EntryTimeoutSeconds}s, {(rl.RefreshEntryTimeout ? "refresh idle expiry" : "creation expiry")})";
+        var expiry = rl.RefreshEntryTimeout ? L["refresh idle expiry"] : L["creation expiry"];
+        return rl.KeyKind == RateLimitKeyKind.DestinationAddress
+            ? L["{0}/{1} per destination (burst {2}, {3}s, {4})", rl.PacketsPerWindow, unit, rl.Burst, rl.EntryTimeoutSeconds, expiry.Value].Value
+            : L["{0}/{1} per source (burst {2}, {3}s, {4})", rl.PacketsPerWindow, unit, rl.Burst, rl.EntryTimeoutSeconds, expiry.Value].Value;
     }
 }

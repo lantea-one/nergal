@@ -2,7 +2,9 @@ import { basicSetup, EditorView } from "codemirror";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
 import { HighlightStyle, syntaxHighlighting, indentRange } from "@codemirror/language";
+import { EditorState } from "@codemirror/state";
 import { tags } from "@lezer/highlight";
+import { editorPhrases } from "./code-editor-phrases.js";
 
 // Enhance only explicitly marked code fields. Server validation remains authoritative.
 const colors = HighlightStyle.define([
@@ -31,7 +33,8 @@ for (const field of document.querySelectorAll("textarea[data-code-editor='json']
     parent: host,
     doc: field.value,
     extensions: [basicSetup, json(), linter(jsonParseLinter()), appearance, syntaxHighlighting(colors),
-      EditorView.contentAttributes.of({ "aria-label": field.dataset.editorLabel || "JSON code editor", "aria-describedby": field.getAttribute("aria-describedby") || "", spellcheck: "false" }),
+      EditorState.phrases.of(editorPhrases(field.dataset)),
+      EditorView.contentAttributes.of({ "aria-label": field.dataset.editorLabel || "JSON code editor", "aria-describedby": field.getAttribute("aria-describedby") || "", dir: "ltr", spellcheck: "false" }),
       EditorView.updateListener.of(update => {
         if (update.docChanged) field.value = update.state.doc.toString();
       }),
@@ -49,7 +52,7 @@ for (const field of document.querySelectorAll("textarea[data-code-editor='json']
   const format = document.createElement("button");
   format.type = "button";
   format.className = "btn btn-secondary btn-sm";
-  format.textContent = "Indent lines";
+  format.textContent = view.state.phrase("Indent lines");
   const status = document.createElement("span");
   status.className = "muted";
   status.setAttribute("role", "status");
@@ -57,7 +60,7 @@ for (const field of document.querySelectorAll("textarea[data-code-editor='json']
   format.addEventListener("click", () => {
     // Parser-aware indentation preserves all values, duplicate keys, and invalid input for server diagnostics.
     view.dispatch({ changes: indentRange(view.state, 0, view.state.doc.length) });
-    status.textContent = "Indentation updated. Preview checks policy compatibility.";
+    status.textContent = view.state.phrase("Indentation updated. Preview checks policy compatibility.");
   });
   toolbar.append(format, status);
   host.before(toolbar);

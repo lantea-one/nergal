@@ -22,7 +22,13 @@ public sealed class UiLocalizationTests
     [InlineData("en-US", "en-US")]
     [InlineData("es-ES", "es-ES")]
     [InlineData("es", "en-US")]
-    [InlineData("fr-FR", "en-US")]
+    [InlineData("fr-FR", "fr-FR")]
+    [InlineData("ar", "ar")]
+    [InlineData("he-IL", "he-IL")]
+    [InlineData("zh-TW", "zh-TW")]
+    [InlineData("FR-fr", "en-US")]
+    [InlineData("fr", "en-US")]
+    [InlineData("sv-SE", "en-US")]
     public async Task OnlyAnExplicitSupportedCookieSelectsTheUiLanguage(string? cookie, string expectedLanguage)
     {
         var originalCulture = CultureInfo.CurrentCulture;
@@ -42,6 +48,56 @@ public sealed class UiLocalizationTests
         await middleware.Invoke(context);
     }
 
+    /// <summary>Every selectable non-English language ships core sign-in, authenticator recovery, and navigation resources.</summary>
+    [Fact]
+    public void EverySelectableLocaleIncludesSharedConsoleMessages()
+    {
+        using var services = new ServiceCollection().AddLogging()
+            .AddLocalization(options => options.ResourcesPath = "Resources").BuildServiceProvider();
+        var strings = services.GetRequiredService<IStringLocalizer<UiStrings>>();
+        var original = CultureInfo.CurrentUICulture;
+        var commonKeys = new[] { "Language", "Display language", "Set language", "Sign in", "Username", "Password",
+            "Sign in with LDAP", "Sign in with OAuth", "Sign in with identity provider", "Primary navigation",
+            "Import nftables.conf", "Review & apply", "Skip to content", "Stored UTC: {0}", "Verify sign-in", "Authenticator code",
+            "Recover authenticator", "Recovery authorization", "Confirm replacement authenticator", "New authenticator code",
+            "Accept", "Drop", "Reject", "Start confirmed apply", "Confirm active apply", "Immediate rollback",
+            "Nergal verification code", "Your Nergal verification code is {0}. Use it only for the request you initiated." };
+        try
+        {
+            foreach (var (culture, nativeName) in UiLocalization.Languages.Where(entry => !entry.Culture.Equals(UiLocalization.DefaultCulture)))
+            {
+                CultureInfo.CurrentUICulture = culture;
+                Assert.False(string.IsNullOrWhiteSpace(nativeName));
+                foreach (var key in commonKeys)
+                {
+                    var translation = strings[key];
+                    Assert.False(translation.ResourceNotFound, $"{culture.Name} is missing '{key}'");
+                    Assert.False(string.IsNullOrWhiteSpace(translation.Value));
+                }
+
+                Assert.Contains("synthetic-user", strings["My profile for {0}", "synthetic-user"].Value, StringComparison.Ordinal);
+                Assert.Contains("123456", strings["Your Nergal verification code is {0}. Use it only for the request you initiated.", "123456"].Value, StringComparison.Ordinal);
+                Assert.NotEqual("Start confirmed apply", strings["Start confirmed apply"].Value);
+                Assert.NotEqual("Immediate rollback", strings["Immediate rollback"].Value);
+                Assert.Equal("NAT", strings["NAT"].Value);
+                Assert.True(strings["Missing test message"].ResourceNotFound);
+            }
+        }
+        finally { CultureInfo.CurrentUICulture = original; }
+    }
+
+    /// <summary>English fallback and the selected shell language have separate coverage.</summary>
+    [Theory]
+    [InlineData("en-US", false, true)]
+    [InlineData("es-ES", true, true)]
+    [InlineData("es-ES", false, false)]
+    [InlineData("ar", true, true)]
+    [InlineData("ja-JP", false, false)]
+    public void LocalizedBodyRequiresTranslationWiring(string locale, bool localizedView, bool expected)
+    {
+        Assert.Equal(expected, UiLocalization.HasLocalizedBody(CultureInfo.GetCultureInfo(locale), localizedView));
+    }
+
     /// <summary>Spanish validation and status text are available, with an English fallback for missing messages.</summary>
     [Fact]
     public async Task SpanishCatalogTranslatesValidationAndStatusAndFallsBackToTheEnglishSource()
@@ -57,9 +113,9 @@ public sealed class UiLocalizationTests
             Assert.Equal("Pendiente de confirmación", strings["pending"].Value);
             Assert.Equal("Mi perfil de Synthetic", strings["My profile for {0}", "Synthetic"].Value);
 
-            var missing = strings["NAT"];
+            var missing = strings["Missing fixture message"];
             Assert.True(missing.ResourceNotFound);
-            Assert.Equal("NAT", missing.Value);
+            Assert.Equal("Missing fixture message", missing.Value);
             return Task.CompletedTask;
         }, Options.Create(UiLocalization.CreateRequestOptions()), NullLoggerFactory.Instance);
 
@@ -95,7 +151,7 @@ public sealed class UiLocalizationTests
     [Fact]
     public async Task UnsupportedAndAmbiguousLanguageRequestsDoNotWriteCookies()
     {
-        foreach (var input in new StringValues[] { "es", "fr-FR", new[] { "en-US", "es-ES" } })
+        foreach (var input in new StringValues[] { "es", "fr", "sv-SE", new[] { "en-US", "es-ES" } })
         {
             var controller = CreateController(input, "/console/manage/hosts");
             Assert.IsType<BadRequestResult>(await controller.Select());

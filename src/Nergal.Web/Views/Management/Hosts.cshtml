@@ -10,7 +10,7 @@
     var displayCulture = System.Globalization.CultureInfo.CurrentUICulture;
 }
 <main class="container" id="main-content" tabindex="-1">
-    <div class="page-header"><div><p class="eyebrow">@L["System / Connections"]</p><h1>@L["Hosts"]</h1>
+    <div class="page-header"><div><p class="eyebrow">@L["System / Connections"]</p><h1 lang="@Nergal.Web.UiLocalization.MessageLanguage(L["Hosts"])" dir="auto">@L["Hosts"]</h1>
         <p class="page-subtitle">@L["Manage connections to enrolled firewall agents. Registering a connection does not apply a policy."]</p></div></div>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     { <p class="alert alert-danger" role="alert">@L[Model.ErrorMessage]</p> }
@@ -99,7 +99,7 @@
         <section class="card">
             <div class="card-header">
                 <h2>@L["Register agent host"]</h2>
-                <span class="badge badge-neutral">@L["Administrator"]</span>
+                <span class="badge badge-neutral" lang="@Nergal.Web.UiLocalization.MessageLanguage(L["Administrator"])" dir="auto">@L["Administrator"]</span>
             </div>
             <p class="hint">@L["Choose a remote pinned mTLS agent or a local Unix socket. Obtain the exact endpoint and expected identity from the agent's local operator; this page cannot enroll a host or create its credentials."]</p>
             <form method="post" action="@Url.Content("~/manage/hosts/add")">

@@ -1,0 +1,4308 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>跳至主要內容</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>選單</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>我的個人資料（{0}）</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>管理員</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>稽核員</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>佈景主題</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>淺色模式</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>深色模式</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>切換至淺色主題</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>切換至深色主題</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>語言</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>顯示語言</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>設定語言</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>主要導覽</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>儀表板</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>總覽</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>主機</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>防火牆</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>規則</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>網路橋接</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>檢閱與匯出</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>別名與 IP 位址清單</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>組態</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>匯入 nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>檢閱與套用</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>系統</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>活動與稽核</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>設定</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>本機使用者</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>我的個人資料與工作階段</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>時區：</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC（無法取得本地時間）</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>儲存的 UTC 時間：{0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>登入</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>使用者名稱</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>密碼</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>登入失敗。請檢查登入憑證後再試一次。</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>登入後即可管理已登錄的防火牆主機、原則修訂版本，以及需要確認的套用作業。</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>目錄服務登入</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>目錄服務使用者名稱</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>目錄服務密碼</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>使用 LDAP 登入</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>使用復原授權</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>使用 OAuth 登入</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>使用身分識別提供者登入</value>
+    </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>驗證登入</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>Nergal Guardian 標誌</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>請輸入驗證器應用程式目前顯示的六位數驗證碼。</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>無法驗證這組驗證碼。請使用驗證器應用程式目前顯示的驗證碼再試一次。</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>驗證器驗證碼</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>驗證並登入</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>返回登入</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>復原驗證器</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>請準備好復原授權碼和驗證器應用程式，然後選擇平常用來登入的帳號。</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>目錄服務帳號</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>本機帳號</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>復原授權碼</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>設定新的驗證器</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>無法開始復原</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>請檢查復原授權碼和登入憑證。如果授權碼已過期，或已開始設定，請申請新的復原授權碼。</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>返回驗證器復原頁面</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>確認新的驗證器</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>在驗證器應用程式中為 Nergal 新增使用時間型一次性密碼的帳號，然後輸入這組設定金鑰。</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>驗證失敗。請使用新驗證器目前顯示的驗證碼再試一次。如果復原已逾時，或已用完嘗試次數，請申請新的復原授權碼。</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>新驗證器的驗證碼</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>確認後，請使用密碼及新驗證器產生的下一組驗證碼重新登入。</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>確認驗證器</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>接受</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>丟棄</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>拒絕</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>任意</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>已啟用</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>已停用</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>開始需要確認的套用</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>確認進行中的套用</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>立即復原</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>Nergal 驗證碼</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>您的 Nergal 驗證碼是 {0}。請僅將此驗證碼用於您本人發起的請求。</value>
+    </data>
+    <data name=" (+{0} more in report)" xml:space="preserve">
+        <value> (報告中又增加{0})</value>
+    </data>
+    <data name="&amp; pinned TLS 1.3 mTLS" xml:space="preserve">
+        <value>被封閉( P) TLS 1.3 毫升</value>
+    </data>
+    <data name="(any ICMP type)" xml:space="preserve">
+        <value>(任何 ICMP 類型)</value>
+    </data>
+    <data name="(empty baseline)" xml:space="preserve">
+        <value>(空基线)</value>
+    </data>
+    <data name="(not configured)" xml:space="preserve">
+        <value>( 未配置)</value>
+    </data>
+    <data name="(read-only). Only Administrators can save system settings." xml:space="preserve">
+        <value>(只讀) 只有管理員才能儲存系統設定值 。</value>
+    </data>
+    <data name="-300 to 300. Use -5 for an early auxiliary-style bridge filter; the initial default is -200." xml:space="preserve">
+        <value>-300 至 300。使用 -5 用于早期的辅助類型的橋面滤波器; 初始預設為 -200.</value>
+    </data>
+    <data name="-300 to 300; -5 runs before ordinary priority-0 filtering." xml:space="preserve">
+        <value>-300 至 300; -5  在普通优先级之前執行...0 正在过滤中 。</value>
+    </data>
+    <data name=". Accept here continues to later hooks; it does not override later filter drops. Changing the raw default to Drop can interrupt traffic before ordinary filter rules run." xml:space="preserve">
+        <value>. 在此執行 Accept（接受）後，流量會繼續通過後續掛鉤。這不會覆蓋後續篩選所做的丟棄判定。將 raw 的預設動作改為 Drop（丟棄），可能在一般篩選規則執行前中斷流量。</value>
+    </data>
+    <data name=". Choose a displayed version, then attach it explicitly. Browsing left the draft unchanged." xml:space="preserve">
+        <value>。選擇顯示的版本, 然后直接附帶。 瀏覽未改變草稿 。</value>
+    </data>
+    <data name=". Manage this matcher in the postrouting port-list selector below." xml:space="preserve">
+        <value>。在下面的端口列表選取器中管理此匹配器。</value>
+    </data>
+    <data name=". Manage this matcher in this chain's reusable-list selector." xml:space="preserve">
+        <value>。管理此串列的可重用清單選取器中的匹配器。</value>
+    </data>
+    <data name=". Priority controls hook ordering; lower numbers run first. An Accept here still allows later base chains to drop traffic. This table participates in complete ownership checks, candidate review and timed rollback; it does not adopt foreign tables." xml:space="preserve">
+        <value>. 優先順序決定掛鉤的執行順序，數值越小越先執行。在此執行 Accept（接受）後，後續基礎鏈仍可丟棄流量。此表納入完整的所有權檢查、候選組態審查與逾時復原流程，不會接管外部表。</value>
+    </data>
+    <data name="1 port or comma-separated set (1–65535)." xml:space="preserve">
+        <value>1 端口或逗號分隔集(1-65535)。</value>
+    </data>
+    <data name="1. Choose each table's destination role" xml:space="preserve">
+        <value>1. 選擇每張表格的目的地角色</value>
+    </data>
+    <data name="1. Target host selection" xml:space="preserve">
+        <value>1. 目標主機選擇</value>
+    </data>
+    <data name="15–128 characters. Passwords are never shown again or recorded in audit entries. The user can change their own password after signing in." xml:space="preserve">
+        <value>15–128 個字。 密碼永遠不會再顯示, 或是被記錄在審查項目中。 使用者可以在簽署後更改自己的密碼 。</value>
+    </data>
+    <data name="1–32 ASCII letters/digits/underscores, starting with a letter; forward is reserved. Create a chain before adding jumps to it. Missing targets, cycles and excessive nesting are rejected." xml:space="preserve">
+        <value>1–32 ASCII 字母/ 數字/ 下方分數, 從字母開始; 向前保留 。 在加入跳動前先建立連結。 錯誤的目標、 周期和過量的巢穴被拒絕 。</value>
+    </data>
+    <data name="1–64 entries, one per line. Examples: 192.0.2.10, 198.51.100.0/24; for IPv6, 2001:db8::/64; for ports, 443. Use zero host bits in CIDRs. No hostnames, ranges, duplicates, dynamic flags or timeouts. Blank lines are ignored." xml:space="preserve">
+        <value>1–64 項目, 每行1 。 例如: 192.0.2.10, 198.51.100.0/24; IPv6, 2001: db8: 64; 端口: 443. 在 CIDRs 中使用零主機位。 沒有主機名、 範圍、 重复、 动态旗號或超時。 空白行被忽略 。</value>
+    </data>
+    <data name="1–64 letters (A–Z), digits, dots, underscores or hyphens. Names are case-insensitive and cannot replace an existing account." xml:space="preserve">
+        <value>1–64 個字母( A– Z) 、 數字、 點、 下掛號或連字符。 名稱是忽略大小寫的, 不能取代已存在的帳號 。</value>
+    </data>
+    <data name="1–64 lowercase letters, digits or underscores; start with a letter. For example, trusted_clients. Names are unique and remain fixed." xml:space="preserve">
+        <value>使用 1 至 64 個小寫字母、數字或底線，且必須以字母開頭，例如 trusted_clients。名稱必須唯一，且建立後保持不變。</value>
+    </data>
+    <data name="2. Bind includes to uploaded snapshots" xml:space="preserve">
+        <value>2. 捆綁包括上傳快照</value>
+    </data>
+    <data name="2. Live agent status —" xml:space="preserve">
+        <value>2. 活的代理身份 -</value>
+    </data>
+    <data name="3. Pending confirmation window" xml:space="preserve">
+        <value>3. 等待确认的窗口</value>
+    </data>
+    <data name="3. Start confirmed apply" xml:space="preserve">
+        <value>3. 開始确定适用</value>
+    </data>
+    <data name="443 or 80, 443" xml:space="preserve">
+        <value>443 或 80, 443</value>
+    </data>
+    <data name="64 lowercase hex characters" xml:space="preserve">
+        <value>64 小寫十六元字元</value>
+    </data>
+    <data name=": no reverse route through the input interface. With Drop, this rejects packets failing the lookup." xml:space="preserve">
+        <value>: 沒有經過輸入介面的反向路由。選用 Drop（丟棄）時，反向路由查詢失敗的封包會遭到丟棄。</value>
+    </data>
+    <data name="A change is waiting for confirmation" xml:space="preserve">
+        <value>更改正在等待确认</value>
+    </data>
+    <data name="A host needs attention" xml:space="preserve">
+        <value>一個主機需要關注</value>
+    </data>
+    <data name="A host with that name already exists." xml:space="preserve">
+        <value>已存在此名稱的主機 。</value>
+    </data>
+    <data name="A matching agent baseline does not mean the latest controller policy is applied. Review the selected revision and each host before starting a confirmed change." xml:space="preserve">
+        <value>匹配的代理基准不表示使用最新的控制器策略 。 在啟動確認的變更前, 檢查所選取的變更與每個主機 。</value>
+    </data>
+    <data name="A matching baseline means the agent matched its protected receipt. The latest saved controller revision can differ. A missing baseline receipt means the agent has no bound reference for comparison." xml:space="preserve">
+        <value>匹配 的 基线 表示 代理 匹配 其 保護 的 收件 。 最近保存的 控制器 變更可能不同 。 缺失 的 基准 收件 表示 代理 無 拘束 的 參考 。</value>
+    </data>
+    <data name="A provider profile field is unavailable." xml:space="preserve">
+        <value>提供者設定檔字段不可用 。</value>
+    </data>
+    <data name="A secret is stored. Leave blank to retain it for the same issuer and client ID." xml:space="preserve">
+        <value>已儲存一個秘密 。 留空白, 以保留同一個發售人和客戶端的代碼 。</value>
+    </data>
+    <data name="A secret is stored. Leave blank to retain it for the same provider identity binding." xml:space="preserve">
+        <value>隱藏了一個秘密。 留下空白, 以保留相同的提供者身份 。</value>
+    </data>
+    <data name="A selected source is unavailable or conversion-plan storage is full. No plan was saved." xml:space="preserve">
+        <value>選取的來源已無法使用, 或是轉換計劃儲存已滿。 沒有儲存任何計劃 。</value>
+    </data>
+    <data name="A short operator note; no effect on matching." xml:space="preserve">
+        <value>操作符短音符; 匹配無效 。</value>
+    </data>
+    <data name="Accent color" xml:space="preserve">
+        <value>中央顏色</value>
+    </data>
+    <data name="Accept — continue to later hooks" xml:space="preserve">
+        <value>接受 — 在後續掛鉤中繼續處理</value>
+    </data>
+    <data name="Access" xml:space="preserve">
+        <value>存取</value>
+    </data>
+    <data name="Access changed" xml:space="preserve">
+        <value>存取已變更</value>
+    </data>
+    <data name="Access denied" xml:space="preserve">
+        <value>存取被拒絕</value>
+    </data>
+    <data name="Access enabled" xml:space="preserve">
+        <value>存取已啟用</value>
+    </data>
+    <data name="Access for {0}" xml:space="preserve">
+        <value>{0}的存取</value>
+    </data>
+    <data name="Access groups" xml:space="preserve">
+        <value>存取群組</value>
+    </data>
+    <data name="Account created" xml:space="preserve">
+        <value>帳號已建立</value>
+    </data>
+    <data name="Account identifier" xml:space="preserve">
+        <value>帳號标识符</value>
+    </data>
+    <data name="Action" xml:space="preserve">
+        <value>動作</value>
+    </data>
+    <data name="Action / translated source" xml:space="preserve">
+        <value>動作/ 翻譯來源</value>
+    </data>
+    <data name="Actions" xml:space="preserve">
+        <value>動作</value>
+    </data>
+    <data name="Active phase" xml:space="preserve">
+        <value>作用中階段</value>
+    </data>
+    <data name="Active: SQLite WAL" xml:space="preserve">
+        <value>作用中: SQLite WAL</value>
+    </data>
+    <data name="Actor" xml:space="preserve">
+        <value>角色</value>
+    </data>
+    <data name="Add DNAT rule" xml:space="preserve">
+        <value>添加 DNAT 规则</value>
+    </data>
+    <data name="Add a local user" xml:space="preserve">
+        <value>新增本地使用者</value>
+    </data>
+    <data name="Add a time-based account named Nergal in your authenticator app and enter this setup key. Keep the key private." xml:space="preserve">
+        <value>在您的驗證器應用程式中加入一個命名為 Nergal 的時間帳號, 并輸入此設定金鑰。 保留金鑰的私密性 。</value>
+    </data>
+    <data name="Add an issuer profile mapping" xml:space="preserve">
+        <value>新增發佈者描述檔映射</value>
+    </data>
+    <data name="Add another file" xml:space="preserve">
+        <value>新增其他檔案</value>
+    </data>
+    <data name="Add auxiliary filter rule" xml:space="preserve">
+        <value>新增辅助過程規則</value>
+    </data>
+    <data name="Add auxiliary rule to draft" xml:space="preserve">
+        <value>在草稿中加入附加規則</value>
+    </data>
+    <data name="Add bridge rule to draft" xml:space="preserve">
+        <value>在草稿中加入橋條</value>
+    </data>
+    <data name="Add filter rule" xml:space="preserve">
+        <value>新增滤波器規則</value>
+    </data>
+    <data name="Add filter rule to draft" xml:space="preserve">
+        <value>向草稿加入過程規則</value>
+    </data>
+    <data name="Add postrouting rule" xml:space="preserve">
+        <value>新增後端路由規則</value>
+    </data>
+    <data name="Add raw prerouting rule" xml:space="preserve">
+        <value>新增原始路由前規則</value>
+    </data>
+    <data name="Add raw rule to draft" xml:space="preserve">
+        <value>在草稿中加入原始規則</value>
+    </data>
+    <data name="Add regular chain to draft" xml:space="preserve">
+        <value>新增正規串列到草稿</value>
+    </data>
+    <data name="Add rule" xml:space="preserve">
+        <value>新增規則</value>
+    </data>
+    <data name="Add rule to {0}" xml:space="preserve">
+        <value>在{0}中增加规则</value>
+    </data>
+    <data name="Added entries" xml:space="preserve">
+        <value>新增的項目</value>
+    </data>
+    <data name="Additional rule diagnostics are available in the review download." xml:space="preserve">
+        <value>更多規則的診斷在審查下載中提供。</value>
+    </data>
+    <data name="Administrator group DN" xml:space="preserve">
+        <value>DN 管理員群組</value>
+    </data>
+    <data name="Administrator group(s)" xml:space="preserve">
+        <value>管理員群組</value>
+    </data>
+    <data name="Administrator groups" xml:space="preserve">
+        <value>管理者群組</value>
+    </data>
+    <data name="Administrator login" xml:space="preserve">
+        <value>管理員登入</value>
+    </data>
+    <data name="Administrator session" xml:space="preserve">
+        <value>管理者</value>
+    </data>
+    <data name="Administrators and enrolled users" xml:space="preserve">
+        <value>管理員和已注册的使用者</value>
+    </data>
+    <data name="Administrators can change configuration and manage users. Auditors inspect configuration and manage their own profile. Share the initial credential through your installation's protected process." xml:space="preserve">
+        <value>管理員可以變更設定並管理使用者。 审计员檢查設定並管理自己的設定。 通过您的安裝保護行程共享初始憑證 。</value>
+    </data>
+    <data name="Advanced JSON &amp; Revisions" xml:space="preserve">
+        <value>高级 JSON 及版本</value>
+    </data>
+    <data name="Advanced JSON bundle editor" xml:space="preserve">
+        <value>高级 JSON 捆綁編輯器</value>
+    </data>
+    <data name="Agent baseline revision" xml:space="preserve">
+        <value>代理基准修正</value>
+    </data>
+    <data name="Alias references and pinned list versions" xml:space="preserve">
+        <value>取消參考和封號列表版本</value>
+    </data>
+    <data name="All authored rule states" xml:space="preserve">
+        <value>所有作者的規定狀態</value>
+    </data>
+    <data name="All local and LDAP users" xml:space="preserve">
+        <value>所有本地端和 LDAP 使用者</value>
+    </data>
+    <data name="Allow HTTPS ingress from management subnet" xml:space="preserve">
+        <value>允許 HTTPS 從管理子網路入侵</value>
+    </data>
+    <data name="An existing list's name and type cannot change. Create a separate list instead." xml:space="preserve">
+        <value>已存在的清單名稱與類型無法變更。 另行建立清單 。</value>
+    </data>
+    <data name="An independent inet filter rule. Empty optional matchers mean any; clearing them may broaden access. Except requires its matcher. Edits preserve enabled state, order and existing list pins. This changes only the draft." xml:space="preserve">
+        <value>這是一條獨立的 inet 篩選規則。選填的比對條件留空時，該項目符合任意值。清除條件可能擴大存取範圍。使用「排除」須設定對應的比對條件。編輯時會保留啟用狀態、規則順序，以及對清單指定版本的既有參照。此變更只會影響草稿。</value>
+    </data>
+    <data name="An operator note; has no effect on matching." xml:space="preserve">
+        <value>接線符; 對匹配沒有效果 。</value>
+    </data>
+    <data name="Another edit was saved first. Your input is retained; open the current version in another tab and compare before editing again." xml:space="preserve">
+        <value>另一版編輯被先儲存。 您的輸入被保留; 在另一個分頁中開啟目前的版本, 并在再次編輯前做比較 。</value>
+    </data>
+    <data name="Appearance changes apply to management pages. Authentication, database, and firewall fields below are saved preferences; they do not reconfigure the running services. Configure the running controller database at deployment. Keep local access and protected host configuration available when planning changes." xml:space="preserve">
+        <value>外觀變更适用于管理頁面 。 下面的驗證、 資料庫與防火牆字段是儲存的偏好; 它們不重新設定執行中的服務。 部署時設定執行中的控制器資料庫。 在計劃改變時保持本地存取與被保護的主機設定 。</value>
+    </data>
+    <data name="Append-only audit log ({0})" xml:space="preserve">
+        <value>只附稽核日志({0})</value>
+    </data>
+    <data name="Application name" xml:space="preserve">
+        <value>應用程式名稱</value>
+    </data>
+    <data name="Apply / Status" xml:space="preserve">
+        <value>套用/ 狀態</value>
+    </data>
+    <data name="Apply Safety" xml:space="preserve">
+        <value>套用安全性</value>
+    </data>
+    <data name="Apply start failed: {0}." xml:space="preserve">
+        <value>套用啟動失敗: {0} 。</value>
+    </data>
+    <data name="Ask the recipient to open" xml:space="preserve">
+        <value>請接收者開啟</value>
+    </data>
+    <data name="Assurance claim" xml:space="preserve">
+        <value>保 保 赔 要求</value>
+    </data>
+    <data name="At least one authentication provider (Local, OIDC, or LDAP) must stay enabled." xml:space="preserve">
+        <value>至少須維持一個驗證提供者（本機、OIDC 或 LDAP）處於啟用狀態。</value>
+    </data>
+    <data name="Atomic validation + automatic local rollback" xml:space="preserve">
+        <value>原子驗證 + 自動回滚</value>
+    </data>
+    <data name="Attach list to draft" xml:space="preserve">
+        <value>附于草稿的清單</value>
+    </data>
+    <data name="Attach replaces the selected matcher's literal restriction or prior reference. Remove clears that reference and its restriction, which can broaden the rule. Both actions change only this draft: inspect the summary and native diff before saving a revision and confirmed apply." xml:space="preserve">
+        <value>附加取代選取的字面限制或前置參考。 移除此參考及其限制, 以擴大規則。 兩項動作只改變此草稿: 在儲存修改與確認前檢查摘要與本地 diff 。</value>
+    </data>
+    <data name="Attach selected version to draft" xml:space="preserve">
+        <value>將所選取的版本附加到草稿</value>
+    </data>
+    <data name="Audit &amp; revision history" xml:space="preserve">
+        <value>稽核和修正歷史</value>
+    </data>
+    <data name="Audit Log" xml:space="preserve">
+        <value>稽核日志</value>
+    </data>
+    <data name="Auditor access is read-only. An Administrator can create and edit lists." xml:space="preserve">
+        <value>監控員的權限只有讀取。 監控員可以建立並編輯清單 。</value>
+    </data>
+    <data name="Auditor group DN" xml:space="preserve">
+        <value>DN 审计员群組</value>
+    </data>
+    <data name="Auditor group(s)" xml:space="preserve">
+        <value>审计人群</value>
+    </data>
+    <data name="Auditor groups" xml:space="preserve">
+        <value>审计人小组</value>
+    </data>
+    <data name="Authenticated" xml:space="preserve">
+        <value>已驗證</value>
+    </data>
+    <data name="Authentication" xml:space="preserve">
+        <value>認證</value>
+    </data>
+    <data name="Authentication (Local / OIDC / LDAP)" xml:space="preserve">
+        <value>認證( 本地 / OIDC / LDAP)</value>
+    </data>
+    <data name="Authenticator app" xml:space="preserve">
+        <value>驗證程式</value>
+    </data>
+    <data name="Authenticator enrolled" xml:space="preserve">
+        <value>已注册的認證者</value>
+    </data>
+    <data name="Authenticator requirement" xml:space="preserve">
+        <value>驗證者要求</value>
+    </data>
+    <data name="Authenticator setup could not be confirmed. Check your device time and start setup again." xml:space="preserve">
+        <value>無法確定認證器設定 。 請檢查您的裝置時間並重新啟動設定 。</value>
+    </data>
+    <data name="Authenticator setup could not start. Review your current enrollment status." xml:space="preserve">
+        <value>無法啟動驗證器設定 。 請檢查您的目前入学狀態 。</value>
+    </data>
+    <data name="Authenticator setup denied" xml:space="preserve">
+        <value>驗證器設定被拒絕</value>
+    </data>
+    <data name="Authenticator setup started" xml:space="preserve">
+        <value>驗證器設定已啟動</value>
+    </data>
+    <data name="Authenticator verified" xml:space="preserve">
+        <value>驗證器已驗證</value>
+    </data>
+    <data name="Authorization endpoint" xml:space="preserve">
+        <value>授權端點</value>
+    </data>
+    <data name="Authorize authenticator recovery" xml:space="preserve">
+        <value>授權驗證器回收</value>
+    </data>
+    <data name="Authorized firewall administrators only. All changes are audited." xml:space="preserve">
+        <value>只限授權防火牆管理員。 所有變更都接受審查 。</value>
+    </data>
+    <data name="Auxiliary inet filter" xml:space="preserve">
+        <value>辅助內置過程器</value>
+    </data>
+    <data name="Auxiliary inet filtering" xml:space="preserve">
+        <value>辅助內置過程</value>
+    </data>
+    <data name="Auxiliary inet references" xml:space="preserve">
+        <value>附加內置參考</value>
+    </data>
+    <data name="Auxiliary priority" xml:space="preserve">
+        <value>辅助优先性</value>
+    </data>
+    <data name="Auxiliary rule {0}" xml:space="preserve">
+        <value>附则 {0}</value>
+    </data>
+    <data name="Auxiliary/extended bridge scope requires complete bundle receipts. Confirmed apply and local rollback cover all owned tables; unexpected drift requires recovery." xml:space="preserve">
+        <value>辅助/ 延伸的橋面範圍需要完整的捆綁收據。 已證實的應用程式和本地回滚覆覆覆所有自有的表格; 意外的漂移需要回收 。</value>
+    </data>
+    <data name="Back to Dashboard" xml:space="preserve">
+        <value>返回 Dashboard</value>
+    </data>
+    <data name="Back to MFA policy" xml:space="preserve">
+        <value>回到 MFA 政策</value>
+    </data>
+    <data name="Back to my profile" xml:space="preserve">
+        <value>回到我的檔案</value>
+    </data>
+    <data name="Back to settings" xml:space="preserve">
+        <value>返回到設定值</value>
+    </data>
+    <data name="Backend" xml:space="preserve">
+        <value>后端</value>
+    </data>
+    <data name="Backend decision · nergal" xml:space="preserve">
+        <value>后端決定 ^ 內臟</value>
+    </data>
+    <data name="Backend design &amp; guarantees" xml:space="preserve">
+        <value>後端設計保障( S)</value>
+    </data>
+    <data name="Base DN" xml:space="preserve">
+        <value>基底 DN</value>
+    </data>
+    <data name="Baseline matches" xml:space="preserve">
+        <value>基准匹配</value>
+    </data>
+    <data name="Before requiring MFA, enroll an authenticator for at least one enabled local Administrator." xml:space="preserve">
+        <value>在要求 MFA 之前, 登入至少一個已啟用本地管理員的驗證器 。</value>
+    </data>
+    <data name="Blocked: {0} gaps" xml:space="preserve">
+        <value>封鎖:{0}</value>
+    </data>
+    <data name="Blocking conversion gaps" xml:space="preserve">
+        <value>堵塞轉換缺口</value>
+    </data>
+    <data name="Branding &amp; Theme" xml:space="preserve">
+        <value>品牌主題( T)</value>
+    </data>
+    <data name="Branding &amp; appearance" xml:space="preserve">
+        <value>品牌外觀( E)</value>
+    </data>
+    <data name="Bridge ({0} rules)" xml:space="preserve">
+        <value>大橋({0}規則)</value>
+    </data>
+    <data name="Bridge ({0})" xml:space="preserve">
+        <value>桥梁({0})</value>
+    </data>
+    <data name="Bridge action" xml:space="preserve">
+        <value>橋牌動作</value>
+    </data>
+    <data name="Bridge filter" xml:space="preserve">
+        <value>橋面過程</value>
+    </data>
+    <data name="Bridge forward default" xml:space="preserve">
+        <value>中斷前進預設值</value>
+    </data>
+    <data name="Bridge forward priority" xml:space="preserve">
+        <value>橋牌前進优先</value>
+    </data>
+    <data name="Bridge forward rule {0}" xml:space="preserve">
+        <value>橋前規則{0}</value>
+    </data>
+    <data name="Bridge forwarding ·" xml:space="preserve">
+        <value>橋接轉接...</value>
+    </data>
+    <data name="Bridge matchers and action" xml:space="preserve">
+        <value>橋牌比對與動作</value>
+    </data>
+    <data name="Bridge rule" xml:space="preserve">
+        <value>橋牌規則</value>
+    </data>
+    <data name="Bridge table settings" xml:space="preserve">
+        <value>橋牌表設定</value>
+    </data>
+    <data name="Bridge {0} list references" xml:space="preserve">
+        <value>{0}大橋列表參考</value>
+    </data>
+    <data name="Bridge {0} rule {1}" xml:space="preserve">
+        <value>橋牌{0} 規則{1}</value>
+    </data>
+    <data name="Browse a selected list to show older versions. Only one history is loaded at a time. Attachment pins the displayed version, replacing literals or the prior reference. Address lists must match the NAT family; ports require TCP or UDP. Bridge address lists require an explicit IP family. Removal clears the selected restriction (and NAT address negation), which may broaden matching; explicit SNAT still requires a source restriction. Other matchers, action, enabled state and order remain. Review the draft, save a revision, then use confirmed apply." xml:space="preserve">
+        <value>瀏覽所選清單的歷程，即可查看較舊的版本。一次只會載入一份清單的歷程。附加參照會鎖定目前顯示的版本，並取代直接指定的值或原有參照。位址清單必須符合 NAT 的位址家族，指定連接埠則必須使用 TCP 或 UDP。橋接器位址清單必須明確指定 IP 家族。移除參照會清除所選限制以及對 NAT 位址條件的反向比對，因此可能擴大比對範圍。明確指定的 SNAT 仍需要來源限制。其他比對條件、動作、啟用狀態與順序維持不變。請審查草稿、儲存修訂版本，然後使用需確認的套用流程。</value>
+    </data>
+    <data name="Browse selected list history" xml:space="preserve">
+        <value>瀏覽所選取的清單歷史</value>
+    </data>
+    <data name="Bucket key" xml:space="preserve">
+        <value>Bucket 金鑰</value>
+    </data>
+    <data name="Bundle JSON" xml:space="preserve">
+        <value>包裝 JSON</value>
+    </data>
+    <data name="Bundle summary" xml:space="preserve">
+        <value>套裝摘要</value>
+    </data>
+    <data name="Burst (packets)" xml:space="preserve">
+        <value>桶( 包)</value>
+    </data>
+    <data name="Burst packets" xml:space="preserve">
+        <value>桶包</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid)" xml:space="preserve">
+        <value>CT 狀態( 已分離 : 新建、 建立、 相關、 無效 )</value>
+    </data>
+    <data name="Called only by local jumps. Return or reaching the end resumes the calling chain. Remove incoming jumps and all rules before deleting this chain." xml:space="preserve">
+        <value>只能用本地端的跳動呼叫。 返回或達到尾端會恢復呼叫鏈。 在刪除此鏈之前, 移除已接收到的跳動和所有規則 。</value>
+    </data>
+    <data name="Candidate SHA-256" xml:space="preserve">
+        <value>候选人 SHA-256</value>
+    </data>
+    <data name="Candidate applied with watchdog armed; confirm before timeout or agent will roll back automatically." xml:space="preserve">
+        <value>候選組態已套用，看門狗已啟動。請在逾時前確認，否則代理程式會自動復原。</value>
+    </data>
+    <data name="Candidate confirmed as current baseline revision." xml:space="preserve">
+        <value>候选人被确认为目前的基线修订。</value>
+    </data>
+    <data name="Canonical FirewallPolicyBundle" xml:space="preserve">
+        <value>木板防火牆政策</value>
+    </data>
+    <data name="Capacity: {0} / 128 immutable snapshots, up to 32 MiB total source bytes. Importing the same file again creates another snapshot." xml:space="preserve">
+        <value>容量: {0} / 128 不可變化的快照, 最高可達 32 MiB 總來源字節。 匯入同樣的檔案再次產生快照 。</value>
+    </data>
+    <data name="Chain" xml:space="preserve">
+        <value>串</value>
+    </data>
+    <data name="Chain / interfaces" xml:space="preserve">
+        <value>串/ 介面</value>
+    </data>
+    <data name="Change in progress" xml:space="preserve">
+        <value>進展中的变化</value>
+    </data>
+    <data name="Change password" xml:space="preserve">
+        <value>變更密碼</value>
+    </data>
+    <data name="Change password and sign out" xml:space="preserve">
+        <value>更改密碼并簽署</value>
+    </data>
+    <data name="Change summary requirement" xml:space="preserve">
+        <value>更改概要要求</value>
+    </data>
+    <data name="Changes are validated and recorded as an immutable" xml:space="preserve">
+        <value>變更被驗證並記錄為不可變更</value>
+    </data>
+    <data name="Changes only these conditions. Addresses, ports, pinned lists and enabled state are retained. Negation means “anything except” the specified matcher; it requires an existing matcher. Removing a MAC restriction can broaden access." xml:space="preserve">
+        <value>此處只會變更這些條件。位址、連接埠、固定版本的清單及規則的啟用狀態都會保留。反向比對表示「比對所有不符合指定條件的值」，且須先設定該比對條件。移除 MAC 位址限制可能擴大存取範圍。</value>
+    </data>
+    <data name="Changing issuer or client ID requires a new secret." xml:space="preserve">
+        <value>變更發件人或客戶端代碼需要新的秘密 。</value>
+    </data>
+    <data name="Check host connections" xml:space="preserve">
+        <value>檢查主機連接</value>
+    </data>
+    <data name="Check line {0}, column {1}." xml:space="preserve">
+        <value>請检查access-date=中的日期值 (帮助) {0}列{1}列.</value>
+    </data>
+    <data name="Check the HTTPS endpoints, callback, exact groups and literal JSON field names." xml:space="preserve">
+        <value>檢查 HTTPS 的端點、 召回、 确切的群組和字面的 JSON 字段名稱 。</value>
+    </data>
+    <data name="Check the display name and configuration file." xml:space="preserve">
+        <value>檢查顯示名稱與設定檔 。</value>
+    </data>
+    <data name="Check the list name, type, description and entries. No change was saved." xml:space="preserve">
+        <value>請檢查清單名稱、 型態、 描述和項目。 沒有儲存任何變更 。</value>
+    </data>
+    <data name="Check the source, table roles and ordered include selections." xml:space="preserve">
+        <value>檢查來源、 表格角色和命令包括選擇區域 。</value>
+    </data>
+    <data name="Choose IPv4 addresses, IPv6 addresses or transport ports." xml:space="preserve">
+        <value>選擇 IPv4 位址、 IPv6 位址或傳輸端口 。</value>
+    </data>
+    <data name="Choose UTF-8 text, up to 512 KiB. Original bytes and line endings are retained. Includes are not opened and the file is not executed." xml:space="preserve">
+        <value>選擇 UTF-8 文本, 最多 512 KiB。 原始字节和行尾保留。 包括不開啟, 檔案不執行 。</value>
+    </data>
+    <data name="Choose a UTF-8 configuration file between 1 byte and 512 KiB." xml:space="preserve">
+        <value>選擇一個介於 1 字节和 512 KiB 之間的 UTF-8 設定檔 。</value>
+    </data>
+    <data name="Choose a list for attachment" xml:space="preserve">
+        <value>選擇附件清單</value>
+    </data>
+    <data name="Choose a list, then browse its history to select an older version. Only one list history is loaded at a time. The displayed version is pinned even if a newer version is saved before you submit. Address family and protocol must match the rule; unsupported overlaps/adjacency are rejected." xml:space="preserve">
+        <value>選擇列表, 然后瀏覽其歷史以選擇舊版本。 一次只載入一個列表歷史。 即使您提交之前保存了更新的版本, 顯示的版本會被封鎖。 地址族和協議必須符合規則; 不支援的重複/ adjacency 被拒絕 。</value>
+    </data>
+    <data name="Choose a matching-family address list or a Port list, and optionally browse its immutable history. Attachment replaces only the selected matcher before translation; all matches use the same explicit target. Ports require TCP or UDP. Removal clears the selected source or port restriction (and source negation), which may broaden matching. Original destination is required, so removing its sole reference is denied; replace it explicitly instead. Other matchers, translation, order and enabled state remain. Review the draft, save a revision, then use confirmed apply." xml:space="preserve">
+        <value>請選取位址家族相符的位址清單或連接埠清單。可視需要瀏覽其無法變更的版本歷程。附加清單只會取代所選的、在轉換前評估的比對條件。所有符合條件的流量都使用同一個明確指定的轉換目標。指定連接埠時必須使用 TCP 或 UDP。移除參照會清除所選的來源或連接埠限制，也會清除對來源條件的反向比對，因此可能擴大比對範圍。原始目的地為必填，因此不得移除指定原始目的地的唯一參照。請明確取代該參照。其他比對條件、轉換、順序和啟用狀態維持不變。請審查草稿、儲存修訂版本，然後使用需確認的套用流程。</value>
+    </data>
+    <data name="Choose a remote pinned mTLS agent or a local Unix socket. Obtain the exact endpoint and expected identity from the agent's local operator; this page cannot enroll a host or create its credentials." xml:space="preserve">
+        <value>選擇遠端被封鎖的 mTLS 代理或本地的 Unix 套接字 。 從代理伺服器的本地運算器取得确切的端點和期望的身份; 此頁面無法登入主機或建立它的憑證 。</value>
+    </data>
+    <data name="Choose a role" xml:space="preserve">
+        <value>選擇角色</value>
+    </data>
+    <data name="Choose a single IP family when restricting a source network. Empty means any." xml:space="preserve">
+        <value>限制來源網路時選擇一個 IP 家族。 空表示任意 。</value>
+    </data>
+    <data name="Choose how signed OIDC claims supply profile defaults. Mappings do not activate authentication providers." xml:space="preserve">
+        <value>選擇簽署的 OIDC 申請供應描述檔預設。 映射不啟動認證提供者 。</value>
+    </data>
+    <data name="Choose one type per list. Separate IPv4 and IPv6. Port lists contain numbers; the policy rule chooses TCP or UDP." xml:space="preserve">
+        <value>每列表選擇一個類型。 分開的 IPv4 和 IPv6. Port 列表包含數字; 政策規則選擇 TCP 或 UDP 。</value>
+    </data>
+    <data name="Choose only for Jump. Create the regular chain first. Missing targets and cycles are rejected, including in disabled rules." xml:space="preserve">
+        <value>只有在動作為 Jump（跳躍）時才選擇目標。請先建立一般鏈。即使規則已停用，目標缺漏或出現循環仍會遭到拒絕。</value>
+    </data>
+    <data name="Choose provider trust only if the provider enforces MFA for this connection. Roles with optional MFA can sign in under any mode." xml:space="preserve">
+        <value>選擇提供者信任, 只有在提供者執行此連結的 MFA 。 角色可選擇 MFA 。 在任何模式下都可以簽署 。</value>
+    </data>
+    <data name="Clear entire NAT section" xml:space="preserve">
+        <value>清除整個 NAT 區段</value>
+    </data>
+    <data name="Client ID" xml:space="preserve">
+        <value>客戶端代碼</value>
+    </data>
+    <data name="Client secret" xml:space="preserve">
+        <value>客戶端秘密</value>
+    </data>
+    <data name="Colon-delimited 48-bit address, for example 02:00:00:00:00:01." xml:space="preserve">
+        <value>Colon- delimited 48-bit 地址, 例如 02:00:00:00:00:01.</value>
+    </data>
+    <data name="Colon-delimited MACs, comma-separated; matches the directly visible Ethernet sender." xml:space="preserve">
+        <value>每個 MAC 位址內用冒號分隔，各位址之間用逗號分隔。比對可直接看見的乙太網路傳送端。</value>
+    </data>
+    <data name="Comma-separated: new, established, related, invalid." xml:space="preserve">
+        <value>逗號分隔 : 新建、 建立、 關聯、 無效 。</value>
+    </data>
+    <data name="Compare against revision" xml:space="preserve">
+        <value>和修订版相比</value>
+    </data>
+    <data name="Compare current library version with this pin (opens a new tab)" xml:space="preserve">
+        <value>將目前的函式庫版本與此 pin 相對( 開啟新分頁 )</value>
+    </data>
+    <data name="Compare diff against" xml:space="preserve">
+        <value>比較 diff 與</value>
+    </data>
+    <data name="Compare exact stored entries in either direction. Added and removed CIDRs are entry changes, not a calculation of address coverage or allowed traffic. Existing policy pins stay unchanged. Viewing a comparison does not save or apply anything." xml:space="preserve">
+        <value>可依任一方向逐項比對實際儲存的項目。新增或移除的 CIDR 僅表示項目變更，並未計算位址涵蓋範圍或允許的流量。原則中現有的固定版本參照會維持原樣。檢視比較結果不會儲存或套用任何變更。</value>
+    </data>
+    <data name="Compare list versions" xml:space="preserve">
+        <value>比較清單版本</value>
+    </data>
+    <data name="Compare versions" xml:space="preserve">
+        <value>比較版本</value>
+    </data>
+    <data name="Compiled nftables candidate" xml:space="preserve">
+        <value>已編譯 nftables 候选人</value>
+    </data>
+    <data name="Complete generated candidate" xml:space="preserve">
+        <value>完整生成的候選人</value>
+    </data>
+    <data name="Completions" xml:space="preserve">
+        <value>完成</value>
+    </data>
+    <data name="Conditions / description" xml:space="preserve">
+        <value>條件/描述</value>
+    </data>
+    <data name="Configuration file" xml:space="preserve">
+        <value>配置文件</value>
+    </data>
+    <data name="Configuration workflow" xml:space="preserve">
+        <value>配置工作流程</value>
+    </data>
+    <data name="Configure LDAP connection" xml:space="preserve">
+        <value>配置 LDAP 連接</value>
+    </data>
+    <data name="Configure OAuth connection" xml:space="preserve">
+        <value>配置 OAuth 連接</value>
+    </data>
+    <data name="Configure active LDAP connection" xml:space="preserve">
+        <value>配置作用中的 LDAP 連接</value>
+    </data>
+    <data name="Configure active OIDC connection" xml:space="preserve">
+        <value>配置作用中的 OIDC 連接</value>
+    </data>
+    <data name="Configure email delivery" xml:space="preserve">
+        <value>配置電子郵件送出</value>
+    </data>
+    <data name="Configure one OpenID Connect provider. Local sign-in remains available." xml:space="preserve">
+        <value>配置一個 OpenID 連接提供者。 本地端的簽署仍然可用 。</value>
+    </data>
+    <data name="Configure one OpenLDAP directory over TLS. Local password sign-in remains available." xml:space="preserve">
+        <value>配置 OpenLDAP 目錄 超過 TLS. 本地密碼簽署仍然可用 。</value>
+    </data>
+    <data name="Configure packets, burst and timeout in Edit first. Destination buckets share a limit among callers reaching the same destination." xml:space="preserve">
+        <value>在 Edit 中設定套件、 爆破及超時。 目的地桶在來到同一目的地的呼叫者中共享限制 。</value>
+    </data>
+    <data name="Configure the SMTP relay for verification and sign-in codes. The relay must support STARTTLS with a certificate trusted by this installation." xml:space="preserve">
+        <value>配置 SMTP 中继器以檢查與簽署代碼。 中继器必須用此安裝所信任的憑證來支援 SAPTLS 。</value>
+    </data>
+    <data name="Confirm failed: {0}." xml:space="preserve">
+        <value>證實失敗 : {0}.</value>
+    </data>
+    <data name="Confirm now to make it permanent, or roll back immediately. If connectivity is lost, the local watchdog will automatically restore the previous baseline." xml:space="preserve">
+        <value>請立即確認以永久保留這次套用的規則集，或立即復原。如果連線中斷，本機看門狗會自動還原先前的基準狀態。</value>
+    </data>
+    <data name="Confirm the replacement to save OAuth provider trust." xml:space="preserve">
+        <value>确认取代以儲存 OAuth 提供者信任 。</value>
+    </data>
+    <data name="Confirmation timeout (1–3600s)" xml:space="preserve">
+        <value>確認逾時(1-3600s)</value>
+    </data>
+    <data name="Confirmation timeout must be between 1 and 3600 seconds." xml:space="preserve">
+        <value>確認逾時必須介于之間 1 和 3600 秒。</value>
+    </data>
+    <data name="Confirmed apply" xml:space="preserve">
+        <value>确认應用程式</value>
+    </data>
+    <data name="Connect a firewall host" xml:space="preserve">
+        <value>連接防火牆主機</value>
+    </data>
+    <data name="Connect a host" xml:space="preserve">
+        <value>連接主機</value>
+    </data>
+    <data name="Connect an OAuth provider with a current-user JSON endpoint that supplies a stable account ID and trusted groups." xml:space="preserve">
+        <value>連接 OAuth 供應商與目前使用者 JSON 端點, 提供穩定的帳號 ID 與信任的群組 。</value>
+    </data>
+    <data name="Connection and identity" xml:space="preserve">
+        <value>連接與身份</value>
+    </data>
+    <data name="Connection details" xml:space="preserve">
+        <value>連接細節</value>
+    </data>
+    <data name="Connection settings" xml:space="preserve">
+        <value>連接設定值</value>
+    </data>
+    <data name="Connection states (optional)" xml:space="preserve">
+        <value>連接狀態( 可選擇的)</value>
+    </data>
+    <data name="Connection tracking states (" xml:space="preserve">
+        <value>連接追蹤狀態( N)</value>
+    </data>
+    <data name="Content SHA-256" xml:space="preserve">
+        <value>內容 SHA-256</value>
+    </data>
+    <data name="Contract gap signal" xml:space="preserve">
+        <value>合同缺口信號</value>
+    </data>
+    <data name="Control character" xml:space="preserve">
+        <value>控制字符</value>
+    </data>
+    <data name="Controller audit &amp; revision history" xml:space="preserve">
+        <value>控制員稽核與修正歷史</value>
+    </data>
+    <data name="Controller revision" xml:space="preserve">
+        <value>控制器修改</value>
+    </data>
+    <data name="Conversion blocked — explicit mapping required." xml:space="preserve">
+        <value>轉換被封鎖——需要清晰的映射 。</value>
+    </data>
+    <data name="Conversion blocked: {0} gaps. No partial policy or reusable list was created. Resolve the source or choices and review a new plan." xml:space="preserve">
+        <value>轉換被封鎖: {0} 個缺口。 沒有建立部分政策或可重新使用的清單。 解析來源或選擇, 并审查新計劃 。</value>
+    </data>
+    <data name="Conversion plan history ({0})" xml:space="preserve">
+        <value>轉換計劃歷史({0})</value>
+    </data>
+    <data name="Convert to a managed policy" xml:space="preserve">
+        <value>轉換為管理中的政策</value>
+    </data>
+    <data name="Create a list" xml:space="preserve">
+        <value>建立列表</value>
+    </data>
+    <data name="Create a policy" xml:space="preserve">
+        <value>建立政策</value>
+    </data>
+    <data name="Create auxiliary table in draft" xml:space="preserve">
+        <value>在草稿中建立辅助表格</value>
+    </data>
+    <data name="Create bridge table in draft" xml:space="preserve">
+        <value>在草稿中建立橋牌表</value>
+    </data>
+    <data name="Create list" xml:space="preserve">
+        <value>建立清單</value>
+    </data>
+    <data name="Create local user" xml:space="preserve">
+        <value>建立本地使用者</value>
+    </data>
+    <data name="Create raw chain in draft" xml:space="preserve">
+        <value>在草稿中建立原始鏈</value>
+    </data>
+    <data name="Create reviewed policy revision" xml:space="preserve">
+        <value>建立已審查的政策修改</value>
+    </data>
+    <data name="Create rules in Firewall, or import an existing nftables.conf. You can prepare and review configuration before connecting a host." xml:space="preserve">
+        <value>在防火牆建立規則, 或是匯入已有的 nftables.conf 。 您可以在連接主機前準備並檢視設定 。</value>
+    </data>
+    <data name="Create rules or import a configuration" xml:space="preserve">
+        <value>建立規則或匯入設定</value>
+    </data>
+    <data name="Created" xml:space="preserve">
+        <value>已建立</value>
+    </data>
+    <data name="Created (local time)" xml:space="preserve">
+        <value>已建立( 本地時間 )</value>
+    </data>
+    <data name="Created by" xml:space="preserve">
+        <value>建立者</value>
+    </data>
+    <data name="Creates one immutable revision and its pinned reusable lists atomically. Future list edits cannot change this revision." xml:space="preserve">
+        <value>建立一項不可變更的變更, 且其封存的可重新使用清單在解剖上。 未來的清單編輯無法變更此變更 。</value>
+    </data>
+    <data name="Current LDAP defaults, mapping version {0}. Local nonempty fields override these values." xml:space="preserve">
+        <value>目前的 LDAP 預設值, 映射版本 {0}. 本地的非空域覆蓋這些值 。</value>
+    </data>
+    <data name="Current OAuth profile endpoint defaults, mapping version {0}. Local nonempty fields override these values." xml:space="preserve">
+        <value>目前的 OAuth 描述檔端點預設值, 映射版本 {0}. 本地的非空域覆蓋這些值 。</value>
+    </data>
+    <data name="Current library versions · stored, not applied" xml:space="preserve">
+        <value>儲存的、未应用的目前文庫版本 。</value>
+    </data>
+    <data name="Current password" xml:space="preserve">
+        <value>目前密碼</value>
+    </data>
+    <data name="Current password verification failed. Try again or wait for the account lockout to expire." xml:space="preserve">
+        <value>目前的密碼檢查失敗。 再試一次或等待帳號關閉到期 。</value>
+    </data>
+    <data name="Current signed OIDC defaults, mapping version {0}. Local nonempty fields override these values." xml:space="preserve">
+        <value>目前簽署的 OIDC 預設, 映射版本{0}。 本地的非空字段會覆蓋這些值 。</value>
+    </data>
+    <data name="Current-user endpoint" xml:space="preserve">
+        <value>目前使用者端點</value>
+    </data>
+    <data name="DNAT list references" xml:space="preserve">
+        <value>DNAT 列表參考</value>
+    </data>
+    <data name="DNAT negation conditions" xml:space="preserve">
+        <value>DNAT 否定条件</value>
+    </data>
+    <data name="DNAT rule" xml:space="preserve">
+        <value>DNAT 规则</value>
+    </data>
+    <data name="DNAT rule {0}" xml:space="preserve">
+        <value>DNAT 规则 {0}</value>
+    </data>
+    <data name="DNAT rule {0} · {1} · {2} → {3}" xml:space="preserve">
+        <value>DNAT 细则{0} − {1} → {2} → {3}</value>
+    </data>
+    <data name="DNAT rules:" xml:space="preserve">
+        <value>DNAT 規則 :</value>
+    </data>
+    <data name="Database &amp; storage backend" xml:space="preserve">
+        <value>數據庫後端( S)</value>
+    </data>
+    <data name="Database Backend" xml:space="preserve">
+        <value>數據庫后端</value>
+    </data>
+    <data name="Database name" xml:space="preserve">
+        <value>數據庫名稱</value>
+    </data>
+    <data name="Database provider" xml:space="preserve">
+        <value>數據庫提供者</value>
+    </data>
+    <data name="Database server host" xml:space="preserve">
+        <value>數據庫伺服器主機</value>
+    </data>
+    <data name="Database snapshots" xml:space="preserve">
+        <value>數據庫快照</value>
+    </data>
+    <data name="Decision for unmatched frames. A drop default can interrupt bridge traffic." xml:space="preserve">
+        <value>無法比對的框的決定 。 空降預設值會打斷橋面交通</value>
+    </data>
+    <data name="Default actions and policy version" xml:space="preserve">
+        <value>預設動作與政策版本</value>
+    </data>
+    <data name="Default confirmation watchdog timeout (seconds)" xml:space="preserve">
+        <value>預設確認監控超時( 秒)</value>
+    </data>
+    <data name="Default filter schema version" xml:space="preserve">
+        <value>預設過程程式版本</value>
+    </data>
+    <data name="Default forward verdict" xml:space="preserve">
+        <value>預設前置判決</value>
+    </data>
+    <data name="Default input verdict" xml:space="preserve">
+        <value>預設輸入判斷</value>
+    </data>
+    <data name="Default output verdict" xml:space="preserve">
+        <value>預設輸出定數</value>
+    </data>
+    <data name="Default theme" xml:space="preserve">
+        <value>預設主題</value>
+    </data>
+    <data name="Default verdict:" xml:space="preserve">
+        <value>預設判決 :</value>
+    </data>
+    <data name="Delivery address" xml:space="preserve">
+        <value>送件地址</value>
+    </data>
+    <data name="Deny OAuth sign-in" xml:space="preserve">
+        <value>拒絕 OAuth 簽署</value>
+    </data>
+    <data name="Deny provider sign-in" xml:space="preserve">
+        <value>拒絕提供商簽署</value>
+    </data>
+    <data name="Description" xml:space="preserve">
+        <value>描述</value>
+    </data>
+    <data name="Description (optional)" xml:space="preserve">
+        <value>描述( 可選擇的)</value>
+    </data>
+    <data name="Description changed" xml:space="preserve">
+        <value>描述已變更</value>
+    </data>
+    <data name="Description unchanged." xml:space="preserve">
+        <value>描述未變。</value>
+    </data>
+    <data name="Descriptive contact information only. This does not verify email delivery or configure account recovery or MFA." xml:space="preserve">
+        <value>只描述聯絡人資訊。 這不驗證電子郵件送出或設定帳號回收或 MFA.</value>
+    </data>
+    <data name="Desired configuration may differ from the policy confirmed on each host." xml:space="preserve">
+        <value>理想的配置可能與每個主機所確認的策略不同。</value>
+    </data>
+    <data name="Dest port(s)" xml:space="preserve">
+        <value>Dest 端口</value>
+    </data>
+    <data name="Destination" xml:space="preserve">
+        <value>目的地</value>
+    </data>
+    <data name="Destination CIDR" xml:space="preserve">
+        <value>CIDR 目的地</value>
+    </data>
+    <data name="Destination CIDR(s)" xml:space="preserve">
+        <value>CIDR(s)</value>
+    </data>
+    <data name="Destination CIDR(s) (optional)" xml:space="preserve">
+        <value>CIDR(s)(可選)</value>
+    </data>
+    <data name="Destination MAC (optional)" xml:space="preserve">
+        <value>MAC(可選擇)</value>
+    </data>
+    <data name="Destination address" xml:space="preserve">
+        <value>目的地地址</value>
+    </data>
+    <data name="Destination literals; pinned lists are managed separately" xml:space="preserve">
+        <value>目的字元; 封存清單被單獨管理</value>
+    </data>
+    <data name="Destination port (optional)" xml:space="preserve">
+        <value>目的端口( 可選擇的)</value>
+    </data>
+    <data name="Destination port(s)" xml:space="preserve">
+        <value>目的端口</value>
+    </data>
+    <data name="Destination port(s) (optional)" xml:space="preserve">
+        <value>目的端口( 可選擇的)</value>
+    </data>
+    <data name="Destination ports" xml:space="preserve">
+        <value>目的端口</value>
+    </data>
+    <data name="Detail" xml:space="preserve">
+        <value>細節</value>
+    </data>
+    <data name="Diagnostics" xml:space="preserve">
+        <value>诊断</value>
+    </data>
+    <data name="Directory IP address" xml:space="preserve">
+        <value>目錄 IP 地址</value>
+    </data>
+    <data name="Directory Server URI" xml:space="preserve">
+        <value>目錄伺服器 URI</value>
+    </data>
+    <data name="Directory actor ID" xml:space="preserve">
+        <value>目錄演員代碼</value>
+    </data>
+    <data name="Disabled rules below retain intent but do not enforce traffic policy. Native observations contain active rules only." xml:space="preserve">
+        <value>下方已停用的規則會保留原有的設定意圖，但不會執行流量原則。原生觀測結果只包含生效中的規則。</value>
+    </data>
+    <data name="Disabled · omitted" xml:space="preserve">
+        <value>已禁用 %s 省略</value>
+    </data>
+    <data name="Disabled · omitted from candidate" xml:space="preserve">
+        <value>已停用 · 不納入候選規則集</value>
+    </data>
+    <data name="Dispatch compiled multi-table bundles with an autonomous local watchdog rollback window." xml:space="preserve">
+        <value>發射器編譯了多表的捆綁, 以及自動的本地監控回滚視窗 。</value>
+    </data>
+    <data name="Display name" xml:space="preserve">
+        <value>顯示名稱</value>
+    </data>
+    <data name="Display name field" xml:space="preserve">
+        <value>顯示名稱字段</value>
+    </data>
+    <data name="Display-name claim" xml:space="preserve">
+        <value>顯示名稱要求</value>
+    </data>
+    <data name="Displayed in the top navigation bar and page titles." xml:space="preserve">
+        <value>在頂端導覽列和頁面標題中顯示 。</value>
+    </data>
+    <data name="Disposition" xml:space="preserve">
+        <value>處理</value>
+    </data>
+    <data name="Download mapping and gap report" xml:space="preserve">
+        <value>下載映射與空白報告</value>
+    </data>
+    <data name="Download migration review" xml:space="preserve">
+        <value>下載移動檢視</value>
+    </data>
+    <data name="Download nftables.conf" xml:space="preserve">
+        <value>下載 nftables.conf</value>
+    </data>
+    <data name="Download original" xml:space="preserve">
+        <value>下載原始</value>
+    </data>
+    <data name="Download original {0}" xml:space="preserve">
+        <value>下載原始的{0}</value>
+    </data>
+    <data name="Download policy intent" xml:space="preserve">
+        <value>下載政策意向</value>
+    </data>
+    <data name="Drift detected" xml:space="preserve">
+        <value>检测到漂流</value>
+    </data>
+    <data name="Dual-stack inet filtering" xml:space="preserve">
+        <value>雙層內置輸入过滤</value>
+    </data>
+    <data name="Each reference pins a list version and its contents. A later library edit cannot change this draft or a saved revision. Supported scope: primary and auxiliary inet filter source, destination and destination-port matchers. Postrouting NAT and bridge source, destination and port selectors are beside their rule editors; DNAT source, original-destination and original-port lists have a separate selector. New attachments share a static native set within each table. Earlier saved references retain their representation." xml:space="preserve">
+        <value>每個參考的標籤都包含列表版本及其內容。 後來的函式庫編輯無法改變此草稿或儲存的版本。 支援的範圍: 主及辅助插入滤波器來源、 目的地和目的端口匹配器。 Postrouting NAT 和 Bridge 來源、 目的地和端口選擇器 都放在其規則編輯器旁; DNAT 來源、 原始目的地和原始端口列表有另外的選取器。 新的附件在每個表格中共享一個靜态的原生集。 先前保存的參考保留了它們的表示 。</value>
+    </data>
+    <data name="Each selector reads one descriptive attribute. The user can override these values in their profile. Profile email cannot verify a delivery address or supply an MFA factor." xml:space="preserve">
+        <value>每個選取者會讀取一個描述性屬性。 使用者可以在他們的設定檔中覆寫這些數值。 設定檔電子郵件無法驗證送件地址或提供 MFA 因素 。</value>
+    </data>
+    <data name="Each switch changes only this draft. Disabled rules retain their settings and position. Review intent/native diffs, save a revision and use confirmed apply. Disabling a drop, return exemption or clamp can broaden traffic or change connectivity." xml:space="preserve">
+        <value>每一個切換器只變更此草稿。 已關閉的規則會保留他們的設定與位置 。 檢視意向/ 單位 diffs, 儲存修正與使用已確認的應用性 。 禁用掉落、 回復豁免或壓縮可以擴張流量或改變連通性 。</value>
+    </data>
+    <data name="Early filtering table" xml:space="preserve">
+        <value>早期過程表</value>
+    </data>
+    <data name="Early inet filter rule {0}" xml:space="preserve">
+        <value>早期信息滤波器規則 {0}</value>
+    </data>
+    <data name="Edit" xml:space="preserve">
+        <value>編輯</value>
+    </data>
+    <data name="Edit DNAT #{0}" xml:space="preserve">
+        <value>編輯 DNAT # {0}</value>
+    </data>
+    <data name="Edit Policy Bundles" xml:space="preserve">
+        <value>編輯政策套件</value>
+    </data>
+    <data name="Edit postrouting #{0}" xml:space="preserve">
+        <value>編輯第{0}號文章</value>
+    </data>
+    <data name="Egress port name, for example lan1." xml:space="preserve">
+        <value>Egress 連接埠名稱, 例如 lan1.</value>
+    </data>
+    <data name="Email code" xml:space="preserve">
+        <value>電子郵件代碼</value>
+    </data>
+    <data name="Email delivery" xml:space="preserve">
+        <value>電子郵件交付</value>
+    </data>
+    <data name="Email delivery settings changed" xml:space="preserve">
+        <value>電子郵件傳送設定值已變更</value>
+    </data>
+    <data name="Email factor" xml:space="preserve">
+        <value>電子郵件因數</value>
+    </data>
+    <data name="Email factor verified" xml:space="preserve">
+        <value>已驗證電子郵件因數</value>
+    </data>
+    <data name="Email field" xml:space="preserve">
+        <value>電子郵件字段</value>
+    </data>
+    <data name="Email setup could not be confirmed. Check the code or start setup again." xml:space="preserve">
+        <value>無法確定電子郵件設定 。 請檢查密碼或重新啟動設定 。</value>
+    </data>
+    <data name="Email setup could not start. Check that delivery is available and try again later." xml:space="preserve">
+        <value>無法啟動電子郵件設定 。 請檢查是否可提供送件, 稍后再試 。</value>
+    </data>
+    <data name="Email setup unavailable" xml:space="preserve">
+        <value>無法建立電子郵件設定</value>
+    </data>
+    <data name="Email verification" xml:space="preserve">
+        <value>郵件檢查</value>
+    </data>
+    <data name="Email verification denied" xml:space="preserve">
+        <value>電子郵件驗證被拒絕</value>
+    </data>
+    <data name="Email verification started" xml:space="preserve">
+        <value>電子郵件檢查開始</value>
+    </data>
+    <data name="Email verified" xml:space="preserve">
+        <value>郵件已驗證</value>
+    </data>
+    <data name="Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family." xml:space="preserve">
+        <value>留空表示比對任意位址。可指定所選位址家族的 1 個 CIDR，或 2–64 個互不重疊且互不相鄰的 CIDR。</value>
+    </data>
+    <data name="Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Ordinary edits retain pinned contents and negation." xml:space="preserve">
+        <value>留空表示比對任意位址。可指定此位址家族的 1 個 CIDR，或 2–64 個互不重疊且互不相鄰的 CIDR。一般編輯會保留已固定的內容及反向比對設定。</value>
+    </data>
+    <data name="Empty optional matchers mean any; removing them may broaden access. Ethernet and IP families must agree. Choose an IP family for IP-prefix matching; transport matching can cover both families. A jump calls a declared local regular chain; Return resumes its caller and is allowed only inside a regular chain. Editing preserves enabled state and order." xml:space="preserve">
+        <value>選填的比對條件留空時，該項目符合任意值。移除條件可能擴大存取範圍。乙太網路通訊協定與 IP 位址族必須一致。依 IP 前綴比對時，請選擇 IP 位址族。傳輸層比對可同時適用於兩種位址族。跳轉會呼叫目前資料表中已宣告的一般鏈。返回會接續執行呼叫端所在的鏈，且只能在一般鏈中使用。編輯時會保留規則的啟用狀態與順序。</value>
+    </data>
+    <data name="Enable LDAP / AD directory authentication" xml:space="preserve">
+        <value>開啟 LDAP / AD 目錄認證</value>
+    </data>
+    <data name="Enable LDAP sign-in" xml:space="preserve">
+        <value>開啟 LDAP 簽署</value>
+    </data>
+    <data name="Enable OIDC / OAuth 2.0 SSO" xml:space="preserve">
+        <value>開啟 OIDC / OAuth 2.0 SSO</value>
+    </data>
+    <data name="Enable OpenID Connect sign-in" xml:space="preserve">
+        <value>開啟 OpenID 連接簽署</value>
+    </data>
+    <data name="Enable after entering the provider details. Disabling retains them." xml:space="preserve">
+        <value>輸入提供者的細節後啟用。 禁用會保留它們 。</value>
+    </data>
+    <data name="Enable email delivery" xml:space="preserve">
+        <value>開啟電子郵件送出</value>
+    </data>
+    <data name="Enable local administrator accounts" xml:space="preserve">
+        <value>開啟本地管理器帳號</value>
+    </data>
+    <data name="Enable to offer directory sign-in. Disabling retains the saved settings." xml:space="preserve">
+        <value>啟用以提供目錄簽署。 禁用保留已儲存的設定值 。</value>
+    </data>
+    <data name="Enabled state" xml:space="preserve">
+        <value>已開啟狀態</value>
+    </data>
+    <data name="Endpoint" xml:space="preserve">
+        <value>端點</value>
+    </data>
+    <data name="Enroll an authenticator for at least one enabled local Administrator before requiring MFA." xml:space="preserve">
+        <value>在需要前輸入至少一個已啟用本地管理員的驗證器 MFA.</value>
+    </data>
+    <data name="Enrolled host" xml:space="preserve">
+        <value>已輸入主機</value>
+    </data>
+    <data name="Enrolled users always use a code. Users covered by the policy must enroll before they can sign in. A policy change may require signing in again." xml:space="preserve">
+        <value>已輸入的使用者總是使用一個代碼。 政策覆蓋的使用者必須先登入, 才能簽署。 政策變更可能需要再次簽署 。</value>
+    </data>
+    <data name="Enrolled users only" xml:space="preserve">
+        <value>只輸入使用者</value>
+    </data>
+    <data name="Enter 1–64 entries, one per line." xml:space="preserve">
+        <value>輸入 1–64 項目, 每行1 項 。</value>
+    </data>
+    <data name="Enter a client secret when creating a connection or changing its issuer or client ID." xml:space="preserve">
+        <value>建立連接或改變發件人或客戶端代碼時輸入客戶端秘密 。</value>
+    </data>
+    <data name="Enter a mailbox you can access. Sign-in codes use this verified address independently of your profile email." xml:space="preserve">
+        <value>輸入您可以存取的邮箱。 簽署代碼使用此已查實的地址, 独立于您的設定檔電子郵件 。</value>
+    </data>
+    <data name="Enter a search password when creating the connection or changing its endpoint, dial IP, user base or bind DN." xml:space="preserve">
+        <value>建立連接或改變其端點時輸入搜尋密碼, 拨打 IP, 使用基數或綁定 DN 。</value>
+    </data>
+    <data name="Enter a valid HTTPS issuer and callback, client ID, literal groups claim and distinct role groups. Secrets must be 1–4096 characters without controls." xml:space="preserve">
+        <value>輸入有效的 HTTPS 發佈器與回復、 客戶端代碼、 字面群組 聲明與不同的角色群組。 密件必須是 1–4096 個字元, 沒有控制 。</value>
+    </data>
+    <data name="Enter a valid LDAPS endpoint, dial IP, search settings, supported attributes and distinct role group DNs." xml:space="preserve">
+        <value>輸入有效的 LDAPS 端點, 拨打 IP , 搜尋設定、 支援的屬性與不同的角色群組 DN 。</value>
+    </data>
+    <data name="Enter a valid server, port and sender address. Leave the username blank for a relay that does not require credentials." xml:space="preserve">
+        <value>請輸入有效的伺服器、連接埠和寄件者地址。如果轉送伺服器不需要認證資料，請將使用者名稱留空。</value>
+    </data>
+    <data name="Enter both packets and burst to configure a bucket. Clear both to remove it. Destination buckets share a limit across callers reaching the same destination." xml:space="preserve">
+        <value>輸入兩包並爆破以設定桶。 清除兩桶以移除它。 目的地桶在呼叫者中共有限制, 以達到同一目的地 。</value>
+    </data>
+    <data name="Enter individual numeric ports from 1 to 65535. Port ranges are not supported." xml:space="preserve">
+        <value>輸入從 1 到 65535 的單個數值端口。 不支援端口範圍 。</value>
+    </data>
+    <data name="Enter literal top-level claim names. Leave a field blank to stop importing it. No paths, templates or expressions; standard identity, role and MFA claim names are reserved. Your provider must include selected metadata in its signed ID token." xml:space="preserve">
+        <value>輸入字面的頂層要求名稱。 留下字段空白以停止匯入。 沒有路徑、 樣本或表达式; 標準身份、 角色和 MFA 的名稱被保留。 您的提供者必須在簽署的ID 令牌中加入選取的元件 。</value>
+    </data>
+    <data name="Enter one exact group name per line and at least one group across both roles. Accounts matching both roles are denied." xml:space="preserve">
+        <value>每行輸入一個精确的群組名稱, 以及至少一個群組在兩個角色之間。 符合兩個角色的帳號都被拒絕 。</value>
+    </data>
+    <data name="Enter the SMTP password for the new relay or username." xml:space="preserve">
+        <value>輸入新接力或使用者名稱的 SMTP 密碼 。</value>
+    </data>
+    <data name="Enter the client secret for this new provider identity configuration." xml:space="preserve">
+        <value>輸入此新提供者身份設定的客戶端秘密 。</value>
+    </data>
+    <data name="Enter the code we sent" xml:space="preserve">
+        <value>輸入我們發送的代碼</value>
+    </data>
+    <data name="Enter the confidential client's secret." xml:space="preserve">
+        <value>輸入保密客戶的秘密 。</value>
+    </data>
+    <data name="Enter the confidential client's secret. It is encrypted at rest and never shown again." xml:space="preserve">
+        <value>輸入保密客戶端的秘密。 它在休息時被加密, 不再顯示 。</value>
+    </data>
+    <data name="Enter the current six-digit code from the account you just added." xml:space="preserve">
+        <value>從您剛加入的帳號輸入目前的六位數代碼 。</value>
+    </data>
+    <data name="Enter the exact IPv4 or IPv6 address to connect to, without brackets or an interface scope." xml:space="preserve">
+        <value>輸入要連接的 IPv4 或 IPv6 位址, 不加入括弧或介面範圍 。</value>
+    </data>
+    <data name="Enter the six-digit code within five minutes. When setup completes, you’ll sign in again." xml:space="preserve">
+        <value>五分鐘內輸入六位數代碼。 設定完成後, 您將再次簽署 。</value>
+    </data>
+    <data name="Enter two distinct groupOfNames DNs. The user must be a direct member of exactly one group through its member attribute." xml:space="preserve">
+        <value>輸入兩個不同的群組 OfNames DN。 使用者必須通过其成員屬性直接成為一個群組的成員 。</value>
+    </data>
+    <data name="Entries" xml:space="preserve">
+        <value>項目</value>
+    </data>
+    <data name="Entry timeout (seconds)" xml:space="preserve">
+        <value>輸入暫停( 秒 )</value>
+    </data>
+    <data name="Entry type" xml:space="preserve">
+        <value>項目型態</value>
+    </data>
+    <data name="Ethernet protocol" xml:space="preserve">
+        <value>以太网协议</value>
+    </data>
+    <data name="Events: {0} · Revisions: {1}" xml:space="preserve">
+        <value>事件:{0} 修改:{1}</value>
+    </data>
+    <data name="Every address must match the selected IPv4 or IPv6 type." xml:space="preserve">
+        <value>每個位址必須符合選取的 IPv4 或 IPv6 類型 。</value>
+    </data>
+    <data name="Every table still needs explicit ownership, hook and rule-order mapping. Counters, definitions, named objects and control flow must be accounted for before an equivalent policy can be reviewed." xml:space="preserve">
+        <value>每張表格仍需要明確的擁有權、钩子和規則排程映射。 在對等政策進行審查之前, 必須要計算對數、 定義、 定名物件及控制流 。</value>
+    </data>
+    <data name="Every version is immutable. Selecting an older version is read-only and never restores or applies it." xml:space="preserve">
+        <value>每個版本都是不可變化的。 選擇舊版本只讀, 永遠不會恢復或应用它 。</value>
+    </data>
+    <data name="Exact HTTPS issuer from provider discovery; no query or fragment." xml:space="preserve">
+        <value>提供商發現的精确 HTTPS 發佈器; 沒有查詢或片段 。</value>
+    </data>
+    <data name="Exact OIDC issuer" xml:space="preserve">
+        <value>精确的 OIDC 發售器</value>
+    </data>
+    <data name="Exact source snapshot" xml:space="preserve">
+        <value>精确的來源快照</value>
+    </data>
+    <data name="Except destination IP/network(s)" xml:space="preserve">
+        <value>除目的 IP/ 網路</value>
+    </data>
+    <data name="Except destination MAC" xml:space="preserve">
+        <value>目的地除外 MAC</value>
+    </data>
+    <data name="Except destination {0}" xml:space="preserve">
+        <value>目的地除外 {0}</value>
+    </data>
+    <data name="Except input interface" xml:space="preserve">
+        <value>除了輸入介面</value>
+    </data>
+    <data name="Except input interface {0}" xml:space="preserve">
+        <value>除了輸入介面 {0}</value>
+    </data>
+    <data name="Except output interface" xml:space="preserve">
+        <value>除了輸出介面</value>
+    </data>
+    <data name="Except source IP/network(s)" xml:space="preserve">
+        <value>除了來源 IP/網路</value>
+    </data>
+    <data name="Except source MAC" xml:space="preserve">
+        <value>除來源 MAC</value>
+    </data>
+    <data name="Except source MAC address(es)" xml:space="preserve">
+        <value>除來源 MAC 位址</value>
+    </data>
+    <data name="Except source {0}" xml:space="preserve">
+        <value>除來源{0}</value>
+    </data>
+    <data name="Except these source MACs" xml:space="preserve">
+        <value>排除這些來源 MAC 位址</value>
+    </data>
+    <data name="Except this destination" xml:space="preserve">
+        <value>除了這個目的地</value>
+    </data>
+    <data name="Except this input interface" xml:space="preserve">
+        <value>除了此輸入介面</value>
+    </data>
+    <data name="Except this output interface" xml:space="preserve">
+        <value>除了此輸出介面</value>
+    </data>
+    <data name="Except this source" xml:space="preserve">
+        <value>除了這個來源</value>
+    </data>
+    <data name="Expected Server UID" xml:space="preserve">
+        <value>期望伺服器 UID</value>
+    </data>
+    <data name="Expected assurance value" xml:space="preserve">
+        <value>期望的保证值</value>
+    </data>
+    <data name="Expected peer:" xml:space="preserve">
+        <value>期望的對等點 :</value>
+    </data>
+    <data name="Explicit DNAT / SNAT" xml:space="preserve">
+        <value>明确 DNAT / SNAT</value>
+    </data>
+    <data name="Explicit rollback completed and verified." xml:space="preserve">
+        <value>完成并核实了明确的回滚。</value>
+    </data>
+    <data name="Explicit typed mapping" xml:space="preserve">
+        <value>明确打字映射</value>
+    </data>
+    <data name="Export a saved revision" xml:space="preserve">
+        <value>匯出已儲存的版本</value>
+    </data>
+    <data name="External credentials" xml:space="preserve">
+        <value>外部證件</value>
+    </data>
+    <data name="External identity" xml:space="preserve">
+        <value>外部身份</value>
+    </data>
+    <data name="Failed login lockout threshold" xml:space="preserve">
+        <value>登入鎖定阈值失敗</value>
+    </data>
+    <data name="Family" xml:space="preserve">
+        <value>家庭</value>
+    </data>
+    <data name="Family / protocol" xml:space="preserve">
+        <value>家庭/ 協議</value>
+    </data>
+    <data name="Family name" xml:space="preserve">
+        <value>姓</value>
+    </data>
+    <data name="Family name field" xml:space="preserve">
+        <value>姓氏字段</value>
+    </data>
+    <data name="Family-name claim" xml:space="preserve">
+        <value>姓名索赔</value>
+    </data>
+    <data name="Filter audit entries" xml:space="preserve">
+        <value>過度檢視項目</value>
+    </data>
+    <data name="Filter by actor, action, target, outcome…" xml:space="preserve">
+        <value>按演員、動作、目標、結果过滤...</value>
+    </data>
+    <data name="Filter chain defaults (" xml:space="preserve">
+        <value>滤波串缺省( E)</value>
+    </data>
+    <data name="Filter defaults — Input:" xml:space="preserve">
+        <value>過程預設─輸入 :</value>
+    </data>
+    <data name="Filter rule" xml:space="preserve">
+        <value>滤鏡規則</value>
+    </data>
+    <data name="Filter rule {0}" xml:space="preserve">
+        <value>滤鏡規則 {0}</value>
+    </data>
+    <data name="Filter rule {0} · {1} · {2} · {3} · MAC &amp; negation" xml:space="preserve">
+        <value>滤鏡規則 {0} · {1} · {2} · {3} · MAC 否定( D)</value>
+    </data>
+    <data name="Filter rules ({0})" xml:space="preserve">
+        <value>滤鏡規則( {0})</value>
+    </data>
+    <data name="Filter v{0} ({1} rules)" xml:space="preserve">
+        <value>滤波器 v{0} ({1} 規則)</value>
+    </data>
+    <data name="Find" xml:space="preserve">
+        <value>查找</value>
+    </data>
+    <data name="Find a list" xml:space="preserve">
+        <value>尋找清單</value>
+    </data>
+    <data name="Firewall &amp; apply defaults" xml:space="preserve">
+        <value>防火牆預設( A)</value>
+    </data>
+    <data name="Firewall / Configuration" xml:space="preserve">
+        <value>防火牆/ 配置</value>
+    </data>
+    <data name="Firewall Backend" xml:space="preserve">
+        <value>防火牆后端</value>
+    </data>
+    <data name="Firewall Defaults" xml:space="preserve">
+        <value>防火牆預設值</value>
+    </data>
+    <data name="Firewall configuration, connected hosts and recent activity." xml:space="preserve">
+        <value>防火牆設定、 連線主機與最近活動 。</value>
+    </data>
+    <data name="Fold line" xml:space="preserve">
+        <value>折叠行</value>
+    </data>
+    <data name="Folded lines" xml:space="preserve">
+        <value>折叠的行</value>
+    </data>
+    <data name="For a directory account that has completed the password step at least once, enter" xml:space="preserve">
+        <value>對至少已完成一次密碼步數的目錄帳號, 請輸入</value>
+    </data>
+    <data name="For example echo-request; requires the matching ICMP family." xml:space="preserve">
+        <value>例如回音要求; 需要匹配的 ICMP 家族 。</value>
+    </data>
+    <data name="Foreign table preservation" xml:space="preserve">
+        <value>外国表格保存</value>
+    </data>
+    <data name="Forward" xml:space="preserve">
+        <value>前進</value>
+    </data>
+    <data name="Forward HTTPS to reverse proxy" xml:space="preserve">
+        <value>將 HTTPS 轉換到代理伺服器</value>
+    </data>
+    <data name="Forward SYN MSS clamp" xml:space="preserve">
+        <value>前置SYN MSS 夹</value>
+    </data>
+    <data name="Forward TCP MSS clamping" xml:space="preserve">
+        <value>前進 TCP MSS 壓制</value>
+    </data>
+    <data name="Forward TCP SYN MSS clamp: {0} bytes · {1}." xml:space="preserve">
+        <value>前進 TCP 希恩 MSS 剪切 : {0} 位元組 ! {1}.</value>
+    </data>
+    <data name="Forward TCP SYN MSS:" xml:space="preserve">
+        <value>前進 TCP SYN MSS :</value>
+    </data>
+    <data name="Forward base chain" xml:space="preserve">
+        <value>前方基線</value>
+    </data>
+    <data name="Forward default" xml:space="preserve">
+        <value>向前預設值</value>
+    </data>
+    <data name="Forward rules:" xml:space="preserve">
+        <value>前進規則 :</value>
+    </data>
+    <data name="Forward:" xml:space="preserve">
+        <value>向前 :</value>
+    </data>
+    <data name="From entry creation (add)" xml:space="preserve">
+        <value>從項目建立( 添加)</value>
+    </data>
+    <data name="From saved" xml:space="preserve">
+        <value>從儲存中</value>
+    </data>
+    <data name="From version" xml:space="preserve">
+        <value>從版本</value>
+    </data>
+    <data name="From version {0}" xml:space="preserve">
+        <value>從{0}版本</value>
+    </data>
+    <data name="Gaps in status coverage" xml:space="preserve">
+        <value>狀態覆盖范围的差距</value>
+    </data>
+    <data name="Give this one-time authorization to the verified recipient through a private channel. It expires in ten minutes." xml:space="preserve">
+        <value>一次通過私人頻道授權給受證人 10分鐘後失效</value>
+    </data>
+    <data name="Given name" xml:space="preserve">
+        <value>姓名</value>
+    </data>
+    <data name="Given name field" xml:space="preserve">
+        <value>給定名稱字段</value>
+    </data>
+    <data name="Given-name claim" xml:space="preserve">
+        <value>定名索赔</value>
+    </data>
+    <data name="Go to home" xml:space="preserve">
+        <value>回家</value>
+    </data>
+    <data name="Go to line" xml:space="preserve">
+        <value>跳到行</value>
+    </data>
+    <data name="Go to overview" xml:space="preserve">
+        <value>跳至概述</value>
+    </data>
+    <data name="Group membership attribute" xml:space="preserve">
+        <value>群組成員屬性</value>
+    </data>
+    <data name="Group membership must come from the signed ID token. Values match exactly, including case. Supply at least one role group." xml:space="preserve">
+        <value>群組成員必須來自簽署的ID符號。 數值完全吻合, 包括大小寫。 至少提供一個角色群組 。</value>
+    </data>
+    <data name="Groups claim" xml:space="preserve">
+        <value>G. 索赔</value>
+    </data>
+    <data name="Groups claim name" xml:space="preserve">
+        <value>G. 索赔姓名</value>
+    </data>
+    <data name="Groups field" xml:space="preserve">
+        <value>群組字段</value>
+    </data>
+    <data name="Have a time-based authenticator app ready. Setup generates a private key and asks you to verify a code before activation." xml:space="preserve">
+        <value>已準備好一個基于時間的驗證器應用程式。 設定會產生一個私密金鑰, 請您在啟動前檢查密碼 。</value>
+    </data>
+    <data name="Home" xml:space="preserve">
+        <value>內容</value>
+    </data>
+    <data name="Host name" xml:space="preserve">
+        <value>主機名稱</value>
+    </data>
+    <data name="Host specification violated transport constraints." xml:space="preserve">
+        <value>主機规格違反了運輸限制 。</value>
+    </data>
+    <data name="Host status" xml:space="preserve">
+        <value>主機狀態</value>
+    </data>
+    <data name="How configuration changes reach a host" xml:space="preserve">
+        <value>設定變更如何傳達到主機</value>
+    </data>
+    <data name="How host status is measured" xml:space="preserve">
+        <value>如何測量主機狀態</value>
+    </data>
+    <data name="ICMP (IPv4)" xml:space="preserve">
+        <value>ICMP(IPv4)</value>
+    </data>
+    <data name="ICMP / ICMPv6 type" xml:space="preserve">
+        <value>ICMP / ICMPv6 型</value>
+    </data>
+    <data name="ICMP type" xml:space="preserve">
+        <value>ICMP 類型</value>
+    </data>
+    <data name="ICMP type (optional)" xml:space="preserve">
+        <value>ICMP 類型( 可選擇的)</value>
+    </data>
+    <data name="IP family" xml:space="preserve">
+        <value>IP 家族</value>
+    </data>
+    <data name="IPv4 addresses / CIDRs" xml:space="preserve">
+        <value>IPv4 位址 / CIDRs</value>
+    </data>
+    <data name="IPv4 and IPv6" xml:space="preserve">
+        <value>IPv4 和 IPv6</value>
+    </data>
+    <data name="IPv6 addresses / CIDRs" xml:space="preserve">
+        <value>IPv6 位址 / CIDRs</value>
+    </data>
+    <data name="Identity" xml:space="preserve">
+        <value>身份</value>
+    </data>
+    <data name="Identity activity" xml:space="preserve">
+        <value>身份活动</value>
+    </data>
+    <data name="Identity and access" xml:space="preserve">
+        <value>身份和存取</value>
+    </data>
+    <data name="Identity provider" xml:space="preserve">
+        <value>身份提供者</value>
+    </data>
+    <data name="Identity provider connection" xml:space="preserve">
+        <value>身份提供者連接</value>
+    </data>
+    <data name="Iface / Source" xml:space="preserve">
+        <value>Iface / 源碼</value>
+    </data>
+    <data name="Immutable account ID field" xml:space="preserve">
+        <value>無法變更的帳號 ID 字段</value>
+    </data>
+    <data name="Immutable imported sources — no firewall changes" xml:space="preserve">
+        <value>不可變化的匯入來源——沒有防火牆變更</value>
+    </data>
+    <data name="Import configuration snapshots into database history, review migration work, and download original files." xml:space="preserve">
+        <value>將設定快照匯入數據庫歷史, 审查移動工作, 並下載原始檔案 。</value>
+    </data>
+    <data name="Import source snapshot" xml:space="preserve">
+        <value>匯入來源快照</value>
+    </data>
+    <data name="Import staged {0}" xml:space="preserve">
+        <value>{0} 已完成进口</value>
+    </data>
+    <data name="Import stores a private source snapshot. It does not convert a policy or apply firewall rules." xml:space="preserve">
+        <value>匯入儲存私人來源快照。 它不轉換政策或使用防火牆規則 。</value>
+    </data>
+    <data name="Imported (local time)" xml:space="preserve">
+        <value>已匯入( 本地時間 )</value>
+    </data>
+    <data name="Include paths are labels only; the server never opens them. Select uploaded snapshots in expansion order, top to bottom. Use the move buttons to reorder files, then refresh to discover nested includes or table headers." xml:space="preserve">
+        <value>包含路徑只是標籤; 伺服器從不開啟。 選擇按擴張順序上傳的快照, 從上到下。 使用移動按鍵重新排序檔案, 然后刷新以發現嵌入的內存或表格頭 。</value>
+    </data>
+    <data name="Included in candidate" xml:space="preserve">
+        <value>列入候选人</value>
+    </data>
+    <data name="Indent lines" xml:space="preserve">
+        <value>縮排</value>
+    </data>
+    <data name="Indentation updated. Preview checks policy compatibility." xml:space="preserve">
+        <value>縮排已更新。 預覽檢查策略相容性 。</value>
+    </data>
+    <data name="Independent priority tables and extended bridge jump/return chains support confirmed apply with complete bundle receipts. Every owned table is validated and replaced together. Missing confirmation triggers local rollback; unexpected native drift requires manual recovery." xml:space="preserve">
+        <value>獨立的優先權表與延伸的橋跳/ 回傳鏈支援已用完整的捆綁收據來使用。 每個自有的表會被驗證並一起取代。 缺少的確認會觸發本地回覆; 意外的本地漂移需要手動回收 。</value>
+    </data>
+    <data name="Inet NAT" xml:space="preserve">
+        <value>伊网 NAT</value>
+    </data>
+    <data name="Ingress port name, for example lan0." xml:space="preserve">
+        <value>入侵端口名稱, 例如 lan0 。</value>
+    </data>
+    <data name="Initial account created" xml:space="preserve">
+        <value>建立初始帳號</value>
+    </data>
+    <data name="Initial password" xml:space="preserve">
+        <value>初始密碼</value>
+    </data>
+    <data name="Inline CIDR &amp; port sets" xml:space="preserve">
+        <value>內置的 CIDR 端口套件( P)</value>
+    </data>
+    <data name="Input" xml:space="preserve">
+        <value>投入</value>
+    </data>
+    <data name="Input bridge master (optional)" xml:space="preserve">
+        <value>輸入橋主機( 可選擇的)</value>
+    </data>
+    <data name="Input bridge port (optional)" xml:space="preserve">
+        <value>輸入橋端口( 可選的)</value>
+    </data>
+    <data name="Input default" xml:space="preserve">
+        <value>輸入預設值</value>
+    </data>
+    <data name="Input iface" xml:space="preserve">
+        <value>輸入( I)</value>
+    </data>
+    <data name="Input interface (" xml:space="preserve">
+        <value>輸入介面( E)</value>
+    </data>
+    <data name="Input interface (optional)" xml:space="preserve">
+        <value>輸入介面( 可選擇的)</value>
+    </data>
+    <data name="Inspect activity" xml:space="preserve">
+        <value>檢查活動</value>
+    </data>
+    <data name="Inspect changes, apply, then confirm" xml:space="preserve">
+        <value>檢查變更, 應用, 然后确认</value>
+    </data>
+    <data name="Inspect connections" xml:space="preserve">
+        <value>檢查連接</value>
+    </data>
+    <data name="Inspect host state" xml:space="preserve">
+        <value>檢查主機狀態</value>
+    </data>
+    <data name="Inspect live agent status" xml:space="preserve">
+        <value>檢查實體代理狀態</value>
+    </data>
+    <data name="Inspect pending change" xml:space="preserve">
+        <value>檢查待變更</value>
+    </data>
+    <data name="Inspect saved policy" xml:space="preserve">
+        <value>檢查已儲存的策略</value>
+    </data>
+    <data name="Inspect the pending operation and its deadline. The agent's local watchdog decides rollback independently of this page." xml:space="preserve">
+        <value>請檢查待處理的作業及其截止時間。代理程式的本機看門狗會獨立判斷是否復原，不受此頁面影響。</value>
+    </data>
+    <data name="Instance subtitle" xml:space="preserve">
+        <value>實體字幕</value>
+    </data>
+    <data name="Intent diff — enabled state and retained settings" xml:space="preserve">
+        <value>intent diff - 已啟用狀態及保留設定值</value>
+    </data>
+    <data name="Interfaces" xml:space="preserve">
+        <value>介面</value>
+    </data>
+    <data name="Invalid expected server UID." xml:space="preserve">
+        <value>不合法的伺服器 UID 。</value>
+    </data>
+    <data name="Invalid socket group ID." xml:space="preserve">
+        <value>不合法的套接字群組代碼 。</value>
+    </data>
+    <data name="Inventory incomplete:" xml:space="preserve">
+        <value>清單不完整 :</value>
+    </data>
+    <data name="Issue MFA recovery authorization" xml:space="preserve">
+        <value>MFA 回收批准</value>
+    </data>
+    <data name="Issue recovery authorization" xml:space="preserve">
+        <value>签发追回授权</value>
+    </data>
+    <data name="Issuer" xml:space="preserve">
+        <value>發件人</value>
+    </data>
+    <data name="Issuer / Authority URL (HTTPS required)" xml:space="preserve">
+        <value>發件人/ 權限網址( 需要 HTTPS )</value>
+    </data>
+    <data name="Issuer URL" xml:space="preserve">
+        <value>發件人網址</value>
+    </data>
+    <data name="Issuing a new authorization cancels earlier recovery attempts for this account. Its current authenticator keeps working until the recipient confirms the replacement." xml:space="preserve">
+        <value>發出新的授權會取消此帳號之前的回收試驗。 它目前的驗證器一直工作到接收者確認重置 。</value>
+    </data>
+    <data name="JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics." xml:space="preserve">
+        <value>JSON 語法突顯、折叠和錯誤標籤。 使用 Ctrl+F( CMD+F) 來搜尋。 Tab 移動到下一個控制。 預覽會驗證策略語法 。</value>
+    </data>
+    <data name="Jump target" xml:space="preserve">
+        <value>跳動目標</value>
+    </data>
+    <data name="Jump to regular chain" xml:space="preserve">
+        <value>跳轉至一般鏈</value>
+    </data>
+    <data name="Jump → {0}" xml:space="preserve">
+        <value>跳 ~ {0}</value>
+    </data>
+    <data name="Keep a local Administrator who can sign in without email delivery before verifying this address." xml:space="preserve">
+        <value>在核對這個地址前, 請保留一個本地管理員, 可以在不發送電子郵件的情况下簽署 。</value>
+    </data>
+    <data name="Keep at least one enabled local Administrator. Create or promote another Administrator first." xml:space="preserve">
+        <value>請保留至少一個已啟用的本機管理員帳戶。請先建立另一個管理員帳戶，或將其他帳戶升級為管理員。</value>
+    </data>
+    <data name="Keep at least one enabled local Administrator. Saving access changes or revoking sessions signs that account out of every browser. Disabled accounts retain their identity and history." xml:space="preserve">
+        <value>請至少保留一個已啟用的本機系統管理員帳戶。儲存存取權限變更或撤銷工作階段時，該帳戶會從所有瀏覽器登出。停用帳戶後，其身分與歷程記錄仍會保留。</value>
+    </data>
+    <data name="Keep typed lists in one place, with a permanent history of every saved version." xml:space="preserve">
+        <value>將輸入的清單保存在一個地方, 并有每個已儲存版本的永久歷史 。</value>
+    </data>
+    <data name="L2 Bridge filtering" xml:space="preserve">
+        <value>L2 橋面過程</value>
+    </data>
+    <data name="LDAP" xml:space="preserve">
+        <value>LDAP</value>
+    </data>
+    <data name="LDAP / AD sign-in" xml:space="preserve">
+        <value>LDAP / AD 登入</value>
+    </data>
+    <data name="LDAP / Active Directory" xml:space="preserve">
+        <value>LDAP / 作用中目錄</value>
+    </data>
+    <data name="LDAP connection" xml:space="preserve">
+        <value>LDAP 連接</value>
+    </data>
+    <data name="LDAP connection settings replaced" xml:space="preserve">
+        <value>已取代 LDAP 連接設定</value>
+    </data>
+    <data name="LDAP session signed out" xml:space="preserve">
+        <value>LDAP 已簽署</value>
+    </data>
+    <data name="LDAP sign-in completed" xml:space="preserve">
+        <value>LDAP 已完成登記</value>
+    </data>
+    <data name="LDAPS endpoint" xml:space="preserve">
+        <value>LDAPS 端點</value>
+    </data>
+    <data name="Last recorded revision {0}" xml:space="preserve">
+        <value>最后一次订正 {0}</value>
+    </data>
+    <data name="Latest 100 user and profile events. Configuration changes appear separately in Activity &amp; audit." xml:space="preserve">
+        <value>最近 100 使用者與設定檔事件。 設定變更會在活動與稽核中分別出現 。</value>
+    </data>
+    <data name="Latest five attributed events" xml:space="preserve">
+        <value>最近5次事件</value>
+    </data>
+    <data name="Leave blank" xml:space="preserve">
+        <value>留空</value>
+    </data>
+    <data name="Leave blank for any destination. Use networks from the selected IP family." xml:space="preserve">
+        <value>留空白到任何目的地。 使用選取的 IP 家族的網路 。</value>
+    </data>
+    <data name="Leave blank for any source. Separate multiple disjoint networks with commas." xml:space="preserve">
+        <value>留空白給任何來源。 用逗號分開多個互聯網絡 。</value>
+    </data>
+    <data name="Leave blank if the relay accepts mail without SMTP authentication." xml:space="preserve">
+        <value>如果中继器接受不使用 SMTP 認證的郵件, 請留下空白 。</value>
+    </data>
+    <data name="Leave blank to retain the saved password for the same relay and username." xml:space="preserve">
+        <value>留空白以保留相同中继與使用者名稱的已儲存的密碼 。</value>
+    </data>
+    <data name="Library" xml:space="preserve">
+        <value>圖書室</value>
+    </data>
+    <data name="Limit the lookup to the subtree containing eligible user entries." xml:space="preserve">
+        <value>將搜尋限制在包含合格使用者項目的子樹上 。</value>
+    </data>
+    <data name="Line {0}, column {1}" xml:space="preserve">
+        <value>{0}列{1}列</value>
+    </data>
+    <data name="List name" xml:space="preserve">
+        <value>列表名稱</value>
+    </data>
+    <data name="List version" xml:space="preserve">
+        <value>列表版本</value>
+    </data>
+    <data name="Literal top-level claim name; expressions and nested lookups are unsupported." xml:space="preserve">
+        <value>字面頂層的聲明名稱; 表达式與嵌套的搜尋不支援 。</value>
+    </data>
+    <data name="Live Status" xml:space="preserve">
+        <value>直播狀態</value>
+    </data>
+    <data name="Live agent control is not configured on this controller. Connections can be registered, but their current firewall state has not been checked." xml:space="preserve">
+        <value>此控制器上沒有設定 Live 代理控制。 連接可以登記, 但目前防火牆狀態尚未檢查 。</value>
+    </data>
+    <data name="Live applied" xml:space="preserve">
+        <value>實用直播</value>
+    </data>
+    <data name="Live status is unavailable, unqueried or incomplete. This does not establish that a host is offline. Review its connection and agent configuration." xml:space="preserve">
+        <value>Live 狀態不可用、 未排入或不完整 。 這不能確定主機已下線 。 請檢查它的連接與代理設定 。</value>
+    </data>
+    <data name="Load Rev {0}" xml:space="preserve">
+        <value>裝入 Rev {0}</value>
+    </data>
+    <data name="Local administrator accounts" xml:space="preserve">
+        <value>本地管理者帳號</value>
+    </data>
+    <data name="Local authentication" xml:space="preserve">
+        <value>本地認證</value>
+    </data>
+    <data name="Local password" xml:space="preserve">
+        <value>本地密碼</value>
+    </data>
+    <data name="Local sign-in completed" xml:space="preserve">
+        <value>本地簽署完成</value>
+    </data>
+    <data name="Local user access" xml:space="preserve">
+        <value>本地使用者存取</value>
+    </data>
+    <data name="Lockout duration (minutes)" xml:space="preserve">
+        <value>關閉時間( 分鐘 )</value>
+    </data>
+    <data name="MAC, negation &amp; meter conditions" xml:space="preserve">
+        <value>MAC, 否定和计量條件</value>
+    </data>
+    <data name="MAC, negation and meter conditions" xml:space="preserve">
+        <value>MAC 否定和计量条件</value>
+    </data>
+    <data name="MFA assurance" xml:space="preserve">
+        <value>MFA 保证</value>
+    </data>
+    <data name="MFA attempt denied" xml:space="preserve">
+        <value>MFA 試驗失敗</value>
+    </data>
+    <data name="MFA policy" xml:space="preserve">
+        <value>MFA 政策</value>
+    </data>
+    <data name="MFA policy changed" xml:space="preserve">
+        <value>MFA 政策已更改</value>
+    </data>
+    <data name="MFA recovery attempt denied" xml:space="preserve">
+        <value>MFA 追回努力被拒绝</value>
+    </data>
+    <data name="MFA recovery authorized" xml:space="preserve">
+        <value>MFA 已核准追回</value>
+    </data>
+    <data name="MFA recovery completed" xml:space="preserve">
+        <value>MFA 回收完成</value>
+    </data>
+    <data name="MFA recovery enrollment started" xml:space="preserve">
+        <value>MFA 恢复招生</value>
+    </data>
+    <data name="Manage MFA policy" xml:space="preserve">
+        <value>管理 MFA 政策</value>
+    </data>
+    <data name="Manage OIDC profile defaults" xml:space="preserve">
+        <value>管理 OIDC 設定檔預設值</value>
+    </data>
+    <data name="Manage appearance and saved configuration intent. Use the dedicated OIDC and LDAP connection screens for live provider settings. Storage and apply safety retain their protected host boundaries." xml:space="preserve">
+        <value>管理外觀和儲存的設定意图。 使用指定的 OIDC 和 LDAP 連接螢幕來設定活的提供者 。 儲存和施用安全性會保留其被保護的主機邊界 。</value>
+    </data>
+    <data name="Manage application access. These accounts are separate from Linux users and firewall agents." xml:space="preserve">
+        <value>管理應用程式存取。 這些帳號與 Linux 使用者和防火牆代理程式是分開的 。</value>
+    </data>
+    <data name="Manage connections to enrolled firewall agents. Registering a connection does not apply a policy." xml:space="preserve">
+        <value>管理已登入的防火牆代理商的連接。 登記連接不使用政策 。</value>
+    </data>
+    <data name="Manage external credentials at your identity provider." xml:space="preserve">
+        <value>管理身份提供者的外部認證 。</value>
+    </data>
+    <data name="Manage fleet, policies &amp; audit" xml:space="preserve">
+        <value>管理船隊、政策和稽核</value>
+    </data>
+    <data name="Manage hosts" xml:space="preserve">
+        <value>管理主機</value>
+    </data>
+    <data name="Manage lists" xml:space="preserve">
+        <value>管理清單</value>
+    </data>
+    <data name="Manage rules, NAT and bridge filtering. Edits remain drafts until you review and save a revision." xml:space="preserve">
+        <value>管理規則, NAT 和橋面過滤器。 編輯在您檢視並儲存修改前仍為草稿 。</value>
+    </data>
+    <data name="Managed hosts ({0})" xml:space="preserve">
+        <value>管理的主机( {0})</value>
+    </data>
+    <data name="Map TCP MSS clamping, flags and hook placement." xml:space="preserve">
+        <value>TCP MSS 壓制、旗子和勾鎖位置的地圖 。</value>
+    </data>
+    <data name="Map every jump target and preserve rule ordering." xml:space="preserve">
+        <value>圖上每個跳跃目標 并保持規則命令 。</value>
+    </data>
+    <data name="Map every source table and resolve uploaded includes, then review a saved conversion plan. Unsupported content blocks the whole candidate. Nothing here applies firewall rules." xml:space="preserve">
+        <value>映射上傳的每個來源表和解析度包含, 然後檢查已儲存的轉換計劃。 不支援的內容會阻擋整個候選人。 這裡沒有任何資訊會适用防火牆規則 。</value>
+    </data>
+    <data name="Map meter keys, rates, bursts and address-family scope." xml:space="preserve">
+        <value>地圖測量鍵 速率 突發率 和地址 - 家庭範圍</value>
+    </data>
+    <data name="Map reverse-path FIB checks and their ordered bypasses." xml:space="preserve">
+        <value>地圖反向路徑 FIB 檢查和他們訂訂的绕行</value>
+    </data>
+    <data name="Map signed ID-token fields to optional profile defaults. Local edits stay separate and take precedence." xml:space="preserve">
+        <value>將簽署的 ID- token 字段映射到可選用設定檔的預設值。 本地編輯要保持分離並优先 。</value>
+    </data>
+    <data name="Map unclassified source statements explicitly; none may be discarded." xml:space="preserve">
+        <value>映射未解密的來源語言; 沒有一個可能被丟棄 。</value>
+    </data>
+    <data name="Masquerade — output address" xml:space="preserve">
+        <value>面具- 輸出地址</value>
+    </data>
+    <data name="Match DNAT (" xml:space="preserve">
+        <value>符合 DNAT (</value>
+    </data>
+    <data name="Match connection originally translated by DNAT" xml:space="preserve">
+        <value>匹配連接方式原譯為 DNAT</value>
+    </data>
+    <data name="Match failed reverse-path lookup" xml:space="preserve">
+        <value>符合失敗的反向路徑搜尋</value>
+    </data>
+    <data name="Match the exact case-sensitive string or one item in an array of distinct strings. Leave both claim fields blank in other modes." xml:space="preserve">
+        <value>匹配區分大小寫的字串或一個項目, 以不同的字串排列 。 在其他模式中留空兩個字段 。</value>
+    </data>
+    <data name="Matcher to change" xml:space="preserve">
+        <value>要變更的匹配者</value>
+    </data>
+    <data name="Matches" xml:space="preserve">
+        <value>匹配</value>
+    </data>
+    <data name="Matches ether daddr; negation requires a MAC." xml:space="preserve">
+        <value>符合 ether daddr; 否定需要 MAC 。</value>
+    </data>
+    <data name="Matches meta ibrname, for example br0." xml:space="preserve">
+        <value>比對 meta ibrname，例如 br0。</value>
+    </data>
+    <data name="Max authentication age (seconds)" xml:space="preserve">
+        <value>最大認證年齡( 秒 )</value>
+    </data>
+    <data name="Maximum segment size (bytes)" xml:space="preserve">
+        <value>最大片段大小( 字節)</value>
+    </data>
+    <data name="Meter entry expiry" xml:space="preserve">
+        <value>數據項目到期</value>
+    </data>
+    <data name="Migration review signals — non-exhaustive, not semantic validation" xml:space="preserve">
+        <value>移動評論信號——非详尽,非語义認證</value>
+    </data>
+    <data name="Minimum password length" xml:space="preserve">
+        <value>最小密碼長度</value>
+    </data>
+    <data name="Minute" xml:space="preserve">
+        <value>分鐘</value>
+    </data>
+    <data name="Missing baseline receipt" xml:space="preserve">
+        <value>缺少基准收據</value>
+    </data>
+    <data name="Missing capability:" xml:space="preserve">
+        <value>缺少能力 :</value>
+    </data>
+    <data name="Missing required host registration fields." xml:space="preserve">
+        <value>缺少需要的主機登記欄位 。</value>
+    </data>
+    <data name="Move auxiliary rule down" xml:space="preserve">
+        <value>將辅助規則下移</value>
+    </data>
+    <data name="Move auxiliary rule up" xml:space="preserve">
+        <value>上移辅助規則</value>
+    </data>
+    <data name="Move bridge rule down" xml:space="preserve">
+        <value>下移橋牌規則</value>
+    </data>
+    <data name="Move bridge rule up" xml:space="preserve">
+        <value>上移橋牌規則</value>
+    </data>
+    <data name="Move down" xml:space="preserve">
+        <value>下移</value>
+    </data>
+    <data name="Move file down" xml:space="preserve">
+        <value>將檔案下移</value>
+    </data>
+    <data name="Move file up" xml:space="preserve">
+        <value>將檔案上移</value>
+    </data>
+    <data name="Move raw rule down" xml:space="preserve">
+        <value>將原始規則下移</value>
+    </data>
+    <data name="Move raw rule up" xml:space="preserve">
+        <value>將原始規則上移</value>
+    </data>
+    <data name="Move up" xml:space="preserve">
+        <value>上移</value>
+    </data>
+    <data name="Move {0} rule {1} down" xml:space="preserve">
+        <value>下移{0} 條例 {1}</value>
+    </data>
+    <data name="Move {0} rule {1} up" xml:space="preserve">
+        <value>上移{0} 規則 {1}</value>
+    </data>
+    <data name="My authenticator" xml:space="preserve">
+        <value>我的驗證人</value>
+    </data>
+    <data name="My profile" xml:space="preserve">
+        <value>我的檔案</value>
+    </data>
+    <data name="NAT" xml:space="preserve">
+        <value>NAT</value>
+    </data>
+    <data name="NAT ({0} rules)" xml:space="preserve">
+        <value>NAT({0}規定)</value>
+    </data>
+    <data name="NAT ({0})" xml:space="preserve">
+        <value>NAT({0})</value>
+    </data>
+    <data name="Name" xml:space="preserve">
+        <value>姓名</value>
+    </data>
+    <data name="Names allow up to 80 characters. Blank fields use current provider defaults. Saving local edits never changes your identity or permissions." xml:space="preserve">
+        <value>名稱允許最多 80 個字元。 空白字段使用目前的提供者預設 。 儲存本地編輯從不變更您的身份或權限 。</value>
+    </data>
+    <data name="Native" xml:space="preserve">
+        <value>原生</value>
+    </data>
+    <data name="Native nftables" xml:space="preserve">
+        <value>土著 nftables</value>
+    </data>
+    <data name="Native nftables on Linux" xml:space="preserve">
+        <value>原生 nftables  在 Linux 上</value>
+    </data>
+    <data name="Native nftables on Linux is the sole firewall target. These defaults are saved preferences; they do not change active policy." xml:space="preserve">
+        <value>Linux 上的 原生 nftables 是唯一的防火牆目標。 這些預設是儲存的偏好; 它們不變更動中的政策 。</value>
+    </data>
+    <data name="Native nftables · Linux" xml:space="preserve">
+        <value>原生地 nftables-Linux</value>
+    </data>
+    <data name="Native source library" xml:space="preserve">
+        <value>原生來源文庫</value>
+    </data>
+    <data name="Native sources" xml:space="preserve">
+        <value>原生源</value>
+    </data>
+    <data name="Needs attention" xml:space="preserve">
+        <value>需要注意</value>
+    </data>
+    <data name="New list" xml:space="preserve">
+        <value>新列表</value>
+    </data>
+    <data name="New password" xml:space="preserve">
+        <value>新密碼</value>
+    </data>
+    <data name="New regular chain name" xml:space="preserve">
+        <value>新增正規鏈名稱</value>
+    </data>
+    <data name="Next action" xml:space="preserve">
+        <value>下一步</value>
+    </data>
+    <data name="No IP restriction" xml:space="preserve">
+        <value>IP 限制</value>
+    </data>
+    <data name="No UI-managed connection has been saved. Protected startup configuration may supply an initial connection." xml:space="preserve">
+        <value>沒有儲存 UI 管理的連接。 保護的啟動設定可能會提供初始連接 。</value>
+    </data>
+    <data name="No added entries." xml:space="preserve">
+        <value>沒有新增的項目 。</value>
+    </data>
+    <data name="No additional file" xml:space="preserve">
+        <value>沒有其他檔案</value>
+    </data>
+    <data name="No audit events recorded." xml:space="preserve">
+        <value>沒有任何稽核事件記錄。</value>
+    </data>
+    <data name="No audit records yet." xml:space="preserve">
+        <value>尚未有稽核記錄</value>
+    </data>
+    <data name="No bridge table configured." xml:space="preserve">
+        <value>沒有設定橋牌表 。</value>
+    </data>
+    <data name="No catalogued keywords were found. This does not establish compatibility or completeness." xml:space="preserve">
+        <value>找不到目錄中的關鍵字。 這不能建立相容性或完整性 。</value>
+    </data>
+    <data name="No configuration activity recorded yet." xml:space="preserve">
+        <value>尚未記錄設定活動 。</value>
+    </data>
+    <data name="No current provider defaults. An Administrator can configure a mapping; sign in again after changes to refresh the mapped fields." xml:space="preserve">
+        <value>沒有目前的提供者預設。 管理員可以設定映射; 在變更後再次簽署以刷新映射的字段 。</value>
+    </data>
+    <data name="No description" xml:space="preserve">
+        <value>沒有描述</value>
+    </data>
+    <data name="No diagnostics" xml:space="preserve">
+        <value>沒有診斷</value>
+    </data>
+    <data name="No filter rules defined." xml:space="preserve">
+        <value>沒有定義過程規則 。</value>
+    </data>
+    <data name="No filter rules yet. Add a rule using the form below." xml:space="preserve">
+        <value>尚未有過程規則。 使用下面的表單新增一條規則 。</value>
+    </data>
+    <data name="No firewall apply was requested." xml:space="preserve">
+        <value>沒有要求防火牆應用 。</value>
+    </data>
+    <data name="No hosts connected." xml:space="preserve">
+        <value>沒有連接主機 。</value>
+    </data>
+    <data name="No imported snapshots yet. Upload a configuration or import an operator-staged source below." xml:space="preserve">
+        <value>尚未匯入快照。 上傳設定或匯入以下的操作員階端的來源 。</value>
+    </data>
+    <data name="No jump target" xml:space="preserve">
+        <value>沒有跳跃目標</value>
+    </data>
+    <data name="No managed hosts registered yet. Connect an already enrolled agent below. Its local operator establishes the trust boundary before registration." xml:space="preserve">
+        <value>尚未注册管理的主機 。 連接下面已經注册的代理商。 它的本地運算符在注册前會建立信任邊界 。</value>
+    </data>
+    <data name="No managed hosts registered yet. Register a host from the" xml:space="preserve">
+        <value>尚未登記管理的主機。 登記主機來自</value>
+    </data>
+    <data name="No matching lists. Create a list below or change your search." xml:space="preserve">
+        <value>沒有匹配清單。 在下面建立列表或更改您的搜尋 。</value>
+    </data>
+    <data name="No pinned list references in this draft." xml:space="preserve">
+        <value>本草案中沒有標注清單的參考。</value>
+    </data>
+    <data name="No policy revisions persisted yet." xml:space="preserve">
+        <value>目前尚未继续进行政策修改。</value>
+    </data>
+    <data name="No postrouting rules defined." xml:space="preserve">
+        <value>沒有定義文章路由規則 。</value>
+    </data>
+    <data name="No prerouting DNAT rules defined." xml:space="preserve">
+        <value>未定義 DNAT 預設路由 。</value>
+    </data>
+    <data name="No profile mappings saved. Create one for your configured OIDC issuer." xml:space="preserve">
+        <value>沒有儲存描述檔映射 。 為您配置的 OIDC 發佈器建立 。</value>
+    </data>
+    <data name="No query made" xml:space="preserve">
+        <value>沒有查詢</value>
+    </data>
+    <data name="No removed entries." xml:space="preserve">
+        <value>沒有移除的項目 。</value>
+    </data>
+    <data name="No rules in this chain." xml:space="preserve">
+        <value>這條鏈子上沒有規矩</value>
+    </data>
+    <data name="No saved policy revisions exist yet. Create and save a policy revision in the" xml:space="preserve">
+        <value>尚未儲存政策變更 。</value>
+    </data>
+    <data name="No saved policy revisions." xml:space="preserve">
+        <value>未儲存政策修改 。</value>
+    </data>
+    <data name="No saved policy yet." xml:space="preserve">
+        <value>尚未儲存政策 。</value>
+    </data>
+    <data name="No saved revisions reference this list." xml:space="preserve">
+        <value>沒有儲存的變更參考此清單 。</value>
+    </data>
+    <data name="No table headers found in the selected files. Resolve includes and refresh choices first." xml:space="preserve">
+        <value>在所選取的檔案中找不到表格頭。 解析先包含並刷新選項 。</value>
+    </data>
+    <data name="No usable agent status classifications for this page load." xml:space="preserve">
+        <value>此頁面載入的可使用代理狀態分類 。</value>
+    </data>
+    <data name="Not supplied" xml:space="preserve">
+        <value>未提供</value>
+    </data>
+    <data name="OAuth connection" xml:space="preserve">
+        <value>OAuth 連接</value>
+    </data>
+    <data name="OAuth connection settings replaced" xml:space="preserve">
+        <value>已取代 OAuth 連接設定</value>
+    </data>
+    <data name="OAuth sign-in" xml:space="preserve">
+        <value>OAuth 登記</value>
+    </data>
+    <data name="OAuth sign-in completed" xml:space="preserve">
+        <value>OAuth 已完成登記</value>
+    </data>
+    <data name="OIDC / OAuth 2.0 sign-in" xml:space="preserve">
+        <value>OIDC / OAuth 2.0 登記</value>
+    </data>
+    <data name="OIDC connection" xml:space="preserve">
+        <value>OIDC 連接</value>
+    </data>
+    <data name="OIDC connection settings replaced" xml:space="preserve">
+        <value>已取代 OIDC 連接設定</value>
+    </data>
+    <data name="OIDC profile defaults" xml:space="preserve">
+        <value>OIDC 描述檔預設值</value>
+    </data>
+    <data name="Object" xml:space="preserve">
+        <value>物件</value>
+    </data>
+    <data name="Observed" xml:space="preserve">
+        <value>觀察</value>
+    </data>
+    <data name="Observed firewall state differs from its protected baseline, or owned resources are missing. Inspect recovery status before making another change." xml:space="preserve">
+        <value>觀察的防火牆狀態與它被保護的基线不同, 或是缺少自有資源。 檢查回收狀態後再做改變 。</value>
+    </data>
+    <data name="Offline operator" xml:space="preserve">
+        <value>离線操作員</value>
+    </data>
+    <data name="One CIDR or 2–64 distinct, disjoint/non-adjacent CIDRs. Requires a matching IP family; pinned contents are read-only." xml:space="preserve">
+        <value>指定 1 個 CIDR，或 2–64 個彼此不同、互不重疊且互不相鄰的 CIDR。IP 位址家族必須相符，已固定的內容為唯讀。</value>
+    </data>
+    <data name="One CIDR or a comma-separated list of disjoint networks." xml:space="preserve">
+        <value>一 CIDR 或以逗號分隔的互聯網絡清單。</value>
+    </data>
+    <data name="One canonical CIDR or 2–64 comma-separated, disjoint, non-adjacent CIDRs of the selected family. Explicit SNAT requires a source restriction. Pinned address fields show immutable contents; change them through the list selector below." xml:space="preserve">
+        <value>請指定所選位址家族的 1 個標準格式 CIDR，或 2–64 個以逗號分隔且互不重疊、互不相鄰的 CIDR。明確的 SNAT 規則必須限制來源。已固定的位址欄位會顯示不可變更的內容，請透過下方的清單選擇器更改參照。</value>
+    </data>
+    <data name="One exact group per line, up to 32. No wildcards." xml:space="preserve">
+        <value>每行一整組,最多 32 沒有通配符 。</value>
+    </data>
+    <data name="One or more settings failed validation. Review the highlighted codes below." xml:space="preserve">
+        <value>一個或多個設定失敗驗證 。 請檢查以下突顯的代碼 。</value>
+    </data>
+    <data name="One per line. A group cannot appear in both roles." xml:space="preserve">
+        <value>每行一個 一個團體不能出現在兩個角色中</value>
+    </data>
+    <data name="One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. All use the same translated target. Pinned contents stay read-only." xml:space="preserve">
+        <value>指定 1 個連接埠，或 2–64 個彼此不同、以逗號分隔的連接埠，範圍為 1–65535。必須使用 TCP 或 UDP。所有連接埠皆使用相同的轉換目標。已固定的內容維持唯讀。</value>
+    </data>
+    <data name="One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. Every original port maps to the same target; leave blank for any." xml:space="preserve">
+        <value>一個連接埠或 2–64 分開的逗號連接埠, 1–65535; 需要 TCP 或 UDP。 每一個原始連接埠映射到同一目標; 任何一個都留空白 。</value>
+    </data>
+    <data name="One port or comma-separated ports in 1–65535. Requires TCP or UDP." xml:space="preserve">
+        <value>1–65535. 需要 TCP 或 UDP 的連接埠 。</value>
+    </data>
+    <data name="One port or comma-separated ports, 1–65535; requires TCP or UDP." xml:space="preserve">
+        <value>一個連接埠或逗號分隔埠, 1–65535; 需要 TCP 或 UDP 。</value>
+    </data>
+    <data name="Open Fleet Dashboard" xml:space="preserve">
+        <value>開啟船隊的板</value>
+    </data>
+    <data name="Open Policy Builder" xml:space="preserve">
+        <value>開啟建構策略者</value>
+    </data>
+    <data name="Open audit log" xml:space="preserve">
+        <value>開啟稽核紀錄</value>
+    </data>
+    <data name="Open revision review" xml:space="preserve">
+        <value>開放版本審查</value>
+    </data>
+    <data name="Open rules" xml:space="preserve">
+        <value>開啟規則</value>
+    </data>
+    <data name="Open the current version to edit" xml:space="preserve">
+        <value>開啟目前的版本以編輯</value>
+    </data>
+    <data name="OpenID Connect / OAuth 2.0" xml:space="preserve">
+        <value>OpenID 連接 / OAuth 2.0</value>
+    </data>
+    <data name="Operation ID" xml:space="preserve">
+        <value>操作代碼</value>
+    </data>
+    <data name="Operation or watchdog identifier is invalid." xml:space="preserve">
+        <value>操作或監控身份認證不合法 。</value>
+    </data>
+    <data name="Operator-staged sources ({0})" xml:space="preserve">
+        <value>操作相位源({0})</value>
+    </data>
+    <data name="Optional independent owned table" xml:space="preserve">
+        <value>可選擇的獨立表格</value>
+    </data>
+    <data name="Optional rate limit" xml:space="preserve">
+        <value>可選擇的费率限制</value>
+    </data>
+    <data name="Optional, up to 80 characters. Leave blank to use current provider defaults, then the verified sign-in name." xml:space="preserve">
+        <value>可選, 最多 80 字元。留下空白以使用目前的提供者預設,然后是已驗證的簽署名稱。</value>
+    </data>
+    <data name="Optional: Per-source token-bucket rate limit (dynamic nftables set)" xml:space="preserve">
+        <value>可選用: 單源令牌- 桶速率限制( 動力 nftables 套)</value>
+    </data>
+    <data name="Optional: one address or a comma-separated list, for example 02:00:00:00:00:01. MAC matching applies to the directly visible Ethernet sender." xml:space="preserve">
+        <value>可選用: 一個位址或逗號分隔的列表, 例如 02:00:00:00:00:01. MAC 匹配适用于直接可见的以太網發件人 。</value>
+    </data>
+    <data name="Order / Edit / Remove" xml:space="preserve">
+        <value>命令 / 編輯 / 移除</value>
+    </data>
+    <data name="Original Dest" xml:space="preserve">
+        <value>原始寄件</value>
+    </data>
+    <data name="Original destination CIDR(s)" xml:space="preserve">
+        <value>原目的地 CIDR(s)</value>
+    </data>
+    <data name="Original destination address" xml:space="preserve">
+        <value>原目的地地址</value>
+    </data>
+    <data name="Original destination port(s)" xml:space="preserve">
+        <value>原始目的端口</value>
+    </data>
+    <data name="Original destination port(s) (optional)" xml:space="preserve">
+        <value>原始目的端口( 可選擇的)</value>
+    </data>
+    <data name="Original destination ports" xml:space="preserve">
+        <value>原始目的端口</value>
+    </data>
+    <data name="Outcome" xml:space="preserve">
+        <value>成果</value>
+    </data>
+    <data name="Output" xml:space="preserve">
+        <value>輸出</value>
+    </data>
+    <data name="Output bridge port (optional)" xml:space="preserve">
+        <value>輸出橋端口( 可選擇的)</value>
+    </data>
+    <data name="Output default" xml:space="preserve">
+        <value>輸出預設值</value>
+    </data>
+    <data name="Output iface" xml:space="preserve">
+        <value>輸出 iface</value>
+    </data>
+    <data name="Output interface (" xml:space="preserve">
+        <value>輸出介面( E)</value>
+    </data>
+    <data name="Output interface (optional)" xml:space="preserve">
+        <value>輸出介面( 可選擇的)</value>
+    </data>
+    <data name="Output:" xml:space="preserve">
+        <value>輸出 :</value>
+    </data>
+    <data name="Packets per window" xml:space="preserve">
+        <value>每个視窗的包</value>
+    </data>
+    <data name="Page not found" xml:space="preserve">
+        <value>找不到頁面</value>
+    </data>
+    <data name="Password changed" xml:space="preserve">
+        <value>密碼已變更</value>
+    </data>
+    <data name="Password verification denied" xml:space="preserve">
+        <value>密碼驗證被拒絕</value>
+    </data>
+    <data name="Per destination address" xml:space="preserve">
+        <value>每一個目的地地址</value>
+    </data>
+    <data name="Per source address" xml:space="preserve">
+        <value>每個來源地址</value>
+    </data>
+    <data name="Per-source dynamic rate limits" xml:space="preserve">
+        <value>每源动态速率限制</value>
+    </data>
+    <data name="Pinned Server SHA-256 Thumbprint (64 hex chars)" xml:space="preserve">
+        <value>Pinned 伺服器 SHA-256 縮圖印表 (64 ix 字元)</value>
+    </data>
+    <data name="Pinned destination list:" xml:space="preserve">
+        <value>已壓縮的目的地列表 :</value>
+    </data>
+    <data name="Pinned destination list: {0} v{1}." xml:space="preserve">
+        <value>被封鎖的目的地列表:{0} v{1}.</value>
+    </data>
+    <data name="Pinned original-port list: {0} v{1}." xml:space="preserve">
+        <value>固定的原埠列表: {0} v {1}.</value>
+    </data>
+    <data name="Pinned port list:" xml:space="preserve">
+        <value>被壓制的端口清單 :</value>
+    </data>
+    <data name="Pinned source list:" xml:space="preserve">
+        <value>已壓縮的來源清單 :</value>
+    </data>
+    <data name="Pinned source list: {0} v{1}." xml:space="preserve">
+        <value>平底源列表:{0} v{1}.</value>
+    </data>
+    <data name="Please wait before trying again" xml:space="preserve">
+        <value>請等一下,再試一次</value>
+    </data>
+    <data name="Policies can pin a list version for source, destination or destination-port matching. Saving a new list version does not change existing policy revisions or firewalls. Update the reference in a policy draft, review, save and use confirmed apply." xml:space="preserve">
+        <value>政策可以標定列表版本的來源、目的或目的端口匹配。 保存新的列表版本不會改變现有的政策修改或防火牆。 更新政策草案中的參考、 審查、 保存和使用已確認的應用程式 。</value>
+    </data>
+    <data name="Policy builder" xml:space="preserve">
+        <value>政法制定者</value>
+    </data>
+    <data name="Policy bundle JSON" xml:space="preserve">
+        <value>政策包 JSON</value>
+    </data>
+    <data name="Policy bundle sections" xml:space="preserve">
+        <value>政策捆绑部分</value>
+    </data>
+    <data name="Policy revision" xml:space="preserve">
+        <value>政策修订</value>
+    </data>
+    <data name="Policy revision {0}" xml:space="preserve">
+        <value>政策修订 {0}</value>
+    </data>
+    <data name="Port" xml:space="preserve">
+        <value>端口</value>
+    </data>
+    <data name="Port literals; pinned lists are managed separately" xml:space="preserve">
+        <value>端口字元; 標籤清單另作管理</value>
+    </data>
+    <data name="Ports" xml:space="preserve">
+        <value>端口</value>
+    </data>
+    <data name="Ports require TCP or UDP. For a DHCP-client exception, choose UDP source port 68 and review its scope." xml:space="preserve">
+        <value>端口需要 TCP 或 UDP 。 对于 DHCP 客戶端例外, 請選擇 UDP 源端端口 68 , 並檢查其範圍 。</value>
+    </data>
+    <data name="Position" xml:space="preserve">
+        <value>位置</value>
+    </data>
+    <data name="Postrouting NAT list references" xml:space="preserve">
+        <value>NAT 名單參考</value>
+    </data>
+    <data name="Postrouting NAT rules (" xml:space="preserve">
+        <value>后路由 NAT 規則( Name</value>
+    </data>
+    <data name="Postrouting action" xml:space="preserve">
+        <value>後端路由動作</value>
+    </data>
+    <data name="Postrouting rule" xml:space="preserve">
+        <value>后路由規則</value>
+    </data>
+    <data name="Postrouting rule {0}" xml:space="preserve">
+        <value>第{0}条规则</value>
+    </data>
+    <data name="Postrouting rules:" xml:space="preserve">
+        <value>後端路由規則 :</value>
+    </data>
+    <data name="Prepare a policy" xml:space="preserve">
+        <value>制定政策</value>
+    </data>
+    <data name="Prerouting DNAT rules (" xml:space="preserve">
+        <value>路由前 DNAT 規則( R)</value>
+    </data>
+    <data name="Preserve bridge-master interface matching." xml:space="preserve">
+        <value>保留橋主介面匹配 。</value>
+    </data>
+    <data name="Preserve connection-tracking bypass and raw-hook ordering; notrack is not modeled." xml:space="preserve">
+        <value>保留連接軌道旁路徑和原點點; Notrack 不建模 。</value>
+    </data>
+    <data name="Preserve counter identity and reset/observation semantics; counter statements are not modeled." xml:space="preserve">
+        <value>預防對數身份與重置/觀察語言;對數语句不建模 。</value>
+    </data>
+    <data name="Preserve destination MAC restrictions and negation." xml:space="preserve">
+        <value>保留目的地 MAC 限制和否定。</value>
+    </data>
+    <data name="Preserve flow-offload behavior; flowtables are not modeled." xml:space="preserve">
+        <value>保留流動卸載行為; 流動表不是建模的 。</value>
+    </data>
+    <data name="Preserve logging behavior; native log statements are not modeled." xml:space="preserve">
+        <value>保留登錄行為; 原生日志說明沒有建模 。</value>
+    </data>
+    <data name="Preserve named/inline map lookup semantics; map translation is not modeled." xml:space="preserve">
+        <value>保留已命名/ 內含地圖的搜尋語言; 地圖翻譯沒有建模 。</value>
+    </data>
+    <data name="Preserve postrouting translation order and exemptions." xml:space="preserve">
+        <value>保留后路由翻譯命令及豁免 。</value>
+    </data>
+    <data name="Preserve redirect translation; redirect statements are not modeled." xml:space="preserve">
+        <value>保留重定向翻譯; 重定向語言沒有建模 。</value>
+    </data>
+    <data name="Preserve return behavior in its original chain and caller context." xml:space="preserve">
+        <value>保留其原鏈和呼叫器上下文中的回應行為 。</value>
+    </data>
+    <data name="Preserve source MAC restrictions together with IP restrictions." xml:space="preserve">
+        <value>保留來源 MAC 限制與 IP 限制 。</value>
+    </data>
+    <data name="Preserve the imported operation. Refreshing keeps an active bucket alive; creation-based expiry can reset it while traffic continues." xml:space="preserve">
+        <value>預防匯入的操作。 刷新可以保持一個活性桶; 以建立為基礎的到期值可以在流量繼續時重置它 。</value>
+    </data>
+    <data name="Preserve transparent-proxy behavior; tproxy is not modeled." xml:space="preserve">
+        <value>保留透明代碼的行為; tproxy 不建模 。</value>
+    </data>
+    <data name="Preserve userspace queue behavior; queue statements are not modeled." xml:space="preserve">
+        <value>保留使用者空格列的行為; 隊列聲明沒有建模 。</value>
+    </data>
+    <data name="Preserve verdict-map control flow; verdict maps are not modeled." xml:space="preserve">
+        <value>保留定案圖控制流; 定案地圖沒有建模 。</value>
+    </data>
+    <data name="Preview compatibility &amp; nftables diff" xml:space="preserve">
+        <value>預覽兼容性 &amp; nftables diff</value>
+    </data>
+    <data name="Preview diff" xml:space="preserve">
+        <value>預覽 diff</value>
+    </data>
+    <data name="Previous observation ({0})" xml:space="preserve">
+        <value>先前的觀察({0})</value>
+    </data>
+    <data name="Primary inet filter" xml:space="preserve">
+        <value>主插入過程</value>
+    </data>
+    <data name="Primary inet references" xml:space="preserve">
+        <value>主要提示</value>
+    </data>
+    <data name="Priority:" xml:space="preserve">
+        <value>優先權 :</value>
+    </data>
+    <data name="Profile configuration" xml:space="preserve">
+        <value>配置文件配置</value>
+    </data>
+    <data name="Profile defaults" xml:space="preserve">
+        <value>設定檔預設值</value>
+    </data>
+    <data name="Profile email" xml:space="preserve">
+        <value>設定檔 mail</value>
+    </data>
+    <data name="Profile field mappings" xml:space="preserve">
+        <value>配置字段映射</value>
+    </data>
+    <data name="Profile mapping for the new issuer" xml:space="preserve">
+        <value>新發佈器的設定檔映射</value>
+    </data>
+    <data name="Profile mapping for {0}" xml:space="preserve">
+        <value>{0}的剖面圖</value>
+    </data>
+    <data name="Profile mapping saved" xml:space="preserve">
+        <value>配置映射已儲存</value>
+    </data>
+    <data name="Profile updated" xml:space="preserve">
+        <value>已更新配置文件</value>
+    </data>
+    <data name="Profile-email claim" xml:space="preserve">
+        <value>配置文件- 郵件索赔</value>
+    </data>
+    <data name="Protocol" xml:space="preserve">
+        <value>议定书</value>
+    </data>
+    <data name="Protocol / ICMP" xml:space="preserve">
+        <value>议定书/ ICMP</value>
+    </data>
+    <data name="Protocol / destination ports" xml:space="preserve">
+        <value>协议/ 目的端口</value>
+    </data>
+    <data name="Provider connection" xml:space="preserve">
+        <value>提供者連接</value>
+    </data>
+    <data name="Provider defaults" xml:space="preserve">
+        <value>提供者缺省</value>
+    </data>
+    <data name="Provider information never links accounts or verifies a delivery address." xml:space="preserve">
+        <value>提供人信息從不連結帳戶或確認送信地址 。</value>
+    </data>
+    <data name="Provider profile refreshed" xml:space="preserve">
+        <value>提供者描述檔已刷新</value>
+    </data>
+    <data name="Provider sign-in" xml:space="preserve">
+        <value>提供商簽署</value>
+    </data>
+    <data name="Purpose of this rule" xml:space="preserve">
+        <value>本细则的目的</value>
+    </data>
+    <data name="Rate Limit" xml:space="preserve">
+        <value>限速率</value>
+    </data>
+    <data name="Rate limit burst" xml:space="preserve">
+        <value>速率限制破裂</value>
+    </data>
+    <data name="Rate limit pkts" xml:space="preserve">
+        <value>速率限制pkts</value>
+    </data>
+    <data name="Rate limit timeout" xml:space="preserve">
+        <value>速率限制逾時</value>
+    </data>
+    <data name="Rate limit unit" xml:space="preserve">
+        <value>限速單位</value>
+    </data>
+    <data name="Rate-limit bucket" xml:space="preserve">
+        <value>限速桶</value>
+    </data>
+    <data name="Raw chain default" xml:space="preserve">
+        <value>Raw 鏈式預設</value>
+    </data>
+    <data name="Raw prerouting &amp; reverse-path filtering" xml:space="preserve">
+        <value>原始的路由預覽和逆向路徑過程</value>
+    </data>
+    <data name="Raw prerouting rule {0}" xml:space="preserve">
+        <value>原始預航規則 {0}</value>
+    </data>
+    <data name="Raw prerouting runs before connection tracking. Rules run in order; put intentional exceptions before a reverse-path drop. This form changes only the draft, retaining an existing rule's enabled state." xml:space="preserve">
+        <value>raw 優先順序的 prerouting 處理會先於連線追蹤。規則依序執行。請將刻意設定的例外放在因反向路徑檢查而捨棄封包的規則之前。此表單只會變更草稿，並保留既有規則的啟用狀態。</value>
+    </data>
+    <data name="Raw rpfilter:" xml:space="preserve">
+        <value>原始 rpfilter :</value>
+    </data>
+    <data name="Raw rpfilter: {0} rules." xml:space="preserve">
+        <value>原始的 rpfilter: {0} 規則.</value>
+    </data>
+    <data name="Raw rule {0}" xml:space="preserve">
+        <value>原始规则{0}</value>
+    </data>
+    <data name="Raw verdict" xml:space="preserve">
+        <value>原始判決</value>
+    </data>
+    <data name="Raw, auxiliary and sub-chain rule states" xml:space="preserve">
+        <value>原始、 辅助和子鏈規則狀態</value>
+    </data>
+    <data name="Read the backend decision" xml:space="preserve">
+        <value>讀取後端決定</value>
+    </data>
+    <data name="Read-only administration" xml:space="preserve">
+        <value>只讀管理</value>
+    </data>
+    <data name="Ready for revision" xml:space="preserve">
+        <value>正在修改中</value>
+    </data>
+    <data name="Ready to create a saved revision. Every source statement is accounted for in the supported grammar. Review the mappings and candidate below; confirmed apply remains a separate workflow." xml:space="preserve">
+        <value>準備建立儲存的版本 。 每個來源語言都在支援的文法中被計算。 請檢查以下的映射和候選人; 已確認的應用性仍然是一個不同的工作流程 。</value>
+    </data>
+    <data name="Reason" xml:space="preserve">
+        <value>理由</value>
+    </data>
+    <data name="Recent activity" xml:space="preserve">
+        <value>最近的活动</value>
+    </data>
+    <data name="Recent apply &amp; controller audit activity" xml:space="preserve">
+        <value>最近的應用程式控制器審查活動( C)</value>
+    </data>
+    <data name="Recovery could not be authorized. Check the account identifier and current policy, then try again." xml:space="preserve">
+        <value>無法被授權回收 。 請檢查帳號标识符和目前的策略, 然後再試一次 。</value>
+    </data>
+    <data name="Redirect URI (optional)" xml:space="preserve">
+        <value>重定向 URI (可選的)</value>
+    </data>
+    <data name="Refresh include and table choices" xml:space="preserve">
+        <value>刷新包含和表格選擇</value>
+    </data>
+    <data name="Refresh live status" xml:space="preserve">
+        <value>刷新直播狀態</value>
+    </data>
+    <data name="Refresh on matching packets (meter/update)" xml:space="preserve">
+        <value>更新匹配的包( 公尺/ 更新)</value>
+    </data>
+    <data name="Register agent host" xml:space="preserve">
+        <value>登記代理主機</value>
+    </data>
+    <data name="Register an enrolled agent" xml:space="preserve">
+        <value>登記已登記的代理商</value>
+    </data>
+    <data name="Register host" xml:space="preserve">
+        <value>登記主機</value>
+    </data>
+    <data name="Register the exact HTTPS callback ending in /signin-oauth." xml:space="preserve">
+        <value>登記在/sigin-oauth的 HTTPS 呼叫結束 。</value>
+    </data>
+    <data name="Register this exact HTTPS URL at the provider. The path must be /signin-oidc." xml:space="preserve">
+        <value>提供商登記此 准确的 HTTPS 網址。 路徑必須是 / sign-oidc 。</value>
+    </data>
+    <data name="Registered callback URL" xml:space="preserve">
+        <value>已註冊回召網址</value>
+    </data>
+    <data name="Registered connections: {0:N0}" xml:space="preserve">
+        <value>已登記的連線: {0:N0}</value>
+    </data>
+    <data name="Regular chain: {0}" xml:space="preserve">
+        <value>正常鏈: {0}</value>
+    </data>
+    <data name="Regular chains:" xml:space="preserve">
+        <value>正規鏈 :</value>
+    </data>
+    <data name="Reject — ICMP admin prohibited" xml:space="preserve">
+        <value>拒絕 — 回傳 ICMP admin-prohibited 錯誤</value>
+    </data>
+    <data name="Remove" xml:space="preserve">
+        <value>移除</value>
+    </data>
+    <data name="Remove MSS configuration from draft" xml:space="preserve">
+        <value>從草稿中移除 MSS 設定</value>
+    </data>
+    <data name="Remove auxiliary rule from draft" xml:space="preserve">
+        <value>從草稿中移除辅助規則</value>
+    </data>
+    <data name="Remove bridge rule from draft" xml:space="preserve">
+        <value>從草稿中移除橋架規則</value>
+    </data>
+    <data name="Remove duplicate entries. An address and its /32 or /128 prefix identify the same entry." xml:space="preserve">
+        <value>移除重复的項目。 地址及其 /32 或/128  前缀表示同一個項目。</value>
+    </data>
+    <data name="Remove empty auxiliary table from draft" xml:space="preserve">
+        <value>從草稿中移除空的辅助表格</value>
+    </data>
+    <data name="Remove empty bridge table from draft" xml:space="preserve">
+        <value>從草稿中移除空的橋面表</value>
+    </data>
+    <data name="Remove empty raw chain from draft" xml:space="preserve">
+        <value>從草稿中移除空的生鏈</value>
+    </data>
+    <data name="Remove empty regular chain {0}" xml:space="preserve">
+        <value>移除空的正規鏈 {0}</value>
+    </data>
+    <data name="Remove list reference from draft" xml:space="preserve">
+        <value>從草稿中移除清單參考</value>
+    </data>
+    <data name="Remove raw rule from draft" xml:space="preserve">
+        <value>從草稿中移除原始規則</value>
+    </data>
+    <data name="Remove reference from draft" xml:space="preserve">
+        <value>移除草稿中的引用</value>
+    </data>
+    <data name="Remove rules and regular chains first. Removing an empty table also removes its default policy, which may broaden access." xml:space="preserve">
+        <value>先移除規則與正規鏈。 移除空表也會移除它的預設政策, 這可能會擴大存取功能 。</value>
+    </data>
+    <data name="Removed entries" xml:space="preserve">
+        <value>已移除的項目</value>
+    </data>
+    <data name="Removing this empty table removes its chain defaults too, which may broaden access." xml:space="preserve">
+        <value>移除此空表也移除其鏈式缺省, 這可能會擴張存取權 。</value>
+    </data>
+    <data name="Replace" xml:space="preserve">
+        <value>取代</value>
+    </data>
+    <data name="Replace provider trust and retire current OAuth sessions" xml:space="preserve">
+        <value>取代提供者信任, 保留目前的 OAuth 會議</value>
+    </data>
+    <data name="Replace whole-ruleset operations with explicit managed-resource ownership." xml:space="preserve">
+        <value>用明确的管理資源所有者取代整條規則集的操作 。</value>
+    </data>
+    <data name="Replacement client secret (optional)" xml:space="preserve">
+        <value>取代客戶端秘密( 可選擇的)</value>
+    </data>
+    <data name="Replacement search password" xml:space="preserve">
+        <value>取代搜索密碼</value>
+    </data>
+    <data name="Reported revision {0}" xml:space="preserve">
+        <value>{0}</value>
+    </data>
+    <data name="Request unsuccessful" xml:space="preserve">
+        <value>要求失敗</value>
+    </data>
+    <data name="Request {0}" xml:space="preserve">
+        <value>要求 {0}</value>
+    </data>
+    <data name="Require StartTLS (for ldap://)" xml:space="preserve">
+        <value>需要 startTLS (for ldap://)</value>
+    </data>
+    <data name="Require a signed ID-token claim" xml:space="preserve">
+        <value>需要簽署身份證申請</value>
+    </data>
+    <data name="Require an authenticator for" xml:space="preserve">
+        <value>需要驗證器</value>
+    </data>
+    <data name="Require change summaries on saved policy revisions" xml:space="preserve">
+        <value>要求修改已保存的政策修改摘要</value>
+    </data>
+    <data name="Required before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family; every match uses the same translated target." xml:space="preserve">
+        <value>需要先翻譯 。 選取的家族中, 一個CIDR 或 2–64 個不相關的 CIDR ; 每一個比賽都使用相同的翻譯目標 。</value>
+    </data>
+    <data name="Required for explicit SNAT; leave empty for masquerade or return. Must match the selected IP family." xml:space="preserve">
+        <value>需要明确 SNAT; 留空以假裝或返回。 必須符合選取的 IP 家族 。</value>
+    </data>
+    <data name="Required matcher before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Pinned contents are read-only." xml:space="preserve">
+        <value>在翻譯前需要配對者。 此家族的一個CIDR 或 2–64 脫節/ 非相關的 CIDR 。 被壓縮的內容是只讀的 。</value>
+    </data>
+    <data name="Resolve every unparsed rule expression; no partial rule may be converted." xml:space="preserve">
+        <value>解析所有未解析的規則表达式; 不能轉換部分規則 。</value>
+    </data>
+    <data name="Resolve external includes explicitly; this review never opens another file." xml:space="preserve">
+        <value>解析外部包含 ; 此檢視從未開啟過其他檔案 。</value>
+    </data>
+    <data name="Resolve named definitions against this exact source snapshot." xml:space="preserve">
+        <value>解析命名的定義與此精确的來源快照 。</value>
+    </data>
+    <data name="Restrict source cleanup to the selected managed resources." xml:space="preserve">
+        <value>限制來源清理到所選取的管理資源 。</value>
+    </data>
+    <data name="Return" xml:space="preserve">
+        <value>返回</value>
+    </data>
+    <data name="Return to caller" xml:space="preserve">
+        <value>返回呼叫端的鏈</value>
+    </data>
+    <data name="Return to the console and use the available controls for this action." xml:space="preserve">
+        <value>回到控制台, 并使用可用的控制器來做此動作 。</value>
+    </data>
+    <data name="Return — translation exemption" xml:space="preserve">
+        <value>返回 — 豁免位址轉換</value>
+    </data>
+    <data name="Reusable list references" xml:space="preserve">
+        <value>重用清單參考</value>
+    </data>
+    <data name="Reusable postrouting lists" xml:space="preserve">
+        <value>重新使用后路由列表</value>
+    </data>
+    <data name="Rev" xml:space="preserve">
+        <value>修訂版</value>
+    </data>
+    <data name="Rev {0}" xml:space="preserve">
+        <value>订正{0}</value>
+    </data>
+    <data name="Rev {0} ({1})" xml:space="preserve">
+        <value>订正{0}({1})</value>
+    </data>
+    <data name="Reverse-path filtering and TCP MSS" xml:space="preserve">
+        <value>反向路徑過程及 TCP MSS</value>
+    </data>
+    <data name="Review and apply" xml:space="preserve">
+        <value>审查和适用</value>
+    </data>
+    <data name="Review area" xml:space="preserve">
+        <value>檢視區域</value>
+    </data>
+    <data name="Review pending change" xml:space="preserve">
+        <value>等待修改的复核</value>
+    </data>
+    <data name="Review the exact source below." xml:space="preserve">
+        <value>查查下面的來源</value>
+    </data>
+    <data name="Review the submitted information, then try again. Your change may not have been saved." xml:space="preserve">
+        <value>檢查提交的信息, 然後再試一次。 您的變更可能沒有儲存 。</value>
+    </data>
+    <data name="Review topics are unavailable until the source error is resolved." xml:space="preserve">
+        <value>在源碼錯誤解決之前, 檢視主題不可用 。</value>
+    </data>
+    <data name="Review topics help locate work; they do not validate or convert the configuration. Keywords may be identifiers, so inspect each occurrence in context. No policy has been created or applied." xml:space="preserve">
+        <value>檢視主題有助于找到工作; 它們不驗證或轉換設定。 關鍵字可能會是身份證, 所以檢查每個發生地區。 沒有建立或应用任何政策 。</value>
+    </data>
+    <data name="Review your saved configuration" xml:space="preserve">
+        <value>檢查您已儲存的設定</value>
+    </data>
+    <data name="Review {0}" xml:space="preserve">
+        <value>第{0}次</value>
+    </data>
+    <data name="Revision" xml:space="preserve">
+        <value>版本</value>
+    </data>
+    <data name="Revision created" xml:space="preserve">
+        <value>版本已建立</value>
+    </data>
+    <data name="Revision summary / change note" xml:space="preserve">
+        <value>修正摘要/更改附注</value>
+    </data>
+    <data name="Revision {0}" xml:space="preserve">
+        <value>{0} 版本</value>
+    </data>
+    <data name="Revision {0} ({1})" xml:space="preserve">
+        <value>{0}({1})</value>
+    </data>
+    <data name="Revision {0} saved" xml:space="preserve">
+        <value>已儲存的版本 {0}</value>
+    </data>
+    <data name="Revision {0} was created from this plan." xml:space="preserve">
+        <value>修改{0} 由此計劃建立.</value>
+    </data>
+    <data name="Revision {0} · {1}" xml:space="preserve">
+        <value>{0} - {1}</value>
+    </data>
+    <data name="Revoke sessions" xml:space="preserve">
+        <value>取消會議</value>
+    </data>
+    <data name="Revoke sessions for {0}" xml:space="preserve">
+        <value>{0}的取消會議</value>
+    </data>
+    <data name="Role" xml:space="preserve">
+        <value>作用</value>
+    </data>
+    <data name="Role for {0}" xml:space="preserve">
+        <value>{0}的作用</value>
+    </data>
+    <data name="Role groups" xml:space="preserve">
+        <value>角色集團</value>
+    </data>
+    <data name="Rollback failed: {0}." xml:space="preserve">
+        <value>回轉失敗: {0}.</value>
+    </data>
+    <data name="Router constructs and apply readiness" xml:space="preserve">
+        <value>路由器建構與應用狀態</value>
+    </data>
+    <data name="Rule" xml:space="preserve">
+        <value>规则</value>
+    </data>
+    <data name="Rule edits change the draft. Saving creates an immutable revision. Review and apply sends an explicitly selected revision to an enrolled host; its local watchdog restores the previous policy if confirmation is missing." xml:space="preserve">
+        <value>編輯規則會變更草稿。儲存時會建立不可修改的修訂版本。檢閱並套用時，系統會將明確選取的修訂版本傳送至已註冊的主機。如果未收到套用確認，該主機上的本機監控程式（watchdog）會還原上一版原則。</value>
+    </data>
+    <data name="Rule switches update the draft only. Disabled rules keep their settings and order and are omitted from the native candidate. Review the intent/native diffs, save a revision, then use confirmed apply. Disabling a rule can broaden or restrict traffic." xml:space="preserve">
+        <value>規定切換只更新草稿。 殘障的規定會保持它們的設定和秩序, 並且從本地候選人中省略 。 檢查意向/ 本地的 diffs, 儲存修改, 然后使用已確認的應用 。 禁用規則可以擴張或限制流量 。</value>
+    </data>
+    <data name="Rule {0} · {1} · {2}" xml:space="preserve">
+        <value>规则 {0} · {1} · {2}</value>
+    </data>
+    <data name="Rule {0} · {1} · {2} · {3}" xml:space="preserve">
+        <value>規則 {0} · {1} · {2} · {3}</value>
+    </data>
+    <data name="Rule {0} · {1} · {2} · {3} · {4}" xml:space="preserve">
+        <value>規則 {0} · {1} · {2} · {3} · {4}</value>
+    </data>
+    <data name="Rules ({0})" xml:space="preserve">
+        <value>({0})</value>
+    </data>
+    <data name="Rules run in order. Return stops this NAT chain without translation; place exemptions before translation rules. Empty optional matchers mean any. Negation means “anything except” and requires that matcher. Changes update the draft for review, not the live firewall." xml:space="preserve">
+        <value>规则按序執行 。 返回時不做翻譯就停止此 NAT 串列 ; 免置於翻譯規則之前 。 空選匹配符表示任何。 忽略表示「 除任何外的 ” , 要求匹配符。 變更更新草稿以供審查, 而不是實際防火牆 。</value>
+    </data>
+    <data name="SMTP password" xml:space="preserve">
+        <value>SMTP 密碼</value>
+    </data>
+    <data name="SMTP port" xml:space="preserve">
+        <value>SMTP 端口</value>
+    </data>
+    <data name="SMTP server" xml:space="preserve">
+        <value>SMTP 伺服器</value>
+    </data>
+    <data name="SMTP username" xml:space="preserve">
+        <value>SMTP 使用者名稱</value>
+    </data>
+    <data name="SNAT — explicit address" xml:space="preserve">
+        <value>SNAT — 明确地址</value>
+    </data>
+    <data name="SQLite WAL with" xml:space="preserve">
+        <value>SQLite WAL 使用</value>
+    </data>
+    <data name="Save DNAT #{0}" xml:space="preserve">
+        <value>保存 DNAT #{0}</value>
+    </data>
+    <data name="Save MFA policy" xml:space="preserve">
+        <value>儲存 MFA 政策</value>
+    </data>
+    <data name="Save OAuth connection" xml:space="preserve">
+        <value>儲存 OAuth 連接</value>
+    </data>
+    <data name="Save a new list version" xml:space="preserve">
+        <value>儲存新的列表版本</value>
+    </data>
+    <data name="Save access" xml:space="preserve">
+        <value>儲存存取</value>
+    </data>
+    <data name="Save and replace LDAP settings" xml:space="preserve">
+        <value>保存和取代 LDAP 設定值</value>
+    </data>
+    <data name="Save and replace provider settings" xml:space="preserve">
+        <value>保存和取代提供者設定值</value>
+    </data>
+    <data name="Save conversion plan for review" xml:space="preserve">
+        <value>儲存轉換計劃供審查</value>
+    </data>
+    <data name="Save email delivery settings" xml:space="preserve">
+        <value>儲存電子郵件傳送設定值</value>
+    </data>
+    <data name="Save new version" xml:space="preserve">
+        <value>儲存新版本</value>
+    </data>
+    <data name="Save policy revision" xml:space="preserve">
+        <value>儲存政策修改</value>
+    </data>
+    <data name="Save profile" xml:space="preserve">
+        <value>儲存設定檔</value>
+    </data>
+    <data name="Save profile mapping" xml:space="preserve">
+        <value>儲存描述檔映射</value>
+    </data>
+    <data name="Save retains an immutable version and audit entry. Addresses are stored as canonical CIDRs. Overlapping prefixes are retained without merging. Existing versions are unchanged." xml:space="preserve">
+        <value>儲存時會保留一個不可變更的版本並寫入稽核紀錄。位址會以標準 CIDR 格式儲存。重疊的前綴會個別保留，不會合併。現有版本維持原樣。</value>
+    </data>
+    <data name="Save rule #{0}" xml:space="preserve">
+        <value>保存規則 # {0}</value>
+    </data>
+    <data name="Save system settings" xml:space="preserve">
+        <value>儲存系統設定值</value>
+    </data>
+    <data name="Saved" xml:space="preserve">
+        <value>已儲存</value>
+    </data>
+    <data name="Saved (local time)" xml:space="preserve">
+        <value>已儲存( 本地時間)</value>
+    </data>
+    <data name="Saved configuration" xml:space="preserve">
+        <value>已儲存的設定</value>
+    </data>
+    <data name="Saved connection settings take effect on the next request." xml:space="preserve">
+        <value>儲存的連接設定值在下次要求時生效 。</value>
+    </data>
+    <data name="Saved conversion review" xml:space="preserve">
+        <value>已儲存的轉換檢視</value>
+    </data>
+    <data name="Saved login notice (not displayed yet)" xml:space="preserve">
+        <value>已儲存的登入通知( 尚未顯示)</value>
+    </data>
+    <data name="Saved policy revision" xml:space="preserve">
+        <value>已儲存的政策修改</value>
+    </data>
+    <data name="Saved policy revisions ({0})" xml:space="preserve">
+        <value>已省下的政策修改({0})</value>
+    </data>
+    <data name="Saved preference; the actual confirmation timeout is selected when starting an apply." xml:space="preserve">
+        <value>已儲存偏好; 啟動應用程式時會選擇實際的確認逾時 。</value>
+    </data>
+    <data name="Saved references: {0} to version {1}; {2} to version {3}. See the revision links above for locations. These counts include historical revisions and dormant rules; they do not establish active host use." xml:space="preserve">
+        <value>已儲存的參考數: {0} 到 {1} 版本; {2} 到 {3} 版本。 參考以上位置的修改連結 。 這些計數包括歷史的修改和休眠規則; 它們不建立有效的主機使用 。</value>
+    </data>
+    <data name="Saved revision" xml:space="preserve">
+        <value>已儲存的版本</value>
+    </data>
+    <data name="Saved revision references ({0})" xml:space="preserve">
+        <value>已儲存的版本參考( {0})</value>
+    </data>
+    <data name="Saved version {0}" xml:space="preserve">
+        <value>已儲存的{0}版本</value>
+    </data>
+    <data name="Saved versions loaded for" xml:space="preserve">
+        <value>已儲存的版本已載入</value>
+    </data>
+    <data name="Saved versions loaded for {0}; browsing left this draft unchanged." xml:space="preserve">
+        <value>已儲存的版本已載入{0}; 瀏覽未變 。</value>
+    </data>
+    <data name="Saving replaces the active connection settings, invalidates existing provider sessions and cancels in-flight provider sign-ins. Local sessions remain available. No provider request is made until sign-in." xml:space="preserve">
+        <value>儲存取代正在使用的連接設定值, 取消现有的提供商會議, 取消在飛的提供商簽署。 本地會議仍然可用。 除非簽署, 不會有提供商的請求 。</value>
+    </data>
+    <data name="Saving retires existing LDAP sessions and pending LDAP sign-ins. The directory is contacted only when someone attempts LDAP sign-in." xml:space="preserve">
+        <value>儲存已存在的 LDAP 會議及待發行的 LDAP 簽署。 只有有人試圖 LDAP 簽署時才能聯絡到此目錄 。</value>
+    </data>
+    <data name="Schema 1 (Input-only stateless)" xml:space="preserve">
+        <value>Schema 1 (只限輸入的无国籍者)</value>
+    </data>
+    <data name="Schema 1 (Minimal Input filter)" xml:space="preserve">
+        <value>Schema 1 (最小輸入過程器)</value>
+    </data>
+    <data name="Schema 2 (Multi-chain, stateful, sets)" xml:space="preserve">
+        <value>Schema 2 (多鏈、 狀態、 套)</value>
+    </data>
+    <data name="Schema 2 (Stateful + Forward/Output + Sets + Rate limits)" xml:space="preserve">
+        <value>Schema 2 (宣告 + 前進/ 输出 + 設定 + 速率限制)</value>
+    </data>
+    <data name="Schema version" xml:space="preserve">
+        <value>Schema 版本</value>
+    </data>
+    <data name="Schema v{0}" xml:space="preserve">
+        <value>司馬 v {0}</value>
+    </data>
+    <data name="Scopes" xml:space="preserve">
+        <value>範圍</value>
+    </data>
+    <data name="Search" xml:space="preserve">
+        <value>搜尋</value>
+    </data>
+    <data name="Search account DN" xml:space="preserve">
+        <value>搜尋帳號 DN</value>
+    </data>
+    <data name="Search names and descriptions. Clear the search to see every list." xml:space="preserve">
+        <value>搜索姓名和描述。 清除搜尋以查看每個清單 。</value>
+    </data>
+    <data name="Search password" xml:space="preserve">
+        <value>搜尋密碼</value>
+    </data>
+    <data name="Second" xml:space="preserve">
+        <value>第二批</value>
+    </data>
+    <data name="Second-factor code required" xml:space="preserve">
+        <value>需要第二元碼</value>
+    </data>
+    <data name="Select a saved database revision. Unsaved draft changes are excluded. The native file contains active policy only; the intent file also retains disabled rules, descriptions and pinned lists. These downloads describe desired configuration, not current host state." xml:space="preserve">
+        <value>請選取已儲存於資料庫中的修訂版本。未儲存的草稿變更不會納入。原生檔案只包含生效的原則，意圖檔案還會保留已停用的規則、說明和鎖定版本的清單。下載的檔案描述的是所需組態，並非主機目前的狀態。</value>
+    </data>
+    <data name="Select an enabled local account." xml:space="preserve">
+        <value>選擇已開啟的本地帳號 。</value>
+    </data>
+    <data name="Select both a managed host and a saved policy revision." xml:space="preserve">
+        <value>選擇管理的主機和儲存的政策變更 。</value>
+    </data>
+    <data name="Selected managed host was not found." xml:space="preserve">
+        <value>找不到所選管理的主機 。</value>
+    </data>
+    <data name="Selected policy revision was not found." xml:space="preserve">
+        <value>未找到一些政策修改 。</value>
+    </data>
+    <data name="Selection deleted" xml:space="preserve">
+        <value>選擇區已刪除</value>
+    </data>
+    <data name="Self-hosted Linux firewall controller with native" xml:space="preserve">
+        <value>自辦 Linux 防火牆控制器</value>
+    </data>
+    <data name="Send verification code" xml:space="preserve">
+        <value>傳送驗證碼</value>
+    </data>
+    <data name="Sender address" xml:space="preserve">
+        <value>發件人地址</value>
+    </data>
+    <data name="Seq" xml:space="preserve">
+        <value>世克</value>
+    </data>
+    <data name="Service Bind DN (optional)" xml:space="preserve">
+        <value>服務 捆綁 DN( 可選擇的)</value>
+    </data>
+    <data name="Service temporarily unavailable" xml:space="preserve">
+        <value>服務暫時不可用</value>
+    </data>
+    <data name="Session" xml:space="preserve">
+        <value>階段</value>
+    </data>
+    <data name="Session idle timeout (minutes)" xml:space="preserve">
+        <value>會議暫停( 分鐘)</value>
+    </data>
+    <data name="Sessions revoked" xml:space="preserve">
+        <value>工作階段已取消</value>
+    </data>
+    <data name="Set the authenticator requirement for local and LDAP sign-ins." xml:space="preserve">
+        <value>設定本地端和 LDAP 簽章的驗證要求 。</value>
+    </data>
+    <data name="Set up time-based verification codes for your sign-ins." xml:space="preserve">
+        <value>為您的登記設置時間性檢查碼 。</value>
+    </data>
+    <data name="Set up your app" xml:space="preserve">
+        <value>設定您的應用程式</value>
+    </data>
+    <data name="Sets &amp; IP lists" xml:space="preserve">
+        <value>設定 &amp; IP 列表</value>
+    </data>
+    <data name="Sets the TCP maximum segment size on forwarded SYN packets in both IP families. This does not accept traffic. Pick a size appropriate for the path MTU; review connectivity with disposable packet tests." xml:space="preserve">
+        <value>設定在 IP 家族中傳送的 SYN 包上 TCP 最大區段大小 。 這不接受流量 。 請選擇適當於路徑 MTU 的大小; 檢視與可支配包測試的連通性 。</value>
+    </data>
+    <data name="Showing 5 hosts. Open Hosts for all connections." xml:space="preserve">
+        <value>顯示 5 主機。 開啟所有連接的主機 。</value>
+    </data>
+    <data name="Showing the first 100 gaps. Download the report for all {0} gaps." xml:space="preserve">
+        <value>顯示第一個 100 空白。 下載報告給所有人 {0} 差距。</value>
+    </data>
+    <data name="Showing the first 200 mappings. Download the report for all {0} mappings." xml:space="preserve">
+        <value>顯示首批 200 張地圖。 下載所有 {0} 地圖的報告 。</value>
+    </data>
+    <data name="Sign in as a local Administrator to change provider trust or credentials." xml:space="preserve">
+        <value>簽署為本地管理員, 以改變提供商信任或憑證 。</value>
+    </data>
+    <data name="Sign in as a local Administrator to change provider trust." xml:space="preserve">
+        <value>簽署為當地管理員, 以改變提供商的信任 。</value>
+    </data>
+    <data name="Sign in as a local Administrator to grant or restore local Administrator access." xml:space="preserve">
+        <value>簽署為當地行政官, 以授權或恢復當地行政官的權限 。</value>
+    </data>
+    <data name="Sign in to continue" xml:space="preserve">
+        <value>簽署繼續</value>
+    </data>
+    <data name="Sign out" xml:space="preserve">
+        <value>簽字</value>
+    </data>
+    <data name="Sign out of all local sessions" xml:space="preserve">
+        <value>在所有本地會議中簽署</value>
+    </data>
+    <data name="Sign out of this session" xml:space="preserve">
+        <value>簽署此階段</value>
+    </data>
+    <data name="Sign-in name" xml:space="preserve">
+        <value>簽署名稱</value>
+    </data>
+    <data name="Signed in as" xml:space="preserve">
+        <value>簽名為</value>
+    </data>
+    <data name="Signed out" xml:space="preserve">
+        <value>簽了字</value>
+    </data>
+    <data name="Signed-claim mode only. Enter a literal top-level claim name, separate from the groups claim." xml:space="preserve">
+        <value>只簽署索赔模式。 輸入單位的頂層索赔名稱, 與群體索赔相隔離 。</value>
+    </data>
+    <data name="Signing out revokes all sessions for your local account." xml:space="preserve">
+        <value>簽署取消您本地帳號的所有會議 。</value>
+    </data>
+    <data name="Signing out revokes this LDAP session." xml:space="preserve">
+        <value>簽署取消此 LDAP 會議 。</value>
+    </data>
+    <data name="Signing out revokes this federated ticket." xml:space="preserve">
+        <value>簽署會吊銷這張聯邦的票</value>
+    </data>
+    <data name="Size" xml:space="preserve">
+        <value>大小</value>
+    </data>
+    <data name="Snapshot" xml:space="preserve">
+        <value>抓圖</value>
+    </data>
+    <data name="Socket Group ID (optional)" xml:space="preserve">
+        <value>Socket 群組代碼( 可選擇的)</value>
+    </data>
+    <data name="Socket group:" xml:space="preserve">
+        <value>套接字群組 :</value>
+    </data>
+    <data name="Something went wrong" xml:space="preserve">
+        <value>出事了</value>
+    </data>
+    <data name="Source" xml:space="preserve">
+        <value>來源</value>
+    </data>
+    <data name="Source CIDR" xml:space="preserve">
+        <value>出處:CIDR</value>
+    </data>
+    <data name="Source CIDR (optional)" xml:space="preserve">
+        <value>CIDR(可選擇的)</value>
+    </data>
+    <data name="Source CIDR(s)" xml:space="preserve">
+        <value>出處:CIDR(s)</value>
+    </data>
+    <data name="Source CIDR(s) (optional)" xml:space="preserve">
+        <value>CIDR(s) (可選)</value>
+    </data>
+    <data name="Source MAC (optional)" xml:space="preserve">
+        <value>MAC(可選擇的)</value>
+    </data>
+    <data name="Source MAC address(es)" xml:space="preserve">
+        <value>源碼 MAC 位址( es)</value>
+    </data>
+    <data name="Source MAC address(es) (optional)" xml:space="preserve">
+        <value>來源 MAC 位址( 選擇性)</value>
+    </data>
+    <data name="Source SHA-256" xml:space="preserve">
+        <value>出處:SHA-256</value>
+    </data>
+    <data name="Source address" xml:space="preserve">
+        <value>來源地址</value>
+    </data>
+    <data name="Source inventory and exact original" xml:space="preserve">
+        <value>原始和原始</value>
+    </data>
+    <data name="Source lines" xml:space="preserve">
+        <value>來源行</value>
+    </data>
+    <data name="Source literals; pinned lists are managed separately" xml:space="preserve">
+        <value>來源字元; 標籤清單被分類管理</value>
+    </data>
+    <data name="Source names do not grant ownership. Primary filtering uses priority 0; auxiliary filtering preserves an independent priority; NAT supports prerouting/postrouting; bridge supports forward and regular subchains. Unmapped or incompatible tables block conversion." xml:space="preserve">
+        <value>來源名稱不授權所有。 主滤波器使用优先级 0; 辅助滤波器保留了獨立优先级 ; NAT 支持預先路由/ 後端路由 ; 橋支持前端和正規子鏈。 未放大或不兼容的表格區塊轉換 。</value>
+    </data>
+    <data name="Source port (optional)" xml:space="preserve">
+        <value>來源端口( 可選擇的)</value>
+    </data>
+    <data name="Source position" xml:space="preserve">
+        <value>來源位置</value>
+    </data>
+    <data name="Source resolution" xml:space="preserve">
+        <value>來源解析</value>
+    </data>
+    <data name="Source storage is full (128 snapshots or 32 MiB). No source or audit record was added." xml:space="preserve">
+        <value>來源儲存已滿( 128 個快照或 32 MiB ) 。 沒有新增來源或審查記錄 。</value>
+    </data>
+    <data name="Source structure and diagnostic details" xml:space="preserve">
+        <value>原始结构和诊断性細節</value>
+    </data>
+    <data name="Source structure is complete: {0} delimiter groups, maximum nesting {1}." xml:space="preserve">
+        <value>源頭結構完整:{0} 定界器群,最大巢穴{1}.</value>
+    </data>
+    <data name="Source structure is incomplete. No partial tree or topic inventory is used." xml:space="preserve">
+        <value>來源結構不全。 沒有使用部分樹狀或主題目錄 。</value>
+    </data>
+    <data name="Source-to-policy mappings ({0})" xml:space="preserve">
+        <value>源碼政策映射({0})</value>
+    </data>
+    <data name="Source-wide operations and ownership scope" xml:space="preserve">
+        <value>全源操作和所有者範圍</value>
+    </data>
+    <data name="Space-separated provider scopes for reading the current account and groups." xml:space="preserve">
+        <value>空間分隔的供應者範圍, 以讀取當期帳號與群組 。</value>
+    </data>
+    <data name="Start authenticator setup" xml:space="preserve">
+        <value>啟動驗證器設定</value>
+    </data>
+    <data name="Start email setup again" xml:space="preserve">
+        <value>重新啟動電子郵件設定</value>
+    </data>
+    <data name="Start with your firewall policy" xml:space="preserve">
+        <value>從防火牆政策開始</value>
+    </data>
+    <data name="StartTLS requirement" xml:space="preserve">
+        <value>啟動TLS 要求</value>
+    </data>
+    <data name="State" xml:space="preserve">
+        <value>狀態</value>
+    </data>
+    <data name="States / Match" xml:space="preserve">
+        <value>狀態/ 匹配</value>
+    </data>
+    <data name="Status superseded" xml:space="preserve">
+        <value>狀態已取代</value>
+    </data>
+    <data name="Status unavailable" xml:space="preserve">
+        <value>狀態不可用</value>
+    </data>
+    <data name="Status unknown" xml:space="preserve">
+        <value>狀態未知</value>
+    </data>
+    <data name="Stored · not applied" xml:space="preserve">
+        <value>已儲存的 ^ 未应用</value>
+    </data>
+    <data name="Structured policy bundle summary" xml:space="preserve">
+        <value>结构化政策捆绑摘要</value>
+    </data>
+    <data name="Submit each field once. Check the list name, type, description and entries." xml:space="preserve">
+        <value>提交每個字段一次。 請檢查清單名稱、 型態、 描述和項目 。</value>
+    </data>
+    <data name="Submit one display name and one configuration file." xml:space="preserve">
+        <value>提交一個顯示名稱和一個設定檔 。</value>
+    </data>
+    <data name="Summary" xml:space="preserve">
+        <value>摘要</value>
+    </data>
+    <data name="Supports inline CIDR/port sets &amp; rate limiting" xml:space="preserve">
+        <value>支援內置的 CIDR/ port 套件限制率( R)</value>
+    </data>
+    <data name="System / Connections" xml:space="preserve">
+        <value>系統/ 連接</value>
+    </data>
+    <data name="System settings" xml:space="preserve">
+        <value>系統設定值</value>
+    </data>
+    <data name="System settings changed while you were editing. Review the current settings and reapply your changes." xml:space="preserve">
+        <value>系統設定值在您編輯時變更 。 請檢查目前的設定值並重新應用您的變更 。</value>
+    </data>
+    <data name="System settings saved and recorded in the append-only audit log." xml:space="preserve">
+        <value>系統設定已儲存, 并記錄在附件只檢查紀錄中 。</value>
+    </data>
+    <data name="System settings sections" xml:space="preserve">
+        <value>系統設定區域</value>
+    </data>
+    <data name="TLS / SSL mode" xml:space="preserve">
+        <value>TLS / SSL 模式</value>
+    </data>
+    <data name="Target" xml:space="preserve">
+        <value>目標</value>
+    </data>
+    <data name="Target host" xml:space="preserve">
+        <value>目標主機</value>
+    </data>
+    <data name="Technical identifiers" xml:space="preserve">
+        <value>技術辨識器</value>
+    </data>
+    <data name="That action isn't available" xml:space="preserve">
+        <value>這個動作沒有用</value>
+    </data>
+    <data name="That name already exists. Choose a different identifier or edit the existing list." xml:space="preserve">
+        <value>此名稱已經存在。 選擇不同的标识符或編輯已存在的清單 。</value>
+    </data>
+    <data name="That sign-in name already exists. Choose another name." xml:space="preserve">
+        <value>簽名已經存在 。 選擇另一個名稱 。</value>
+    </data>
+    <data name="The candidate ruleset is active on" xml:space="preserve">
+        <value>候選人規則正在執行中</value>
+    </data>
+    <data name="The change was rejected. Review the fields and try again." xml:space="preserve">
+        <value>變更被拒絕了,再檢查一下字段再試一次</value>
+    </data>
+    <data name="The configuration exceeds 512 KiB." xml:space="preserve">
+        <value>配置超過 512 KiB 。</value>
+    </data>
+    <data name="The conversion choices exceed the supported bounds or contain an invalid value." xml:space="preserve">
+        <value>轉換選項超越支援的邊界或包含一個無效的值 。</value>
+    </data>
+    <data name="The field must contain a stable string ID." xml:space="preserve">
+        <value>字段必須包含一個穩定的字串ID 。</value>
+    </data>
+    <data name="The field must contain an array of group names." xml:space="preserve">
+        <value>字段必須包含群組名稱的陣列 。</value>
+    </data>
+    <data name="The file must contain valid UTF-8 text." xml:space="preserve">
+        <value>檔案必須包含有效的 UTF-8 文本 。</value>
+    </data>
+    <data name="The library has reached its limit of 128 lists. No list or audit entry was added." xml:space="preserve">
+        <value>圖書館已經達到極限 128 列表。沒有新增清單或稽核項目。</value>
+    </data>
+    <data name="The native file creates reserved Nergal tables and fails if they already exist. Managed updates use confirmed apply. Keep the intent file to preserve authored settings; it is not a backup of library history, accounts or agent ownership." xml:space="preserve">
+        <value>本地檔案會建立保留 Nergal 表格, 如果它們已經存在, 並且失敗。 管理更新的用法已確認 。 要保留目的檔案以保存作者的設定; 它不是圖書庫歷史、 帳號或代理主權的備份 。</value>
+    </data>
+    <data name="The original remains intact. A global flush is never executed; foreign tables are preserved. This decision is recorded in the plan. Unsupported commands and rules cannot be approved away." xml:space="preserve">
+        <value>原則保存完好。 全球衝浪從未執行; 外國表格被保留。 此決定被記錄在計劃中。 不支援的命令和規則無法被批准 。</value>
+    </data>
+    <data name="The password is encrypted and never displayed. Leave blank to keep a stored password. Changing the endpoint, IP address, search base or bind DN requires a replacement." xml:space="preserve">
+        <value>密碼是加密的, 從未顯示 。 留下空白以保留已儲存的密碼。 更改端點, IP 位址、 搜尋基址或捆綁 DN 需要更换 。</value>
+    </data>
+    <data name="The policy changed. Review the current requirement and submit again." xml:space="preserve">
+        <value>政策變了,重新檢查目前的要求,再提交。</value>
+    </data>
+    <data name="The provider did not supply a display name." xml:space="preserve">
+        <value>提供者未提供顯示名稱 。</value>
+    </data>
+    <data name="The provider did not supply a family name." xml:space="preserve">
+        <value>供養者未提供姓氏。</value>
+    </data>
+    <data name="The provider did not supply a given name." xml:space="preserve">
+        <value>供方未提供指定姓名。</value>
+    </data>
+    <data name="The provider did not supply a profile email address." xml:space="preserve">
+        <value>提供商未提供設定檔電子郵件地址 。</value>
+    </data>
+    <data name="The provider supplied an invalid display name." xml:space="preserve">
+        <value>提供者提供了不合法的顯示名稱 。</value>
+    </data>
+    <data name="The provider supplied an invalid family name." xml:space="preserve">
+        <value>供應商提供不合法的姓氏。</value>
+    </data>
+    <data name="The provider supplied an invalid given name." xml:space="preserve">
+        <value>提供者提供了不合法的指定名稱 。</value>
+    </data>
+    <data name="The provider supplied an invalid profile email address." xml:space="preserve">
+        <value>提供者提供了不合法的剖面描述檔電子郵件地址 。</value>
+    </data>
+    <data name="The relay settings changed. Review the current settings and submit again." xml:space="preserve">
+        <value>中继設定變更 。 請重新檢視目前的設定值, 並再次提交 。</value>
+    </data>
+    <data name="The selected list or expected version is invalid. Open the library and select the list again." xml:space="preserve">
+        <value>選取的清單或期望的版本不合法。 開啟文庫, 再選擇清單 。</value>
+    </data>
+    <data name="The staged source has an invalid name, encoding or size." xml:space="preserve">
+        <value>舞台來源有不合法的名字、編碼或大小 。</value>
+    </data>
+    <data name="These are saved policy references, not a claim of active host usage. Every revision retains its selected version. Saving a list edit does not update any reference." xml:space="preserve">
+        <value>這些是已儲存的政策參考, 而不是對主機用戶的稱呼。 每一份版本都保留其選取的版本。 儲存清單編輯不更新任何參考 。</value>
+    </data>
+    <data name="These checks retain source structure for mapping; they do not validate native rule semantics or resolve includes. Conversion remains blocked." xml:space="preserve">
+        <value>這些檢查保留了映射的來源結構; 它們不驗證原生規則語法或解析度。 轉換仍然被封鎖 。</value>
+    </data>
+    <data name="These connection settings changed. Reload the page before saving again." xml:space="preserve">
+        <value>這些連接設定變更。 在再次儲存前重新載入頁面 。</value>
+    </data>
+    <data name="These general settings are saved intent. Configure the active connection and its encrypted secret on the dedicated provider screen." xml:space="preserve">
+        <value>這些一般設定值是儲存的意向。 設定在指定提供者螢幕上的啟動連接及其加密密件 。</value>
+    </data>
+    <data name="These general settings are saved intent. The active OpenLDAP connection and its encrypted search password are managed on the dedicated connection screen." xml:space="preserve">
+        <value>這些一般設定值是儲存的意向。 正在使用的 OpenLDAP 連接及其加密的搜尋密碼被管理在專用連接螢幕上 。</value>
+    </data>
+    <data name="These optional file snapshots are staging inputs. Import explicitly to retain a database record; later file changes cannot alter an imported snapshot." xml:space="preserve">
+        <value>這些可選取的檔案快照正在輸入。 匯入以明确保留數據庫紀錄; 後來檔案變更無法改變匯入的快照 。</value>
+    </data>
+    <data name="These settings do not activate sign-in, change roles or link accounts. The exact issuer must match the active OIDC connection. A changed or disabled mapping immediately retires its old defaults; users sign in again to refresh. Profile email is not a verified delivery address." xml:space="preserve">
+        <value>這些設定不啟動簽署、 改變角色或連結帳號。 确切的發佈者必須符合有效的 OIDC 連接。 已變更或已關閉的映射會立即取消其舊的預設; 使用者再次簽署以刷新。 Profile email不是已驗證的送出地址 。</value>
+    </data>
+    <data name="This draft includes auxiliary tables or extended bridge chains. Use an updated agent with complete bundle receipts; confirmation and local rollback cover the entire bundle." xml:space="preserve">
+        <value>此草稿包括辅助表格或延伸的橋鏈。 使用更新的代理程式, 包含完整的捆綁收據; 確認和本地翻轉覆覆蓋整捆資料 。</value>
+    </data>
+    <data name="This includes dormant rules and pinned references, which cannot be reconstructed from kernel observations. A state change is still a draft until saved and applied." xml:space="preserve">
+        <value>這包括休眠規則和標注的參考, 這不能從內核觀察中重建。 狀態變更在保存和应用前仍是草稿 。</value>
+    </data>
+    <data name="This installation has reached the supported limit of 256 local accounts." xml:space="preserve">
+        <value>此安裝已達到支持的 256 個本地帳號的上限 。</value>
+    </data>
+    <data name="This installation supports up to 16 issuer profile mappings." xml:space="preserve">
+        <value>此安裝支援 16 個發布者剖面圖 。</value>
+    </data>
+    <data name="This list has reached its limit of 64 immutable versions. No change was saved." xml:space="preserve">
+        <value>此清單已達限值 : 64 不可變化的版本。 沒有儲存任何變更 。</value>
+    </data>
+    <data name="This mapping changed. Review its current version and submit again." xml:space="preserve">
+        <value>此映射已變更 。 請重新檢視目前的版本並再次提交 。</value>
+    </data>
+    <data name="This optional owned table filters forwarded Ethernet frames. Priority orders its bridge hook; lower numbers run first. Complete table observation, native ownership receipts and independent timed rollback remain required for apply. No host apply happens here." xml:space="preserve">
+        <value>此可選取的表格過載器已傳送 Ethernet 框架。 优先點為它的橋钩; 少數先執行。 完整表觀察、 本地所有者接收器與獨立的時間回滚仍需要使用 。 這裡沒有執行主機 。</value>
+    </data>
+    <data name="This page may have moved, or the address may be incorrect. Use the console navigation to continue." xml:space="preserve">
+        <value>此頁面可能已移動, 或者地址可能不正確。 使用控制台導覽繼續 。</value>
+    </data>
+    <data name="This plan is blocked, already committed, or no longer matches current conversion logic. Review a new plan; no duplicate revision was created." xml:space="preserve">
+        <value>此計劃已被封鎖、 已經執行, 或是不再符合目前的轉換邏輯 。 請檢查新計劃; 沒有建立任何重複的變更 。</value>
+    </data>
+    <data name="This plan uses immutable database originals." xml:space="preserve">
+        <value>這個計劃使用不可變化的數據庫原件.</value>
+    </data>
+    <data name="This record changed. Review its current values and submit again." xml:space="preserve">
+        <value>此紀錄已變更 。 請重新檢視目前的數值並再次提交 。</value>
+    </data>
+    <data name="This review uses immutable database content." xml:space="preserve">
+        <value>此評論使用不可變化的數據庫內容 。</value>
+    </data>
+    <data name="This statement must be represented completely; it cannot be skipped." xml:space="preserve">
+        <value>此聲明必須完全代表它; 它不能跳過 。</value>
+    </data>
+    <data name="This wildcard intentionally expands to no files." xml:space="preserve">
+        <value>此通配符有意擴大到沒有檔案 。</value>
+    </data>
+    <data name="Time (local)" xml:space="preserve">
+        <value>時間( 本地 )</value>
+    </data>
+    <data name="Timestamp (local time)" xml:space="preserve">
+        <value>時間戳( 本地時間 )</value>
+    </data>
+    <data name="To version" xml:space="preserve">
+        <value>到版本</value>
+    </data>
+    <data name="To version {0}" xml:space="preserve">
+        <value>至{0}版本</value>
+    </data>
+    <data name="Token endpoint" xml:space="preserve">
+        <value>收件端點</value>
+    </data>
+    <data name="Too many requests arrived in a short time. Wait a minute, then try again." xml:space="preserve">
+        <value>太多要求在短短的時間里到達了,等一下,再試一次</value>
+    </data>
+    <data name="Translated Addr" xml:space="preserve">
+        <value>翻譯添加器</value>
+    </data>
+    <data name="Translated IP" xml:space="preserve">
+        <value>翻譯 IP</value>
+    </data>
+    <data name="Translated IP address" xml:space="preserve">
+        <value>翻譯的 IP 位址</value>
+    </data>
+    <data name="Translated port" xml:space="preserve">
+        <value>翻譯端口</value>
+    </data>
+    <data name="Translated port (optional)" xml:space="preserve">
+        <value>轉換連接埠( 可選擇的)</value>
+    </data>
+    <data name="Transport" xml:space="preserve">
+        <value>交通</value>
+    </data>
+    <data name="Transport ports" xml:space="preserve">
+        <value>運輸埠</value>
+    </data>
+    <data name="Transport protocol" xml:space="preserve">
+        <value>運輸協議</value>
+    </data>
+    <data name="Trigger-protected append-only audit log and immutable policy revision archive." xml:space="preserve">
+        <value>啟動保護的附加單一審查紀錄和不可變化的政策修正檔 。</value>
+    </data>
+    <data name="Trust Boundary" xml:space="preserve">
+        <value>信任邊界</value>
+    </data>
+    <data name="Trust the provider to enforce MFA" xml:space="preserve">
+        <value>信任提供商執行 MFA</value>
+    </data>
+    <data name="Try again shortly. If the problem continues, ask an Administrator to check the application logs." xml:space="preserve">
+        <value>很快再試一次。 如果問題繼續, 請讓管理員檢查應用程式紀錄 。</value>
+    </data>
+    <data name="Two-Phase Watchdog" xml:space="preserve">
+        <value>二階段監視犬</value>
+    </data>
+    <data name="Two-phase confirmed apply" xml:space="preserve">
+        <value>二相确定</value>
+    </data>
+    <data name="Two-phase safe apply" xml:space="preserve">
+        <value>二相安全适用</value>
+    </data>
+    <data name="Type" xml:space="preserve">
+        <value>類型</value>
+    </data>
+    <data name="UTC" xml:space="preserve">
+        <value>UTC</value>
+    </data>
+    <data name="Unavailable means the query could not establish status. Unqueried means no status request was made. Unknown means the controller lacks a usable classification. These gaps leave the firewall state undetermined." xml:space="preserve">
+        <value>無法取得, 表示查詢無法建立狀態 。 未取得, 表示沒有提出狀態要求 。 未知的表示控制器缺乏可用的分類。 這些缺口讓防火牆狀態未定 。</value>
+    </data>
+    <data name="Unfold line" xml:space="preserve">
+        <value>折叠行</value>
+    </data>
+    <data name="Unfolded lines" xml:space="preserve">
+        <value>未覆行</value>
+    </data>
+    <data name="Unified diff preview" xml:space="preserve">
+        <value>單一 diff 預覽</value>
+    </data>
+    <data name="Up to 16 exact-issuer mappings. This screen supports signed OIDC metadata. LDAP and generic OAuth profile adapters are not implemented yet." xml:space="preserve">
+        <value>最多 16 個精确發佈者映射 。 此螢幕支援已簽署的 OIDC 中繼資料 。 LDAP 和一般的 OAuth 描述檔适配器尚未實施 。</value>
+    </data>
+    <data name="Up to 500 characters explaining the purpose and who maintains this list." xml:space="preserve">
+        <value>最高 500 字元解釋目的, 以及是誰保持此清單 。</value>
+    </data>
+    <data name="Update DNAT conditions draft" xml:space="preserve">
+        <value>更新 DNAT 條件草案</value>
+    </data>
+    <data name="Update MSS draft" xml:space="preserve">
+        <value>更新 MSS 草稿</value>
+    </data>
+    <data name="Update auxiliary defaults draft" xml:space="preserve">
+        <value>更新辅助預設草案</value>
+    </data>
+    <data name="Update auxiliary rule draft" xml:space="preserve">
+        <value>更新附加規則草稿</value>
+    </data>
+    <data name="Update bridge rule draft" xml:space="preserve">
+        <value>更新橋架規則草稿</value>
+    </data>
+    <data name="Update bridge table draft" xml:space="preserve">
+        <value>更新通訊表草稿</value>
+    </data>
+    <data name="Update defaults" xml:space="preserve">
+        <value>更新預設值</value>
+    </data>
+    <data name="Update draft conditions" xml:space="preserve">
+        <value>更新草稿條件</value>
+    </data>
+    <data name="Update draft state" xml:space="preserve">
+        <value>更新草稿狀態</value>
+    </data>
+    <data name="Update postrouting draft" xml:space="preserve">
+        <value>更新後端路由草稿</value>
+    </data>
+    <data name="Update raw chain default" xml:space="preserve">
+        <value>更新原始鏈式預設</value>
+    </data>
+    <data name="Update raw rule draft" xml:space="preserve">
+        <value>更新原始规则草案</value>
+    </data>
+    <data name="Updated" xml:space="preserve">
+        <value>更新</value>
+    </data>
+    <data name="Use Firewall / Rules to create a policy, or Configuration / Import to start with a native file." xml:space="preserve">
+        <value>使用 Firewall / rules 來建立策略, 或是配置 / 匯入以本地檔案開始 。</value>
+    </data>
+    <data name="Use a descriptive label, such as “Gateway baseline”. Names may repeat; each import has its own identity and history." xml:space="preserve">
+        <value>使用描述性標籤, 如「 Gateway 基线 」 。 名稱可能會重複, 每個匯入都有自己的身份和歷史 。</value>
+    </data>
+    <data name="Use a display name of 1–120 characters without paths or control characters, and a nonempty UTF-8 file." xml:space="preserve">
+        <value>使用 1–120 個字元的顯示名稱, 不包含路徑或控制字元, 以及非空的 UTF-8 檔案 。</value>
+    </data>
+    <data name="Use a name of 1–64 lowercase letters, digits or underscores, starting with a letter." xml:space="preserve">
+        <value>使用 1–64 小寫字母、 數字或下划線的名稱, 從字母開始 。</value>
+    </data>
+    <data name="Use a password of 15–128 characters." xml:space="preserve">
+        <value>使用密碼 : 15–128 字符。</value>
+    </data>
+    <data name="Use a plain-text description of at most 500 characters." xml:space="preserve">
+        <value>使用最多 500 字元的純文字描述 。</value>
+    </data>
+    <data name="Use a read-only account with access to the required user attributes and role group membership." xml:space="preserve">
+        <value>使用只讀的帳號, 可以存取需要的使用者屬性與角色群組成員 。</value>
+    </data>
+    <data name="Use an exact HTTPS issuer and literal claim names. Identity, role and MFA claims cannot be mapped as metadata." xml:space="preserve">
+        <value>使用 HTTPS 發佈器和字面名稱。 身份、 角色和 MFA 的聲明無法被映射成元数据 。</value>
+    </data>
+    <data name="Use at most 80 characters for each name and a valid profile email address, without control characters." xml:space="preserve">
+        <value>最多使用 80 每個名稱的字元及有效的描述檔電子郵件位址,而不使用控制字元。</value>
+    </data>
+    <data name="Use letters, digits, dots, underscores or hyphens; no spaces." xml:space="preserve">
+        <value>使用字母、 位數、 點、 下划線或連字符; 沒有空格 。</value>
+    </data>
+    <data name="Use literal top-level JSON field names. Leave any descriptive field blank to skip it. Users can override these values on their own profile." xml:space="preserve">
+        <value>使用字面上級的 JSON 字段名稱。 任何描述字段都留空白以跳過它。 使用者可以在自己的設定檔上覆寫這些值 。</value>
+    </data>
+    <data name="Use numeric addresses or CIDRs with zero host bits. Names, ranges, scoped and mapped addresses are not supported." xml:space="preserve">
+        <value>請使用數字格式的位址，或主機位元全為 0 的 CIDR。不支援名稱、位址範圍、帶有範圍識別碼的位址或對應位址。</value>
+    </data>
+    <data name="Use provider profile defaults" xml:space="preserve">
+        <value>使用提供者設定檔預設</value>
+    </data>
+    <data name="Use the exact TLS peer name and optional port. The certificate must chain to a trusted CA and match this name." xml:space="preserve">
+        <value>使用精确的 TLS 端點名稱和可選連接埠。 憑證必須連結到信任的 CA , 並符合此名稱 。</value>
+    </data>
+    <data name="Use the guided forms for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation, destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return. The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits." xml:space="preserve">
+        <value>使用導引的 rpfilter 規則, UDP 原始端口, 前置的 MSS 剪切, MAC 匹配與否定, 目的地按鍵公尺, 取消介面/ 前置, 以及後置的假裝/ 返回。 本地 diff 顯示已編譯的完整選項 。 已有的高级匹配者幸存了結構的編輯 。</value>
+    </data>
+    <data name="Use the selected IP family." xml:space="preserve">
+        <value>使用選取的 IP 家族 。</value>
+    </data>
+    <data name="Use three HTTPS URLs on the same provider origin. The current-user endpoint must accept a Bearer token and return a JSON object." xml:space="preserve">
+        <value>請使用屬於同一提供者來源的三個 HTTPS URL。用於取得目前使用者資料的端點必須接受 Bearer 權杖並傳回 JSON 物件。</value>
+    </data>
+    <data name="Use time-based codes to verify your sign-ins." xml:space="preserve">
+        <value>使用時間代碼來檢查您的簽章 。</value>
+    </data>
+    <data name="User and profile activity" xml:space="preserve">
+        <value>使用者與設定檔活動</value>
+    </data>
+    <data name="User search base DN" xml:space="preserve">
+        <value>使用者搜尋基底 DN</value>
+    </data>
+    <data name="User search filter" xml:space="preserve">
+        <value>使用者搜尋過程</value>
+    </data>
+    <data name="Username lookup attribute" xml:space="preserve">
+        <value>使用者名稱搜尋屬性</value>
+    </data>
+    <data name="Valid for Input or Forward chains." xml:space="preserve">
+        <value>輸入或前進鏈合法 。</value>
+    </data>
+    <data name="Valid for Output or Forward chains." xml:space="preserve">
+        <value>輸出或前進鏈的有效期 。</value>
+    </data>
+    <data name="Valid range: 536–1460. Updating a configured clamp preserves its enabled state. Use its separate Enabled switch to disable while retaining this size." xml:space="preserve">
+        <value>有效範圍：536–1460。更新已設定的 MSS 限制值時，會保留其啟用狀態。請使用獨立的「已啟用」開關將其停用，以保留這個大小設定。</value>
+    </data>
+    <data name="Validation diagnostics ({0})" xml:space="preserve">
+        <value>驗證诊断({0})</value>
+    </data>
+    <data name="Verdict" xml:space="preserve">
+        <value>判斷</value>
+    </data>
+    <data name="Verify a mailbox" xml:space="preserve">
+        <value>檢查信箱</value>
+    </data>
+    <data name="Verify a mailbox for sign-in codes. If you enroll an authenticator app, sign-in uses that app." xml:space="preserve">
+        <value>檢查信箱的簽署代碼。 如果您登入了驗證程式, 請使用此程式 。</value>
+    </data>
+    <data name="Verify email" xml:space="preserve">
+        <value>檢查電子郵件</value>
+    </data>
+    <data name="Verify the recipient’s identity before handing them an authorization. They have ten minutes to use it with their password and verify a new authenticator." xml:space="preserve">
+        <value>在給他們授權前檢查接收者的身份。 他們有十分鐘使用密碼, 並驗證新的驗證者 。</value>
+    </data>
+    <data name="Verify your current password, then choose 15–128 characters. A successful change signs out all your local sessions and returns to sign-in. Incorrect current passwords count toward account lockout." xml:space="preserve">
+        <value>請驗證目前的密碼，再設定長度為 15–128 個字元的新密碼。變更成功後，系統會登出您的所有本機工作階段，並返回登入頁面。輸入錯誤的目前密碼會計入帳戶鎖定的失敗次數。</value>
+    </data>
+    <data name="Version" xml:space="preserve">
+        <value>版本</value>
+    </data>
+    <data name="Version history ({0})" xml:space="preserve">
+        <value>版本歷史( {0})</value>
+    </data>
+    <data name="Version {0}" xml:space="preserve">
+        <value>版本 {0}</value>
+    </data>
+    <data name="Version {0} · {1} entries" xml:space="preserve">
+        <value>{0} 版本{1}条目</value>
+    </data>
+    <data name="Version {0} → version {1}" xml:space="preserve">
+        <value>第{0}版_第{1}版</value>
+    </data>
+    <data name="View agent status" xml:space="preserve">
+        <value>查看代理伺服器狀態</value>
+    </data>
+    <data name="View full log" xml:space="preserve">
+        <value>查看完整日志</value>
+    </data>
+    <data name="Viewing historical contents." xml:space="preserve">
+        <value>檢視歷史內容 。</value>
+    </data>
+    <data name="Watchdog ID" xml:space="preserve">
+        <value>監控犬代碼</value>
+    </data>
+    <data name="Watchdog armed" xml:space="preserve">
+        <value>看門狗已就緒</value>
+    </data>
+    <data name="Watchdog countdown" xml:space="preserve">
+        <value>監視犬倒數</value>
+    </data>
+    <data name="We couldn't process that request" xml:space="preserve">
+        <value>我們不能處理這個要求</value>
+    </data>
+    <data name="When MFA is required for the signed-in role" xml:space="preserve">
+        <value>什麼時候 MFA 簽署角色需要</value>
+    </data>
+    <data name="When Nergal requires MFA" xml:space="preserve">
+        <value>什麼時候 Nergal 需要 MFA</value>
+    </data>
+    <data name="When agent control is configured, Overview requests status over each registered agent’s authenticated connection. Each bar shows the number of hosts in that state against the full registered fleet for this page load." xml:space="preserve">
+        <value>設定代理控件時, 概述會要求每個已注册代理的已驗證連接的狀態 。 每條列會顯示此狀態中主機數量與已注册的整列列的對數 。</value>
+    </data>
+    <data name="When setup completes, you’ll sign in again with your password and an authenticator code." xml:space="preserve">
+        <value>當設置完成後, 您會再次用您的密碼與認證碼簽署。</value>
+    </data>
+    <data name="Window" xml:space="preserve">
+        <value>窗口</value>
+    </data>
+    <data name="Window unit" xml:space="preserve">
+        <value>視窗單位</value>
+    </data>
+    <data name="Work to preserve behavior" xml:space="preserve">
+        <value>努力保持行為</value>
+    </data>
+    <data name="You can inspect policy revisions, host status and audit history. An administrator must save configuration changes and manage connections." xml:space="preserve">
+        <value>您可以檢視政策變更、主機狀態與稽核歷史。 管理員必須儲存設定變更與管理連接 。</value>
+    </data>
+    <data name="You can prepare a policy first. Agent enrollment and connection registration establish the host's trust boundary." xml:space="preserve">
+        <value>您可以先制定政策 。 代理登入和連接注册會建立主機的信任邊界 。</value>
+    </data>
+    <data name="Your account doesn't have permission for this page or action. Contact an Administrator if you need access." xml:space="preserve">
+        <value>您的帳戶沒有權限使用此頁面或動作。 如果您需要存取, 請聯絡管理員 。</value>
+    </data>
+    <data name="Your account’s MFA policy and the current mail delivery settings determine whether email setup is available." xml:space="preserve">
+        <value>您的帳號 MFA 政策與目前的郵件送出設定值決定了郵件設定是否可用 。</value>
+    </data>
+    <data name="Your authenticator app supplies the additional code you need to sign in." xml:space="preserve">
+        <value>您的驗證程式提供您需要簽署的附加代碼 。</value>
+    </data>
+    <data name="Your display name appears in the header. Sign-in and permissions use your verified account." xml:space="preserve">
+        <value>您的顯示名稱出現在信頭中。 簽署與權限使用您已驗證的帳號 。</value>
+    </data>
+    <data name="Your policy is saved. Register an already enrolled agent to inspect its state and prepare a reviewed change." xml:space="preserve">
+        <value>您的政策被儲存。 登記一個已經登記的代理 以檢查其狀態, 并準備一個審查的變更 。</value>
+    </data>
+    <data name="Your session has ended or a sign-in is required. Sign in to open the console." xml:space="preserve">
+        <value>您的會議已經結束, 或是需要簽署。 簽署以開啟控制台 。</value>
+    </data>
+    <data name="Your verified mailbox can receive sign-in codes." xml:space="preserve">
+        <value>您的確證信箱可以接收簽署代碼 。</value>
+    </data>
+    <data name="Zero-Priv Web UI" xml:space="preserve">
+        <value>0Priv 網頁UI</value>
+    </data>
+    <data name="all" xml:space="preserve">
+        <value>全部</value>
+    </data>
+    <data name="amber" xml:space="preserve">
+        <value>琥珀</value>
+    </data>
+    <data name="and early" xml:space="preserve">
+        <value>早期</value>
+    </data>
+    <data name="and use their current password. The setup key appears once after verification." xml:space="preserve">
+        <value>并使用目前的密碼。設定金鑰在檢查後出現一次 。</value>
+    </data>
+    <data name="appliedPendingConfirmation" xml:space="preserve">
+        <value>應用程式Pending 證詞</value>
+    </data>
+    <data name="at" xml:space="preserve">
+        <value>于</value>
+    </data>
+    <data name="audit event." xml:space="preserve">
+        <value>稽核事件。</value>
+    </data>
+    <data name="authenticator recovery" xml:space="preserve">
+        <value>驗證器回收</value>
+    </data>
+    <data name="before applying." xml:space="preserve">
+        <value>在申請前</value>
+    </data>
+    <data name="before dispatching an apply." xml:space="preserve">
+        <value>在寄送應用程式前</value>
+    </data>
+    <data name="blue" xml:space="preserve">
+        <value>藍</value>
+    </data>
+    <data name="busy" xml:space="preserve">
+        <value>忙</value>
+    </data>
+    <data name="by word" xml:space="preserve">
+        <value>按字</value>
+    </data>
+    <data name="close" xml:space="preserve">
+        <value>關閉</value>
+    </data>
+    <data name="compatible" xml:space="preserve">
+        <value>兼容</value>
+    </data>
+    <data name="compilation, explicit table ownership, and autonomous timed rollback." xml:space="preserve">
+        <value>編譯、 明確的表格擁有權, 以及自動的回滚。</value>
+    </data>
+    <data name="confirmed" xml:space="preserve">
+        <value>确定</value>
+    </data>
+    <data name="creation expiry" xml:space="preserve">
+        <value>建立到期</value>
+    </data>
+    <data name="current match" xml:space="preserve">
+        <value>目前匹配</value>
+    </data>
+    <data name="dark" xml:space="preserve">
+        <value>黑暗</value>
+    </data>
+    <data name="declarative chain headers" xml:space="preserve">
+        <value>宣傳鏈頭</value>
+    </data>
+    <data name="declarative table headers" xml:space="preserve">
+        <value>宣讀表頭</value>
+    </data>
+    <data name="denied" xml:space="preserve">
+        <value>拒絕</value>
+    </data>
+    <data name="destination-unreachable (IPv4 &amp; IPv6)" xml:space="preserve">
+        <value>目的地不可通( IPv4 &amp; IPv6)</value>
+    </data>
+    <data name="disable" xml:space="preserve">
+        <value>禁用</value>
+    </data>
+    <data name="drift" xml:space="preserve">
+        <value>漂移</value>
+    </data>
+    <data name="e.g. 10" xml:space="preserve">
+        <value>例如,10</value>
+    </data>
+    <data name="e.g. 20" xml:space="preserve">
+        <value>例如,20</value>
+    </data>
+    <data name="e.g. Allow HTTPS + ICMPv4 diagnostics on WAN" xml:space="preserve">
+        <value>例如,允许 HTTPS + ICMPv4  在WAN上的诊断</value>
+    </data>
+    <data name="echo-reply (IPv4 &amp; IPv6)" xml:space="preserve">
+        <value>回音重複( IPv4 &amp; IPv6)</value>
+    </data>
+    <data name="echo-request (IPv4 &amp; IPv6)" xml:space="preserve">
+        <value>回聲要求(IPv4 &amp; IPv6)</value>
+    </data>
+    <data name="emerald" xml:space="preserve">
+        <value>翡翠</value>
+    </data>
+    <data name="file protection is the default. Record server database preferences here. Set the controller's live connection string separately at deployment." xml:space="preserve">
+        <value>檔案保護是預設的。 在此紀錄伺服器資料庫偏好。 部署時將控制器的實存連接字串分开 。</value>
+    </data>
+    <data name="fleet dashboard" xml:space="preserve">
+        <value>船隊仪表板</value>
+    </data>
+    <data name="folded code" xml:space="preserve">
+        <value>折叠的代碼</value>
+    </data>
+    <data name="go" xml:space="preserve">
+        <value>走</value>
+    </data>
+    <data name="icmpv6 (IPv6)" xml:space="preserve">
+        <value>icmpv6 (IPv6)</value>
+    </data>
+    <data name="in" xml:space="preserve">
+        <value>入站</value>
+    </data>
+    <data name="in {0}" xml:space="preserve">
+        <value>{0}年</value>
+    </data>
+    <data name="in:{0}" xml:space="preserve">
+        <value>在:{0}</value>
+    </data>
+    <data name="in:{0} out:{1}" xml:space="preserve">
+        <value>在:{0} 出:{1}</value>
+    </data>
+    <data name="in:{0}{1}" xml:space="preserve">
+        <value>在:{0}{1}</value>
+    </data>
+    <data name="in:{0}{1} out:{2}{3}" xml:space="preserve">
+        <value>在:{0}{1} 出:{2}{3}</value>
+    </data>
+    <data name="incompatible" xml:space="preserve">
+        <value>不兼容</value>
+    </data>
+    <data name="invalidRequest" xml:space="preserve">
+        <value>無效的請求</value>
+    </data>
+    <data name="is Nergal’s sole firewall engine. Controller and agent services target Linux." xml:space="preserve">
+        <value>是 Nergal 唯一的防火牆引擎。 Controller 和代理服務以 Linux 为目标 。</value>
+    </data>
+    <data name="light" xml:space="preserve">
+        <value>光</value>
+    </data>
+    <data name="line {0}, column {1}. The entire rule remains unmapped." xml:space="preserve">
+        <value>第{0}行,第{1}行。</value>
+    </data>
+    <data name="list version {0}" xml:space="preserve">
+        <value>列表第{0}版</value>
+    </data>
+    <data name="match case" xml:space="preserve">
+        <value>匹配大小寫</value>
+    </data>
+    <data name="matched" xml:space="preserve">
+        <value>匹配</value>
+    </data>
+    <data name="missing" xml:space="preserve">
+        <value>缺少</value>
+    </data>
+    <data name="nd-neighbor-advert (IPv6 ND)" xml:space="preserve">
+        <value>nd-neighbor-advert (IPv6 ND)</value>
+    </data>
+    <data name="nd-neighbor-solicit (IPv6 ND)" xml:space="preserve">
+        <value>nd-neighbor-solicit (IPv6 ND)</value>
+    </data>
+    <data name="nd-router-advert (IPv6 ND)" xml:space="preserve">
+        <value>nd-router-advert (IPv6 ND)</value>
+    </data>
+    <data name="nd-router-solicit (IPv6 ND)" xml:space="preserve">
+        <value>nd-router-solicit (IPv6 ND)</value>
+    </data>
+    <data name="nergal compiles typed policy bundles directly into owned" xml:space="preserve">
+        <value>Negal 編譯直接輸入自有的策略捆綁</value>
+    </data>
+    <data name="nergal-ctl GID" xml:space="preserve">
+        <value>內腺晶體GID</value>
+    </data>
+    <data name="next" xml:space="preserve">
+        <value>下一頁</value>
+    </data>
+    <data name="on line" xml:space="preserve">
+        <value>在線上</value>
+    </data>
+    <data name="online" xml:space="preserve">
+        <value>在线</value>
+    </data>
+    <data name="or" xml:space="preserve">
+        <value>或</value>
+    </data>
+    <data name="out" xml:space="preserve">
+        <value>退出</value>
+    </data>
+    <data name="out:{0}" xml:space="preserve">
+        <value>出: {0}</value>
+    </data>
+    <data name="out:{0}{1}" xml:space="preserve">
+        <value>{0}{1}</value>
+    </data>
+    <data name="packet-too-big (IPv6)" xml:space="preserve">
+        <value>packet-too-big (IPv6)</value>
+    </data>
+    <data name="parameter-problem (IPv4 &amp; IPv6)" xml:space="preserve">
+        <value>參數問題( IPv4 &amp; IPv6)</value>
+    </data>
+    <data name="pending" xml:space="preserve">
+        <value>待定</value>
+    </data>
+    <data name="per destination" xml:space="preserve">
+        <value>每目的地</value>
+    </data>
+    <data name="per minute" xml:space="preserve">
+        <value>每分鐘</value>
+    </data>
+    <data name="per second" xml:space="preserve">
+        <value>每秒</value>
+    </data>
+    <data name="per source" xml:space="preserve">
+        <value>每來源</value>
+    </data>
+    <data name="policy editor" xml:space="preserve">
+        <value>政策編輯器</value>
+    </data>
+    <data name="prefer" xml:space="preserve">
+        <value>偏好</value>
+    </data>
+    <data name="previous" xml:space="preserve">
+        <value>前一個</value>
+    </data>
+    <data name="refresh idle expiry" xml:space="preserve">
+        <value>刷新闲置的过期</value>
+    </data>
+    <data name="regexp" xml:space="preserve">
+        <value>正则表达式</value>
+    </data>
+    <data name="rejected" xml:space="preserve">
+        <value>拒絕</value>
+    </data>
+    <data name="replace all" xml:space="preserve">
+        <value>取代全部</value>
+    </data>
+    <data name="replaced $ matches" xml:space="preserve">
+        <value>已取代 $ 匹配</value>
+    </data>
+    <data name="replaced match on line $" xml:space="preserve">
+        <value>已取代的符合 $</value>
+    </data>
+    <data name="require" xml:space="preserve">
+        <value>需要</value>
+    </data>
+    <data name="review topics" xml:space="preserve">
+        <value>審查主題</value>
+    </data>
+    <data name="rolledBack" xml:space="preserve">
+        <value>卷起后方</value>
+    </data>
+    <data name="rose" xml:space="preserve">
+        <value>玫瑰</value>
+    </data>
+    <data name="same" xml:space="preserve">
+        <value>相同</value>
+    </data>
+    <data name="slate" xml:space="preserve">
+        <value>列表</value>
+    </data>
+    <data name="stateless" xml:space="preserve">
+        <value>无国籍者</value>
+    </data>
+    <data name="tables with atomic candidate validation and independent local watchdog rollback. Foreign tables are never flushed or modified." xml:space="preserve">
+        <value>包含原子候選人驗證和獨立的本地監控回滚的表格。 外國表格從未被沖洗或修改 。</value>
+    </data>
+    <data name="time-exceeded (IPv4 &amp; IPv6)" xml:space="preserve">
+        <value>超時( IPv4 &amp; IPv6)</value>
+    </data>
+    <data name="tls (Pinned TLS 1.3 mTLS)" xml:space="preserve">
+        <value>tls (Pinned TLS 1.3 mTLS)</value>
+    </data>
+    <data name="to" xml:space="preserve">
+        <value>至</value>
+    </data>
+    <data name="to saved" xml:space="preserve">
+        <value>要保存</value>
+    </data>
+    <data name="unavailable" xml:space="preserve">
+        <value>不可用</value>
+    </data>
+    <data name="unbound" xml:space="preserve">
+        <value>不帶行</value>
+    </data>
+    <data name="unfold" xml:space="preserve">
+        <value>展开</value>
+    </data>
+    <data name="unix (Local SO_PEERCRED socket)" xml:space="preserve">
+        <value>unix (本地 SO_ PEERCRED 套接字)</value>
+    </data>
+    <data name="unknown" xml:space="preserve">
+        <value>未知</value>
+    </data>
+    <data name="unqueried" xml:space="preserve">
+        <value>未排</value>
+    </data>
+    <data name="using its immutable entry UUID." xml:space="preserve">
+        <value>使用其不可變化的輸入UUID。</value>
+    </data>
+    <data name="verify-full" xml:space="preserve">
+        <value>完全檢查( E)</value>
+    </data>
+    <data name="violet" xml:space="preserve">
+        <value>紫羅蘭</value>
+    </data>
+    <data name="{0:N0} of {1:N0} registered hosts classified by agent status" xml:space="preserve">
+        <value>{1:N0}的{0:N0} 已登記主機 按代理身份分類</value>
+    </data>
+    <data name="{0} ({1} — rev {2})" xml:space="preserve">
+        <value>{0}({1} - {2})</value>
+    </data>
+    <data name="{0} added" xml:space="preserve">
+        <value>新增{0}</value>
+    </data>
+    <data name="{0} bridge rule {1}" xml:space="preserve">
+        <value>{0} 大橋規則 {1}</value>
+    </data>
+    <data name="{0} bytes" xml:space="preserve">
+        <value>{0} 位元組</value>
+    </data>
+    <data name="{0} bytes." xml:space="preserve">
+        <value>{0}字節.</value>
+    </data>
+    <data name="{0} enabled" xml:space="preserve">
+        <value>{0} 已啟用</value>
+    </data>
+    <data name="{0} entries" xml:space="preserve">
+        <value>{0}条目</value>
+    </data>
+    <data name="{0} file {1}" xml:space="preserve">
+        <value>{0} 檔案 {1}</value>
+    </data>
+    <data name="{0} of {1} rule statements parsed by the current expression grammar. Parsed rules still require scope, ownership and complete semantic mapping." xml:space="preserve">
+        <value>{1}中的{0} 規則語言由目前的語法來解析。 解析的規則仍然需要範圍、 屬性與完整的語言映射 。</value>
+    </data>
+    <data name="{0} or {1}" xml:space="preserve">
+        <value>{0}或{1}</value>
+    </data>
+    <data name="{0} ordered rules." xml:space="preserve">
+        <value>{0} 命令的規矩。</value>
+    </data>
+    <data name="{0} removed" xml:space="preserve">
+        <value>{0} 已移除</value>
+    </data>
+    <data name="{0} s remaining" xml:space="preserve">
+        <value>其余{0}</value>
+    </data>
+    <data name="{0} unchanged entries." xml:space="preserve">
+        <value>{0} 未變的条目。</value>
+    </data>
+    <data name="{0} · version {1}" xml:space="preserve">
+        <value>{0} - {1}版本</value>
+    </data>
+    <data name="{0}/{1} per destination (burst {2}, {3}s, {4})" xml:space="preserve">
+        <value>{0}/{1} 人/目的地(burst {2}, {3}s, {4})</value>
+    </data>
+    <data name="{0}/{1} per source (burst {2}, {3}s, {4})" xml:space="preserve">
+        <value>{0}/{1} 每來源(爆炸{2},{3}s,{4})</value>
+    </data>
+    <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
+        <value>「Except（排除）」會將現有比對條件反轉，並不會移除該條件。轉換、連接埠、位置和啟用狀態都會保留。反轉輸入介面或來源條件前，必須先設定相應的條件。請仔細審查反轉來源條件的 DNAT，因為它會影響來自所選來源範圍之外的連線。</value>
+    </data>
+</root>

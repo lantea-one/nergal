@@ -1,12 +1,14 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
+@{ var anyLabel = L["Any"]; }
 @if (Model.CanMutate && Model.Bundle?.Nat is { } nat)
 {
     @for (var i = 0; i < nat.DnatRules.Count; i++)
     {
         if (nat.DnatRules[i] is not { } d) { continue; }
         <details class="router-form-details" id="dnat-editor-@i">
-            <summary>Edit DNAT #@(i + 1) · @d.Family · @d.Protocol · @(d.Description ?? "No description")</summary>
+            <summary>@L["Edit DNAT #{0}", i + 1] · @d.Family · @d.Protocol · @(d.Description ?? L["No description"].Value)</summary>
             <div class="router-form-body">
                 <form class="router-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/edit")">
                     @Html.AntiForgeryToken()
@@ -16,59 +18,59 @@
                     <input type="hidden" name="ruleIndex" value="@i" />
                     <div class="form-grid">
                         <div class="field">
-                            <label for="dnat-edit-@i-family">Family</label>
+                            <label for="dnat-edit-@i-family">@L["Family"]</label>
                             <select name="family" id="dnat-edit-@i-family">
                                 <option value="ipv4" selected="@(d.Family == IpFamily.IPv4)">ipv4</option>
                                 <option value="ipv6" selected="@(d.Family == IpFamily.IPv6)">ipv6</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-protocol">Protocol</label>
+                            <label for="dnat-edit-@i-protocol">@L["Protocol"]</label>
                             <select name="protocol" id="dnat-edit-@i-protocol">
                                 <option value="tcp" selected="@(d.Protocol == FilterProtocol.Tcp)">tcp</option>
                                 <option value="udp" selected="@(d.Protocol == FilterProtocol.Udp)">udp</option>
-                                <option value="any" selected="@(d.Protocol == FilterProtocol.Any)">any</option>
+                                <option value="any" selected="@(d.Protocol == FilterProtocol.Any)">@(anyLabel.ResourceNotFound ? "any" : anyLabel.Value)</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-originalDestination">Original destination CIDR(s)</label>
+                            <label for="dnat-edit-@i-originalDestination">@L["Original destination CIDR(s)"]</label>
                             <input type="text" name="@(d.DestinationObject is null ? "originalDestination" : null)" value="@(d.DestinationObject is { } destinationPin ? string.Join(", ", destinationPin.Content.Entries) : d.OriginalDestination?.Value ?? (d.DestinationPrefixes is { } destinations ? string.Join(", ", destinations.Select(p => p.Value)) : ""))" readonly="@(d.DestinationObject is not null)" required="@(d.DestinationObject is null)" aria-describedby="dnat-edit-@i-destination-hint" id="dnat-edit-@i-originalDestination" />
-                            <span class="hint" id="dnat-edit-@i-destination-hint">Required matcher before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Pinned contents are read-only.</span>
-                            @if (d.DestinationObject is { } destinationObject) { <span class="hint">Pinned destination list: @destinationObject.Content.Name v@(destinationObject.Version).</span> }
+                            <span class="hint" id="dnat-edit-@i-destination-hint">@L["Required matcher before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Pinned contents are read-only."]</span>
+                            @if (d.DestinationObject is { } destinationObject) { <span class="hint">@L["Pinned destination list: {0} v{1}.", destinationObject.Content.Name, destinationObject.Version]</span> }
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-translatedAddress">Translated IP</label>
+                            <label for="dnat-edit-@i-translatedAddress">@L["Translated IP"]</label>
                             <input type="text" name="translatedAddress" value="@d.TranslatedAddress" required id="dnat-edit-@i-translatedAddress" />
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-originalPort">Original destination port(s)</label>
+                            <label for="dnat-edit-@i-originalPort">@L["Original destination port(s)"]</label>
                             <input type="text" name="@(d.OriginalPortObject is null ? "originalPorts" : null)" value="@(d.OriginalPortObject is { } pinnedPorts ? string.Join(", ", pinnedPorts.Content.Entries) : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } ports ? string.Join(", ", ports) : ""))" readonly="@(d.OriginalPortObject is not null)" id="dnat-edit-@i-originalPort" aria-describedby="dnat-edit-@i-originalPort-hint" />
-                            <span class="hint" id="dnat-edit-@i-originalPort-hint">One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. All use the same translated target. Pinned contents stay read-only.</span>
-                            @if (d.OriginalPortObject is { } pin) { <span class="hint">Pinned original-port list: @pin.Content.Name v@(pin.Version).</span> }
+                            <span class="hint" id="dnat-edit-@i-originalPort-hint">@L["One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. All use the same translated target. Pinned contents stay read-only."]</span>
+                            @if (d.OriginalPortObject is { } pin) { <span class="hint">@L["Pinned original-port list: {0} v{1}.", pin.Content.Name, pin.Version]</span> }
                         </div>
                         <div class="field">
-                            <label for="dnat-edit-@i-translatedPort">Translated port</label>
+                            <label for="dnat-edit-@i-translatedPort">@L["Translated port"]</label>
                             <input type="number" name="translatedPort" value="@d.TranslatedPort" min="1" max="65535" id="dnat-edit-@i-translatedPort" />
                         </div>
                         @if (d.Hook == DnatHook.Prerouting)
                         {
                             <div class="field">
-                                <label for="dnat-edit-@i-inputInterface">Input iface</label>
+                                <label for="dnat-edit-@i-inputInterface">@L["Input iface"]</label>
                                 <input type="text" name="inputInterface" value="@d.InputInterface" maxlength="15" id="dnat-edit-@i-inputInterface" />
                             </div>
                         }
                         <div class="field">
-                            <label for="dnat-edit-@i-source">Source CIDR(s)</label>
+                            <label for="dnat-edit-@i-source">@L["Source CIDR(s)"]</label>
                             <input type="text" name="@(d.SourceObject is null ? "source" : null)" value="@(d.SourceObject is { } sourcePin ? string.Join(", ", sourcePin.Content.Entries) : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : ""))" readonly="@(d.SourceObject is not null)" aria-describedby="dnat-edit-@i-source-hint" id="dnat-edit-@i-source" />
-                            <span class="hint" id="dnat-edit-@i-source-hint">Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Ordinary edits retain pinned contents and negation.</span>
-                            @if (d.SourceObject is { } sourceObject) { <span class="hint">Pinned source list: @sourceObject.Content.Name v@(sourceObject.Version).</span> }
+                            <span class="hint" id="dnat-edit-@i-source-hint">@L["Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of this family. Ordinary edits retain pinned contents and negation."]</span>
+                            @if (d.SourceObject is { } sourceObject) { <span class="hint">@L["Pinned source list: {0} v{1}.", sourceObject.Content.Name, sourceObject.Version]</span> }
                         </div>
                         <div class="field span-2">
-                            <label for="dnat-edit-@i-description">Description</label>
+                            <label for="dnat-edit-@i-description">@L["Description"]</label>
                             <input type="text" name="description" value="@d.Description" maxlength="160" id="dnat-edit-@i-description" />
                         </div>
                     </div>
-                    <div class="mt-2"><button type="submit" class="btn btn-sm">Save DNAT #@(i + 1)</button></div>
+                    <div class="mt-2"><button type="submit" class="btn btn-sm">@L["Save DNAT #{0}", i + 1]</button></div>
                 </form>
             </div>
         </details>

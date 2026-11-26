@@ -1,4 +1,5 @@
 """HTTPS guided router forms reject malformed requests and preserve immutable rule intent."""
+from html import unescape
 import json
 import sqlite3
 from policy_objects import Draft
@@ -38,7 +39,7 @@ def check_router_forms(browser, directory):
     bundle = json.loads(draft.value)
     rule = bundle["nat"]["snatRules"][-1]
     assert rule["action"] == "return" and rule["inputInterface"] == "lan0" and rule["destinationPorts"] == [443, 9001]
-    assert 'name="action"' in result and "Return — translation exemption" in result
+    assert 'name="action"' in result and "Return — translation exemption" in unescape(result)
     # Edit the same entry, rather than appending another. Blank translation remains explicit.
     html = browser.request(path, 200, {**postrouting, "bundleJson": draft.value, "ruleIndex": str(len(bundle["nat"]["snatRules"]) - 1), "action": "masquerade"})
     edited = Draft(); edited.feed(html)

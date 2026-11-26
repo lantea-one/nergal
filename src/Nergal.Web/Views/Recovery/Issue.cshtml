@@ -1,22 +1,24 @@
 @model Nergal.Web.Controllers.RecoveryIssueModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Authorize authenticator recovery";
     ViewData["ActiveNav"] = "settings";
 }
 <main id="main-content" tabindex="-1" class="container-narrow">
-    <h1>Authorize authenticator recovery</h1>
+    <h1>@L["Authorize authenticator recovery"]</h1>
     <section class="card">
-        <p>Verify the recipient’s identity before handing them an authorization. They have ten minutes to use it with their password and verify a new authenticator.</p>
+        <p>@L["Verify the recipient’s identity before handing them an authorization. They have ten minutes to use it with their password and verify a new authenticator."]</p>
         @if (Model.Failed)
         {
-            <div role="alert" class="alert alert-danger">Recovery could not be authorized. Check the account identifier and current policy, then try again.</div>
+            <div role="alert" class="alert alert-danger">@L["Recovery could not be authorized. Check the account identifier and current policy, then try again."]</div>
         }
         <form method="post" class="form-stack" action="@Url.Content("~/manage/identity/mfa/recovery")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="version" value="@Model.PolicyVersion" />
             <div class="field">
-                <label for="recipient">Account identifier</label>
+                <label for="recipient">@L["Account identifier"]</label>
                 <input id="recipient" list="local-recipients" name="actorId" type="text" maxlength="80" autocomplete="off" aria-describedby="recipient-help" required />
                 <datalist id="local-recipients">
                     @foreach (var user in Model.Users.Where(user => user.Enabled))
@@ -24,15 +26,15 @@
                         <option value="local:@user.Id">@user.UserName</option>
                     }
                 </datalist>
-                <span class="hint" id="recipient-help">Select an enabled local account.
+                <span class="hint" id="recipient-help">@L["Select an enabled local account."]
                     @if (Model.DirectoryId is Guid directory)
                     {
-                        <text>For a directory account that has completed the password step at least once, enter <code>ldap:@directory:&lt;entryUUID&gt;</code> using its immutable entry UUID.</text>
+                        <text>@L["For a directory account that has completed the password step at least once, enter"] <code>ldap:@directory:&lt;entryUUID&gt;</code> @L["using its immutable entry UUID."]</text>
                     }
                 </span>
             </div>
-            <p class="hint">Issuing a new authorization cancels earlier recovery attempts for this account. Its current authenticator keeps working until the recipient confirms the replacement.</p>
-            <button type="submit">Issue recovery authorization</button>
+            <p class="hint">@L["Issuing a new authorization cancels earlier recovery attempts for this account. Its current authenticator keeps working until the recipient confirms the replacement."]</p>
+            <button type="submit">@L["Issue recovery authorization"]</button>
         </form>
     </section>
 </main>
