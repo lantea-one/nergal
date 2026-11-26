@@ -30,4 +30,8 @@ public enum FirewallFeature
     AuxiliaryFiltering,
     /// <summary>Refresh dynamic meter entry expiry on matching packets rather than only on creation.</summary>
     MeterEntryTimeoutRefresh,
+    /// <summary>Count packets and bytes inline immediately before a filter verdict.</summary>
+    InlineFilterCounters,
+    /// <summary>Translate locally generated traffic in the destination NAT output hook.</summary>
+    OutputDestinationNat,
 }

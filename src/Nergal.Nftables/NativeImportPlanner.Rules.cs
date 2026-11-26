@@ -9,7 +9,9 @@ public static partial class NativeImportPlanner
 {
     private sealed class RuleData
     {
-        internal JsonObject Data { get; } = [];
+        internal JsonObject Data { get; init; } = [];
+        internal Dictionary<string, string[]> Alternatives { get; } = new(StringComparer.Ordinal);
+        internal string[]? TransportAlternatives;
         internal string? Family;
         internal string Protocol = "any";
         internal bool ExplicitTransport;
@@ -25,6 +27,7 @@ public static partial class NativeImportPlanner
         internal bool Eat(string text) { if (!End && Peek.Text == text) { Index++; return true; } return false; }
         internal void Expect(string text) { var t = Take(); Planner.Require(t.Text == text, t, "import.expressionUnsupported"); }
         internal bool Negation() { if (Eat("!=")) { return true; } _ = Eat("=="); return false; }
+        internal Term[] SelectorValues() => Peek.Node.Kind == NativeSourceNodeKind.Braces ? List() : [Take()];
         internal Term[] List()
         {
             var first = Take();
@@ -37,15 +40,54 @@ public static partial class NativeImportPlanner
 
     private sealed partial class Planner
     {
+        private IReadOnlyList<RuleData> ReadRules(Table table, Term origin, Term[] terms)
+        {
+            var rule = ReadRule(table, origin, terms);
+            if (rule.Alternatives.Count == 0 && rule.TransportAlternatives is null) { return [rule]; }
+            // Equality alternatives are disjoint on an unchanged packet. Never split a
+            // meter, counter or jump, which could change state or packet fields.
+            Require(rule.Action != "jump" && !rule.Data.ContainsKey("rateLimit") && !rule.Data.ContainsKey("countPackets"), origin, "import.alternativeStatefulUnsupported");
+
+            var variants = new List<JsonObject> { rule.Data };
+            foreach (var (property, options) in rule.Alternatives)
+            {
+                Require(variants.Count * options.Length <= 128, origin, "import.alternativeLimit");
+                variants = variants.SelectMany(data => options.Select(option =>
+                {
+                    var projected = (JsonObject)data.DeepClone();
+                    projected[property] = option;
+                    return projected;
+                })).ToList();
+            }
+            var protocols = rule.TransportAlternatives ?? [rule.Protocol];
+            Require(variants.Count * protocols.Length <= 128, origin, "import.alternativeLimit");
+            return variants.SelectMany(data => protocols.Select(protocol => new RuleData
+            {
+                Data = (JsonObject)data.DeepClone(),
+                Family = rule.Family,
+                Protocol = protocol,
+                ExplicitTransport = rule.ExplicitTransport,
+                Action = rule.Action,
+                Jump = rule.Jump,
+            })).ToArray();
+        }
+
         private RuleData ReadRule(Table table, Term origin, Term[] terms)
         {
             var rule = new RuleData(); var c = new Cursor(terms); var predicates = 0;
             void Set(string key, JsonNode? value, Term term)
             { Require(!rule.Data.ContainsKey(key), term, "import.repeatedMatcherUnsupported"); rule.Data.Add(key, value); }
+            void SetAlternatives(string key, string[] values, Term term, bool negated = false)
+            {
+                Require(values.Length <= 64 && values.Distinct(StringComparer.Ordinal).Count() == values.Length, term, "import.alternativeUnsupported");
+                Require(!negated || values.Length == 1, term, "import.alternativeNegationUnsupported");
+                Set(key, JsonValue.Create(values[0]), term);
+                if (values.Length > 1) { rule.Alternatives.Add(key, values); }
+            }
             void Family(string family, Term term)
             { Require(rule.Family is null || rule.Family == family, term, "import.familyConflict"); rule.Family = family; }
             void Protocol(string protocol, Term term)
-            { Require(protocol is "tcp" or "udp" or "icmp" or "icmpv6", term, "import.protocolUnsupported"); Require(rule.Protocol == "any" || rule.Protocol == protocol, term, "import.protocolConflict"); rule.Protocol = protocol; }
+            { Require(protocol is "tcp" or "udp" or "icmp" or "icmpv6", term, "import.protocolUnsupported"); Require(rule.TransportAlternatives is null && (rule.Protocol == "any" || rule.Protocol == protocol), term, "import.protocolConflict"); rule.Protocol = protocol; }
             while (!c.End)
             {
                 var first = c.Take(); var word = first.Text;
@@ -68,6 +110,11 @@ public static partial class NativeImportPlanner
                 }
                 switch (word)
                 {
+                    case "counter":
+                        Require(!c.End && c.Peek.Text is "accept" or "drop" or "reject", first, "import.counterPlacementUnsupported");
+                        Require(rule.Family is not null, first, "import.counterFamilyRequired");
+                        Set("countPackets", JsonValue.Create(true), first);
+                        break;
                     case "nfproto":
                         Require(qualified, first, "import.metaKeywordRequired");
                         Require(!c.Negation(), first, "import.negationUnsupported");
@@ -75,14 +122,27 @@ public static partial class NativeImportPlanner
                     case "l4proto":
                         Require(qualified, first, "import.metaKeywordRequired"); rule.ExplicitTransport = true;
                         Require(!c.Negation(), first, "import.negationUnsupported");
-                        var p = String(c.Take()); Protocol(p == "ipv6-icmp" ? "icmpv6" : p, first); break;
+                        var transports = c.SelectorValues().Select(String).ToArray();
+                        if (transports.Length == 1)
+                        {
+                            var p = transports[0]; Protocol(p == "ipv6-icmp" ? "icmpv6" : p, first);
+                        }
+                        else
+                        {
+                            Require(rule.Protocol == "any" && rule.TransportAlternatives is null && transports.Length == 2
+                                && transports.Contains("tcp", StringComparer.Ordinal) && transports.Contains("udp", StringComparer.Ordinal),
+                                first, "import.protocolAlternativesUnsupported");
+                            rule.TransportAlternatives = transports;
+                        }
+                        break;
                     case "iifname":
                     case "oifname":
                     case "ibrname":
-                        var ni = c.Negation(); var name = c.Take();
+                        var ni = c.Negation();
                         var field = word == "iifname" ? NativeRuleField.InputInterface : word == "oifname" ? NativeRuleField.OutputInterface : NativeRuleField.InputBridge;
-                        var literal = (NativeInterfaceLiteral)Literal(field, name); var property = word == "iifname" ? "inputInterface" : word == "oifname" ? "outputInterface" : "bridgeName";
-                        Set(property, JsonValue.Create(literal.Name), first); if (ni) { Set("negate" + char.ToUpperInvariant(property[0]) + property[1..], JsonValue.Create(true), first); }
+                        var names = c.SelectorValues().Select(term => ((NativeInterfaceLiteral)Literal(field, term)).Name).ToArray();
+                        var property = word == "iifname" ? "inputInterface" : word == "oifname" ? "outputInterface" : "bridgeName";
+                        SetAlternatives(property, names, first, ni); if (ni) { Set("negate" + char.ToUpperInvariant(property[0]) + property[1..], JsonValue.Create(true), first); }
                         break;
                     case "ip":
                     case "ip6":
@@ -103,20 +163,24 @@ public static partial class NativeImportPlanner
                         MatchValues(table, c, rule, first, NativeRuleField.EtherSource, key.Text == "saddr" ? "sourceMac" : "destinationMac", Set); break;
                     case "tcp":
                     case "udp":
+                    case "th":
                         var port = c.Take(); Require(port.Text is "sport" or "dport", port, "import.transportExpressionUnsupported");
-                        Protocol(word, first); Require(!c.Negation(), first, "import.negationUnsupported");
+                        if (word == "th")
+                        { Require(rule.ExplicitTransport && (rule.TransportAlternatives is not null || rule.Protocol is "tcp" or "udp"), first, "import.transportGuardRequired"); }
+                        else { Protocol(word, first); }
+                        Require(!c.Negation(), first, "import.negationUnsupported");
                         MatchValues(table, c, rule, first, NativeRuleField.TcpDestinationPort, port.Text == "sport" ? "sourcePort" : "destinationPort", Set, false); break;
                     case "icmp":
                     case "icmpv6":
                         c.Expect("type"); Require(!c.Negation(), first, "import.negationUnsupported"); Family(word == "icmp" ? "ipv4" : "ipv6", first); Protocol(word, first);
-                        Set("icmpType", JsonValue.Create(String(c.Take())), first); break;
+                        SetAlternatives("icmpType", c.SelectorValues().Select(String).ToArray(), first); break;
                     case "ct":
                         var ct = c.Take(); Require(!c.Negation(), first, "import.negationUnsupported");
                         if (ct.Text == "status") { c.Expect("dnat"); Set("matchOriginalDestinationDnat", JsonValue.Create(true), first); }
                         else
                         {
                             Require(ct.Text == "state", ct, "import.connectionExpressionUnsupported"); var states = c.List();
-                            Require(states.All(s => s.Text is "invalid" or "established" or "related" or "new") && states.Select(s => s.Text).Distinct().Count() == states.Length, first, "import.connectionStateUnsupported");
+                            Require(states.All(s => s.Text is "invalid" or "established" or "related" or "new" or "untracked") && states.Select(s => s.Text).Distinct().Count() == states.Length, first, "import.connectionStateUnsupported");
                             Set("connectionStates", new JsonArray(states.Select(s => (JsonNode?)JsonValue.Create(s.Text)).ToArray()), first);
                         }
                         break;

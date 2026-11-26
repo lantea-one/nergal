@@ -138,6 +138,11 @@ public static class NftFilterCompiler
 
             if (policy.SchemaVersion == 1)
             {
+                if (rule.CountPackets)
+                {
+                    errors.Add(new("counter.requiresSchema2", path + ".countPackets"));
+                }
+
                 if (rule.Chain != FilterChainKind.Input)
                 {
                     errors.Add(new("chain.requiresSchema2", path + ".chain"));
@@ -472,6 +477,7 @@ public static class NftFilterCompiler
                 .Append(" burst ").Append(rateLimit.Burst.ToString(CultureInfo.InvariantCulture)).Append(" packets } ");
         }
 
+        if (rule.CountPackets) { text.Append("counter "); }
         text.Append(Verdict(rule.Verdict)).Append('\n');
     }
 
@@ -483,10 +489,10 @@ public static class NftFilterCompiler
         _ => throw new InvalidOperationException("Unvalidated chain."),
     };
 
-    private static string ConnectionStateToken(ConnectionStateFlags states)
+    internal static string ConnectionStateToken(ConnectionStateFlags states)
     {
-        // Kernel bitmask order in nftables JSON: invalid, established, related, new.
-        var parts = new List<string>(4);
+        // Native bitmask order is also the order bound by the receipt fingerprint.
+        var parts = new List<string>(5);
         if ((states & ConnectionStateFlags.Invalid) != 0)
         {
             parts.Add("invalid");
@@ -505,6 +511,11 @@ public static class NftFilterCompiler
         if ((states & ConnectionStateFlags.New) != 0)
         {
             parts.Add("new");
+        }
+
+        if ((states & ConnectionStateFlags.Untracked) != 0)
+        {
+            parts.Add("untracked");
         }
 
         return string.Join(',', parts);

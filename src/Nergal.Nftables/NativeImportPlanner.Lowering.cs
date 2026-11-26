@@ -41,11 +41,15 @@ public static partial class NativeImportPlanner
                         {
                             Attempt(origin, () =>
                             {
-                                var rule = ReadRule(table, origin, terms); Require(rule.Action is "accept" or "drop", origin, "import.rawActionUnsupported");
-                                Allowed(rule, origin, "source", "negateSource", "inputInterface", "negateInputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description");
-                                var data = rule.Data; data["verdict"] = rule.Action; data["protocol"] = rule.Protocol;
-                                if (rule.Family is not null) { data["family"] = rule.Family; }
-                                raw.Add(data); Map(origin, "rule", "filter.rpFilter.rules");
+                                foreach (var rule in ReadRules(table, origin, terms))
+                                {
+                                    Require(rule.Action is "accept" or "drop", origin, "import.rawActionUnsupported");
+                                    Allowed(rule, origin, "source", "negateSource", "inputInterface", "negateInputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description");
+                                    var data = rule.Data; data["verdict"] = rule.Action; data["protocol"] = rule.Protocol;
+                                    if (rule.Family is not null) { data["family"] = rule.Family; }
+                                    raw.Add(data);
+                                }
+                                Map(origin, "rule", "filter.rpFilter.rules");
                             });
                         }
                         return;
@@ -66,11 +70,14 @@ public static partial class NativeImportPlanner
                                 Require(!auxiliary && chain.Hook == "forward" && index == 0 && result["forwardTcpMssClamp"] is null, origin, "import.mssOrderUnsupported");
                                 result["forwardTcpMssClamp"] = Integer(terms[8]); result["forwardTcpMssClampEnabled"] = true; Map(origin, "mss", "filter.forwardTcpMssClamp"); return;
                             }
-                            var rule = ReadRule(table, origin, terms); Require(rule.Action is "accept" or "drop" or "reject", origin, "import.filterActionUnsupported");
-                            Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description");
-                            foreach (var family in Families(rule))
+                            foreach (var rule in ReadRules(table, origin, terms))
                             {
-                                var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol; data["verdict"] = rule.Action; data["chain"] = chain.Hook; rules.Add(data);
+                                Require(rule.Action is "accept" or "drop" or "reject", origin, "import.filterActionUnsupported");
+                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description", "countPackets");
+                                foreach (var family in Families(rule))
+                                {
+                                    var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol; data["verdict"] = rule.Action; data["chain"] = chain.Hook; rules.Add(data);
+                                }
                             }
                             Map(origin, "rule", auxiliary ? "auxiliaryFilter.filter.rules" : "filter.rules");
                         });
@@ -88,25 +95,30 @@ public static partial class NativeImportPlanner
             {
                 Attempt(chain.Origin, () =>
                 {
-                    Require(chain.Type == "nat" && chain.Policy == "accept" && chain.Hook is "prerouting" or "postrouting" && hooks.Add(chain.Hook) && chain.Priority == (chain.Hook == "prerouting" ? -100 : 100), chain.Origin, "import.natChainUnsupported");
+                    Require(chain.Type == "nat" && chain.Policy == "accept" && chain.Hook is "prerouting" or "output" or "postrouting" && hooks.Add(chain.Hook) && chain.Priority == (chain.Hook == "postrouting" ? 100 : -100), chain.Origin, "import.natChainUnsupported");
+                    Require(chain.Hook != "output" || chain.Rules.Count != 0, chain.Origin, "import.emptyNatOutputUnsupported");
+                    var destinationNat = chain.Hook is "prerouting" or "output";
                     foreach (var (origin, terms) in chain.Rules)
                     {
                         Attempt(origin, () =>
                         {
-                            var rule = ReadRule(table, origin, terms);
-                            Require(chain.Hook == "prerouting" ? rule.Action == "dnat" : rule.Action is "snat" or "masquerade" or "return", origin, "import.natActionUnsupported");
-                            Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "translatedAddress", "translatedPort", "description");
-                            foreach (var family in Families(rule))
+                            foreach (var rule in ReadRules(table, origin, terms))
                             {
-                                var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol;
-                                if (chain.Hook == "prerouting")
+                                Require(destinationNat ? rule.Action == "dnat" : rule.Action is "snat" or "masquerade" or "return", origin, "import.natActionUnsupported");
+                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "translatedAddress", "translatedPort", "description");
+                                foreach (var family in Families(rule))
                                 {
-                                    Rename(data, "destination", "originalDestination"); Rename(data, "destinationPort", "originalPort"); Rename(data, "destinationPorts", "originalPorts"); Rename(data, "destinationPortObject", "originalPortObject");
-                                    dnat.Add(data);
+                                    var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol;
+                                    if (destinationNat)
+                                    {
+                                        Rename(data, "destination", "originalDestination"); Rename(data, "destinationPort", "originalPort"); Rename(data, "destinationPorts", "originalPorts"); Rename(data, "destinationPortObject", "originalPortObject");
+                                        if (chain.Hook == "output") { data["hook"] = "output"; }
+                                        dnat.Add(data);
+                                    }
+                                    else { data["action"] = rule.Action; snat.Add(data); }
                                 }
-                                else { data["action"] = rule.Action; snat.Add(data); }
                             }
-                            Map(origin, "rule", chain.Hook == "prerouting" ? "nat.dnatRules" : "nat.snatRules");
+                            Map(origin, "rule", destinationNat ? "nat.dnatRules" : "nat.snatRules");
                         });
                     }
                 });
@@ -138,16 +150,19 @@ public static partial class NativeImportPlanner
                 {
                     Attempt(origin, () =>
                     {
-                        var rule = ReadRule(table, origin, terms);
-                        Require(rule.Family is not null || rule.Protocol == "any" || rule.ExplicitTransport, origin, "import.bridgeProtocolContextRequired");
-                        Require(rule.Action is "accept" or "drop" or "return" or "jump", origin, "import.bridgeActionUnsupported");
-                        Allowed(rule, origin, "inputInterface", "outputInterface", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "etherType", "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "description");
-                        var data = rule.Data; data["verdict"] = rule.Action is "accept" or "drop" ? rule.Action : "drop";
-                        if (rule.Action == "return") { data["return"] = true; }
-                        if (rule.Action == "jump") { Require(rule.Jump is not null && names.ContainsKey(rule.Jump), origin, "import.jumpTargetUnresolved"); data["jumpTarget"] = names[rule.Jump!]; }
-                        if (rule.Family is not null) { data["family"] = rule.Family; }
-                        data["protocol"] = rule.Protocol; if (data["etherType"] is null) { data["etherType"] = "any"; }
-                        target.Add(data); Map(origin, "rule", "bridge.rules");
+                        foreach (var rule in ReadRules(table, origin, terms))
+                        {
+                            Require(rule.Family is not null || rule.Protocol == "any" || rule.ExplicitTransport, origin, "import.bridgeProtocolContextRequired");
+                            Require(rule.Action is "accept" or "drop" or "return" or "jump", origin, "import.bridgeActionUnsupported");
+                            Allowed(rule, origin, "inputInterface", "outputInterface", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "etherType", "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "description");
+                            var data = rule.Data; data["verdict"] = rule.Action is "accept" or "drop" ? rule.Action : "drop";
+                            if (rule.Action == "return") { data["return"] = true; }
+                            if (rule.Action == "jump") { Require(rule.Jump is not null && names.ContainsKey(rule.Jump), origin, "import.jumpTargetUnresolved"); data["jumpTarget"] = names[rule.Jump!]; }
+                            if (rule.Family is not null) { data["family"] = rule.Family; }
+                            data["protocol"] = rule.Protocol; if (data["etherType"] is null) { data["etherType"] = "any"; }
+                            target.Add(data);
+                        }
+                        Map(origin, "rule", "bridge.rules");
                     });
                 }
                 if (!ReferenceEquals(chain, forward)) { subchains.Add(new JsonObject { ["name"] = names[chain.Name], ["rules"] = target }); }

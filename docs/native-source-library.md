@@ -48,14 +48,23 @@ This is a bounded v1 grammar, not support for arbitrary nftables language.
 
 | Area | Supported contract |
 | --- | --- |
-| Tables and chains | Explicit unique role mapping for `inet` filter/NAT/auxiliary and `bridge` filter; supported base hooks, priorities/defaults, ordered rules and bridge regular subchains. Primary filter priority is 0, raw prerouting is -300, NAT prerouting/postrouting are -100/100. |
-| Matching and actions | Numeric IPv4/IPv6 prefixes/hosts and anonymous sets, exact interfaces, MAC+IP restrictions, supported equality/negation, numeric TCP/UDP ports, supported conntrack states/status, ICMP/ICMPv6, accept/drop/explicit ICMPx reject, bridge jump/return. Unsupported scope combinations fail full policy validation. |
-| Router constructs | Raw prerouting reverse-path FIB drop and UDP source ports; forward SYN MSS clamp; source/destination keyed bounded meters; dual-stack DNAT/SNAT, masquerade and ordered postrouting return exemptions; early auxiliary filtering and bridge L2/L3/L4 matching. |
+| Tables and chains | Explicit unique role mapping for `inet` filter/NAT/auxiliary and `bridge` filter, supported base hooks, priorities/defaults, ordered rules and bridge regular subchains. Primary filtering uses priority 0, raw prerouting uses -300, DNAT prerouting and output use -100, and NAT postrouting uses 100. |
+| Matching and actions | Numeric IPv4/IPv6 prefixes/hosts and anonymous sets, exact interface names, MAC+IP restrictions, supported equality/negation, numeric TCP/UDP ports, supported conntrack states including `untracked`, supported conntrack status, ICMP/ICMPv6, accept/drop/explicit ICMPx reject, and bridge jump/return. Unsupported scope combinations fail full policy validation. |
+| Router constructs | Raw prerouting reverse-path FIB drop and UDP source ports, forward SYN MSS clamp, source/destination keyed bounded meters, dual-stack DNAT/SNAT, masquerade and ordered postrouting return exemptions, early auxiliary filtering, and bridge L2/L3/L4 matching. |
 | Named sets | Nonempty static IPv4/IPv6/port sets in supported reference slots become immutable version-1 pinned library objects with shared native definitions. Unused declarations and unsupported flags/options remain blocking. |
 | Definitions/includes | Ordered lexical `define`/`redefine`/`undefine`, with values captured at definition time; exact uploaded include bindings, cycle/depth and expansion bounds. No host/service name resolution. |
 | Native commands | Supported create/add table definitions and add chain/set/rule statements can describe the complete candidate. They are parsed as data and never executed. |
 
-Counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
+Positive sets of exact interface names and supported ICMP types can expand into
+disjoint ordered rules. The explicit `meta l4proto { tcp, udp }` guard supports
+shared `th sport` and `th dport` selectors where the destination policy accepts
+the respective port. Rules that would split a counter, meter or jump are rejected.
+Filter rules with an explicit address family support a plain inline `counter`
+immediately before the terminal verdict. Counters start at zero when the rule is
+installed. Output DNAT retains its own hook and order and requires an original
+destination restriction.
+
+Named counters, seeded counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
 control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
 repeated restrictions and trailing input are explicit gaps. The narrowly supported
 dynamic set form is a private implementation of one bounded meter, with exact

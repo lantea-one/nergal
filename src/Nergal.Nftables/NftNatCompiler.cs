@@ -68,6 +68,15 @@ public static class NftNatCompiler
                 errors.Add(new("nat.protocolUnsupported", path + ".protocol"));
             }
 
+            if (!Enum.IsDefined(rule.Hook))
+            {
+                errors.Add(new("nat.hookUnsupported", path + ".hook"));
+            }
+            if (rule.Hook == DnatHook.Output && rule.InputInterface is not null)
+            {
+                errors.Add(new("interface.chainMismatch", path + ".inputInterface"));
+            }
+
             if (rule.OriginalDestination is null && rule.DestinationPrefixes is null)
             {
                 errors.Add(new("nat.originalDestinationRequired", path + ".originalDestination"));
@@ -188,13 +197,21 @@ public static class NftNatCompiler
 
         text.Append('\n');
         text.Append("add chain inet " + TableName + " prerouting { type nat hook prerouting priority dstnat; policy accept; }\n");
+        if (normalizedDnat.Any(entry => entry.Rule is { Enabled: true, Hook: DnatHook.Output }))
+        {
+            text.Append("add chain inet " + TableName + " output { type nat hook output priority dstnat; policy accept; }\n");
+        }
         text.Append("add chain inet " + TableName + " postrouting { type nat hook postrouting priority srcnat; policy accept; }\n");
 
         sets.Append(text, "inet", TableName);
-        foreach (var (rule, addr) in normalizedDnat.Select((r, i) => (Rule: NftStaticSetPlan.Attach(r.Rule, intent.DnatRules[i]!), r.NormalizedAddr)).Where(r => r.Rule.Enabled))
+        // Group like the kernel listing while retaining first-match order within each hook.
+        var activeDnat = normalizedDnat.Select((r, i) => (Rule: NftStaticSetPlan.Attach(r.Rule, intent.DnatRules[i]!), r.NormalizedAddr))
+            .Where(r => r.Rule.Enabled).OrderBy(r => r.Rule.Hook);
+        foreach (var (rule, addr) in activeDnat)
         {
             var familyToken = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
-            text.Append("add rule inet " + TableName + " prerouting meta nfproto ")
+            var chainName = rule.Hook == DnatHook.Output ? "output" : "prerouting";
+            text.Append("add rule inet " + TableName + " ").Append(chainName).Append(" meta nfproto ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
 
             if (rule.InputInterface is not null)

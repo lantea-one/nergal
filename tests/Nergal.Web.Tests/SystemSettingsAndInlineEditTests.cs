@@ -86,11 +86,12 @@ public sealed class SystemSettingsAndInlineEditTests
             // 1. Edit existing filter rule #0 in place with a description.
             var m1 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(
                 admin.EditFilterRule(seed, "inline-edit", null, 0, "input", "ipv4", "tcp", "accept",
-                    "192.0.2.0/24", null, "443", null, "eth0", null, "new", description: "Allow HTTPS from LAN")).Model);
+                    "192.0.2.0/24", null, "443", null, "eth0", null, "new, untracked", description: "Allow HTTPS from LAN")).Model);
             Assert.Empty(m1.Diagnostics);
             Assert.Single(m1.Bundle!.Filter.Rules);
             Assert.Equal("Allow HTTPS from LAN", m1.Bundle.Filter.Rules[0]!.Description);
             Assert.Equal(443, m1.Bundle.Filter.Rules[0]!.DestinationPort);
+            Assert.Equal(ConnectionStateFlags.New | ConnectionStateFlags.Untracked, m1.Bundle.Filter.Rules[0]!.ConnectionStates);
 
             // 2. Add & edit DNAT rule in place.
             var m2 = Assert.IsType<PolicyEditorViewModel>(Assert.IsType<ViewResult>(

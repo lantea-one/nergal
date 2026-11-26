@@ -84,6 +84,7 @@
                                     <span class="badge @(rule.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
                                         @rule.Verdict.ToString().ToLowerInvariant()
                                     </span>
+                                    @if (rule.CountPackets) { <span class="muted">counter</span> }
                                 </td>
                             </tr>
                         }
@@ -104,7 +105,7 @@
         @if (Bundle.Nat is { } nat)
         {
             <h3>NAT (<code>inet nergal_nat</code>)</h3>
-            <p class="muted">DNAT rules: <strong>@nat.DnatRules.Count</strong> · Postrouting rules: <strong>@nat.SnatRules.Count</strong></p>
+            <p class="muted">Prerouting DNAT rules: <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Prerouting)</strong> · Output DNAT rules: <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Output)</strong> · Postrouting rules: <strong>@nat.SnatRules.Count</strong></p>
         }
 
         @if (Bundle.Bridge is { } bridge)
@@ -150,6 +151,7 @@
         if ((states & ConnectionStateFlags.Established) != 0) { parts.Add("established"); }
         if ((states & ConnectionStateFlags.Related) != 0) { parts.Add("related"); }
         if ((states & ConnectionStateFlags.Invalid) != 0) { parts.Add("invalid"); }
+        if ((states & ConnectionStateFlags.Untracked) != 0) { parts.Add("untracked"); }
         return string.Join(", ", parts);
     }
 

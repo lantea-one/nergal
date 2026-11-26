@@ -27,6 +27,12 @@ performs host operations. The web host uses the pure compiler for draft validati
   Schema 1 policies reject schema-2 fields.
 All unmatched packets receive the chain's explicit default. There are no implicit permits.
 
+Schema-2 primary and auxiliary filter rules accept the optional JSON boolean
+`countPackets` (default `false`). When true, an anonymous native `counter`
+counts packets and bytes after all matches and any meter, immediately before the
+verdict. The receipt binds the counter to that position on that rule. Packet and
+byte totals change with traffic and are excluded from saved intent and fingerprints.
+
 ```csharp
 var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
 [
@@ -76,6 +82,7 @@ contain stable identifiers rather than caller-supplied policy data.
 | `interface.chainMismatch` | `InputInterface` used on `Output` or `OutputInterface` used on `Input`. |
 | `connectionState.requiresSchema2` | Schema 1 rule specified connection-tracking state flags. |
 | `connectionState.unknown` | Connection state mask contains undefined bits. |
+| `counter.requiresSchema2` | Schema 1 rule requested an inline packet and byte counter. |
 | `icmpType.requiresSchema2` | Schema 1 rule specified an ICMP/ICMPv6 type matcher. |
 | `icmpType.requiresIcmp` | ICMP type specified without ICMP or ICMPv6 protocol. |
 | `icmpType.unsupported` | ICMP type is not in the family's canonical allowlist. |

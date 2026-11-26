@@ -72,7 +72,7 @@ public sealed class NativeImportPlannerTests
 
     /// <summary>Unknown stateful operations, macros and contexts cannot be approved away or yield a weaker candidate.</summary>
     [Theory]
-    [InlineData("counter accept", "import.expressionUnsupported")]
+    [InlineData("counter accept", "import.counterFamilyRequired")]
     [InlineData("log accept", "import.expressionUnsupported")]
     [InlineData("ip saddr $missing accept", "import.definitionUnresolved")]
     [InlineData("ip saddr 192.0.2.1 ip saddr 198.51.100.1 accept", "import.repeatedMatcherUnsupported")]
@@ -139,6 +139,90 @@ public sealed class NativeImportPlannerTests
         Assert.Contains(plan.Gaps, g => g.Code == code);
         Assert.Null(plan.PolicyJson);
         Assert.Null(plan.CandidateDigest);
+    }
+
+    /// <summary>Disjoint sets preserve each permitted packet class and adjacent rule order.</summary>
+    [Fact]
+    public void PositiveEqualitySets_ExpandIntoOrderedDisjointRules()
+    {
+        var source = Source("""
+            table inet sample {
+              chain input {
+                type filter hook input priority 0; policy drop;
+                ip saddr 192.0.2.1 iifname { "edge0", "edge1" } meta l4proto { tcp, udp } th dport 443 accept;
+                icmpv6 type { echo-request, nd-neighbor-solicit } accept;
+                ip saddr 198.51.100.1 drop;
+              }
+            }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var rules = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter.Rules.Select(r => r!).ToArray();
+        Assert.Equal(7, rules.Length);
+        Assert.Equal(
+            [("edge0", FilterProtocol.Tcp), ("edge0", FilterProtocol.Udp), ("edge1", FilterProtocol.Tcp), ("edge1", FilterProtocol.Udp)],
+            rules.Take(4).Select(rule => (rule.InputInterface, rule.Protocol)));
+        Assert.All(rules.Take(4), rule => Assert.Equal(443, rule.DestinationPort));
+        Assert.Equal(["echo-request", "nd-neighbor-solicit"], rules.Skip(4).Take(2).Select(rule => rule.IcmpType));
+        Assert.Equal(FilterVerdict.Drop, rules[^1].Verdict);
+        Assert.Equal(3, plan.Mappings.Count(mapping => mapping.Disposition == "rule"));
+    }
+
+    /// <summary>Do not split negated sets, shared state, or unguarded transport-header matches.</summary>
+    [Theory]
+    [InlineData("iifname != { edge0, edge1 } accept", "import.alternativeNegationUnsupported")]
+    [InlineData("iifname { edge0, edge1 } udp dport 443 meter bucket { ip saddr timeout 60s limit rate 1/minute burst 1 packets } accept", "import.alternativeStatefulUnsupported")]
+    [InlineData("ip saddr 192.0.2.1 iifname { edge0, edge1 } counter accept", "import.alternativeStatefulUnsupported")]
+    [InlineData("ip saddr 192.0.2.1 counter udp dport 443 accept", "import.counterPlacementUnsupported")]
+    [InlineData("th dport 443 accept", "import.transportGuardRequired")]
+    [InlineData("meta l4proto { tcp, ipv6-icmp } th dport 443 accept", "import.protocolAlternativesUnsupported")]
+    public void UnrepresentableAlternatives_DenyWholeCandidate(string rule, string code)
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; " + rule + "; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+
+        Assert.Contains(plan.Gaps, gap => gap.Code == code);
+        Assert.Null(plan.PolicyJson);
+    }
+
+    /// <summary>A local DNAT rule stays on output and an inline counter stays on its explicit family.</summary>
+    [Fact]
+    public void LocalDnatAndScopedCounter_PreserveIntent()
+    {
+        var source = Source("""
+            table inet sample {
+              chain input { type filter hook input priority filter; policy drop; ip saddr 192.0.2.1 counter accept; }
+            }
+            table inet translate {
+              chain output {
+                type nat hook output priority dstnat; policy accept;
+                ip daddr 192.0.2.3 udp dport 443 dnat ip to 198.51.100.4:8443;
+              }
+            }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source,
+            new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter),
+            new NativeImportTableBinding("inet", "translate", NativeImportTableRole.Nat)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var bundle = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!;
+        Assert.True(Assert.Single(bundle.Filter.Rules)!.CountPackets);
+        Assert.Equal(DnatHook.Output, Assert.Single(bundle.Nat!.DnatRules)!.Hook);
+    }
+
+    /// <summary>An explicit but empty output hook requires a policy representation before import.</summary>
+    [Fact]
+    public void EmptyOutputNat_DeniesWholeCandidate()
+    {
+        var source = Source("""
+            table inet sample { chain input { type filter hook input priority filter; policy drop; } }
+            table inet translate { chain output { type nat hook output priority dstnat; policy accept; } }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source,
+            new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter),
+            new NativeImportTableBinding("inet", "translate", NativeImportTableRole.Nat)), [source]);
+        Assert.Contains(plan.Gaps, gap => gap.Code == "import.emptyNatOutputUnsupported");
+        Assert.Null(plan.PolicyJson);
     }
 
     /// <summary>Named static sets remain pinned references rather than collapsing into anonymous IP-only accepts.</summary>

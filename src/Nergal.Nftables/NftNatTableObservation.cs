@@ -33,6 +33,7 @@ public sealed class NftNatTableObservation
         NftTableIdentity identity,
         ulong tableHandle,
         ulong preroutingChainHandle,
+        ulong? outputChainHandle,
         ulong postroutingChainHandle,
         NatPolicy policy,
         List<(ulong Handle, DnatRule Rule)> dnatRules,
@@ -41,19 +42,25 @@ public sealed class NftNatTableObservation
         Identity = identity;
         TableHandle = tableHandle;
         PreroutingChainHandle = preroutingChainHandle;
+        OutputChainHandle = outputChainHandle;
         PostroutingChainHandle = postroutingChainHandle;
         Policy = policy;
 
         var completeSets = dnatRules.Any(e => e.Rule.OriginalPorts is not null || e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null) || snatRules.Any(e => e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null);
-        var extended = completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
+        var extended = outputChainHandle.HasValue || completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
             snatRules.Any(e => e.Rule.Action != NatPostroutingAction.Snat || e.Rule.NegateSource || e.Rule.NegateDestination ||
                 e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any);
         var projection = new StringBuilder(string.Join('\n',
-            completeSets ? "nergal-nat-observation-v3" : extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
+            outputChainHandle.HasValue ? "nergal-nat-observation-v4" : completeSets ? "nergal-nat-observation-v3" : extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
             identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture),
             string.Join(' ', preroutingChainHandle.ToString(CultureInfo.InvariantCulture), "inet", NftNatCompiler.TableName, "prerouting", "nat", "prerouting", "-100", "accept"),
             string.Join(' ', postroutingChainHandle.ToString(CultureInfo.InvariantCulture), "inet", NftNatCompiler.TableName, "postrouting", "nat", "postrouting", "100", "accept")));
+        if (outputChainHandle is { } outputHandle)
+        {
+            projection.Append('\n').Append(outputHandle.ToString(CultureInfo.InvariantCulture))
+                .Append(" inet " + NftNatCompiler.TableName + " output nat output -100 accept");
+        }
 
         foreach (var (handle, rule) in dnatRules)
         {
@@ -103,6 +110,9 @@ public sealed class NftNatTableObservation
     /// <summary>Gets the positive native prerouting chain handle.</summary>
     public ulong PreroutingChainHandle { get; }
 
+    /// <summary>Gets the native OUTPUT chain handle when active OUTPUT DNAT rules are present.</summary>
+    public ulong? OutputChainHandle { get; }
+
     /// <summary>Gets the positive native postrouting chain handle.</summary>
     public ulong PostroutingChainHandle { get; }
 
@@ -145,107 +155,57 @@ public sealed class NftNatTableObservation
             var named = NftStaticSetSnapshot.Expand(json, "inet", NftNatCompiler.TableName, isEcho);
             using var expanded = named.IsEmpty ? null : JsonDocument.Parse(named.Json);
             var items = (expanded?.RootElement ?? root).GetProperty("nftables").EnumerateArray().ToArray();
-            JsonElement table, preChain, postChain;
-            int ruleStartIndex;
-            if (isEcho)
+            if (!isEcho && (items.Length < 4 || !NftJsonHelpers.Properties(items[0], "metainfo")))
             {
-                if (items.Length < 3 ||
-                    !NftJsonHelpers.Properties(items[0], "create") || !NftJsonHelpers.Properties(items[0].GetProperty("create"), "table") ||
-                    !NftJsonHelpers.Properties(items[1], "add") || !NftJsonHelpers.Properties(items[1].GetProperty("add"), "chain") ||
-                    !NftJsonHelpers.Properties(items[2], "add") || !NftJsonHelpers.Properties(items[2].GetProperty("add"), "chain"))
-                {
-                    return Deny("observation.replacementEcho");
-                }
-
-                table = items[0].GetProperty("create").GetProperty("table");
-                preChain = items[1].GetProperty("add").GetProperty("chain");
-                postChain = items[2].GetProperty("add").GetProperty("chain");
-                ruleStartIndex = 3;
+                return Deny("observation.unsupportedObjects");
             }
-            else
+            if (!isEcho && !NftJsonHelpers.TryReadMetaHeader(items))
             {
-                if (items.Length < 4 || !NftJsonHelpers.Properties(items[0], "metainfo"))
-                {
-                    return Deny("observation.unsupportedObjects");
-                }
-
-                if (!NftJsonHelpers.TryReadMetaHeader(items))
-                {
-                    return Deny("observation.schema");
-                }
-
-                if (!NftJsonHelpers.Properties(items[1], "table") ||
-                    !NftJsonHelpers.Properties(items[2], "chain") ||
-                    !NftJsonHelpers.Properties(items[3], "chain"))
-                {
-                    return Deny("observation.unsupportedObjects");
-                }
-
-                table = items[1].GetProperty("table");
-                preChain = items[2].GetProperty("chain");
-                postChain = items[3].GetProperty("chain");
-                ruleStartIndex = 4;
+                return Deny("observation.schema");
             }
 
-            if (!NftJsonHelpers.Properties(table, "family", "name", "handle", "comment") ||
-                !NftJsonHelpers.Properties(preChain, "family", "table", "name", "handle", "type", "hook", "prio", "policy") ||
-                !NftJsonHelpers.Properties(postChain, "family", "table", "name", "handle", "type", "hook", "prio", "policy"))
+            var index = isEcho ? 0 : 1;
+            var unexpectedObject = isEcho ? "observation.replacementEcho" : "observation.unsupportedObjects";
+            if (!TryReadObject(items, index++, isEcho, "create", "table", out var table) ||
+                !TryReadObject(items, index++, isEcho, "add", "chain", out var preChain) ||
+                !TryReadObject(items, index++, isEcho, "add", "chain", out var nextChain))
             {
-                return Deny("observation.fields");
+                return Deny(unexpectedObject);
             }
-
-            if (table.GetProperty("family").GetString() != "inet" || table.GetProperty("name").GetString() != NftNatCompiler.TableName ||
-                !ValidateChain(preChain, "prerouting", -100) ||
-                !ValidateChain(postChain, "postrouting", 100))
+            if (!NftJsonHelpers.Properties(table, "family", "name", "handle", "comment")) { return Deny("observation.fields"); }
+            if (table.GetProperty("family").GetString() != "inet" || table.GetProperty("name").GetString() != NftNatCompiler.TableName)
             {
                 return Deny("observation.scope");
             }
-
-            if (table.GetProperty("handle").ValueKind != JsonValueKind.Number || !table.GetProperty("handle").TryGetUInt64(out var tableHandle) || tableHandle == 0 ||
-                preChain.GetProperty("handle").ValueKind != JsonValueKind.Number || !preChain.GetProperty("handle").TryGetUInt64(out var preHandle) || preHandle == 0 ||
-                postChain.GetProperty("handle").ValueKind != JsonValueKind.Number || !postChain.GetProperty("handle").TryGetUInt64(out var postHandle) || postHandle == 0 ||
-                preHandle == postHandle)
+            if (table.GetProperty("handle").ValueKind != JsonValueKind.Number || !table.GetProperty("handle").TryGetUInt64(out var tableHandle) || tableHandle == 0)
             {
                 return Deny("observation.handle");
             }
-
             var identity = NftTableIdentity.Parse(table.GetProperty("comment").GetString() ?? "");
-            if (identity is null)
-            {
-                return Deny("observation.identity");
-            }
+            if (identity is null) { return Deny("observation.identity"); }
 
-            if (preChain.GetProperty("policy").GetString() != "accept" ||
-                postChain.GetProperty("policy").GetString() != "accept")
+            var handles = new HashSet<ulong>();
+            var error = ReadChain(preChain, "prerouting", -100, handles, out var preHandle);
+            if (error is not null) { return Deny(error); }
+            ulong? outputHandle = null;
+            if (nextChain.TryGetProperty("name", out var name) && name.GetString() == "output")
             {
-                return Deny("observation.policy");
+                error = ReadChain(nextChain, "output", -100, handles, out var handle);
+                if (error is not null) { return Deny(error); }
+                outputHandle = handle;
+                if (!TryReadObject(items, index++, isEcho, "add", "chain", out nextChain)) { return Deny(unexpectedObject); }
             }
+            error = ReadChain(nextChain, "postrouting", 100, handles, out var postHandle);
+            if (error is not null) { return Deny(error); }
 
-            var handles = new HashSet<ulong> { preHandle, postHandle };
             var dnatRules = new List<(ulong Handle, DnatRule Rule)>();
             var snatRules = new List<(ulong Handle, SnatRule Rule)>();
-            var inPostrouting = false;
-
-            for (var index = ruleStartIndex; index < items.Length; index++)
+            var sawOutputRule = false;
+            for (; index < items.Length; index++)
             {
-                JsonElement rule;
-                if (isEcho)
+                if (!TryReadObject(items, index, isEcho, "add", "rule", out var rule))
                 {
-                    if (!NftJsonHelpers.Properties(items[index], "add") || !NftJsonHelpers.Properties(items[index].GetProperty("add"), "rule"))
-                    {
-                        return Deny("observation.replacementEcho");
-                    }
-
-                    rule = items[index].GetProperty("add").GetProperty("rule");
-                }
-                else
-                {
-                    if (!NftJsonHelpers.Properties(items[index], "rule"))
-                    {
-                        return Deny("observation.unsupportedObjects");
-                    }
-
-                    rule = items[index].GetProperty("rule");
+                    return Deny(unexpectedObject);
                 }
 
                 if (!NftJsonHelpers.Properties(rule, "family", "table", "chain", "handle", "expr"))
@@ -264,20 +224,24 @@ public sealed class NftNatTableObservation
                     return Deny("observation.handle");
                 }
 
-                if (chainName == "prerouting")
+                if (chainName is "prerouting" or "output")
                 {
-                    if (inPostrouting)
+                    if (snatRules.Count != 0 || (chainName == "output" ? !outputHandle.HasValue : sawOutputRule))
                     {
                         return Deny("observation.scope");
                     }
 
                     var parsed = ParseDnatRule(rule.GetProperty("expr"));
                     if (parsed is null) { return Deny("observation.rule"); }
+                    if (chainName == "output")
+                    {
+                        parsed = parsed with { Hook = DnatHook.Output };
+                        sawOutputRule = true;
+                    }
                     dnatRules.Add((ruleHandle, parsed));
                 }
                 else if (chainName == "postrouting")
                 {
-                    inPostrouting = true;
                     var parsed = ParseSnatRule(rule.GetProperty("expr"));
                     if (parsed is null) { return Deny("observation.rule"); }
                     snatRules.Add((ruleHandle, parsed));
@@ -288,11 +252,12 @@ public sealed class NftNatTableObservation
                 }
             }
 
+            if (outputHandle.HasValue && !sawOutputRule) { return Deny("observation.scope"); }
             var policy = new NatPolicy(NatPolicy.CurrentSchemaVersion,
                 dnatRules.Select(entry => entry.Rule),
                 snatRules.Select(entry => entry.Rule));
             if (!NftNatCompiler.Compile(policy).IsSuccess) { return Deny("observation.rule"); }
-            return new(new(identity, tableHandle, preHandle, postHandle, policy, dnatRules, snatRules, named), null);
+            return new(new(identity, tableHandle, preHandle, outputHandle, postHandle, policy, dnatRules, snatRules, named), null);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or EncoderFallbackException or ArgumentException or KeyNotFoundException)
         {
@@ -300,15 +265,40 @@ public sealed class NftNatTableObservation
         }
     }
 
-    private static bool ValidateChain(JsonElement chain, string name, int expectedPrio) =>
-        chain.GetProperty("family").GetString() == "inet" &&
-        chain.GetProperty("table").GetString() == NftNatCompiler.TableName &&
-        chain.GetProperty("name").GetString() == name &&
-        chain.GetProperty("type").GetString() == "nat" &&
-        chain.GetProperty("hook").GetString() == name &&
-        chain.GetProperty("prio").ValueKind == JsonValueKind.Number &&
-        chain.GetProperty("prio").TryGetInt32(out var priority) &&
-        priority == expectedPrio;
+    private static bool TryReadObject(JsonElement[] items, int index, bool isEcho, string command, string kind, out JsonElement value)
+    {
+        value = default;
+        if (index >= items.Length) { return false; }
+        var item = items[index];
+        if (isEcho)
+        {
+            if (!NftJsonHelpers.Properties(item, command)) { return false; }
+            item = item.GetProperty(command);
+        }
+        return NftJsonHelpers.Properties(item, kind) && item.TryGetProperty(kind, out value);
+    }
+
+    private static string? ReadChain(JsonElement chain, string name, int priority, HashSet<ulong> handles, out ulong handle)
+    {
+        handle = 0;
+        if (!NftJsonHelpers.Properties(chain, "family", "table", "name", "handle", "type", "hook", "prio", "policy"))
+        {
+            return "observation.fields";
+        }
+        if (chain.GetProperty("family").GetString() != "inet" || chain.GetProperty("table").GetString() != NftNatCompiler.TableName ||
+            chain.GetProperty("name").GetString() != name || chain.GetProperty("type").GetString() != "nat" ||
+            chain.GetProperty("hook").GetString() != name || chain.GetProperty("prio").ValueKind != JsonValueKind.Number ||
+            !chain.GetProperty("prio").TryGetInt32(out var actualPriority) || actualPriority != priority)
+        {
+            return "observation.scope";
+        }
+        if (chain.GetProperty("handle").ValueKind != JsonValueKind.Number ||
+            !chain.GetProperty("handle").TryGetUInt64(out handle) || handle == 0 || !handles.Add(handle))
+        {
+            return "observation.handle";
+        }
+        return chain.GetProperty("policy").GetString() == "accept" ? null : "observation.policy";
+    }
 
     private static DnatRule? ParseDnatRule(JsonElement expressions)
     {

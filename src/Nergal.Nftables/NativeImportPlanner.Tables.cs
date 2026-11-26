@@ -107,7 +107,7 @@ public static partial class NativeImportPlanner
                 ("inet", "mangle", _) => -150,
                 ("inet", "filter", _) => 0,
                 ("inet", "security", _) => 50,
-                ("inet", "dstnat", "prerouting") => -100,
+                ("inet", "dstnat", "prerouting" or "output") => -100,
                 ("inet", "srcnat", "postrouting") => 100,
                 ("bridge", "filter", _) => -200,
                 ("bridge", "dstnat", "prerouting") => -300,

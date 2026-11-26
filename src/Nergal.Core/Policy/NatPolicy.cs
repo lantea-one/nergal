@@ -1,6 +1,15 @@
 namespace Nergal.Core.Policy;
 
-/// <summary>An immutable destination NAT rule evaluated in the inet prerouting hook.</summary>
+/// <summary>Destination NAT base hooks supported at the native dstnat priority (-100).</summary>
+public enum DnatHook
+{
+    /// <summary>Translate a packet before routing on ingress.</summary>
+    Prerouting,
+    /// <summary>Translate a locally generated packet on output.</summary>
+    Output,
+}
+
+/// <summary>An immutable destination NAT rule evaluated in the selected inet hook.</summary>
 /// <param name="Family">The explicit IP family.</param>
 /// <param name="Protocol">Protocol to match (<see cref="FilterProtocol.Any"/>, <see cref="FilterProtocol.Tcp"/>, or <see cref="FilterProtocol.Udp"/>).</param>
 /// <param name="OriginalDestination">Canonical destination network matched prior to translation, exclusive with a destination set/reference. Some original-destination restriction is required.</param>
@@ -20,6 +29,7 @@ namespace Nergal.Core.Policy;
 /// <param name="DestinationPrefixes">Optional bounded original-destination set, exclusive with original-destination scalar/reference; never translated targets.</param>
 /// <param name="SourceObject">Optional immutable same-family source address-list version.</param>
 /// <param name="DestinationObject">Optional immutable same-family original-destination address-list version; never translated targets.</param>
+/// <param name="Hook">Destination NAT hook; OUTPUT has no ingress interface matcher.</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -39,7 +49,8 @@ public sealed record DnatRule(
     IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
     IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
     PolicyObjectReference? SourceObject = null,
-    PolicyObjectReference? DestinationObject = null);
+    PolicyObjectReference? DestinationObject = null,
+    DnatHook Hook = DnatHook.Prerouting);
 
 /// <summary>Postrouting action; exemptions return before later NAT rules.</summary>
 public enum NatPostroutingAction
@@ -105,7 +116,7 @@ public sealed class NatPolicy
 
     /// <summary>Snapshots ordered DNAT and postrouting rules without discarding invalid entries.</summary>
     /// <param name="schemaVersion">Must be 1 for the current NAT compiler.</param>
-    /// <param name="dnatRules">Ordered prerouting destination NAT rules; null entries remain for diagnostics.</param>
+    /// <param name="dnatRules">Destination NAT rules in evaluation order within each hook; null entries remain for diagnostics.</param>
     /// <param name="snatRules">Ordered postrouting source NAT and exemption rules; null entries remain for diagnostics.</param>
     /// <exception cref="ArgumentNullException">Either rule collection is null.</exception>
     public NatPolicy(int schemaVersion, IEnumerable<DnatRule?> dnatRules, IEnumerable<SnatRule?> snatRules)
@@ -130,7 +141,7 @@ public sealed class NatPolicy
     /// <summary>Gets the schema version validated prior to compilation.</summary>
     public int SchemaVersion { get; }
 
-    /// <summary>Gets the defensive ordered prerouting DNAT rule snapshot.</summary>
+    /// <summary>Gets the defensive ordered DNAT rule snapshot.</summary>
     public IReadOnlyList<DnatRule?> DnatRules { get; }
 
     /// <summary>Gets the defensive ordered postrouting action snapshot.</summary>
@@ -146,6 +157,10 @@ public sealed class NatPolicy
         if (DnatRules.Count > 0)
         {
             features.Add(FirewallFeature.DestinationNat);
+        }
+        if (DnatRules.Any(rule => rule?.Hook == DnatHook.Output))
+        {
+            features.Add(FirewallFeature.OutputDestinationNat);
         }
 
         if (SnatRules.Any(r => r?.Action == NatPostroutingAction.Snat))

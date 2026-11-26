@@ -47,7 +47,15 @@ internal static partial class PolicyAuthoringService
             if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null) { return false; }
             if (index is { } position && rules[position] is { } previous)
             {
-                rule = rule with { Enabled = previous.Enabled, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject, DestinationPortObject = previous.DestinationPortObject, RateLimit = rule.RateLimit is null ? null : rule.RateLimit with { RefreshEntryTimeout = conditions.RefreshEntryTimeout ?? previous.RateLimit?.RefreshEntryTimeout ?? false } };
+                rule = rule with
+                {
+                    Enabled = previous.Enabled,
+                    CountPackets = previous.CountPackets,
+                    SourceObject = previous.SourceObject,
+                    DestinationObject = previous.DestinationObject,
+                    DestinationPortObject = previous.DestinationPortObject,
+                    RateLimit = rule.RateLimit is null ? null : rule.RateLimit with { RefreshEntryTimeout = conditions.RefreshEntryTimeout ?? previous.RateLimit?.RefreshEntryTimeout ?? false },
+                };
             }
             if (!TryApplyVisualConditions(rule, conditions, out rule, out diagnostics)) { return false; }
             if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }

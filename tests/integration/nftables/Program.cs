@@ -57,6 +57,20 @@ if (mode == "import-native" && (args.Length == 4 || args is [_, _, _, _, "--rest
     Console.Write(output); return 0;
 }
 
+if (mode == "verify-import-native" && args.Length == 5)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, true, false, false);
+    var filter = NftTableObservation.Parse(File.ReadAllText(args[3]));
+    var nat = NftNatTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!echo.IsSuccess || !filter.IsSuccess || !nat.IsSuccess)
+    { throw new InvalidOperationException($"Imported bundle observation failed: {echo.ErrorCode} {filter.ErrorCode} {nat.ErrorCode}"); }
+    var listed = NftTableObservation.Combine(filter.Observation!, nat.Observation!, null);
+    if (echo.Observation!.StateDigest != listed.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listed.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Imported bundle native round-trip diverged."); }
+    return 0;
+}
+
 if (mode == "native-low-ipv6" && args.Length == 2)
 {
     Console.Write(NftFilterCompiler.Compile(LowIpv6(args[1]), routerIdentity).Candidate); return 0;

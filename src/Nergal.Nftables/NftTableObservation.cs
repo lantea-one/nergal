@@ -113,6 +113,7 @@ public sealed partial class NftTableObservation
                 }
 
                 if (hasRouter) { projection.Append(RouterProjection(rule)).Append(' '); }
+                if (rule.CountPackets) { projection.Append("counter "); }
                 projection.Append(VerdictToken(rule.Verdict));
             }
 
@@ -569,7 +570,7 @@ public sealed partial class NftTableObservation
                     lastChain = chainKind.Value;
                     if (!rule.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle))
                     { return Deny("observation.handle"); }
-                    var parsed = ParseSchema2Rule(rule.GetProperty("expr"), chainKind.Value, sets, ref nextSetIndex);
+                    var parsed = ParseSchema2Rule(rule.GetProperty("expr"), chainKind.Value, sets, ref nextSetIndex, allowCounter: true);
                     if (parsed is null) { return Deny("observation.rule"); }
                     rules.Add((handle, parsed));
                 }
@@ -957,9 +958,10 @@ public sealed partial class NftTableObservation
         JsonElement expressions,
         FilterChainKind chain,
         IReadOnlyList<ObservedRateLimitSet> sets,
-        ref int nextSetIndex)
+        ref int nextSetIndex,
+        bool allowCounter)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 12)
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 13)
         {
             return null;
         }
@@ -972,6 +974,19 @@ public sealed partial class NftTableObservation
             terminal.GetProperty("reject").GetProperty("type").GetString() == "icmpx" &&
             terminal.GetProperty("reject").GetProperty("expr").GetString() == "admin-prohibited";
         if (!accept && !drop && !reject) { return null; }
+        var matchEnd = count - 1;
+        var countPackets = Properties(expressions[matchEnd - 1], "counter");
+        if (countPackets)
+        {
+            var counter = expressions[matchEnd - 1].GetProperty("counter");
+            if (!allowCounter || !Properties(counter, "packets", "bytes") ||
+                !IsCounterValue(counter.GetProperty("packets")) || !IsCounterValue(counter.GetProperty("bytes")))
+            {
+                return null;
+            }
+            matchEnd--;
+        }
+
         var negateInput = false;
         var negateOutput = false;
         var negateSource = false;
@@ -998,9 +1013,9 @@ public sealed partial class NftTableObservation
         var hasL4Proto = false;
         var stage = -1;
 
-        for (var index = 0; index < count - 1; index++)
+        for (var index = 0; index < matchEnd; index++)
         {
-            if (index == count - 2 && Properties(expressions[index], "set"))
+            if (index == matchEnd - 1 && Properties(expressions[index], "set"))
             {
                 if (stage >= 9 || nextSetIndex >= sets.Count)
                 {
@@ -1262,8 +1277,12 @@ public sealed partial class NftTableObservation
             source, destination, destinationPort, chain, inputInterface, outputInterface, connectionStates, icmpType, rateLimit,
             matchOriginalDestinationDnat, sourcePrefixes, destinationPrefixes, destinationPorts,
             NegateInputInterface: negateInput, NegateOutputInterface: negateOutput, NegateSource: negateSource,
-            NegateDestination: negateDestination, SourceMac: sourceMac, SourceMacs: sourceMacs, NegateSourceMac: negateMac);
+            NegateDestination: negateDestination, SourceMac: sourceMac, SourceMacs: sourceMacs, NegateSourceMac: negateMac,
+            CountPackets: countPackets);
     }
+
+    // Native values are live unsigned totals. Validate their shape, then bind only the counter's position and presence.
+    private static bool IsCounterValue(JsonElement value) => value.ValueKind == JsonValueKind.Number && value.TryGetUInt64(out _);
 
     internal static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
     {
@@ -1426,7 +1445,7 @@ public sealed partial class NftTableObservation
             return ConnectionStateFromToken(right.GetString(), out _) is { } single ? single : ConnectionStateFlags.None;
         }
 
-        if (right.ValueKind != JsonValueKind.Array || right.GetArrayLength() is < 2 or > 4)
+        if (right.ValueKind != JsonValueKind.Array || right.GetArrayLength() is < 2 or > 5)
         {
             return ConnectionStateFlags.None;
         }
@@ -1469,6 +1488,9 @@ public sealed partial class NftTableObservation
             case "new":
                 rank = 3;
                 return ConnectionStateFlags.New;
+            case "untracked":
+                rank = 4;
+                return ConnectionStateFlags.Untracked;
             default:
                 rank = -1;
                 return null;
@@ -1551,36 +1573,8 @@ public sealed partial class NftTableObservation
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
 
-    private static string ConnectionStateProjection(ConnectionStateFlags states)
-    {
-        if (states == ConnectionStateFlags.None)
-        {
-            return "-";
-        }
-
-        var parts = new List<string>(4);
-        if ((states & ConnectionStateFlags.Invalid) != 0)
-        {
-            parts.Add("invalid");
-        }
-
-        if ((states & ConnectionStateFlags.Established) != 0)
-        {
-            parts.Add("established");
-        }
-
-        if ((states & ConnectionStateFlags.Related) != 0)
-        {
-            parts.Add("related");
-        }
-
-        if ((states & ConnectionStateFlags.New) != 0)
-        {
-            parts.Add("new");
-        }
-
-        return string.Join(',', parts);
-    }
+    private static string ConnectionStateProjection(ConnectionStateFlags states) =>
+        states == ConnectionStateFlags.None ? "-" : NftFilterCompiler.ConnectionStateToken(states);
 
     private static string RateLimitProjection(PerSourceRateLimit? rateLimit)
     {

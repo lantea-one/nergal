@@ -60,6 +60,8 @@ public enum ConnectionStateFlags
     Related = 4,
     /// <summary>Packet that cannot be associated with a known valid connection.</summary>
     Invalid = 8,
+    /// <summary>Packet explicitly excluded from connection tracking.</summary>
+    Untracked = 16,
 }
 
 /// <summary>Supported rate-limit window units for per-source dynamic sets.</summary>
@@ -172,6 +174,7 @@ public sealed class RpFilterPolicy
 /// <param name="DestinationObject">Optional pinned address-list reference, exclusive with destination literals.</param>
 /// <param name="DestinationPortObject">Optional pinned port-list reference, exclusive with destination-port literals.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
+/// <param name="CountPackets">Count packets and bytes reaching the verdict after all matches and any meter (schema 2 only).</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -200,7 +203,8 @@ public sealed record FilterRule(
     PolicyObjectReference? SourceObject = null,
     PolicyObjectReference? DestinationObject = null,
     PolicyObjectReference? DestinationPortObject = null,
-    bool Enabled = true)
+    bool Enabled = true,
+    bool CountPackets = false)
 {
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
@@ -239,6 +243,7 @@ public sealed record FilterRule(
             Equals(SourceMac, other.SourceMac) &&
             SequenceEqual(SourceMacs, other.SourceMacs) &&
             NegateSourceMac == other.NegateSourceMac &&
+            CountPackets == other.CountPackets &&
             Enabled == other.Enabled && Equals(SourceObject, other.SourceObject) && Equals(DestinationObject, other.DestinationObject) && Equals(DestinationPortObject, other.DestinationPortObject);
     }
 
@@ -270,6 +275,7 @@ public sealed record FilterRule(
         hash.Add(SourceMac);
         AddSequenceHash(ref hash, SourceMacs);
         hash.Add(NegateSourceMac);
+        hash.Add(CountPackets);
         hash.Add(Enabled); hash.Add(SourceObject); hash.Add(DestinationObject); hash.Add(DestinationPortObject);
         return hash.ToHashCode();
     }
@@ -406,6 +412,7 @@ public sealed class FilterPolicy
 
         if (Rules.Any(rule => rule?.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)) { features.Add(FirewallFeature.PerDestinationRateLimiting); }
         if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
+        if (Rules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
         if (RpFilter is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&
             (r.SourceMac is not null || r.SourceMacs is not null || r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface || r.Verdict == FilterVerdict.Reject)))
         { features.Add(FirewallFeature.RouterFiltering); }

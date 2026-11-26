@@ -1,0 +1,23 @@
+# Independent native source using only documentation IPs in a disposable namespace.
+table inet nergal_filter {
+    chain input {
+        type filter hook input priority filter; policy drop;
+        ct state established accept
+        ip saddr 192.0.2.2 udp dport 19042 counter drop
+        ip saddr 192.0.2.2 tcp dport 19042 drop
+        ip6 saddr 2001:db8::2 meta l4proto { tcp, udp } th dport 19042 drop
+        iifname { "lo", "fixture-extra" } meta l4proto { tcp, udp } th dport 19042 accept
+        ct state untracked udp dport 19044 accept
+        udp dport 19046 accept
+        icmp type { echo-request, echo-reply } accept
+        icmpv6 type { echo-request, echo-reply } accept
+    }
+}
+
+table inet nergal_nat {
+    chain output {
+        type nat hook output priority dstnat; policy accept;
+        ip daddr 192.0.2.2 udp dport 19045 dnat ip to 192.0.2.1:19046
+        ip6 daddr 2001:db8::2 udp dport 19045 dnat ip6 to [2001:db8::1]:19046
+    }
+}

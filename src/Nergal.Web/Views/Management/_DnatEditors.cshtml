@@ -50,10 +50,13 @@
                             <label for="dnat-edit-@i-translatedPort">Translated port</label>
                             <input type="number" name="translatedPort" value="@d.TranslatedPort" min="1" max="65535" id="dnat-edit-@i-translatedPort" />
                         </div>
-                        <div class="field">
-                            <label for="dnat-edit-@i-inputInterface">Input iface</label>
-                            <input type="text" name="inputInterface" value="@d.InputInterface" maxlength="15" id="dnat-edit-@i-inputInterface" />
-                        </div>
+                        @if (d.Hook == DnatHook.Prerouting)
+                        {
+                            <div class="field">
+                                <label for="dnat-edit-@i-inputInterface">Input iface</label>
+                                <input type="text" name="inputInterface" value="@d.InputInterface" maxlength="15" id="dnat-edit-@i-inputInterface" />
+                            </div>
+                        }
                         <div class="field">
                             <label for="dnat-edit-@i-source">Source CIDR(s)</label>
                             <input type="text" name="@(d.SourceObject is null ? "source" : null)" value="@(d.SourceObject is { } sourcePin ? string.Join(", ", sourcePin.Content.Entries) : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : ""))" readonly="@(d.SourceObject is not null)" aria-describedby="dnat-edit-@i-source-hint" id="dnat-edit-@i-source" />

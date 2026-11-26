@@ -245,6 +245,7 @@ internal static partial class PolicyAuthoringService
         nextRules[ruleIndex] = rule with
         {
             Enabled = previous.Enabled,
+            CountPackets = previous.CountPackets,
             SourceObject = previous.SourceObject,
             DestinationObject = previous.DestinationObject,
             DestinationPortObject = previous.DestinationPortObject,
@@ -436,6 +437,7 @@ internal static partial class PolicyAuthoringService
                     case "established": states |= ConnectionStateFlags.Established; break;
                     case "related": states |= ConnectionStateFlags.Related; break;
                     case "invalid": states |= ConnectionStateFlags.Invalid; break;
+                    case "untracked": states |= ConnectionStateFlags.Untracked; break;
                     default: errors.Add(new("connectionState.unknown", "rule.connectionStates")); break;
                 }
             }
@@ -697,7 +699,7 @@ internal static partial class PolicyAuthoringService
 
         var dnats = bundle.Nat.DnatRules.ToList();
         var previous = bundle.Nat.DnatRules[ruleIndex]!;
-        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject };
+        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject, Hook = previous.Hook };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
