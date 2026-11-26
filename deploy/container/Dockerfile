@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0.404@sha256:8c6edfb26c85153f236d26efebd9ad349aec403583f343f201ee67838b23658d AS build
 WORKDIR /source
 COPY global.json Directory.Build.props ./
-COPY LICENSE scripts/collect-nuget-notices.py ./
+COPY LICENSE scripts/collect-nuget-notices.py scripts/normalize-static-asset-endpoints.py ./
 COPY scripts/nuget-license-texts/ ./nuget-license-texts/
 COPY deploy/LinuxRelease.targets ./LinuxRelease.targets
 COPY src/ src/
@@ -17,13 +17,11 @@ RUN dotnet restore src/Nergal.Web/Nergal.Web.csproj --locked-mode \
     && python3 -B collect-nuget-notices.py --output /publish/notices \
         --assets src/Nergal.Web/obj/project.assets.json --assets src/Nergal.Admin/obj/project.assets.json \
     && install -m 0644 LICENSE /publish/notices/LICENSE
-# The SDK embeds compression time in its generated static asset HTTP metadata.
-# Reproducible builds use the source revision timestamp for Last-Modified.
+# Use the same stable endpoint manifest as the native packages.
 ARG SOURCE_DATE_EPOCH
 RUN if [ -n "$SOURCE_DATE_EPOCH" ]; then \
-      modified="$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" '+%a, %d %b %Y %T GMT')" \
-      && sed -i "s/\"Name\":\"Last-Modified\",\"Value\":\"[^\"]*\"/\"Name\":\"Last-Modified\",\"Value\":\"$modified\"/g" \
-        /publish/web/Nergal.Web.staticwebassets.endpoints.json; \
+      python3 -B normalize-static-asset-endpoints.py \
+        /publish/web/Nergal.Web.staticwebassets.endpoints.json "$SOURCE_DATE_EPOCH"; \
     fi
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.15@sha256:aac50ceef10391e78a899e3d2ccd00bbafa2dcb56ccf4586cbccf00edb84fc21
