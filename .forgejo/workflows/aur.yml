@@ -116,7 +116,7 @@ jobs:
             install -m 0644 "$package/.SRCINFO" "$package/LICENSE" "recipes/$package/"
           done
           (cd recipes && python3 -m zipfile -c ../nergal-aur-recipes.zip nergal-bin nergal-git)
-      - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@cb8afe72b42edc798abfb8fcb556cf660d894245 # v5
         if: github.event_name != 'pull_request'
         with:
           name: nergal-aur-recipes
