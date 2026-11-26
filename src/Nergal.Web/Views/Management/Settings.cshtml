@@ -10,7 +10,7 @@
     var disabledAttr = Model.CanMutate ? null : "disabled";
     var accentColors = new[] { "blue", "emerald", "violet", "amber", "rose", "slate" };
     var themes = new[] { "system", "light", "dark" };
-    var dbProviders = new[] { "sqlite", "postgresql", "mariadb" };
+    var dbProviders = new[] { "sqlite", "postgresql", "mariadb", "mysql", "sqlserver" };
     var tlsModes = new[] { "disable", "prefer", "require", "verify-full" };
     var verdicts = new[] { "accept", "drop" };
 }
@@ -56,7 +56,7 @@
 
     <div class="alert alert-info" role="status">
         Appearance changes apply to management pages. Authentication, database, and firewall fields below are saved preferences;
-        they do not reconfigure the running services. PostgreSQL and MariaDB adapters are not implemented.
+        they do not reconfigure the running services. Configure the running controller database at deployment.
         Keep local access and protected host configuration available when planning changes.
     </div>
 
@@ -254,7 +254,7 @@
                 <h2>Database &amp; storage backend</h2>
                 <span class="badge badge-primary">Active: SQLite WAL</span>
             </div>
-            <p class="muted">SQLite WAL with <code>0600</code> file protection is the default zero-dependency store. Configure PostgreSQL or MariaDB connection targets below for externalized deployments; database passwords must be provided externally via environment or secret files.</p>
+            <p class="muted">SQLite WAL with <code>0600</code> file protection is the default. Record server database preferences here. Set the controller's live connection string separately at deployment.</p>
             <div class="form-grid">
                 <div class="field">
                     <label for="s-db-provider">Database provider</label>
@@ -275,7 +275,7 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-db-host">Database host (PostgreSQL / MariaDB)</label>
+                    <label for="s-db-host">Database server host</label>
                     <input id="s-db-host" type="text" name="databaseHost" value="@s.Database.Host" placeholder="db.internal.example.test" maxlength="253" disabled="@disabledAttr" />
                 </div>
                 <div class="field">

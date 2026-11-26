@@ -199,3 +199,7 @@ The HTTPS settings fixture checks stale forms, immutable settings history, and
 online SQLite backup and isolated restore. Its restored controller can record
 a new version while a token from a different database history is rejected.
 See [controller SQLite backup and restore](controller-sqlite-backup.md).
+
+The [controller server database fixture](controller-server-databases.md)
+exercises fresh initialization, immutable history, stale settings edits and a
+native backup and restore on each server engine.

@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 using Nergal.Core.Controller;
 using Nergal.Core.Identity;
 
@@ -17,7 +17,7 @@ public sealed partial class ControllerStateStore
     public SystemSettingsVersion ReadSystemSettingsVersion() => Read(ReadCurrentSettings);
 
     /// <summary>Appends a settings version and its audit event after checking the caller's edit token.</summary>
-    /// <remarks>The comparison occurs under the SQLite writer reservation. A divergent restore may reuse a version number.</remarks>
+    /// <remarks>The comparison occurs under the database writer lock. A divergent restore may reuse a version number.</remarks>
     /// <exception cref="ControllerStateException">The caller is denied, the settings are invalid, the edit is stale, or the transaction fails.</exception>
     public SystemSettingsVersion SaveSystemSettings(SystemSettingsSnapshot settings, string expectedToken, string actorId, string actorRole)
     {
@@ -41,23 +41,24 @@ public sealed partial class ControllerStateStore
                 null, "succeeded", SettingsAuditDetail(version, formToken, json));
             ExecuteNonQuery(conn, tx, """
                 INSERT INTO system_settings (version, form_token, settings_json, audit_sequence)
-                VALUES ($version, $token, $json, $audit)
-                """, ("$version", version), ("$token", formToken), ("$json", json), ("$audit", audit.Sequence));
+                VALUES (@version, @token, @json, @audit)
+                """, ("@version", version), ("@token", formToken), ("@json", json), ("@audit", audit.Sequence));
             return new SystemSettingsVersion(version, formToken, settings, audit.TimestampUtc, actorId);
         });
     }
 
-    private static SystemSettingsVersion ReadCurrentSettings(SqliteConnection conn, SqliteTransaction tx)
+    private static SystemSettingsVersion ReadCurrentSettings(DbConnection conn, DbTransaction tx)
     {
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = """
+        var actionLength = TextLength(conn, "action");
+        cmd.CommandText = LimitRows(conn, $"""
             SELECT s.version, s.form_token, s.settings_json, a.sequence, a.timestamp_utc, a.actor_id,
                    a.actor_role, a.action, a.target, a.revision, a.outcome, a.detail_code,
-                   (SELECT max(sequence) FROM audit_log WHERE action = 'settings.update')
+                   (SELECT max(sequence) FROM audit_log WHERE action = 'settings.update' AND {actionLength} = 15)
             FROM system_settings AS s LEFT JOIN audit_log AS a ON a.sequence = s.audit_sequence
-            ORDER BY s.version DESC LIMIT 1
-            """;
+            ORDER BY s.version DESC
+            """, "1");
         using var reader = cmd.ExecuteReader();
         if (!reader.Read()) { throw new ControllerStateException("settings.corrupt"); }
         var version = reader.GetInt64(0);
@@ -93,20 +94,25 @@ public sealed partial class ControllerStateStore
         return "settings.version:" + version.ToString(CultureInfo.InvariantCulture) + ":" + digest;
     }
 
-    private static void InitializeSystemSettings(SqliteConnection connection, SqliteTransaction transaction)
+    private static void InitializeSystemSettings(DbConnection connection, DbTransaction transaction)
     {
         ExecuteNonQuery(connection, transaction, SystemSettingsTableSql);
         ExecuteNonQuery(connection, transaction, SettingsAuditIndexSql);
         ExecuteNonQuery(connection, transaction, SettingsAppendTriggerSql);
         ExecuteNonQuery(connection, transaction, SettingsUpdateTriggerSql);
         ExecuteNonQuery(connection, transaction, SettingsDeleteTriggerSql);
-        ExecuteNonQuery(connection, transaction, """
-            INSERT INTO system_settings (version, form_token, settings_json)
-            VALUES (0, $token, $json)
-            """, ("$token", Guid.NewGuid().ToString("N")), ("$json", SystemSettingsCodec.Serialize(SystemSettingsSnapshot.Default)));
+        SeedSystemSettings(connection, transaction);
     }
 
-    private static void ValidateSystemSettingsSchema(SqliteConnection connection, SqliteTransaction transaction)
+    private static void SeedSystemSettings(DbConnection connection, DbTransaction transaction)
+    {
+        ExecuteNonQuery(connection, transaction, """
+            INSERT INTO system_settings (version, form_token, settings_json)
+            VALUES (0, @token, @json)
+            """, ("@token", Guid.NewGuid().ToString("N")), ("@json", SystemSettingsCodec.Serialize(SystemSettingsSnapshot.Default)));
+    }
+
+    private static void ValidateSystemSettingsSchema(DbConnection connection, DbTransaction transaction)
     {
         RequireDefinition(connection, transaction, "system_settings", SystemSettingsTableSql, "controller.corrupt");
         RequireDefinition(connection, transaction, "settings_audit_sequence", SettingsAuditIndexSql, "controller.corrupt");

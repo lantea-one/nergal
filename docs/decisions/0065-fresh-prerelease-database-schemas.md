@@ -28,8 +28,12 @@ parameters and exact native source retention. Wire, policy and SQLite schema
 identifiers belong to different contracts. Removing obsolete store migration code
 does not establish compatibility for the current policy and agent formats.
 
-Stabilize the logical application-store contracts on SQLite. Next add a real
-PostgreSQL adapter and then a MariaDB adapter, with independent fresh-init,
-constraint, concurrency and backup/restore checks against each engine. Retain
-schema identification and plan release-forward migrations from the first
-supported baseline. Keep rollback and receipt verification local to the agent.
+The controller store shares parameterized domain operations across SQLite,
+PostgreSQL, MariaDB, MySQL and SQL Server. Each server has its own current
+schema with explicit constraints and triggers. It records a fingerprint of
+the database catalog at initialization and checks the catalog before store
+operations. A transaction-scoped lock on a singleton metadata row serializes
+controller writes, including version allocation and stale-token checks.
+Each server requires its own fresh-init, constraint, concurrency and native
+backup/restore evidence. Retain schema identification and plan release-forward
+migrations from the first supported baseline.

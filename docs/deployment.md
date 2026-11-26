@@ -137,3 +137,4 @@ store. Handle retained development data separately. The account store and
 protected agent journal have their own initialization and ownership boundaries.
 See [controller backup and restore](controller-sqlite-backup.md) and the
 [fresh-schema decision](decisions/0065-fresh-prerelease-database-schemas.md).
+For PostgreSQL, MariaDB, MySQL and SQL Server, see [controller server databases](controller-server-databases.md).

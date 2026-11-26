@@ -1,6 +1,7 @@
+using System.Data;
 using System.Globalization;
 using System.Text.Json;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 using Nergal.Core.Controller;
 using Nergal.Core.Identity;
 
@@ -24,19 +25,19 @@ public sealed partial class ControllerStateStore
             if (current is not null && (current.Content.Name != content.Name || current.Content.Kind != content.Kind)) { throw new ControllerStateException("object.identityImmutable"); }
             if (current is null)
             {
-                if (ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects WHERE name=$name", ("$name", content.Name)) != 0) { throw new ControllerStateException("object.duplicateName"); }
+                if (ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects WHERE name=@name", ("@name", content.Name)) != 0) { throw new ControllerStateException("object.duplicateName"); }
                 if (ScalarLong(conn, tx, "SELECT count(*) FROM reusable_objects") >= 128) { throw new ControllerStateException("object.capacityExceeded"); }
-                ExecuteNonQuery(conn, tx, "INSERT INTO reusable_objects(id,name,kind) VALUES($id,$name,$kind)",
-                    ("$id", key.ToString("D")), ("$name", content.Name), ("$kind", content.Kind.ToString()));
+                ExecuteNonQuery(conn, tx, "INSERT INTO reusable_objects(id,name,kind) VALUES(@id,@name,@kind)",
+                    ("@id", key.ToString("D")), ("@name", content.Name), ("@kind", content.Kind.ToString()));
             }
             if (expectedVersion >= 64) { throw new ControllerStateException("object.versionCapacityExceeded"); }
             var version = expectedVersion + 1; var now = _timeProvider.GetUtcNow().ToUniversalTime();
             var entries = JsonSerializer.Serialize(content.Entries); var digest = ObjectDigest(content);
             ExecuteNonQuery(conn, tx, """
                 INSERT INTO reusable_object_versions(object_id,version,description,entries_json,content_sha256,updated_by_actor,updated_at_utc)
-                VALUES($id,$version,$description,$entries,$digest,$actor,$time)
-                """, ("$id", key.ToString("D")), ("$version", version), ("$description", content.Description), ("$entries", entries),
-                ("$digest", digest), ("$actor", actorId), ("$time", now.ToString("O", CultureInfo.InvariantCulture)));
+                VALUES(@id,@version,@description,@entries,@digest,@actor,@time)
+                """, ("@id", key.ToString("D")), ("@version", version), ("@description", content.Description), ("@entries", entries),
+                ("@digest", digest), ("@actor", actorId), ("@time", now.ToString("O", CultureInfo.InvariantCulture)));
             InsertAudit(conn, tx, now, actorId, actorRole, current is null ? "object.create" : "object.version", key.ToString("D"), null, "succeeded", null);
             return new ReusableObjectVersion(key, version, content, digest, actorId, now);
         });
@@ -46,7 +47,7 @@ public sealed partial class ControllerStateStore
     public IReadOnlyList<ReusableObjectVersion> ListReusableObjects() => Read((conn, tx) =>
     {
         using var cmd = conn.CreateCommand(); cmd.Transaction = tx;
-        cmd.CommandText = "SELECT id FROM reusable_objects ORDER BY name LIMIT 129";
+        cmd.CommandText = LimitRows(conn, "SELECT id FROM reusable_objects ORDER BY name", "129");
         var ids = new List<Guid>(); using (var reader = cmd.ExecuteReader()) { while (reader.Read()) { ids.Add(Guid.ParseExact(reader.GetString(0), "D")); } }
         if (ids.Count > 128) { throw new ControllerStateException("object.corrupt"); }
         return Array.AsReadOnly(ids.Select(id => ReadObject(conn, tx, id, null) ?? throw new ControllerStateException("object.corrupt")).ToArray());
@@ -59,22 +60,22 @@ public sealed partial class ControllerStateStore
     public IReadOnlyList<ReusableObjectVersion> ListReusableObjectVersions(Guid id) => Read((conn, tx) =>
     {
         using var cmd = conn.CreateCommand(); cmd.Transaction = tx;
-        cmd.CommandText = "SELECT version FROM reusable_object_versions WHERE object_id=$id ORDER BY version DESC LIMIT 65";
-        cmd.Parameters.AddWithValue("$id", id.ToString("D")); var versions = new List<int>();
+        cmd.CommandText = LimitRows(conn, "SELECT version FROM reusable_object_versions WHERE object_id=@id ORDER BY version DESC", "65");
+        AddParameter(cmd, "@id", id.ToString("D")); var versions = new List<int>();
         using (var reader = cmd.ExecuteReader()) { while (reader.Read()) { versions.Add(reader.GetInt32(0)); } }
         if (versions.Count > 64) { throw new ControllerStateException("object.corrupt"); }
         return Array.AsReadOnly(versions.Select(v => ReadObject(conn, tx, id, v) ?? throw new ControllerStateException("object.corrupt")).ToArray());
     });
 
-    private static ReusableObjectVersion? ReadObject(SqliteConnection conn, SqliteTransaction tx, Guid id, int? version)
+    private static ReusableObjectVersion? ReadObject(DbConnection conn, DbTransaction tx, Guid id, int? version)
     {
         using var cmd = conn.CreateCommand(); cmd.Transaction = tx;
-        cmd.CommandText = """
+        cmd.CommandText = LimitRows(conn, """
             SELECT o.name,o.kind,v.version,v.description,v.entries_json,v.content_sha256,v.updated_by_actor,v.updated_at_utc
             FROM reusable_objects o JOIN reusable_object_versions v ON o.id=v.object_id
-            WHERE o.id=$id AND ($version IS NULL OR v.version=$version) ORDER BY v.version DESC LIMIT 1
-            """;
-        cmd.Parameters.AddWithValue("$id", id.ToString("D")); cmd.Parameters.AddWithValue("$version", (object?)version ?? DBNull.Value);
+            WHERE o.id=@id AND (@version IS NULL OR v.version=@version) ORDER BY v.version DESC
+            """, "1");
+        AddParameter(cmd, "@id", id.ToString("D")); AddParameter(cmd, "@version", (object?)version ?? DBNull.Value, DbType.Int32);
         using var reader = cmd.ExecuteReader(); if (!reader.Read()) { return null; }
         try
         {
@@ -95,7 +96,7 @@ public sealed partial class ControllerStateStore
 
     private static string ObjectDigest(ReusableObjectContent content) => content.Digest;
 
-    private static void ValidateObjectSchema(SqliteConnection conn, SqliteTransaction tx)
+    private static void ValidateObjectSchema(DbConnection conn, DbTransaction tx)
     {
         RequireDefinition(conn, tx, "reusable_objects", ObjectsTableSql, "object.schemaInvalid");
         RequireDefinition(conn, tx, "reusable_object_versions", ObjectVersionsTableSql, "object.schemaInvalid");

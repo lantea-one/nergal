@@ -1,6 +1,25 @@
+using Microsoft.Data.SqlClient;
+using MySqlConnector;
+using Npgsql;
+
 namespace Nergal.ControllerState;
 
-/// <summary>Explicit private storage directory options for the controller SQLite database.</summary>
+/// <summary>Database engine for the controller store.</summary>
+public enum ControllerDatabaseProvider
+{
+    /// <summary>Protected local SQLite database.</summary>
+    Sqlite,
+    /// <summary>PostgreSQL server.</summary>
+    PostgreSql,
+    /// <summary>MariaDB server.</summary>
+    MariaDb,
+    /// <summary>MySQL server.</summary>
+    MySql,
+    /// <summary>Microsoft SQL Server.</summary>
+    SqlServer,
+}
+
+/// <summary>Explicit controller storage configuration.</summary>
 public sealed class ControllerStateOptions
 {
     /// <summary>Validates an absolute NUL-free directory path for controller state persistence.</summary>
@@ -16,8 +35,51 @@ public sealed class ControllerStateOptions
         Directory = Path.GetFullPath(directory);
     }
 
-    /// <summary>Gets the canonical absolute state directory path.</summary>
-    public string Directory { get; }
+    /// <summary>Selects an existing dedicated server database using driver-level credentials and transport settings.</summary>
+    /// <exception cref="ArgumentException">The provider or connection string is invalid.</exception>
+    public ControllerStateOptions(ControllerDatabaseProvider provider, string connectionString)
+    {
+        if (provider is ControllerDatabaseProvider.Sqlite || !Enum.IsDefined(provider))
+        {
+            throw new ArgumentException("A server database provider is required.", nameof(provider));
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        var database = provider switch
+        {
+            ControllerDatabaseProvider.PostgreSql => new NpgsqlConnectionStringBuilder(connectionString).Database,
+            ControllerDatabaseProvider.MariaDb or ControllerDatabaseProvider.MySql => new MySqlConnectionStringBuilder(connectionString).Database,
+            ControllerDatabaseProvider.SqlServer => new SqlConnectionStringBuilder(connectionString).InitialCatalog,
+            _ => null,
+        };
+        if (string.IsNullOrWhiteSpace(database))
+        {
+            throw new ArgumentException("An explicit controller database is required.", nameof(connectionString));
+        }
+
+        Provider = provider;
+        ConnectionString = connectionString;
+    }
+
+    /// <summary>Gets the configured database provider.</summary>
+    public ControllerDatabaseProvider Provider { get; }
+
+    /// <summary>Gets the canonical absolute SQLite state directory path, when configured.</summary>
+    public string? Directory { get; }
+
+    internal string? ConnectionString { get; }
+
+    /// <summary>Resolves a configuration provider name, defaulting to SQLite when omitted.</summary>
+    /// <exception cref="ArgumentException">The provider name is unknown.</exception>
+    public static ControllerDatabaseProvider ParseProvider(string? provider) => provider switch
+    {
+        null or "" or "sqlite" => ControllerDatabaseProvider.Sqlite,
+        "postgresql" => ControllerDatabaseProvider.PostgreSql,
+        "mariadb" => ControllerDatabaseProvider.MariaDb,
+        "mysql" => ControllerDatabaseProvider.MySql,
+        "sqlserver" => ControllerDatabaseProvider.SqlServer,
+        _ => throw new ArgumentException("Unknown controller database provider.", nameof(provider)),
+    };
 }
 
 /// <summary>Stable diagnostic failure thrown when controller persistence validation or integrity fails.</summary>
