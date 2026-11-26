@@ -187,8 +187,9 @@ docker compose -f deploy/container/compose.yaml run --rm admin controller init /
 ```
 
 Set `NERGAL_CREDENTIALS_DIR` to a directory containing `https.crt`,
-`https.key`, and `wrapping.pfx`. Give the private files mode `0600` and
-ownership by UID/GID 1654 as seen from the container. The mount is read-only.
+`https.key`, and `wrapping.pfx`. Give the directory mode `0700` and the private
+files mode `0600`. Both must be owned by UID/GID 1654 as seen from the container.
+The mount is read-only.
 Use `NERGAL_SETTINGS_FILE` for private deployment overrides. The example
 publishes the HTTPS port on IPv4 loopback. For remote browser access, configure
 the intended HTTPS entry point and hostname.
