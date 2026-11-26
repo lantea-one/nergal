@@ -39,7 +39,7 @@ public sealed class NativeConversionForm
     public List<NativeConversionTableForm> Tables { get; set; } = [];
     /// <summary>Ordered include dependencies.</summary>
     public List<NativeConversionIncludeForm> Includes { get; set; } = [];
-    /// <summary>Explicit source-wide flush restriction.</summary>
+    /// <summary>Explicit restriction of supported source cleanup to selected managed resources.</summary>
     public bool RestrictGlobalOperations { get; set; }
 }
 /// <summary>One source's guided conversion view, durable review history and optional selected result.</summary>

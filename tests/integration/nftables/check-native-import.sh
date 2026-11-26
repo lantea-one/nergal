@@ -7,9 +7,12 @@ trap 'rm -rf "$fixture"' EXIT
 runner=(dotnet tests/integration/nftables/bin/Release/net10.0/Nergal.Nftables.Fixture.dll)
 filter_binding='Filter=inet/nergal_filter'
 bindings="$filter_binding;Nat=inet/nergal_nat"
-cat tests/integration/nftables/import-router-filter.nft tests/integration/nftables/import-router-nat.nft > "$fixture/independent-source.nft"
-"${runner[@]}" import-native "$fixture/independent-source.nft" filter "$bindings" > "$fixture/imported-filter.nft"
-"${runner[@]}" import-native "$fixture/independent-source.nft" nat "$bindings" > "$fixture/imported-nat.nft"
+{
+    printf '%s\n' 'destroy table inet nergal_filter' 'destroy table inet nergal_nat'
+    cat tests/integration/nftables/import-router-filter.nft tests/integration/nftables/import-router-nat.nft
+} > "$fixture/independent-source.nft"
+"${runner[@]}" import-native "$fixture/independent-source.nft" filter "$bindings" --restrict-cleanup > "$fixture/imported-filter.nft"
+"${runner[@]}" import-native "$fixture/independent-source.nft" nat "$bindings" --restrict-cleanup > "$fixture/imported-nat.nft"
 # Additional variants exercise existing independent negation/return packet assertions after native re-import.
 for mode in router-packet-nat-disabled-return router-packet-nat-source-miss router-packet-nat-destination-miss router-packet-nat-negated router-nat; do
     "${runner[@]}" "$mode" > "$fixture/original-$mode.nft"

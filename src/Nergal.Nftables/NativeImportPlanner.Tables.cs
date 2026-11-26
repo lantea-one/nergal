@@ -12,7 +12,23 @@ public static partial class NativeImportPlanner
     {
         private void ReadRoot(Unit unit, Term[] terms, Scope scope, int depth)
         {
-            var first = terms[0]; var command = first.Text is "add" or "create";
+            var first = terms[0];
+            if (first.Text == "destroy")
+            {
+                Require(terms.Length == 4 && terms[1].Text == "table", first, "import.commandUnsupported");
+                var targetFamily = terms[2].Text;
+                var targetName = Name(terms[3]);
+                Require(request.RestrictGlobalOperations, first, "import.scopeDecisionRequired");
+                Require(request.Tables.Any(binding => binding.Family == targetFamily && binding.Name == targetName),
+                    first, "import.tableMappingRequired");
+                // Only pre-declaration cleanup of an explicitly selected table can be
+                // represented by managed resource replacement. An unused binding blocks
+                // the whole review if the source never recreates the selected table.
+                Require(!tables.ContainsKey(Key(targetFamily, targetName)), first, "import.destroyOrderUnsupported");
+                Map(first, "scope-restricted", "managed-resources-only");
+                return;
+            }
+            var command = first.Text is "add" or "create";
             var head = command ? terms[1..] : terms;
             Require(head.Length > 0, first, "import.commandUnsupported");
             if (command && head[0].Text is "chain" or "rule" or "set")
