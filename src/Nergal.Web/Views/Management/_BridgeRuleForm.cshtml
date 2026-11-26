@@ -17,6 +17,8 @@
     @if (Model.Index is not null) { <input type="hidden" name="ruleIndex" value="@Model.Index" /> }
     <fieldset disabled="@(!Model.Editor.CanMutate)"><legend>Bridge matchers and action</legend>
     <p id="@(prefix)-hint" class="hint">Empty optional matchers mean any; removing them may broaden access. Ethernet and IP families must agree. Choose an IP family for IP-prefix matching; transport matching can cover both families. A jump calls a declared local regular chain; Return resumes its caller and is allowed only inside a regular chain. Editing preserves enabled state and order.</p>
+    @if (r?.CountPackets == true) { <p class="hint">This rule counts matching frames and bytes before its action.</p> }
+    @if (r?.BindInputInterfaceIndex == true) { <p class="hint">Installation binds the ingress port name to its interface index.</p> }
     <div class="form-grid">
         <div class="field"><label for="@(prefix)-etherType">Ethernet protocol</label><select id="@(prefix)-etherType" name="etherType"><option value="any" selected="@(r is null || r.EtherType == BridgeEtherType.Any)">Any</option><option value="ipv4" selected="@(r?.EtherType == BridgeEtherType.IPv4)">IPv4</option><option value="ipv6" selected="@(r?.EtherType == BridgeEtherType.IPv6)">IPv6</option><option value="arp" selected="@(r?.EtherType == BridgeEtherType.Arp)">ARP</option></select></div>
         <div class="field"><label for="@(prefix)-family">IP family</label><select id="@(prefix)-family" name="family"><option value="none" selected="@(r?.Family is null)">No IP restriction</option><option value="ipv4" selected="@(r?.Family == IpFamily.IPv4)">IPv4</option><option value="ipv6" selected="@(r?.Family == IpFamily.IPv6)">IPv6</option></select></div>

@@ -46,6 +46,7 @@ public static partial class NativeImportPlanner
         internal NativeImportTableRole Role { get; } = role;
         internal Dictionary<string, Chain> Chains { get; } = new(StringComparer.Ordinal);
         internal Dictionary<string, NamedSet> Sets { get; } = new(StringComparer.Ordinal);
+        internal Dictionary<string, StaticTranslationMap> TranslationMaps { get; } = new(StringComparer.Ordinal);
         internal HashSet<string> Meters { get; } = new(StringComparer.Ordinal);
     }
     private sealed class Chain(string name, Term origin, Scope scope)
@@ -109,7 +110,10 @@ public static partial class NativeImportPlanner
             foreach (var obligation in obligations.Where(t => !completed.Contains(t))) { AddGap(obligation, "import.statementUnmapped"); }
             var objects = tables.Values.SelectMany(t => t.Sets.Values).Where(s => s.Reference is not null && s.Used).Select(s => s.Reference!).ToArray();
             foreach (var table in tables.Values)
-            { if (table.Sets.Values.Any(s => !s.Used)) { AddGap(table.Origin, "import.unusedObjectUnsupported"); } }
+            {
+                if (table.Sets.Values.Any(s => !s.Used) || table.TranslationMaps.Values.Any(m => !m.Used))
+                { AddGap(table.Origin, "import.unusedObjectUnsupported"); }
+            }
             if (gaps.Count != 0 || bundle is null) { return Result(null, null, []); }
             var decoded = PolicyBundleJsonCodec.DecodeBundle(bundle.ToJsonString());
             if (decoded.Value is not { } policy) { foreach (var diagnostic in decoded.Diagnostics) { AddGap(root, "import.policy." + diagnostic.Code); } return Result(null, null, []); }
@@ -191,6 +195,7 @@ public static partial class NativeImportPlanner
             if (values.Length == 1 && values[0].Node.Kind == NativeSourceNodeKind.Braces)
             { values = Comma(values[0].Children, origin); }
             else if (values.Length > 1) { values = Comma(values, origin); }
+            values = FlattenLiteralList(values, origin);
             Require(values.Length is >= 1 and <= 64 && values.All(t => t.Node.Kind == NativeSourceNodeKind.Token && t.Kind is NativeSourceTokenKind.Bare or NativeSourceTokenKind.DoubleQuoted or NativeSourceTokenKind.AtReference), origin, "import.definitionExpressionUnsupported");
         }
 

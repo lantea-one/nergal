@@ -1,0 +1,85 @@
+# Independent native source using only documentation IPs in a disposable namespace.
+table inet nergal_filter {
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+        ct state established accept
+        tcp flags syn tcp option maxseg size set rt mtu
+    }
+    chain input {
+        type filter hook input priority filter; policy drop;
+        ct state established accept
+        ip saddr 192.0.2.2 udp dport 19042 counter drop
+        ip saddr 192.0.2.2 tcp dport 19042 drop
+        ip6 saddr 2001:db8::2 meta l4proto { tcp, udp } th dport 19042 drop
+        iifname { "lo", "fixture-*" } meta l4proto { tcp, udp } th dport { 19042, 19054 } counter accept
+        udp dport 19043 counter drop
+        ct state untracked udp dport 19044 accept
+        ct state untracked udp dport 19051 accept
+        udp dport 19058 accept
+        ip daddr 192.0.2.1 udp dport { 19060, 19061 } accept
+        ip6 daddr 2001:db8::1 udp dport { 19060, 19061 } accept
+        iif "fixture-in" udp dport 19052 accept
+        iifname "fixture-in" udp dport 19053 accept
+        ct status dnat ct original ip daddr { 192.0.2.2, 192.0.2.4 } udp dport 19046 accept
+        ct status dnat ct original ip6 daddr { 2001:db8::2, 2001:db8::4 } udp dport 19046 accept
+        udp dport 19047 counter
+        udp dport 19047 accept
+        udp dport 19048 counter reject
+        udp dport 19049 meter test_v4 { ip saddr timeout 60s limit rate 1/minute } counter accept
+        udp dport 19049 meter test_v6 { ip6 saddr timeout 60s limit rate 1/minute } counter accept
+        icmp type destination-unreachable accept
+        icmpv6 type destination-unreachable accept
+        icmp type { echo-request, echo-reply } accept
+        icmpv6 type { echo-request, echo-reply, nd-neighbor-solicit, nd-neighbor-advert } accept
+    }
+    chain output {
+        type filter hook output priority filter; policy accept;
+        oifname { "l*", "unused0" } meta l4proto { tcp, udp } th dport { 19047, 19055 } counter
+    }
+}
+
+table inet nergal_aux {
+    chain before_receive {
+        type filter hook prerouting priority raw; policy accept;
+        iifname "fixture-in" ip protocol udp udp dport 19051 notrack
+        iifname "fixture-in" meta nfproto ipv6 udp dport 19051 notrack
+    }
+    chain before_send {
+        type filter hook output priority raw; policy accept;
+        oifname "lo" udp sport 19050 notrack
+    }
+}
+
+table inet nergal_nat {
+    map test_ports4 { type inet_service : ipv4_addr; elements = { 19060 : 192.0.2.1, 19062 : 192.0.2.4 }; }
+    map test_ports6 { type inet_service : ipv6_addr; elements = { 19060 : 2001:db8::1, 19062 : 2001:db8::4 }; }
+    map test_hosts4 { type ipv4_addr : ipv4_addr; elements = { 192.0.2.1 : 192.0.2.2 }; }
+    map test_hosts6 { type ipv6_addr : ipv6_addr; elements = { 2001:db8::1 : 2001:db8::2 }; }
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        iifname { "fixture-*", "unused-*" } ip daddr 198.51.100.1 udp dport 19057 dnat ip to 192.0.2.1:19058
+        iifname { "fixture-*", "unused-*" } ip6 daddr 2001:db8:2::1 udp dport 19057 dnat ip6 to [2001:db8::1]:19058
+    }
+    chain output {
+        type nat hook output priority dstnat; policy accept;
+        ip daddr { 192.0.2.2, 192.0.2.4, 192.0.2.8 } udp dport 19045 counter dnat ip to 192.0.2.1:19046
+        ip6 daddr { 2001:db8::2, 2001:db8::4, 2001:db8::8 } udp dport 19045 counter dnat ip6 to [2001:db8::1]:19046
+        ip daddr 192.0.2.2 jump lookup4
+        ip6 daddr 2001:db8::2 jump lookup6
+        ip daddr 192.0.2.2 udp dport 19061 dnat ip to 192.0.2.1
+        ip6 daddr 2001:db8::2 udp dport 19061 dnat ip6 to 2001:db8::1
+    }
+    chain lookup4 {
+        udp dport { 19060, 19061 } dnat ip to udp dport map @test_ports4
+    }
+    chain lookup6 {
+        udp dport { 19060, 19061 } dnat ip6 to udp dport map @test_ports6
+    }
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        oifname { "lo", "unused-*" } udp dport 19060 snat to ip saddr map @test_hosts4
+        oifname { "lo", "unused-*" } udp dport 19060 snat to ip6 saddr map @test_hosts6
+        ct status dnat ct original ip saddr 192.0.2.1 ct original ip daddr { 192.0.2.2, 192.0.2.6 } ip daddr 192.0.2.1 udp dport 19046 counter snat ip to 192.0.2.2
+        ct status dnat ct original ip6 saddr 2001:db8::1 ct original ip6 daddr { 2001:db8::2, 2001:db8::6 } ip6 daddr 2001:db8::1 udp dport 19046 counter snat ip6 to 2001:db8::2
+    }
+}

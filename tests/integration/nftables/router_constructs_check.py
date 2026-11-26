@@ -51,14 +51,15 @@ def install(path):
     return run('nft', '--echo', '--handle', '--json', '-f', str(path))
 
 
-def tcp(client, server, family, source, target, expected_peer, allowed=True, capture_mss=False):
+def tcp(client, server, family, source, target, expected_peer, allowed=True, expected_mss=None):
     with network(server.pid):
         listener = socket.socket(family, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind((target, 9001))
         listener.listen()
         listener.settimeout(.5)
-        capture = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0800)) if capture_mss else None
+        ether_type = 0x0800 if family == socket.AF_INET else 0x86dd
+        capture = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ether_type)) if expected_mss is not None else None
         if capture:
             capture.bind(('eth0', 0))
             capture.settimeout(.5)
@@ -82,8 +83,11 @@ def tcp(client, server, family, source, target, expected_peer, allowed=True, cap
             found = None
             for _ in range(32):
                 frame = capture.recv(4096)
-                offset = 14 + (frame[14] & 15) * 4
-                if len(frame) <= offset + 20 or frame[23] != 6 or not frame[offset + 13] & 2:
+                if len(frame) < 54:
+                    continue
+                offset = 14 + (frame[14] & 15) * 4 if family == socket.AF_INET else 54
+                protocol = frame[23] if family == socket.AF_INET else frame[20]
+                if len(frame) <= offset + 20 or protocol != 6 or not frame[offset + 13] & 2:
                     continue
                 end = offset + ((frame[offset + 12] >> 4) * 4)
                 options = frame[offset + 20:end]
@@ -101,7 +105,7 @@ def tcp(client, server, family, source, target, expected_peer, allowed=True, cap
                     i += length
                 if found is not None:
                     break
-            require(found == 1360, 'Forwarded SYN did not contain MSS 1360')
+            require(found == expected_mss, f'Forwarded SYN carried MSS {found}; expected {expected_mss}')
     finally:
         listener.close()
         if capture:
@@ -207,7 +211,15 @@ def main():
         install(sys.argv[1])
         (root / 'packet-nat-echo.json').write_text(install(sys.argv[2]))
         (root / 'packet-nat-list.json').write_text(run('nft', '--terse', '--json', 'list', 'table', 'inet', 'nergal_nat'))
-        tcp(client, server, socket.AF_INET, '192.0.2.2', '198.51.100.2', '198.51.100.1', capture_mss=True)
+        if os.environ.get('NERGAL_TEST_ROUTE_MSS') == '1':
+            for mtu in (1400, 1320):
+                run('ip', 'link', 'set', 'wan0', 'mtu', str(mtu))
+                tcp(client, server, socket.AF_INET, '192.0.2.2', '198.51.100.2', '198.51.100.1', expected_mss=mtu - 40)
+                tcp(client, server, socket.AF_INET6, '2001:db8:1::2', '2001:db8:2::2', '2001:db8:2::1', expected_mss=mtu - 60)
+            run('ip', 'link', 'set', 'wan0', 'mtu', '1500')
+            print('PASS: IPv4 and IPv6 forwarded SYN MSS follows two route MTUs')
+        else:
+            tcp(client, server, socket.AF_INET, '192.0.2.2', '198.51.100.2', '198.51.100.1', expected_mss=1360)
         tcp(client, server, socket.AF_INET, '192.0.2.2', '198.51.100.3', '192.0.2.2')
         tcp(client, server, socket.AF_INET6, '2001:db8:1::2', '2001:db8:2::2', '2001:db8:2::1')
         tcp(client, server, socket.AF_INET6, '2001:db8:1::2', '2001:db8:2::3', '2001:db8:1::2')

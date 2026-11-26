@@ -202,7 +202,7 @@ internal static partial class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, bundle.Filter.RawOutput, bundle.Filter.RegularChains);
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
@@ -234,6 +234,11 @@ internal static partial class PolicyAuthoringService
             diagnostics = [new("rule.indexOutOfRange", "filter.rules")];
             return false;
         }
+        if (bundle.Filter.Rules[ruleIndex]?.Verdict == FilterVerdict.ClampRouteMss)
+        {
+            diagnostics = [new("mss.routeRuleUsesStructuredEditor", "filter.rules")];
+            return false;
+        }
 
         if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null)
         {
@@ -242,9 +247,19 @@ internal static partial class PolicyAuthoringService
 
         var nextRules = bundle.Filter.Rules.ToList();
         var previous = bundle.Filter.Rules[ruleIndex]!;
+        if (previous.Chain == FilterChainKind.Regular || previous.Verdict == FilterVerdict.Jump || previous.UsesNativeSelectors)
+        { diagnostics = [new("filter.regularChainRequiresTypedEdit", "rules")]; return false; }
         nextRules[ruleIndex] = rule with
         {
             Enabled = previous.Enabled,
+            CountPackets = previous.CountPackets,
+            Ipv6HopLimit = previous.Ipv6HopLimit,
+            PacketLimit = previous.PacketLimit,
+            OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
+            OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
+            BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
+            InputInterfaceSelector = previous.InputInterfaceSelector,
+            OutputInterfaceSelector = previous.OutputInterfaceSelector,
             SourceObject = previous.SourceObject,
             DestinationObject = previous.DestinationObject,
             DestinationPortObject = previous.DestinationPortObject,
@@ -268,7 +283,7 @@ internal static partial class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, bundle.Filter.RawOutput, bundle.Filter.RegularChains);
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
@@ -307,7 +322,7 @@ internal static partial class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, bundle.Filter.RawOutput, bundle.Filter.RegularChains);
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
@@ -342,7 +357,7 @@ internal static partial class PolicyAuthoringService
             bundle.Filter.InputDefaultVerdict,
             bundle.Filter.ForwardDefaultVerdict,
             bundle.Filter.OutputDefaultVerdict,
-            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+            nextRules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, bundle.Filter.RawOutput, bundle.Filter.RegularChains);
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         updatedJson = EncodeBundle(nextBundle);
         diagnostics = [];
@@ -383,6 +398,7 @@ internal static partial class PolicyAuthoringService
         {
             "ipv4" => IpFamily.IPv4,
             "ipv6" => IpFamily.IPv6,
+            "dualstack" => IpFamily.DualStack,
             _ => (IpFamily)(-1),
         };
         if (!Enum.IsDefined(family)) { errors.Add(new("family.unknown", "rule.family")); }
@@ -403,6 +419,8 @@ internal static partial class PolicyAuthoringService
             "accept" => FilterVerdict.Accept,
             "drop" => FilterVerdict.Drop,
             "reject" => FilterVerdict.Reject,
+            "continue" => FilterVerdict.Continue,
+            "rejectportunreachable" => FilterVerdict.RejectPortUnreachable,
             _ => (FilterVerdict)(-1),
         };
         if (!Enum.IsDefined(verdict)) { errors.Add(new("verdict.unknown", "rule.verdict")); }
@@ -436,6 +454,7 @@ internal static partial class PolicyAuthoringService
                     case "established": states |= ConnectionStateFlags.Established; break;
                     case "related": states |= ConnectionStateFlags.Related; break;
                     case "invalid": states |= ConnectionStateFlags.Invalid; break;
+                    case "untracked": states |= ConnectionStateFlags.Untracked; break;
                     default: errors.Add(new("connectionState.unknown", "rule.connectionStates")); break;
                 }
             }
@@ -557,7 +576,7 @@ internal static partial class PolicyAuthoringService
             return false;
         }
 
-        var nextFilter = new FilterPolicy(schemaVersion, inV, fwdV, outV, bundle.Filter.Rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+        var nextFilter = new FilterPolicy(schemaVersion, inV, fwdV, outV, bundle.Filter.Rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, bundle.Filter.RawOutput, bundle.Filter.RegularChains);
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, nextFilter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
         if (!compiled.IsSuccess)
@@ -697,7 +716,7 @@ internal static partial class PolicyAuthoringService
 
         var dnats = bundle.Nat.DnatRules.ToList();
         var previous = bundle.Nat.DnatRules[ruleIndex]!;
-        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject };
+        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, CountPackets = previous.CountPackets, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, InputInterfaceSelector = previous.InputInterfaceSelector, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject, Hook = previous.Hook };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
@@ -866,6 +885,12 @@ internal static partial class PolicyAuthoringService
         {
             Enabled = previous.Enabled,
             Action = previous.Action,
+            CountPackets = previous.CountPackets,
+            MatchOriginalDestinationDnat = previous.MatchOriginalDestinationDnat,
+            OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
+            OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
+            InputInterfaceSelector = previous.InputInterfaceSelector,
+            OutputInterfaceSelector = previous.OutputInterfaceSelector,
             InputInterface = previous.InputInterface,
             Protocol = previous.Protocol,
             DestinationPort = previous.DestinationPort,
@@ -1089,6 +1114,7 @@ internal static partial class PolicyAuthoringService
         rules[ruleIndex] = previous with
         {
             EtherType = rule.EtherType,
+            BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
             Verdict = rule.Verdict,
             InputInterface = rule.InputInterface,
             OutputInterface = rule.OutputInterface,

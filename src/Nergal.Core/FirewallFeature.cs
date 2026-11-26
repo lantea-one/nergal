@@ -30,4 +30,22 @@ public enum FirewallFeature
     AuxiliaryFiltering,
     /// <summary>Refresh dynamic meter entry expiry on matching packets rather than only on creation.</summary>
     MeterEntryTimeoutRefresh,
+    /// <summary>Count packets and bytes inline immediately before a filter verdict.</summary>
+    InlineFilterCounters,
+    /// <summary>Translate locally generated traffic in the destination NAT output hook.</summary>
+    OutputDestinationNat,
+    /// <summary>Count packets and bytes immediately before a NAT action.</summary>
+    InlineNatCounters,
+    /// <summary>Bind a named input interface to its current kernel index when installing a rule.</summary>
+    InputInterfaceIndexBinding,
+    /// <summary>Derive TCP SYN MSS from native routing state on the forward path.</summary>
+    RouteDerivedMss,
+    /// <summary>Call and return from declared table-local inet filter regular chains.</summary>
+    FilterChainCalls,
+    /// <summary>Keep native interface-name patterns and protocol sets on one inet rule.</summary>
+    FilterSelectorSets,
+    /// <summary>Compare the IPv6 header hop limit for exact equality.</summary>
+    Ipv6HopLimit,
+    /// <summary>Maintain one unkeyed packet token bucket per rule.</summary>
+    RulePacketRateLimiting,
 }

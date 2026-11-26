@@ -70,20 +70,27 @@
                                 </td>
                                 <td><code>@(rule.NegateDestination ? "!= " : "")@(ObjectLabel(rule.DestinationObject) ?? FormatPrefixes(rule.Destination, rule.DestinationPrefixes))</code></td>
                                 <td><code>@(ObjectLabel(rule.DestinationPortObject) ?? FormatPorts(rule.DestinationPort, rule.DestinationPorts))</code></td>
-                                <td><code>@FormatInterfaces(rule.InputInterface is null ? null : (rule.NegateInputInterface ? "!= " : "") + rule.InputInterface, rule.OutputInterface is null ? null : (rule.NegateOutputInterface ? "!= " : "") + rule.OutputInterface)</code></td>
+                                <td><code>@FormatInterfaces(FormatInterfaceMatch(rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface), FormatInterfaceMatch(rule.OutputInterface, rule.OutputInterfaceSelector, rule.NegateOutputInterface))</code>
+                                    @if (rule.BindInputInterfaceIndex) { <span class="rule-desc">Input interface bound by index</span> }
+                                </td>
                                 <td>
                                     <code>@FormatStates(rule.ConnectionStates)</code>
                                     @if (rule.MatchOriginalDestinationDnat)
                                     {
                                         <span class="badge badge-warning">ct dnat</span>
                                     }
+                                    @if (rule.OriginalSourcePrefixes is { } originalSources)
+                                    { <span class="rule-desc">Original source @string.Join(", ", originalSources.Select(p => p.Value))</span> }
+                                    @if (rule.OriginalDestinationPrefixes is { } originalDestinations)
+                                    { <span class="rule-desc">Original destination @string.Join(", ", originalDestinations.Select(p => p.Value))</span> }
                                 </td>
                                 <td><code>@FormatRateLimit(rule.RateLimit)</code></td>
                                 <td>@(rule.Enabled ? "Enabled" : "Disabled · omitted")</td>
                                 <td>
                                     <span class="badge @(rule.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                        @rule.Verdict.ToString().ToLowerInvariant()
+                                        @(rule.Verdict == FilterVerdict.ClampRouteMss ? "Clamp MSS to route MTU" : rule.Verdict.ToString().ToLowerInvariant())
                                     </span>
+                                    @if (rule.CountPackets) { <span class="muted">counter</span> }
                                 </td>
                             </tr>
                         }
@@ -97,6 +104,8 @@
         </details>
         @if (Bundle.Filter.RpFilter is { } rp)
         { <p>Raw rpfilter: @rp.Rules.Count rules.</p> }
+        @if (Bundle.Filter.RawOutput is { } rawOutput)
+        { <p>Raw output: @rawOutput.Rules.Count rules.</p> }
         @if (Bundle.Filter.ForwardTcpMssClamp is { } mss)
         { <p>Forward TCP SYN MSS clamp: @mss bytes · @(Bundle.Filter.ForwardTcpMssClampEnabled ? "Enabled" : "Disabled · omitted").</p> }
         @if (Bundle.RequiresExtendedApplySupport)
@@ -104,7 +113,7 @@
         @if (Bundle.Nat is { } nat)
         {
             <h3>NAT (<code>inet nergal_nat</code>)</h3>
-            <p class="muted">DNAT rules: <strong>@nat.DnatRules.Count</strong> · Postrouting rules: <strong>@nat.SnatRules.Count</strong></p>
+            <p class="muted">Prerouting DNAT rules: <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Prerouting)</strong> · Output DNAT rules: <strong>@nat.DnatRules.Count(rule => rule?.Hook == DnatHook.Output)</strong> · Postrouting rules: <strong>@nat.SnatRules.Count</strong></p>
         }
 
         @if (Bundle.Bridge is { } bridge)
@@ -135,6 +144,12 @@
         return "any";
     }
 
+    private static string? FormatInterfaceMatch(string? name, InterfaceNameSelector? selector, bool negate)
+    {
+        var match = selector is null ? name : string.Join(", ", selector.Patterns.Select(pattern => pattern.Value));
+        return match is null ? null : (negate ? "!= " : "") + match;
+    }
+
     private static string FormatInterfaces(string? iif, string? oif)
     {
         if (iif is null && oif is null) { return "any"; }
@@ -150,6 +165,7 @@
         if ((states & ConnectionStateFlags.Established) != 0) { parts.Add("established"); }
         if ((states & ConnectionStateFlags.Related) != 0) { parts.Add("related"); }
         if ((states & ConnectionStateFlags.Invalid) != 0) { parts.Add("invalid"); }
+        if ((states & ConnectionStateFlags.Untracked) != 0) { parts.Add("untracked"); }
         return string.Join(", ", parts);
     }
 

@@ -13,8 +13,8 @@ internal static class RouterNatValidation
             var path = $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
             if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
             if (r.OriginalDestination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
-            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors);
-            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors);
+            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
             if (r.OriginalPorts is { } ports)
             {
                 if (r.OriginalPort.HasValue) { errors.Add(new("set.conflictsWithScalar", path + ".originalPorts")); }
@@ -23,7 +23,9 @@ internal static class RouterNatValidation
                 if (r.Protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp)) { errors.Add(new("port.requiresTransport", path + ".originalPorts")); }
             }
             RouterFilterValidation.Require(r.NegateSource, r.Source is not null || r.SourcePrefixes is not null, path + ".negateSource", errors);
-            RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null, path + ".negateInputInterface", errors);
+            RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null || r.InputInterfaceSelector is not null, path + ".negateInputInterface", errors);
+            if (r.InputInterface is not null && r.InputInterfaceSelector is not null)
+            { errors.Add(new("interface.selectorConflict", path + ".inputInterfaceSelector")); }
         }
         for (var i = 0; i < policy.SnatRules.Count; i++)
         {
@@ -31,8 +33,8 @@ internal static class RouterNatValidation
             var path = $"snatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
             if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
             if (r.Destination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
-            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors);
-            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors);
+            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
             if (!Enum.IsDefined(r.Action)) { errors.Add(new("nat.actionUnknown", path + ".action")); }
             if (r.Action != NatPostroutingAction.Snat && r.TranslatedAddress is not null)
             { errors.Add(new("nat.actionConflictsWithAddress", path + ".translatedAddress")); }
@@ -51,8 +53,10 @@ internal static class RouterNatValidation
             }
             RouterFilterValidation.Require(r.NegateSource, r.Source is not null || r.SourcePrefixes is not null, path + ".negateSource", errors);
             RouterFilterValidation.Require(r.NegateDestination, r.Destination is not null || r.DestinationPrefixes is not null, path + ".negateDestination", errors);
-            RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null, path + ".negateInputInterface", errors);
-            RouterFilterValidation.Require(r.NegateOutputInterface, r.OutputInterface is not null, path + ".negateOutputInterface", errors);
+            RouterFilterValidation.Require(r.NegateInputInterface, r.InputInterface is not null || r.InputInterfaceSelector is not null, path + ".negateInputInterface", errors);
+            RouterFilterValidation.Require(r.NegateOutputInterface, r.OutputInterface is not null || r.OutputInterfaceSelector is not null, path + ".negateOutputInterface", errors);
+            if (r.InputInterface is not null && r.InputInterfaceSelector is not null || r.OutputInterface is not null && r.OutputInterfaceSelector is not null)
+            { errors.Add(new("interface.selectorConflict", path)); }
         }
     }
 }

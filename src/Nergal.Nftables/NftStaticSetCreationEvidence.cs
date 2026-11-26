@@ -124,7 +124,7 @@ public static class NftStaticSetCreationEvidence
         }
         root["nftables"] = completed;
         var json = root.ToJsonString();
-        if (Encoding.UTF8.GetByteCount(json) > 65536) { throw NftStaticSetSnapshot.Invalid(); }
+        if (Encoding.UTF8.GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { throw NftStaticSetSnapshot.Invalid(); }
         return json;
     }
 }

@@ -200,12 +200,7 @@
                                 var editSources = r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } esp ? string.Join(", ", esp.Select(p => p.Value)) : "");
                                 var editDests = r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } edp ? string.Join(", ", edp.Select(p => p.Value)) : "");
                                 var editPorts = r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } eps ? string.Join(", ", eps) : "");
-                                var editStatesList = new List<string>();
-                                if ((r.ConnectionStates & ConnectionStateFlags.New) != 0) { editStatesList.Add("new"); }
-                                if ((r.ConnectionStates & ConnectionStateFlags.Established) != 0) { editStatesList.Add("established"); }
-                                if ((r.ConnectionStates & ConnectionStateFlags.Related) != 0) { editStatesList.Add("related"); }
-                                if ((r.ConnectionStates & ConnectionStateFlags.Invalid) != 0) { editStatesList.Add("invalid"); }
-                                var editStates = string.Join(", ", editStatesList);
+                                var editStates = r.ConnectionStates == ConnectionStateFlags.None ? "" : r.ConnectionStates.ToString().ToLowerInvariant();
                                 var ifaceText = (r.InputInterface, r.OutputInterface) switch
                                 {
                                     (null, null) => "any",
@@ -218,7 +213,7 @@
                                     <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Filter, idx, null, r.Enabled, "Filter rule " + (idx + 1))))</td>
                                     <td>
                                         <span class="badge @(r.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                            @r.Verdict.ToString().ToLowerInvariant()
+                                            @(r.Verdict == FilterVerdict.ClampRouteMss ? "Clamp MSS to route MTU" : r.Verdict.ToString().ToLowerInvariant())
                                         </span>
                                     </td>
                                     <td class="rule-location"><code>@r.Chain.ToString().ToLowerInvariant()</code>
@@ -274,6 +269,9 @@
                                                         <button type="submit" class="btn btn-secondary btn-sm" title="Move down">↓</button>
                                                     </form>
                                                 }
+                                                @if (r.Verdict is not (FilterVerdict.ClampRouteMss or FilterVerdict.Jump) &&
+                                                    r.Chain != FilterChainKind.Regular && !r.UsesNativeSelectors)
+                                                {
                                                 <details class="inline-edit-details">
                                                     <summary class="btn btn-secondary btn-sm">Edit</summary>
                                                     <div class="inline-edit-popover">
@@ -297,6 +295,10 @@
                                                                     <select name="family" id="filter-edit-@idx-family">
                                                                         <option value="ipv4" selected="@(r.Family == IpFamily.IPv4)">ipv4</option>
                                                                         <option value="ipv6" selected="@(r.Family == IpFamily.IPv6)">ipv6</option>
+                                                                        @if (r.CountPackets)
+                                                                        {
+                                                                            <option value="dualStack" selected="@(r.Family == IpFamily.DualStack)">IPv4 and IPv6</option>
+                                                                        }
                                                                     </select>
                                                                 </div>
                                                                 <div class="field">
@@ -315,6 +317,11 @@
                                                                         <option value="accept" selected="@(r.Verdict == FilterVerdict.Accept)">accept</option>
                                                                         <option value="drop" selected="@(r.Verdict == FilterVerdict.Drop)">drop</option>
                                                                         <option value="reject" selected="@(r.Verdict == FilterVerdict.Reject)">reject — ICMP admin prohibited</option>
+                                                                        <option value="rejectPortUnreachable" selected="@(r.Verdict == FilterVerdict.RejectPortUnreachable)">reject — ICMP port unreachable</option>
+                                                                        @if (r.CountPackets)
+                                                                        {
+                                                                            <option value="continue" selected="@(r.Verdict == FilterVerdict.Continue)">count and continue</option>
+                                                                        }
                                                                     </select>
                                                                 </div>
                                                                 <div class="field span-2">
@@ -342,7 +349,7 @@
                                                                     <input type="text" name="outputInterface" value="@r.OutputInterface" maxlength="15" id="filter-edit-@idx-outputInterface" />
                                                                 </div>
                                                                 <div class="field span-2">
-                                                                    <label for="filter-edit-@idx-connectionStates">CT states (comma-separated: new, established, related, invalid)</label>
+                                                                    <label for="filter-edit-@idx-connectionStates">CT states (comma-separated: new, established, related, invalid, untracked)</label>
                                                                     <input type="text" name="connectionStates" value="@editStates" id="filter-edit-@idx-connectionStates" />
                                                                 </div>
                                                                 <div class="field span-2">
@@ -381,6 +388,7 @@
                                                         </form>
                                                     </div>
                                                 </details>
+                                                }
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/rules/remove")">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
@@ -445,6 +453,7 @@
                                 <option value="accept">accept</option>
                                 <option value="drop">drop</option>
                             <option value="reject">reject — ICMP admin prohibited</option>
+                            <option value="rejectPortUnreachable">reject — ICMP port unreachable</option>
                             </select>
                         </div>
 
@@ -582,7 +591,7 @@
             </div>
             @if (bundle?.Nat is null || bundle.Nat.DnatRules.Count == 0)
             {
-                <p class="muted mb-0">No prerouting DNAT rules defined.</p>
+                <p class="muted mb-0">No DNAT rules defined.</p>
             }
             else
             {
@@ -591,6 +600,7 @@
                         <thead>
                             <tr>
                                 <th>#</th><th>Enabled state</th>
+                                <th>Hook</th>
                                 <th>Family</th>
                                 <th>Protocol</th>
                                 <th>Original Dest</th>
@@ -609,14 +619,18 @@
                                 <tr>
                                     <td>@(i + 1)</td>
                                     <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Dnat, i, null, d.Enabled, "Dnat rule " + (i + 1))))</td>
+                                    <td><code>@d.Hook.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@(d.NegateDestination ? "!= " : "")@(d.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : d.OriginalDestination?.Value ?? string.Join(", ", d.DestinationPrefixes!.Select(p => p.Value)))</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
                                     <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : "any")) → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
-                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
+                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterfaceSelector is { } names ? string.Join(", ", names.Patterns.Select(p => p.Value)) : d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
 
-                                    <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
+                                    <td>
+                                        @(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)
+                                        @if (d.CountPackets) { <span class="hint">Inline counter</span> }
+                                    </td>
                                     @if (Model.CanMutate)
                                     {
                                         <td>
@@ -736,10 +750,16 @@
                                     <td><code>@(s.NegateSource ? "!= " : "")@(s.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : s.Source?.Value ?? (s.SourcePrefixes is { } sourceSet ? "{ " + string.Join(", ", sourceSet.Select(p => p.Value)) + " }" : "any"))</code></td>
                                     <td><code>@(s.Action == NatPostroutingAction.Snat ? s.TranslatedAddress : s.Action.ToString().ToLowerInvariant())</code></td>
                                     <td><code>@(s.NegateDestination ? "!= " : "")@(s.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : s.Destination?.Value ?? (s.DestinationPrefixes is { } destinationSet ? "{ " + string.Join(", ", destinationSet.Select(p => p.Value)) + " }" : "any"))</code></td>
-                                    <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterface ?? "any")</code></td>
+                                    <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterfaceSelector is { } inputNames ? string.Join(", ", inputNames.Patterns.Select(p => p.Value)) : s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterfaceSelector is { } outputNames ? string.Join(", ", outputNames.Patterns.Select(p => p.Value)) : s.OutputInterface ?? "any")</code></td>
                                     <td><code>@s.Protocol · @(s.DestinationPortObject is { } portList ? portList.Content.Name + " v" + portList.Version + " [" + string.Join(", ", portList.Content.Entries) + "]" : s.DestinationPort?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? (s.DestinationPorts is null ? "any" : string.Join(", ", s.DestinationPorts)))</code></td>
 
-                                    <td>@(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)</td>
+                                    <td>
+                                        @(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)
+                                        @if (s.CountPackets) { <span class="hint">Inline counter</span> }
+                                        @if (s.MatchOriginalDestinationDnat) { <span class="hint">Connection status: DNAT</span> }
+                                        @if (s.OriginalSourcePrefixes is { } originalSources) { <span class="hint">Original source @string.Join(", ", originalSources.Select(p => p.Value))</span> }
+                                        @if (s.OriginalDestinationPrefixes is { } originalDestinations) { <span class="hint">Original destination @string.Join(", ", originalDestinations.Select(p => p.Value))</span> }
+                                    </td>
                                     @if (Model.CanMutate)
                                     {
                                         <td>

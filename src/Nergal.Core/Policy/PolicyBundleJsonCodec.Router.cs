@@ -58,19 +58,23 @@ public static partial class PolicyBundleJsonCodec
         return true;
     }
 
-    private static bool TryReadRpFilter(JsonElement filter, out RpFilterPolicy? policy)
+    private static bool TryReadRawChain(JsonElement filter, string property, out RpFilterPolicy? policy)
     {
         policy = null;
-        if (!filter.TryGetProperty("rpFilter", out var el) || el.ValueKind == JsonValueKind.Null) { return true; }
+        if (!filter.TryGetProperty(property, out var el) || el.ValueKind == JsonValueKind.Null) { return true; }
         if (!HasOnlyProperties(el, "defaultVerdict", "rules") ||
             !el.TryGetProperty("defaultVerdict", out var verdictEl) || ParseVerdict(verdictEl) is not { } verdict ||
             !el.TryGetProperty("rules", out var rulesEl) || rulesEl.ValueKind != JsonValueKind.Array || rulesEl.GetArrayLength() > 4096) { return false; }
         var rules = new List<RpFilterRule?>();
         foreach (var item in rulesEl.EnumerateArray())
         {
-            if (!HasOnlyProperties(item, "verdict", "family", "protocol", "source", "negateSource", "inputInterface", "negateInputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description", "enabled") || !TryReadEnabled(item, out var enabled) ||
-                !item.TryGetProperty("verdict", out var vEl) || ParseVerdict(vEl) is not { } v ||
+            if (!HasOnlyProperties(item, "verdict", "family", "protocol", "source", "negateSource", "inputInterface", "negateInputInterface", "outputInterface", "negateOutputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "notrack", "description", "enabled", "countPackets", "bindInputInterfaceIndex", "sourcePrefixes", "destination", "destinationPrefixes") || !TryReadEnabled(item, out var enabled) ||
+                !item.TryGetProperty("verdict", out var vEl) || ParseFilterRuleVerdict(vEl) is not { } v || v is FilterVerdict.Jump or FilterVerdict.Return ||
                 !TryReadBool(item, "negateSource", out var ns) || !TryReadBool(item, "negateInputInterface", out var ni) ||
+                !TryReadBool(item, "negateOutputInterface", out var no) || !TryReadOptionalString(item, "outputInterface", out var oif) ||
+                !TryReadBool(item, "notrack", out var notrack) || !TryReadBool(item, "countPackets", out var countPackets) ||
+                !TryReadBool(item, "bindInputInterfaceIndex", out var bindIndex) || !TryReadOptionalString(item, "destination", out var destination) ||
+                !TryReadAddressObjectsAndSets(item, out var sources, out var destinations, out _, out _) ||
                 !TryReadBool(item, "matchFibUnreachable", out var fib) || !TryReadOptionalString(item, "inputInterface", out var iif) ||
                 !TryReadOptionalString(item, "source", out var source) || !TryReadOptionalInt(item, "sourcePort", out var sport) ||
                 !TryReadOptionalInt(item, "destinationPort", out var dport) || !TryReadOptionalDescription(item, out var description)) { return false; }
@@ -79,7 +83,7 @@ public static partial class PolicyBundleJsonCodec
             { family = ParseFamily(fEl); if (family is null) { return false; } }
             var protocol = item.TryGetProperty("protocol", out var pEl) ? ParseProtocol(pEl) : FilterProtocol.Any;
             if (protocol is null) { return false; }
-            try { rules.Add(new(v, family, protocol.Value, source is null ? null : new NetworkPrefix(source), ns, iif, ni, sport, dport, fib, description, enabled)); }
+            try { rules.Add(new(v, family, protocol.Value, source is null ? null : new NetworkPrefix(source), ns, iif, ni, sport, dport, fib, description, enabled, notrack, oif, no, countPackets, bindIndex, sources, destination is null ? null : new(destination), destinations)); }
             catch (ArgumentException) { return false; }
         }
         policy = new(verdict, rules);
@@ -106,8 +110,14 @@ public static partial class PolicyBundleJsonCodec
     {
         if (!policy.ForwardTcpMssClampEnabled) { w.WriteBoolean("forwardTcpMssClampEnabled", false); }
         if (policy.ForwardTcpMssClamp is { } mss) { w.WriteNumber("forwardTcpMssClamp", mss); }
-        if (policy.RpFilter is not { } rp) { return; }
-        w.WriteStartObject("rpFilter");
+        WriteRawChain(w, "rpFilter", policy.RpFilter);
+        WriteRawChain(w, "rawOutput", policy.RawOutput);
+    }
+
+    private static void WriteRawChain(Utf8JsonWriter w, string property, RpFilterPolicy? rp)
+    {
+        if (rp is null) { return; }
+        w.WriteStartObject(property);
         w.WriteString("defaultVerdict", VerdictName(rp.DefaultVerdict));
         w.WriteStartArray("rules");
         foreach (var draft in rp.Rules)
@@ -122,6 +132,14 @@ public static partial class PolicyBundleJsonCodec
             if (r.InputInterface is not null) { w.WriteString("inputInterface", r.InputInterface); }
             if (r.NegateSource) { w.WriteBoolean("negateSource", true); }
             if (r.NegateInputInterface) { w.WriteBoolean("negateInputInterface", true); }
+            if (r.OutputInterface is not null) { w.WriteString("outputInterface", r.OutputInterface); }
+            if (r.NegateOutputInterface) { w.WriteBoolean("negateOutputInterface", true); }
+            WritePrefixSet(w, "sourcePrefixes", r.SourcePrefixes);
+            WritePrefixSet(w, "destinationPrefixes", r.DestinationPrefixes);
+            if (r.Destination is not null) { w.WriteString("destination", r.Destination.Value); }
+            if (r.CountPackets) { w.WriteBoolean("countPackets", true); }
+            if (r.BindInputInterfaceIndex) { w.WriteBoolean("bindInputInterfaceIndex", true); }
+            if (r.Notrack) { w.WriteBoolean("notrack", true); }
             if (r.SourcePort is { } sport) { w.WriteNumber("sourcePort", sport); }
             if (r.DestinationPort is { } dport) { w.WriteNumber("destinationPort", dport); }
             if (r.MatchFibUnreachable) { w.WriteBoolean("matchFibUnreachable", true); }

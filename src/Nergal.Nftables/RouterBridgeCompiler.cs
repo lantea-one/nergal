@@ -38,17 +38,19 @@ internal static class RouterBridgeCompiler
                 if (r.Return && name == "forward") { errors.Add(new("return.requiresRegularChain", path)); }
                 foreach (var iface in new[] { r.InputInterface, r.OutputInterface, r.BridgeName })
                 { if (iface is not null && !FilterPolicyValidation.IsValidInterfaceName(iface)) { errors.Add(new("interface.invalid", path)); } }
+                if (r.BindInputInterfaceIndex && (r.InputInterface is null || r.InputInterface.All(char.IsAsciiDigit)))
+                { errors.Add(new("interface.indexBindingRequiresName", path + ".inputInterface")); }
                 RouterFilterValidation.Require(r.NegateSourceMac, r.SourceMac is not null, path + ".negateSourceMac", errors);
                 RouterFilterValidation.Require(r.NegateDestinationMac, r.DestinationMac is not null, path + ".negateDestinationMac", errors);
-                if (r.Family is { } family && (!Enum.IsDefined(family) || (r.EtherType != BridgeEtherType.Any && r.EtherType != (family == IpFamily.IPv4 ? BridgeEtherType.IPv4 : BridgeEtherType.IPv6))))
+                if (r.Family is { } family && (family is not (IpFamily.IPv4 or IpFamily.IPv6) || (r.EtherType != BridgeEtherType.Any && r.EtherType != (family == IpFamily.IPv4 ? BridgeEtherType.IPv4 : BridgeEtherType.IPv6))))
                 { errors.Add(new("bridge.familyMismatch", path)); }
                 if ((r.SourcePrefixes is not null || r.DestinationPrefixes is not null) && !r.Family.HasValue) { errors.Add(new("bridge.familyRequired", path + ".family")); }
                 if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
                 if (r.Destination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
                 if (r.Family is { } setFamily)
                 {
-                    NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, setFamily, path + ".sourcePrefixes", errors);
-                    NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, setFamily, path + ".destinationPrefixes", errors);
+                    NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, setFamily, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+                    NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, setFamily, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
                 }
                 if ((r.Source is not null && r.Source.Family != r.Family) || (r.Destination is not null && r.Destination.Family != r.Family))
                 { errors.Add(new("network.familyMismatch", path)); }
@@ -82,7 +84,7 @@ internal static class RouterBridgeCompiler
                 var r = NftStaticSetPlan.Attach(draft!, originalRules[index]!);
                 if (!r.Enabled) { continue; }
                 text.Append("add rule bridge " + NftBridgeCompiler.TableName + ' ').Append(name).Append(' ');
-                if (r.InputInterface is not null) { text.Append("iifname \"").Append(r.InputInterface).Append("\" "); }
+                if (r.InputInterface is not null) { text.Append(r.BindInputInterfaceIndex ? "iif \"" : "iifname \"").Append(r.InputInterface).Append("\" "); }
                 if (r.OutputInterface is not null) { text.Append("oifname \"").Append(r.OutputInterface).Append("\" "); }
                 if (r.BridgeName is not null) { text.Append("meta ibrname \"").Append(r.BridgeName).Append("\" "); }
                 if (r.SourceMac is not null) { text.Append("ether saddr ").Append(r.NegateSourceMac ? "!= " : "").Append(r.SourceMac.Value).Append(' '); }
@@ -104,10 +106,19 @@ internal static class RouterBridgeCompiler
                     else if (r.DestinationPort is { } port) { text.Append(protocol).Append(" dport ").Append(port.ToString(CultureInfo.InvariantCulture)).Append(' '); }
                     else if (r.DestinationPorts is { } ports) { text.Append(protocol).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
                 }
+                if (r.CountPackets) { text.Append("counter "); }
                 text.Append(r.JumpTarget is not null ? "jump " + r.JumpTarget : r.Return ? "return" : r.Verdict == FilterVerdict.Accept ? "accept" : "drop").Append('\n');
             }
         }
-        return sets.Finish(text.ToString());
+        var result = sets.Finish(text.ToString());
+        if (result.Candidate is null || result.ObservationBudget > 0 ||
+            !chains.SelectMany(c => c.Rules).Any(r => r is { Enabled: true } && (r.CountPackets || r.BindInputInterfaceIndex)))
+        { return result; }
+
+        var budget = NftStaticSetPlan.Estimate(result.Candidate);
+        return budget > NftObservationLimits.MaximumDocumentBytes
+            ? new(null, [new("bridge.nativeObservationTooLarge", "rules")])
+            : new(result.Candidate, [], budget);
     }
 
     private static bool ValidName(string? name) => name is { Length: >= 1 and <= 32 } &&

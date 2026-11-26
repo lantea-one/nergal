@@ -57,6 +57,96 @@ if (mode == "import-native" && (args.Length == 4 || args is [_, _, _, _, "--rest
     Console.Write(output); return 0;
 }
 
+if (mode == "verify-raw-bridge" && args.Length == 5)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, false, true, false);
+    var primary = NftTableObservation.Parse(File.ReadAllText(args[3]));
+    var bridge = NftBridgeTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!echo.IsSuccess || !primary.IsSuccess || !bridge.IsSuccess)
+    { throw new InvalidOperationException($"Raw/bridge observation failed: {echo.ErrorCode} {primary.ErrorCode} {bridge.ErrorCode}"); }
+    var listing = NftTableObservation.Combine(primary.Observation!, bridge: bridge.Observation);
+    if (listing.StateDigest != echo.Observation!.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listing.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Raw/bridge native round-trip diverged."); }
+    return 0;
+}
+
+if (mode == "verify-filter-calls" && args.Length == 5)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, false, false, true);
+    var primary = NftTableObservation.Parse(File.ReadAllText(args[3]));
+    var auxiliary = NftAuxiliaryTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!echo.IsSuccess || !primary.IsSuccess || auxiliary is null)
+    { throw new InvalidOperationException($"Filter call observation failed: {echo.ErrorCode} {primary.ErrorCode}"); }
+    var listing = NftTableObservation.Combine(primary.Observation!, auxiliary: auxiliary);
+    if (listing.StateDigest != echo.Observation!.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listing.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Filter call native round-trip diverged."); }
+    return 0;
+}
+if (mode == "large-observation")
+{
+    var rules = Enumerable.Range(20000, 290)
+        .Select(port => new FilterRule(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Accept, DestinationPort: port))
+        .Append(new FilterRule(IpFamily.IPv4, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 20300,
+            SourcePrefixes: [new("192.0.2.1/32"), new("192.0.2.2/32")]))
+        .Append(new FilterRule(IpFamily.IPv6, FilterProtocol.Udp, FilterVerdict.Drop, DestinationPort: 20300,
+            SourcePrefixes: [new("2001:db8::1/128"), new("2001:db8::2/128")]))
+        .Append(new FilterRule(IpFamily.DualStack, FilterProtocol.Any, FilterVerdict.Drop,
+            InputInterfaceSelector: InterfaceNameSelector.Create(["unused*"])));
+    var bundle = new FirewallPolicyBundle(1, new(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Accept, rules), RouterPolicySamples.Nat());
+    var result = NftPolicyBundleCompiler.Compile(bundle, routerIdentity);
+    if (!result.IsSuccess) { throw new InvalidOperationException(string.Join(", ", result.Diagnostics)); }
+    Console.Write(result.Candidate);
+    return 0;
+}
+
+if (mode == "verify-large-observation" && args.Length == 5)
+{
+    var echoText = File.ReadAllText(args[2]);
+    var filterText = File.ReadAllText(args[3]);
+    if (new FileInfo(args[2]).Length <= NftObservationLimits.MaximumInventoryBytes ||
+        new FileInfo(args[3]).Length <= NftObservationLimits.MaximumInventoryBytes)
+    { throw new InvalidOperationException("Fixture evidence did not exceed the old 64 KiB bound."); }
+    var echo = NftTableObservation.ParseBundleReplacementEcho(echoText, routerIdentity, true, false, false);
+    var filter = NftTableObservation.Parse(filterText);
+    var nat = NftNatTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!echo.IsSuccess || !filter.IsSuccess || !nat.IsSuccess)
+    { throw new InvalidOperationException($"Large receipt reconstruction failed: {echo.ErrorCode} {filter.ErrorCode} {nat.ErrorCode}"); }
+    var listed = NftTableObservation.Combine(filter.Observation!, nat.Observation!, null);
+    if (echo.Observation!.StateDigest != listed.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listed.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Large receipt round trip diverged."); }
+    var edited = System.Text.Json.Nodes.JsonNode.Parse(filterText)!;
+    var last = edited["nftables"]!.AsArray().Last(item => item?["rule"] is not null)!["rule"]!;
+    last["handle"] = 4000000;
+    var drift = NftTableObservation.Parse(edited.ToJsonString());
+    if (!drift.IsSuccess || drift.Observation!.StateDigest == filter.Observation!.StateDigest)
+    { throw new InvalidOperationException("A changed handle near the end of a large listing was not detected."); }
+    return 0;
+}
+
+if (mode == "verify-import-native" && (args.Length == 6 || args is [_, _, _, _, _, _, "--renamed"]))
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, true, false, true);
+    var filter = NftTableObservation.Parse(File.ReadAllText(args[3]));
+    var nat = NftNatTableObservation.Parse(File.ReadAllText(args[4]));
+    var auxiliary = NftAuxiliaryTableObservation.Parse(File.ReadAllText(args[5]));
+    if (!echo.IsSuccess || !filter.IsSuccess || !nat.IsSuccess || auxiliary is null)
+    { throw new InvalidOperationException($"Imported bundle observation failed: {echo.ErrorCode} {filter.ErrorCode} {nat.ErrorCode}"); }
+    var listed = NftTableObservation.Combine(filter.Observation!, nat.Observation!, null, auxiliary);
+    if (args.Length == 7)
+    {
+        if (echo.Observation!.StateDigest == listed.StateDigest)
+        { throw new InvalidOperationException("Interface-index binding drift was not detected."); }
+        return 0;
+    }
+    if (echo.Observation!.StateDigest != listed.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listed.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Imported bundle native round-trip diverged."); }
+    return 0;
+}
+
 if (mode == "native-low-ipv6" && args.Length == 2)
 {
     Console.Write(NftFilterCompiler.Compile(LowIpv6(args[1]), routerIdentity).Candidate); return 0;

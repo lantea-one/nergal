@@ -22,8 +22,11 @@ those bytes. This marker is not the nft process-owner flag or an authorization t
 
 ## Observation slice
 
-`NftTableObservation.Parse(json)` accepts at most 64 KiB of valid UTF-8 text and JSON
-depth 16. It requires native schema version 1 with metadata, the tagged
+`NftTableObservation.Parse(json)` accepts a complete listing of up to 256 KiB
+of valid UTF-8 text and JSON depth 16. The agent uses that same bound for
+complete listings and atomic creation echoes. Individual named-set responses
+and the table inventory retain their 64 KiB capture limit. Oversized responses
+fail as a whole. It requires native schema version 1 with metadata, the tagged
 `inet nergal_filter` table and one `input` base chain of type filter, hook input,
 priority 0, with an explicit accept/drop policy. Table and chain handles must be
 positive integers. Marker text must be canonical and have nonempty UUIDs.

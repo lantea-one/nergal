@@ -503,8 +503,10 @@ its semantic retry assumptions do not establish safe adoption of recreated table
 
 Run `bash tools/integration/check-mapped-identities.sh` for the complete distinct-UID
 HTTPS/mTLS and all-four-table path. Real server imports and production packet
-outcomes remain unverified. Native observations retain their documented 64 KiB
-bound; this acceptance is not a large-policy capacity claim.
+outcomes remain unverified. Use `bash tests/integration/nftables/check-large-observation.sh`
+for a synthetic native echo and listing above 64 KiB. The fixture compares full
+receipts, recompiles the observed policy and detects a handle change near the
+end of the listing.
 
 ### Private migration review
 
@@ -810,6 +812,44 @@ saves and inline disable/re-enable, including omission/restoration of unused nat
 objects. Existing literal-projection tests remain for older revisions. See
 [the native static-set guide](native-static-lists.md) and ADR 0048 for support limits.
 
+## IPv6 hop limit and rule-local packet limits
+
+Run `bash tests/integration/nftables/check-hop-rate.sh` after the Release build.
+Separate disposable namespaces exercise the handwritten source and its imported
+candidate. IPv6 UDP probes distinguish hop limits 254 and 255. A hop-limit miss
+leaves a combined rule's token available. IPv4 and IPv6 traffic exhaust the same
+two-packet burst, a new source address still misses, and a separate rule admits
+another packet after its one-second refill. Complete creation echo and post-traffic
+listings must agree and reconstruct the candidate.
+
+In schema-2 inet filter rules, `ipv6HopLimit` is an IPv6-only unsigned byte.
+`packetLimit` has `packetsPerWindow` (1–1000000), `windowUnit` (second or minute)
+and `burst` (1–10000 packets). Import retains nft's five-packet default for an
+omitted burst. The limit follows every match and precedes any inline counter or
+verdict. Inversion, byte rates, multiple buckets, and alternatives requiring a
+shared bucket to be split block the whole import.
+
+## Raw and bridge import
+
+Run `bash tests/integration/nftables/check-raw-bridge.sh` after a Release build.
+The single synthetic snapshot includes a raw prerouting chain and a bridge
+regular chain. Independent source and converted policies run in separate
+disposable namespaces. UDP datagrams and Ethernet frames exercise both address
+families, prefix members and misses, counter placement, and index binding after
+a bridge port rename. A handle-bearing echo and post-traffic listings must
+produce the same complete receipt and reconstruct the exact candidate.
+
+## Inet filter regular-chain calls
+
+Run `bash tests/integration/nftables/check-filter-calls.sh` after a Release
+build. The fixture compares an independently authored policy to its converted
+primary and auxiliary filters in separate disposable namespaces. Dual-stack
+UDP probes distinguish a terminal accept in a callee, explicit return, nested
+fall-through, continuation in the caller and an earlier auxiliary drop. The
+fixture compares the complete native creation echo with independent listings
+and recompiles the exact candidate. `FilterChainCallTests` covers drift in
+handles, targets and rule order, malformed evidence, and graph validation.
+
 ## Source-bound semantic conversion
 
 `NativeImportPlannerTests` covers explicit table roles, whole-candidate round trips,
@@ -833,6 +873,12 @@ bash tests/integration/nftables/check-native-import.sh
 NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --agent
 NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --named-sets
 ```
+
+The selector portion of `check-native-import.sh` sends IPv4 and IPv6 TCP and
+UDP packets to both ports of a guarded transport-header set. It checks the one
+counter shared across input names and transports, the output-name counter, and
+denial after renaming the veth to a near-miss prefix. Handle-bearing echo and
+listing must reconstruct the same candidate.
 
 The first fixture applies independently handwritten native router input and its
 converted candidate in separate disposable user/network namespaces. The same real

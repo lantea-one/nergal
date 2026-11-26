@@ -191,7 +191,7 @@ public sealed class NativeStaticSetTests
     [Fact]
     public void OversizedNativeEchoIsRejectedBeforeApply()
     {
-        var rules = Enumerable.Range(1, 8).Select(index => new FilterRule(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
+        var rules = Enumerable.Range(1, 32).Select(index => new FilterRule(IpFamily.IPv4, FilterProtocol.Tcp, FilterVerdict.Accept,
             DestinationPortObject: new(new Guid(index, 0, 0, new byte[8]), 1,
                 new("services_" + index, ReusableObjectKind.Port, "", Enumerable.Range(index * 100, 64).Select(p => p.ToString(System.Globalization.CultureInfo.InvariantCulture))), true)));
         var result = NftFilterCompiler.Compile(new(2, FilterVerdict.Drop, FilterVerdict.Accept, FilterVerdict.Accept, rules));

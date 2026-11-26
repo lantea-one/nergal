@@ -64,7 +64,7 @@ public static class NftPolicyBundleCompiler
         if (bundle.AuxiliaryFilter is { } auxiliary)
         {
             if (auxiliary.Priority is < -300 or > 300 || auxiliary.Filter is null || auxiliary.Filter.SchemaVersion != 2 ||
-                auxiliary.Filter.RpFilter is not null || auxiliary.Filter.ForwardTcpMssClamp is not null)
+                auxiliary.Filter.ForwardTcpMssClamp is not null)
             { errors.Add(new("auxiliary.invalid", "auxiliaryFilter")); }
             else
             {
@@ -151,7 +151,7 @@ public static class NftPolicyBundleCompiler
         if (components.Any(r => r.ObservationBudget > 0))
         {
             var budget = components.Sum(r => r.ObservationBudget > 0 ? r.ObservationBudget : NftStaticSetPlan.Estimate(r.Candidate!));
-            if (budget > 65536) { return new(null, [new("object.nativeObservationTooLarge", "objects")]); }
+            if (budget > NftObservationLimits.MaximumDocumentBytes) { return new(null, [new("object.nativeObservationTooLarge", "objects")]); }
             return new(text.ToString(), [], budget);
         }
         return new(text.ToString(), []);

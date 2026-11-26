@@ -72,11 +72,26 @@ public sealed class NativeImportPlannerTests
 
     /// <summary>Unknown stateful operations, macros and contexts cannot be approved away or yield a weaker candidate.</summary>
     [Theory]
-    [InlineData("counter accept", "import.expressionUnsupported")]
+    [InlineData("counter packets 3 bytes 60 accept", "import.counterPlacementUnsupported")]
     [InlineData("log accept", "import.expressionUnsupported")]
     [InlineData("ip saddr $missing accept", "import.definitionUnresolved")]
     [InlineData("ip saddr 192.0.2.1 ip saddr 198.51.100.1 accept", "import.repeatedMatcherUnsupported")]
+    [InlineData("ip6 hoplimit 256 accept", "import.hopLimitUnsupported")]
+    [InlineData("ip6 hoplimit 0xff accept", "import.hopLimitUnsupported")]
+    [InlineData("ip6 hoplimit != 255 accept", "import.negationUnsupported")]
+    [InlineData("ip6 hoplimit 1 ip6 hoplimit 2 accept", "import.repeatedMatcherUnsupported")]
+    [InlineData("meta nfproto ipv4 ip6 hoplimit 255 accept", "import.familyConflict")]
+    [InlineData("limit rate over 5/minute drop", "import.packetRateUnsupported")]
+    [InlineData("limit rate 0/second accept", "import.packetRateUnsupported")]
+    [InlineData("limit rate 1/hour accept", "import.packetRateUnsupported")]
+    [InlineData("limit rate 4/second burst 10001 packets accept", "import.packetBurstUnsupported")]
+    [InlineData("limit rate 4/second burst 1 bytes accept", "import.expressionUnsupported")]
+    [InlineData("limit rate 4/second udp dport 53 accept", "import.packetLimitPlacementUnsupported")]
+    [InlineData("counter limit rate 4/second accept", "import.counterPlacementUnsupported")]
+    [InlineData("icmpv6 type { echo-request, echo-reply } limit rate 4/second accept", "import.alternativeStatefulUnsupported")]
     [InlineData("ip6 nexthdr tcp accept", "import.addressExpressionUnsupported")]
+    [InlineData("iif 2 accept", "import.interfaceIndexUnsupported")]
+    [InlineData("udp dport 443 reject with icmpx type host-unreachable", "import.rejectTypeUnsupported")]
     [InlineData("ip saddr 192.0.2.1 accept log", "import.ruleTrailingInput")]
     public void UnsupportedRule_BlocksWholeCandidate(string rule, string code)
     {
@@ -86,6 +101,18 @@ public sealed class NativeImportPlannerTests
         Assert.Null(plan.PolicyJson); Assert.Null(plan.CandidateDigest); Assert.Empty(plan.Objects);
         Assert.Contains(plan.Gaps, g => g.Code == code);
         Assert.All(plan.Gaps, g => Assert.DoesNotContain("192.0.2", g.ToString()));
+    }
+
+    /// <summary>Preserve an implicit five-packet burst and one bucket across both families.</summary>
+    [Fact]
+    public void UnkeyedLimitRetainsOneInetRule()
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; limit rate 1/minute accept; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var rule = Assert.Single(PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter.Rules)!;
+        Assert.Equal(IpFamily.DualStack, rule.Family);
+        Assert.Equal(new PacketRateLimit(1, RateLimitTimeUnit.Minute, 5), rule.PacketLimit);
     }
 
     /// <summary>Only explicit managed-resource restriction can account for global flush; it never enters generated text.</summary>
@@ -139,6 +166,207 @@ public sealed class NativeImportPlannerTests
         Assert.Contains(plan.Gaps, g => g.Code == code);
         Assert.Null(plan.PolicyJson);
         Assert.Null(plan.CandidateDigest);
+    }
+
+    /// <summary>Disjoint sets preserve each permitted packet class and adjacent rule order.</summary>
+    [Fact]
+    public void InterfaceAndProtocolSets_StayOnOneOrderedRule()
+    {
+        var source = Source("""
+            table inet sample {
+              chain input {
+                type filter hook input priority 0; policy drop;
+                ip saddr 192.0.2.1 iifname { "edge0", "edge1" } meta l4proto { tcp, udp } th dport { 53, 443 } counter accept;
+                icmpv6 type { echo-request, nd-neighbor-solicit } accept;
+                ip saddr 198.51.100.1 drop;
+              }
+            }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var rules = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter.Rules.Select(r => r!).ToArray();
+        Assert.Equal(4, rules.Length);
+        Assert.Equal(["edge0", "edge1"], rules[0].InputInterfaceSelector!.Patterns.Select(p => p.Value));
+        Assert.Equal(FilterProtocol.TcpOrUdp, rules[0].Protocol);
+        Assert.Equal(IpFamily.IPv4, rules[0].Family);
+        Assert.Equal([53, 443], rules[0].DestinationPorts);
+        Assert.True(rules[0].CountPackets);
+        Assert.Equal(["echo-request", "nd-neighbor-solicit"], rules.Skip(1).Take(2).Select(rule => rule.IcmpType));
+        Assert.Equal(FilterVerdict.Drop, rules[^1].Verdict);
+        Assert.Equal(3, plan.Mappings.Count(mapping => mapping.Disposition == "rule"));
+    }
+
+    /// <summary>Do not split negated sets, shared state, or unguarded transport-header matches.</summary>
+    [Theory]
+    [InlineData("iifname { edge*, edge0 } counter accept", "import.interfaceSelectorUnsupported")]
+    [InlineData("iifname edge* iifname edge1 counter accept", "import.repeatedMatcherUnsupported")]
+    [InlineData("iifname edge* meta l4proto { tcp, udp } tcp dport 443 counter accept", "import.protocolConflict")]
+    [InlineData("iifname \"e*dge\" counter accept", "import.interfaceSelectorUnsupported")]
+    [InlineData("icmp type { echo-request, echo-reply } counter accept", "import.alternativeStatefulUnsupported")]
+    [InlineData("ip saddr 192.0.2.1 counter udp dport 443 accept", "import.counterPlacementUnsupported")]
+    [InlineData("udp dport 443 meter bucket { ip saddr timeout 60s limit rate 1/minute } iifname edge0 accept", "import.meterPlacementUnsupported")]
+    [InlineData("th dport 443 accept", "import.transportGuardRequired")]
+    [InlineData("meta l4proto { tcp, ipv6-icmp } th dport 443 accept", "import.protocolAlternativesUnsupported")]
+    public void UnrepresentableAlternatives_DenyWholeCandidate(string rule, string code)
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; " + rule + "; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+
+        Assert.Contains(plan.Gaps, gap => gap.Code == code);
+        Assert.Null(plan.PolicyJson);
+    }
+
+    /// <summary>A local DNAT rule stays on output and an inline counter stays on its explicit family.</summary>
+    [Fact]
+    public void LocalDnatAndScopedCounter_PreserveIntent()
+    {
+        var source = Source("""
+            table inet sample {
+              chain input { type filter hook input priority filter; policy drop; ip saddr 192.0.2.1 counter accept; }
+            }
+            table inet translate {
+              chain output {
+                type nat hook output priority dstnat; policy accept;
+                ip daddr 192.0.2.3 udp dport 443 counter dnat ip to 198.51.100.4:8443;
+              }
+            }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source,
+            new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter),
+            new NativeImportTableBinding("inet", "translate", NativeImportTableRole.Nat)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var bundle = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!;
+        Assert.True(Assert.Single(bundle.Filter.Rules)!.CountPackets);
+        var dnat = Assert.Single(bundle.Nat!.DnatRules)!;
+        Assert.Equal(DnatHook.Output, dnat.Hook);
+        Assert.True(dnat.CountPackets);
+    }
+
+    /// <summary>A family-neutral counted rule compiles once and carries no family selector.</summary>
+    [Fact]
+    public void DualStackCounter_ProducesOneNativeRule()
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; udp dport 443 counter drop; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var bundle = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!;
+        var rule = Assert.Single(bundle.Filter.Rules)!;
+        Assert.Equal(IpFamily.DualStack, rule.Family);
+        Assert.True(rule.CountPackets);
+        var candidate = NftFilterCompiler.Compile(bundle.Filter).Candidate!;
+        var nativeRule = Assert.Single(candidate.Split('\n'), line => line.StartsWith("add rule ", StringComparison.Ordinal));
+        Assert.EndsWith("input meta l4proto udp udp dport 443 counter drop", nativeRule, StringComparison.Ordinal);
+    }
+
+    /// <summary>An anonymous counter without a verdict preserves subsequent rule evaluation.</summary>
+    [Fact]
+    public void CounterOnly_KeepsFollowingVerdictInOrder()
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; udp dport 443 counter; udp dport 443 drop; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var rules = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter.Rules;
+        Assert.Equal(3, rules.Count);
+        Assert.Equal(FilterVerdict.Continue, rules[0]!.Verdict);
+        Assert.True(rules[0]!.CountPackets);
+        Assert.All(rules.Skip(1), rule => Assert.Equal(FilterVerdict.Drop, rule!.Verdict));
+    }
+
+    /// <summary>Raw output and ordinary output remain distinct and apply tracking only before conntrack.</summary>
+    [Fact]
+    public void Notrack_RequiresRawHookAndPreservesOutput()
+    {
+        var source = Source("""
+            table inet sample {
+              chain early { type filter hook output priority raw; policy accept; oifname "edge0" udp sport 443 notrack; }
+              chain normal { type filter hook output priority filter; policy drop; ct state untracked accept; }
+            }
+            """);
+        var binding = new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter);
+        var plan = NativeImportPlanner.Plan(Request(source, binding), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var rules = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter;
+        var raw = Assert.Single(rules.RawOutput!.Rules)!;
+        Assert.Equal("edge0", raw.OutputInterface);
+        Assert.True(raw.Notrack);
+        Assert.Equal(FilterVerdict.Drop, rules.OutputDefaultVerdict);
+        var misplaced = Source("table inet sample { chain normal { type filter hook output priority 0; udp sport 443 notrack; } }");
+        var denied = NativeImportPlanner.Plan(Request(misplaced, binding), [misplaced]);
+        Assert.Contains(denied.Gaps, gap => gap.Code == "import.filterActionUnsupported");
+        Assert.Null(denied.PolicyJson);
+    }
+
+    /// <summary>Named index binding and a dynamic name matcher retain their different native selectors.</summary>
+    [Fact]
+    public void InterfaceBinding_PreservesNamedIndexSelector()
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; iif edge0 accept; iifname edge0 drop; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var filter = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter;
+        Assert.All(filter.Rules.Take(2), rule => Assert.True(rule!.BindInputInterfaceIndex));
+        Assert.All(filter.Rules.Skip(2), rule => Assert.False(rule!.BindInputInterfaceIndex));
+        var native = NftFilterCompiler.Compile(filter).Candidate!;
+        Assert.Contains("iif \"edge0\" accept", native, StringComparison.Ordinal);
+        Assert.Contains("iifname \"edge0\" drop", native, StringComparison.Ordinal);
+    }
+
+    /// <summary>Route MSS is an ordered, nonterminal forward rule with native routing semantics.</summary>
+    [Fact]
+    public void RouteMss_KeepsItsPositionBetweenOrdinaryRules()
+    {
+        const string expression = "tcp flags syn tcp option maxseg size set rt mtu";
+        var source = Source("table inet sample { chain forward { type filter hook forward priority 0; ip saddr 192.0.2.1 drop; " +
+            expression + "; ip saddr 198.51.100.1 accept; } }");
+        var binding = new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter);
+        var plan = NativeImportPlanner.Plan(Request(source, binding), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var filter = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter;
+        Assert.Equal([FilterVerdict.Drop, FilterVerdict.ClampRouteMss, FilterVerdict.Accept], filter.Rules.Select(rule => rule!.Verdict));
+        var nativeRules = NftFilterCompiler.Compile(filter).Candidate!.Split('\n')
+            .Where(line => line.StartsWith("add rule ", StringComparison.Ordinal)).ToArray();
+        Assert.EndsWith("forward " + expression, nativeRules[1], StringComparison.Ordinal);
+
+        var input = Source("table inet sample { chain input { type filter hook input priority 0; " + expression + "; } }");
+        var denied = NativeImportPlanner.Plan(Request(input, binding), [input]);
+        Assert.Contains(denied.Gaps, gap => gap.Code == "import.mssRouteHookUnsupported");
+        Assert.Null(denied.PolicyJson);
+    }
+
+    /// <summary>An explicit but empty output hook requires a policy representation before import.</summary>
+    [Fact]
+    public void EmptyOutputNat_DeniesWholeCandidate()
+    {
+        var source = Source("""
+            table inet sample { chain input { type filter hook input priority filter; policy drop; } }
+            table inet translate { chain output { type nat hook output priority dstnat; policy accept; } }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source,
+            new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter),
+            new NativeImportTableBinding("inet", "translate", NativeImportTableRole.Nat)), [source]);
+        Assert.Contains(plan.Gaps, gap => gap.Code == "import.emptyNatOutputUnsupported");
+        Assert.Null(plan.PolicyJson);
+    }
+
+    /// <summary>The translation's own family does not restrict an earlier counter.</summary>
+    [Fact]
+    public void NatCounterWithoutPriorFamily_DeniesWholeCandidate()
+    {
+        var source = Source("""
+            table inet sample { chain input { type filter hook input priority filter; policy drop; } }
+            table inet translate {
+              chain output {
+                type nat hook output priority dstnat; policy accept;
+                udp dport 443 counter dnat ip to 192.0.2.3:8443;
+              }
+            }
+            """);
+        var plan = NativeImportPlanner.Plan(Request(source,
+            new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter),
+            new NativeImportTableBinding("inet", "translate", NativeImportTableRole.Nat)), [source]);
+        Assert.Contains(plan.Gaps, gap => gap.Code == "import.natCounterFamilyRequired");
+        Assert.Null(plan.PolicyJson);
     }
 
     /// <summary>Named static sets remain pinned references rather than collapsing into anonymous IP-only accepts.</summary>
@@ -226,6 +454,25 @@ public sealed class NativeImportPlannerTests
         Assert.Equal("192.0.2.1/32", rules.Single(r => r!.Chain == FilterChainKind.Input)!.Source!.Value);
         Assert.Equal("198.51.100.1/32", rules.Single(r => r!.Chain == FilterChainKind.Output)!.Source!.Value);
         Assert.Equal(5, plan.Sources.Count);
+    }
+
+    /// <summary>Unmapped, cyclic or non-call control flow blocks every source rule in the candidate.</summary>
+    [Theory]
+    [InlineData("jump unknown", "return")]
+    [InlineData("jump input", "return")]
+    [InlineData("return", "return")]
+    [InlineData("goto inner", "return")]
+    [InlineData("jump inner", "jump inner")]
+    [InlineData("jump inner drop", "return")]
+    [InlineData("jump inner", "policy drop")]
+    public void InvalidFilterCallsBlockConversion(string caller, string body)
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; " + caller +
+            "; } chain inner { " + body + "; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.False(plan.CanCreateRevision);
+        Assert.Null(plan.PolicyJson);
+        Assert.Null(plan.CandidateDigest);
     }
 
     private static NativeImportRequest Request(NativeSourceSnapshot source, params NativeImportTableBinding[] tables) => new(source.Summary.Id, tables, []);

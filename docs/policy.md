@@ -27,6 +27,12 @@ performs host operations. The web host uses the pure compiler for draft validati
   Schema 1 policies reject schema-2 fields.
 All unmatched packets receive the chain's explicit default. There are no implicit permits.
 
+Schema-2 primary and auxiliary filter rules accept the optional JSON boolean
+`countPackets` (default `false`). When true, an anonymous native `counter`
+counts packets and bytes after all matches and any meter, immediately before the
+verdict. The receipt binds the counter to that position on that rule. Packet and
+byte totals change with traffic and are excluded from saved intent and fingerprints.
+
 ```csharp
 var policy = new FilterPolicy(2, FilterVerdict.Drop, FilterVerdict.Drop, FilterVerdict.Drop,
 [
@@ -76,6 +82,7 @@ contain stable identifiers rather than caller-supplied policy data.
 | `interface.chainMismatch` | `InputInterface` used on `Output` or `OutputInterface` used on `Input`. |
 | `connectionState.requiresSchema2` | Schema 1 rule specified connection-tracking state flags. |
 | `connectionState.unknown` | Connection state mask contains undefined bits. |
+| `counter.requiresSchema2` | Schema 1 rule requested an inline packet and byte counter. |
 | `icmpType.requiresSchema2` | Schema 1 rule specified an ICMP/ICMPv6 type matcher. |
 | `icmpType.requiresIcmp` | ICMP type specified without ICMP or ICMPv6 protocol. |
 | `icmpType.unsupported` | ICMP type is not in the family's canonical allowlist. |
@@ -114,6 +121,26 @@ Schema 1 remains a narrow in-process contract without a raw-text extension point
 
 The [decision record](decisions/0002-filter-compiler.md) explains why create-only
 provisioning is the compiler overload boundary. The agent implements separate native validation, ownership checks, confirmed apply and independent timed rollback; see [the complete receipt decision](decisions/0036-complete-bundle-observation-and-rollback.md).
+
+## Schema-2 filter interface and protocol selectors
+
+A filter rule can use an `inputInterfaceSelector` or `outputInterfaceSelector` array.
+For example, `["uplink0", "veth-*"]` matches the exact name `uplink0` or any
+interface whose name starts with `veth-`. Use one to 64 disjoint members. Each
+member uses the scalar name alphabet, starts with an ASCII letter or digit, and
+fits in 15 characters including an optional terminal `*`. Empty prefixes,
+escaping, other glob syntax, overlapping matches and simultaneous scalar and
+selector fields on the same side are rejected. Interface-index binding requires
+a scalar exact input name. Negation applies to the entire name predicate.
+
+`"protocol": "tcpOrUdp"` generates one `meta l4proto { tcp, udp }` guard.
+With `"destinationPorts": [53, 443]`, the following `th dport { 53, 443 }`
+predicate checks the same port numbers for either protocol. A family-neutral
+inet filter source with these selectors stays one dual-stack rule. An explicit
+family or family-specific address matcher retains its restriction. With
+`"countPackets": true`, packets reaching the verdict share one native counter
+across all members. Kernel observation binds the guard, members, negation,
+family and presence of the counter to the receipt.
 
 ## Router extensions
 

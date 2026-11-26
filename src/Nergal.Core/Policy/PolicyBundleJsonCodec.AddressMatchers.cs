@@ -4,6 +4,13 @@ namespace Nergal.Core.Policy;
 
 public static partial class PolicyBundleJsonCodec
 {
+    private static bool TryReadOriginalAddresses(JsonElement item, string property, out IReadOnlyList<NetworkPrefix>? addresses)
+    {
+        addresses = null;
+        return !item.TryGetProperty(property, out var value) ||
+            TryParsePrefixList(value, out addresses) && addresses is { Count: > 0 };
+    }
+
     private static bool TryReadAddressObjectsAndSets(JsonElement item, out IReadOnlyList<NetworkPrefix>? source,
         out IReadOnlyList<NetworkPrefix>? destination, out PolicyObjectReference? sourceObject, out PolicyObjectReference? destinationObject)
     {

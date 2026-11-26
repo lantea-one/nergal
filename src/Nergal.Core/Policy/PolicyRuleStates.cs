@@ -20,7 +20,11 @@ public enum PolicyRuleScope
     /// <summary>Bridge base forward-chain rules.</summary>
     Bridge,
     /// <summary>Rules in one explicitly named bridge regular chain.</summary>
-    BridgeChain
+    BridgeChain,
+    /// <summary>Primary raw output rules.</summary>
+    RawOutput,
+    /// <summary>Auxiliary raw rules on the explicitly selected prerouting or output hook.</summary>
+    AuxiliaryRaw
 }
 
 /// <summary>A rule location and retained enabled state, independent of browser or native host operations.</summary>
@@ -36,8 +40,14 @@ public static class PolicyRuleStates
         var states = new List<PolicyRuleState>();
         Add(PolicyRuleScope.Filter, bundle.Filter.Rules.Select(r => r?.Enabled), "Filter");
         if (bundle.Filter.RpFilter is { } raw) { Add(PolicyRuleScope.Raw, raw.Rules.Select(r => r?.Enabled), "Raw prerouting"); }
+        if (bundle.Filter.RawOutput is { } rawOutput) { Add(PolicyRuleScope.RawOutput, rawOutput.Rules.Select(r => r?.Enabled), "Raw output"); }
         if (bundle.Filter.ForwardTcpMssClamp is not null) { states.Add(new(PolicyRuleScope.Mss, 0, null, bundle.Filter.ForwardTcpMssClampEnabled, "Forward SYN MSS clamp")); }
-        if (bundle.AuxiliaryFilter is { } auxiliary) { Add(PolicyRuleScope.Auxiliary, auxiliary.Filter.Rules.Select(r => r?.Enabled), "Early inet filter"); }
+        if (bundle.AuxiliaryFilter is { } auxiliary)
+        {
+            Add(PolicyRuleScope.Auxiliary, auxiliary.Filter.Rules.Select(r => r?.Enabled), "Early inet filter");
+            if (auxiliary.Filter.RpFilter is { } earlyRaw) { Add(PolicyRuleScope.AuxiliaryRaw, earlyRaw.Rules.Select(r => r?.Enabled), "Auxiliary raw prerouting", "prerouting"); }
+            if (auxiliary.Filter.RawOutput is { } earlyOutput) { Add(PolicyRuleScope.AuxiliaryRaw, earlyOutput.Rules.Select(r => r?.Enabled), "Auxiliary raw output", "output"); }
+        }
         if (bundle.Nat is { } nat)
         {
             Add(PolicyRuleScope.Dnat, nat.DnatRules.Select(r => r?.Enabled), "DNAT");
@@ -72,8 +82,14 @@ public static class PolicyRuleStates
         {
             case PolicyRuleScope.Filter: filter = ChangeFilter(filter, index); break;
             case PolicyRuleScope.Raw:
-                var rawRules = filter.RpFilter!.Rules.ToArray(); rawRules[index] = rawRules[index]! with { Enabled = enabled };
-                filter = Copy(filter, raw: new(filter.RpFilter.DefaultVerdict, rawRules)); break;
+                filter = Copy(filter, raw: ChangeRaw(filter.RpFilter!)); break;
+            case PolicyRuleScope.RawOutput:
+                filter = Copy(filter, rawOutput: ChangeRaw(filter.RawOutput!)); break;
+            case PolicyRuleScope.AuxiliaryRaw:
+                var early = auxiliary!.Filter;
+                auxiliary = new(auxiliary.Priority, chain == "output"
+                    ? Copy(early, rawOutput: ChangeRaw(early.RawOutput!))
+                    : Copy(early, raw: ChangeRaw(early.RpFilter!))); break;
             case PolicyRuleScope.Mss: filter = Copy(filter, mssEnabled: enabled); break;
             case PolicyRuleScope.Auxiliary: auxiliary = new(auxiliary!.Priority, ChangeFilter(auxiliary.Filter, index)); break;
             case PolicyRuleScope.Dnat:
@@ -95,6 +111,12 @@ public static class PolicyRuleStates
             default: throw new ArgumentException("rule.stateLocationInvalid");
         }
         return new(bundle.SchemaVersion, filter, nat, bridge, auxiliary);
+        RpFilterPolicy ChangeRaw(RpFilterPolicy original)
+        {
+            var rules = original.Rules.ToArray();
+            rules[index] = rules[index]! with { Enabled = enabled };
+            return new(original.DefaultVerdict, rules);
+        }
         FilterPolicy ChangeFilter(FilterPolicy original, int position)
         {
             var rules = original.Rules.ToArray(); rules[position] = rules[position]! with { Enabled = enabled };
@@ -102,7 +124,7 @@ public static class PolicyRuleStates
         }
     }
 
-    private static FilterPolicy Copy(FilterPolicy policy, IEnumerable<FilterRule?>? rules = null, RpFilterPolicy? raw = null, bool? mssEnabled = null) =>
+    private static FilterPolicy Copy(FilterPolicy policy, IEnumerable<FilterRule?>? rules = null, RpFilterPolicy? raw = null, bool? mssEnabled = null, RpFilterPolicy? rawOutput = null) =>
         new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict, rules ?? policy.Rules,
-            raw ?? policy.RpFilter, policy.ForwardTcpMssClamp, mssEnabled ?? policy.ForwardTcpMssClampEnabled);
+            raw ?? policy.RpFilter, policy.ForwardTcpMssClamp, mssEnabled ?? policy.ForwardTcpMssClampEnabled, rawOutput ?? policy.RawOutput, policy.RegularChains);
 }

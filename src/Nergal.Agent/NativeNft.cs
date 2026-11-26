@@ -9,7 +9,8 @@ namespace Nergal.Agent;
 internal static class NativeNft
 {
     // Only fixed argument lists and locally compiled bytes enter this child process.
-    internal static async Task<string> Run(string[] arguments, string input, CancellationToken cancellation = default)
+    internal static async Task<string> Run(string[] arguments, string input, CancellationToken cancellation = default,
+        int maximumOutputBytes = NftObservationLimits.MaximumInventoryBytes)
     {
         var start = new ProcessStartInfo("/usr/sbin/nft")
         {
@@ -27,7 +28,7 @@ internal static class NativeNft
         deadline.CancelAfter(TimeSpan.FromSeconds(10));
         try
         {
-            var output = ReadOutput(child.StandardOutput.BaseStream, deadline.Token);
+            var output = ReadOutput(child.StandardOutput.BaseStream, maximumOutputBytes, deadline.Token);
             var discardErrors = child.StandardError.BaseStream.CopyToAsync(Stream.Null, deadline.Token);
             if (input.Length > 0)
             {
@@ -52,6 +53,9 @@ internal static class NativeNft
             catch (InvalidOperationException) { }
         }
     }
+
+    internal static Task<string> ApplyWithReceiptEcho(string input) =>
+        Run(["--echo", "--handle", "--json", "--file", "-"], input, maximumOutputBytes: NftObservationLimits.MaximumDocumentBytes);
 
     internal static async Task<NftTableObservation?> TryObserveAsync(CancellationToken cancellation = default) =>
         (await TryObserveCompleteAsync(cancellation))?.Observation;
@@ -117,7 +121,7 @@ internal static class NativeNft
 
     private static async Task<string> CollectTable(string family, string table, CancellationToken cancellation)
     {
-        var terse = await Run(["--terse", "--json", "list", "table", family, table], "", cancellation);
+        var terse = await Run(["--terse", "--json", "list", "table", family, table], "", cancellation, NftObservationLimits.MaximumDocumentBytes);
         var names = NftStaticSetCollection.Names(terse, family, table);
         if (names.Count == 0) { return terse; }
         var contents = new List<string>(names.Count);
@@ -160,9 +164,9 @@ internal static class NativeNft
         }
     }
 
-    private static async Task<string> ReadOutput(Stream stream, CancellationToken token)
+    internal static async Task<string> ReadOutput(Stream stream, int maximumBytes, CancellationToken token)
     {
-        var data = new byte[65537];
+        var data = new byte[checked(maximumBytes + 1)];
         var length = await stream.ReadAtLeastAsync(data, data.Length, throwOnEndOfStream: false, cancellationToken: token);
         if (length == data.Length)
         {

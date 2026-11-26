@@ -39,7 +39,7 @@ public sealed class NftAuxiliaryTableObservation
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            if (Encoding.UTF8.GetByteCount(json) > 65536) { return null; }
+            if (Encoding.UTF8.GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { return null; }
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
             if (HasDuplicateProperties(doc.RootElement) || !Properties(doc.RootElement, "nftables") ||
                 doc.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { return null; }
@@ -69,10 +69,9 @@ public sealed class NftAuxiliaryTableObservation
                 {
                     if (!sawTable || value.GetProperty("table").GetString() != TableName || (echo && !Properties(item, "add"))) { return null; }
                     target["table"] = NftFilterCompiler.TableName;
-                    if (property.Name == "chain")
+                    if (property.Name == "chain" && value.GetProperty("name").GetString() is "input" or "forward" or "output")
                     {
-                        if (value.GetProperty("name").GetString() is not ("input" or "forward" or "output") ||
-                            !value.GetProperty("prio").TryGetInt32(out var p) || p is < -300 or > 300 || (priority.HasValue && priority.Value != p)) { return null; }
+                        if (!value.GetProperty("prio").TryGetInt32(out var p) || p is < -300 or > 300 || (priority.HasValue && priority.Value != p)) { return null; }
                         priority = p;
                         target["prio"] = 0;
                     }
@@ -82,7 +81,7 @@ public sealed class NftAuxiliaryTableObservation
             if (!priority.HasValue) { return null; }
             var normalized = new JsonObject { ["nftables"] = result }.ToJsonString();
             var parsed = echo ? NftTableObservation.ParseReplacementEcho(normalized) : NftTableObservation.Parse(normalized);
-            if (!parsed.IsSuccess || parsed.Observation!.Policy.SchemaVersion != 2 || parsed.Observation.Policy.RpFilter is not null || parsed.Observation.Policy.ForwardTcpMssClamp is not null) { return null; }
+            if (!parsed.IsSuccess || parsed.Observation!.Policy.SchemaVersion != 2 || parsed.Observation.Policy.ForwardTcpMssClamp is not null) { return null; }
             return new(parsed.Observation, priority.Value);
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException or ArgumentException)

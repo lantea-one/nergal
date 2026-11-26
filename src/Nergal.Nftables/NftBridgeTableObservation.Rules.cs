@@ -8,7 +8,7 @@ public sealed partial class NftBridgeTableObservation
 {
     private static BridgeFilterRule? ParseRule(JsonElement expressions)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 12) { return null; }
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 13) { return null; }
         var terminal = expressions[expressions.GetArrayLength() - 1];
         var verdict = FilterVerdict.Drop;
         var returns = false;
@@ -19,10 +19,13 @@ public sealed partial class NftBridgeTableObservation
         else if (Properties(terminal, "jump") && Properties(terminal.GetProperty("jump"), "target") && terminal.GetProperty("jump").GetProperty("target").ValueKind == JsonValueKind.String)
         { jump = terminal.GetProperty("jump").GetProperty("target").GetString(); }
         else { return null; }
-        var r = new BridgeFilterRule(BridgeEtherType.Any, verdict, JumpTarget: jump, Return: returns);
+        var end = expressions.GetArrayLength() - 1;
+        var countPackets = end > 0 && NftTableObservation.IsAnonymousCounter(expressions[end - 1]);
+        if (countPackets) { end--; }
+        var r = new BridgeFilterRule(BridgeEtherType.Any, verdict, JumpTarget: jump, Return: returns, CountPackets: countPackets);
         var stage = -1;
         var hadProtocol = false;
-        for (var i = 0; i < expressions.GetArrayLength() - 1; i++)
+        for (var i = 0; i < end; i++)
         {
             if (!Properties(expressions[i], "match")) { return null; }
             var match = expressions[i].GetProperty("match");
@@ -34,11 +37,14 @@ public sealed partial class NftBridgeTableObservation
             {
                 if (op != "==" || right.ValueKind != JsonValueKind.String) { return null; }
                 var value = right.GetString();
-                switch (left.GetProperty("meta").GetProperty("key").GetString())
+                var key = left.GetProperty("meta").GetProperty("key").GetString();
+                switch (key)
                 {
+                    case "iif":
                     case "iifname":
                         if (stage >= 0 || !FilterPolicyValidation.IsValidInterfaceName(value)) { return null; }
-                        r = r with { InputInterface = value }; stage = 0; break;
+                        if (key == "iif" && value!.All(char.IsAsciiDigit)) { return null; }
+                        r = r with { InputInterface = value, BindInputInterfaceIndex = key == "iif" }; stage = 0; break;
                     case "oifname":
                         if (stage >= 1 || !FilterPolicyValidation.IsValidInterfaceName(value)) { return null; }
                         r = r with { OutputInterface = value }; stage = 1; break;
