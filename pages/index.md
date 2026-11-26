@@ -85,3 +85,5 @@ schemas target fresh pre-release installations; no legacy upgrade path is shippe
 
 [Configure an OIDC connection](oidc-connection.md) through a versioned dedicated
 form with encrypted write-only secrets and trust-generation retirement.
+
+Nergal and its documentation are distributed under the [MIT License](LICENSE).

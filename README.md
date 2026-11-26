@@ -171,8 +171,10 @@ validation checks reject unsupported semantics explicitly rather than weakening 
 
 ## Contributing and license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Original code
-is licensed under MIT. No FWCloud implementation or assets are included.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Nergal's original
+software and documentation are distributed under the [MIT License](LICENSE).
+Package and container notices identify third-party licenses. No FWCloud
+implementation or assets are included.
 
 The native source library supports bounded file uploads, immutable database
 snapshots, source-bound reviews and exact original-file downloads. Source-bound conversion plans now support the declared native grammar, explicit
