@@ -47,9 +47,16 @@ jobs:
           git clone --no-local --bare "$GITHUB_WORKSPACE" "$AUR_STAGE/candidate"
           git --git-dir="$AUR_STAGE/candidate" update-ref refs/heads/main "$(git rev-parse HEAD)"
           chown -R nergal-builder "$AUR_STAGE/candidate"
-          runuser -u nergal-builder -- git config --global url."file://$AUR_STAGE/candidate".insteadOf https://git.lantea.one/lantea-one/nergal.git
+          # makepkg intentionally ignores the build user's Git configuration.
+          git config --file "$AUR_STAGE/gitconfig" url."file://$AUR_STAGE/candidate".insteadOf https://git.lantea.one/lantea-one/nergal.git
+          echo "MAKEPKG_GIT_CONFIG=$AUR_STAGE/gitconfig" >> "$GITHUB_ENV"
       - name: Build both variants with makepkg and install with pacman
-        run: bash tests/aur-packages.test.sh "$AUR_STAGE" nergal-builder
+        run: |
+          bash tests/aur-packages.test.sh "$AUR_STAGE" nergal-builder
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            built=$(runuser -u nergal-builder -- git -C "$AUR_STAGE/nergal-git/src/nergal" rev-parse HEAD)
+            test "$built" = "$(git rev-parse HEAD)"
+          fi
       - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
         if: github.event_name != 'pull_request'
         with:
