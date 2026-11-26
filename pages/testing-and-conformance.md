@@ -13,7 +13,11 @@ nergal requires deterministic unit tests plus real kernel verification in dispos
 | Ownership & Watchdog | `bash tests/integration/ownership/check.sh` & `watchdog/check.sh` | Exclusive creation, collision refusal, and autonomous timeout rollback. |
 | Enrollment & Control | `bash tests/integration/enrollment/check.sh` & `local-status/check.sh` | `SO_PEERCRED` Unix control, TLS 1.3 pinned mTLS, unprivileged `Nergal.Web` (`CapEff == 0`) end-to-end multi-table confirmed apply & rollback. |
 | Identity & OIDC | `tests/integration/admin/check.py`, `local-sessions/check.py`, `oidc/check.py` | Offline CLI provisioning, HTTPS cookie/CSRF/lockout/RBAC, and PKCE OIDC group mapping. |
-| Docs & Packaging | `python3 scripts/verify-pages.py` & `bash scripts/package-release.sh --verify` | Pages link/content integrity and `.tar.gz`/`.deb`/`SHA256SUMS` package verification. |
+| Installed Linux | `tests/integration/installed-system/check-multihost.py` | Separate Debian QEMU guests, optional OIDC, same-schema package upgrades, mTLS rotation, independent backup/restore, and packet and drift checks. |
+| Docs & Packaging | `python3 scripts/verify-pages.py` & `bash scripts/package-release.sh --verify` | Pages integrity and Linux archives, `.deb`, `.rpm`, Arch packages and checksums in release CI. |
+
+The multi-host fixture is opt-in. Prepare two base disks and both package
+versions using the [installed-system fixture guide](https://git.lantea.one/lantea-one/nergal/src/branch/main/tests/integration/installed-system/README.md).
 
 ## Unreleased router and settings work
 

@@ -33,7 +33,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Complete for M5 acceptance | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
 | M6 | Database completion | Complete for the fresh-schema baseline | Fresh controller schema 6, durable settings and latest authenticated host observations, distinct desired/observed/applied state, and verified constraints and backup/restore on SQLite, PostgreSQL, MariaDB, MySQL and SQL Server. |
-| M7 | Installation and operations | In progress | Native Linux packaging, a hardened controller container, and an isolated Debian installation fixture. Clean multi-host installation, optional OIDC in that topology, release upgrades, key/certificate rotation, full installation recovery, and drift and interruption drills remain open. |
+| M7 | Installation and operations | Complete for the current schemas | Native Linux packages and hardened controller container, independent QEMU controller and agent installs, optional OIDC, same-schema package upgrades, wrapping and mTLS certificate rotation, full installation restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
 
 ## Dependencies and support decisions
@@ -66,6 +66,13 @@ five engines. The restore fixture checks stale writes and verifies independent
 writes after recovery. The pinned mutual TLS fixture verifies that an unavailable
 host still displays its previous observation after a controller restart.
 Release-forward migration verification begins with the first released schema.
+
+M7 verifies separately installed Debian guests, managed OIDC and local fallback,
+same-schema package upgrades, rotation of both certificate pins, and complete
+controller and agent recovery onto clean guest disks. The independent agent
+journal restores the last confirmed revision and the fixture verifies real
+packets, watchdog rollback and drift. See [deployment and packaging](deployment-and-packaging.md)
+for the operator guide and [testing](testing-and-conformance.md) for the fixture.
 
 M7/M8 are product-wide integration gates, not a rewrite of already verified slices.
 No production apply, deployment or account change follows from passing tests.
@@ -126,9 +133,9 @@ Verify first-use and everyday tasks with synthetic installations in light, dark,
 keyboard and mobile workflows. Retain clear draft/saved/pending/applied/observed/
 recovery states and expert detail without weakening authorization, change review
 or confirmed apply. Charts need measured data or explicit missing-data states.
-M7 retains installation/trust-bootstrap integration; the UI must guide that boundary
-without exposing host privileges to the browser. These are planned acceptance
-requirements, not a claim that the current screens are already simplified.
+The installation acceptance exercises operator-controlled trust bootstrap and
+authenticated host registration in the controller. These workflows preserve the
+separation between the browser and the privileged agent.
 
 M5 also includes UI internationalization (i18n). Use translatable resources for
 navigation, forms, validation and status messages. Define locale selection and

@@ -32,7 +32,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Complete for M5 acceptance | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
 | M6 | Database completion | Complete for the fresh-schema baseline | Fresh controller schema 6, durable settings and latest authenticated host observations, distinct desired/observed/applied state, and verified constraints and backup/restore on SQLite, PostgreSQL, MariaDB, MySQL and SQL Server. |
-| M7 | Installation and operations | In progress | Native Linux packaging, a hardened controller container, and an isolated Debian installation fixture. Clean multi-host installation, optional OIDC in that topology, release upgrades, key/certificate rotation, full installation recovery, and drift and interruption drills remain open. |
+| M7 | Installation and operations | Complete for the current schemas | Native Linux packages and hardened controller container, independent QEMU controller and agent installs, optional OIDC, same-schema package upgrades, wrapping and mTLS certificate rotation, full installation restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
 
 ## Dependencies and support decisions
@@ -65,6 +65,16 @@ five engines. The restore fixture checks stale writes and verifies independent
 writes after recovery. The pinned mutual TLS fixture verifies that an unavailable
 host still displays its previous observation after a controller restart.
 Release-forward migration verification begins with the first released schema.
+
+M7 acceptance combines the native packages and controller container with a
+[multi-host QEMU fixture](../tests/integration/installed-system/README.md).
+Separate Debian guests verify the installed controller and agent, managed OIDC
+and local fallback, package upgrades within the current schemas, server and
+client certificate rotation, and restore to independent guest boots. The
+controller retains its verified settings, reviewed policy and audit. The
+restored agent reconciles its last confirmed policy and supplies real packet and
+drift evidence. The [deployment guide](deployment.md) records the operator
+procedures and the individual backup boundaries.
 
 M7/M8 are product-wide integration gates, not a rewrite of already verified slices.
 No production apply, deployment or account change follows from passing tests.
@@ -140,8 +150,8 @@ exercises the first-use and everyday workflow gates below.
 
 Retain the complete native detail for expert review. Simplifying the default view
 must preserve explicit change review, authorization, ownership and confirmed-apply
-safety. M7 still owns installation/trust-bootstrap integration; M5 must guide the
-operator through that boundary without exposing host privileges to the browser.
+safety. The installation acceptance exercises the operator's explicit trust
+bootstrap and the controller's authenticated host registration across that boundary.
 
 M5 identity scope now also includes direct LDAP sign-in and profile mapping,
 configurable OIDC/OAuth profile defaults with local overrides, local email and

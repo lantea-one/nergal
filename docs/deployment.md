@@ -80,6 +80,72 @@ enrollment to the operator.
 The [Debian QEMU fixture](../tests/integration/installed-system/README.md)
 checks the installed services and agent rollback in an isolated guest.
 
+## Offline package upgrades
+
+Stage the newer package and its verified SHA-256 manifest on each controller
+and agent host using the site's offline transfer process. Stage any required
+distribution runtime packages before disconnecting the host. Verify the package
+checksum, then upgrade with the local package manager. On Debian, use
+`sudo apt install ./nergal_VERSION_amd64.deb`. Use a package whose version is
+newer than the installed one and whose schemas match the existing stores.
+Keep application services stopped during a planned maintenance window, install
+the package, inspect package-manager and service logs, and start the services
+explicitly after checking their private configuration and state ownership.
+Confirm authenticated status and the expected revision before enabling normal
+controller dispatch. Package installation does not enroll an agent, reconcile
+its firewall, or authorize an apply.
+
+## Rotate remote agent trust
+
+Remote TLS control uses explicit SHA-256 DER leaf pins on both sides (ADR 0028).
+For an agent server-certificate rotation, provision the replacement certificate
+and key privately, calculate its lowercase SHA-256 DER fingerprint, and
+register the replacement endpoint with that new server pin in the controller.
+Switch the agent listener to the new certificate during the maintenance window.
+Verify authenticated status and the expected revision through the replacement
+registration before retiring the old registration. The replacement has its
+own registration ID. Both registration changes remain in the controller audit.
+
+For controller client-certificate rotation, configure the agent's client pin
+allowlist to accept both the old and replacement client fingerprints. Install
+the replacement private key only in the controller service's protected
+directory, configure the controller to use it, and verify authenticated agent
+status. Then remove the old fingerprint from the agent allowlist and verify
+that the old client credential is denied while the replacement still succeeds.
+Keep the active keys and certificate trust configuration in access-controlled
+backups. Retire old private keys according to the site's credential procedure.
+
+## Full controller and agent recovery
+
+Back up the controller and each agent independently. Finish or roll back pending
+operations and quiesce the corresponding service so each set is internally
+consistent. Preserve the controller's
+account and identity stores, application database files and SQLite WAL/SHM as a
+consistent set, Data Protection key ring, wrapping certificate/private key and
+wrapping-key history, HTTPS certificate/key, OIDC issuer and TLS trust
+configuration, and service configuration. Use the database's native consistent
+backup procedure; for SQLite use the backup API described in
+[controller SQLite backup](controller-sqlite-backup.md), rather than copying
+only a live main database file.
+
+For each agent, preserve its protected journal and related state together with
+its boot and resource ownership records, TLS listener configuration and
+site-specific systemd drop-ins. On the recovery host, verify the original
+service UID and group and preserve the original directory and key-file modes.
+The controller database and the agent journal have independent trust roots.
+
+Restore controller and agents onto separate, clean installations, keeping the
+old hosts powered off and offline to prevent duplicate identities or competing
+firewall managers. Check the restored data and trust configuration before
+starting services. On an agent with a new boot identity, explicitly run the
+agent's boot reconciliation procedure and verify authenticated status and real
+policy behavior before restoring controller dispatch. Reconciliation can
+recreate only the journal's last confirmed owned state; inspect collisions or
+ownership failures instead of adopting existing tables. Keep pending rollback
+and controller/agent observations under operator review. M6 server-database
+backup and restore procedures are separate and documented in
+[controller server databases](controller-server-databases.md).
+
 ## Initialize a new single host
 
 1. Create the private web state subdirectories and initialize the offline stores.
