@@ -44,6 +44,7 @@ jobs:
         run: |
           python3 tests/integration/local-sessions/check.py
           python3 -B tests/integration/local-sessions/check-settings.py
+          python3 -B tests/integration/local-sessions/check-wrapping-recovery.py
       - name: Verify optional OIDC with a disposable HTTPS issuer
         run: python3 -B tests/integration/oidc/check.py
       - name: Verify Forgejo Pages documentation portal
