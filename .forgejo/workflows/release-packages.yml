@@ -11,6 +11,7 @@ on:
       - 'deploy/container/release-version.py'
       - 'Directory.Build.props'
       - 'scripts/package-release.sh'
+      - 'tests/package-release.test.sh'
       - 'scripts/collect-nuget-notices.py'
       - 'scripts/nuget-license-texts/**'
   workflow_dispatch:
@@ -80,6 +81,13 @@ jobs:
             python3 -B tests/collect-nuget-notices.test.py
             bash tests/package-release.test.sh
           fi
+      - name: Rebuild independently and compare package bytes
+        if: github.event_name == 'pull_request'
+        env:
+          PACKAGE_FORMAT: ${{ matrix.format }}
+          NERGAL_PACKAGE_USER: nergal-builder
+          NERGAL_ARCH_BUILD_DIRECTORY: /tmp/nergal-arch-release
+        run: bash tests/package-release.test.sh --reproducibility "$PACKAGE_FORMAT"
       - uses: https://code.forgejo.org/forgejo/upload-artifact@cb8afe72b42edc798abfb8fcb556cf660d894245 # v5
         with:
           name: nergal-linux-${{ matrix.format }}

@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
 # Exercise package layout with a synthetic publish payload, or use --reproducibility
-# to compare two real portable archives built under different source paths.
+# to compare real packages built under different source paths.
 set -euo pipefail
 repo=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-if [[ ${1:-} == --reproducibility && $# == 1 ]]; then
+if [[ ${1:-} == --reproducibility && $# -le 2 ]]; then
+    format=${2:-tar}
+    case "$format" in
+        tar|deb|rpm|arch) ;;
+        *) echo 'Reproducibility format must be tar, deb, rpm, or arch' >&2; exit 2 ;;
+    esac
+    if [[ "$format" == arch ]]; then
+        # makepkg includes the build directory in .BUILDINFO. Use the same
+        # path for both builds while varying the source and staging paths.
+        export NERGAL_ARCH_BUILD_DIRECTORY=${NERGAL_ARCH_BUILD_DIRECTORY:-"$tmp/arch-build"}
+    fi
     commit=$(git -C "$repo" rev-parse HEAD)
     export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(git -C "$repo" show -s --format=%ct "$commit")}
     mkdir "$tmp/build-inputs"
@@ -23,17 +33,19 @@ if [[ ${1:-} == --reproducibility && $# == 1 ]]; then
         (
             cd "$checkout"
             dotnet restore Nergal.slnx --locked-mode
-            bash scripts/package-release.sh --format tar --verify --output-dir "$tmp/$build.packages"
+            bash scripts/package-release.sh --format "$format" --verify --output-dir "$tmp/$build.packages"
         )
     done
     cmp "$tmp/first.packages/SHA256SUMS" "$tmp/second checkout.packages/SHA256SUMS"
-    cmp "$tmp/first.packages/"*.tar.gz "$tmp/second checkout.packages/"*.tar.gz
+    while read -r _ filename; do
+        cmp "$tmp/first.packages/$filename" "$tmp/second checkout.packages/$filename"
+    done < "$tmp/first.packages/SHA256SUMS"
     cat "$tmp/first.packages/SHA256SUMS"
-    echo 'PASS: portable archive is byte-identical across independent source paths'
+    printf 'PASS: %s output is byte-identical across independent source paths\n' "$format"
     exit 0
 fi
 if (($#)); then
-    echo 'Usage: package-release.test.sh [--reproducibility]' >&2
+    echo 'Usage: package-release.test.sh [--reproducibility [tar|deb|rpm|arch]]' >&2
     exit 2
 fi
 
