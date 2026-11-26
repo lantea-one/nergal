@@ -54,7 +54,7 @@ public sealed class NativeConversionStoreTests
             Assert.Throws<ControllerStateException>(() => store.CommitNativeConversionPlan(saved.Id, content.Digest, content, Actor, NergalRoles.Auditor));
             Assert.Throws<ControllerStateException>(() => store.CommitNativeConversionPlan(saved.Id, new string('a', 64), content, Actor, NergalRoles.Administrator));
             Assert.Equal(audit, store.ListAuditEntries().Count); Assert.Empty(store.ListReusableObjects()); Assert.Empty(store.ListPolicyRevisions());
-            var blocked = Plan(store, "table inet sample { chain input { type filter hook input priority 0; counter accept; } }");
+            var blocked = Plan(store, "table inet sample { chain input { type filter hook input priority 0; counter packets 3 bytes 60 accept; } }");
             var denied = store.SaveNativeConversionPlan(blocked, Actor, NergalRoles.Administrator);
             Assert.False(blocked.IsReady);
             Assert.Throws<ControllerStateException>(() => store.CommitNativeConversionPlan(denied.Id, blocked.Digest, blocked, Actor, NergalRoles.Administrator));

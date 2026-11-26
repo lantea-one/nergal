@@ -30,7 +30,7 @@ internal static partial class PolicyAuthoringService
         else
         {
             IpFamily? family = input.Family switch { "any" => null, "ipv4" => IpFamily.IPv4, "ipv6" => IpFamily.IPv6, _ => (IpFamily)(-1) };
-            var verdict = input.Verdict switch { "accept" => FilterVerdict.Accept, "drop" => FilterVerdict.Drop, _ => (FilterVerdict)(-1) };
+            var verdict = input.Verdict switch { "accept" => FilterVerdict.Accept, "drop" => FilterVerdict.Drop, "notrack" => FilterVerdict.Continue, _ => (FilterVerdict)(-1) };
             var protocol = input.Protocol switch { "any" => FilterProtocol.Any, "tcp" => FilterProtocol.Tcp, "udp" => FilterProtocol.Udp, _ => (FilterProtocol)(-1) };
             var errors = new List<PolicyDiagnostic>();
             if (family.HasValue && !Enum.IsDefined(family.Value)) { errors.Add(new("family.unknown", "rule.family")); }
@@ -43,7 +43,7 @@ internal static partial class PolicyAuthoringService
             if (errors.Count != 0) { diagnostics = errors; return false; }
             var rule = new RpFilterRule(verdict, family, protocol, source, input.NegateSource, EmptyToNull(input.InputInterface),
                 input.NegateInputInterface, input.SourcePort, input.DestinationPort, input.MatchFibUnreachable, description,
-                index is not { } i || rules[i]!.Enabled);
+                index is not { } i || rules[i]!.Enabled, Notrack: verdict == FilterVerdict.Continue);
             if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
         }
         return TryCompileRawSettings(bundle, new(bundle.Filter.RpFilter?.DefaultVerdict ?? FilterVerdict.Accept, rules),
@@ -110,7 +110,7 @@ internal static partial class PolicyAuthoringService
         out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics)
     {
         var filter = new FilterPolicy(bundle.Filter.SchemaVersion == 1 ? 2 : bundle.Filter.SchemaVersion, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
-            bundle.Filter.OutputDefaultVerdict, bundle.Filter.Rules, raw, mss, mssEnabled);
+            bundle.Filter.OutputDefaultVerdict, bundle.Filter.Rules, raw, mss, mssEnabled, bundle.Filter.RawOutput);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
     }
 }

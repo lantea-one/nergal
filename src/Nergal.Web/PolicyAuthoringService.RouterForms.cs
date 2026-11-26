@@ -25,7 +25,7 @@ internal static partial class PolicyAuthoringService
         var rules = bundle.Filter.Rules.ToArray();
         rules[index] = rule;
         var filter = new FilterPolicy(bundle.Filter.SchemaVersion == 1 ? 2 : bundle.Filter.SchemaVersion, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
-            bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled);
+            bundle.Filter.OutputDefaultVerdict, rules, bundle.Filter.RpFilter, bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, bundle.Filter.RawOutput);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
     }
 

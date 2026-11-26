@@ -12,7 +12,9 @@ internal static partial class PolicyAuthoringService
         if (!TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
         if (operation == "remove")
         {
-            if (bundle.AuxiliaryFilter is null || bundle.AuxiliaryFilter.Filter.Rules.Count != 0 || priority.HasValue || inputDefault is not null || forwardDefault is not null || outputDefault is not null)
+            if (bundle.AuxiliaryFilter is null || bundle.AuxiliaryFilter.Filter.Rules.Count != 0 ||
+                bundle.AuxiliaryFilter.Filter.RpFilter is not null || bundle.AuxiliaryFilter.Filter.RawOutput is not null ||
+                priority.HasValue || inputDefault is not null || forwardDefault is not null || outputDefault is not null)
             { diagnostics = [new("auxiliary.removeRequiresEmptyTable", "auxiliaryFilter")]; return false; }
             return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge), out updated, out diagnostics);
         }
@@ -21,7 +23,7 @@ internal static partial class PolicyAuthoringService
         { diagnostics = [new("auxiliary.defaultsInvalid", "auxiliaryFilter")]; return false; }
         var previous = bundle.AuxiliaryFilter?.Filter;
         var auxiliary = new AuxiliaryFilterPolicy(priority.Value, new(previous?.SchemaVersion ?? 2, input, forward, output, previous?.Rules ?? [],
-            previous?.RpFilter, previous?.ForwardTcpMssClamp, previous?.ForwardTcpMssClampEnabled ?? true));
+            previous?.RpFilter, previous?.ForwardTcpMssClamp, previous?.ForwardTcpMssClampEnabled ?? true, previous?.RawOutput));
         return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge, auxiliary), out updated, out diagnostics);
     }
 
@@ -51,6 +53,9 @@ internal static partial class PolicyAuthoringService
                 {
                     Enabled = previous.Enabled,
                     CountPackets = previous.CountPackets,
+                    OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
+                    OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
+                    BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
                     SourceObject = previous.SourceObject,
                     DestinationObject = previous.DestinationObject,
                     DestinationPortObject = previous.DestinationPortObject,
@@ -61,7 +66,7 @@ internal static partial class PolicyAuthoringService
             if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
         }
         var filter = new FilterPolicy(auxiliary.Filter.SchemaVersion, auxiliary.Filter.InputDefaultVerdict, auxiliary.Filter.ForwardDefaultVerdict,
-            auxiliary.Filter.OutputDefaultVerdict, rules, auxiliary.Filter.RpFilter, auxiliary.Filter.ForwardTcpMssClamp, auxiliary.Filter.ForwardTcpMssClampEnabled);
+            auxiliary.Filter.OutputDefaultVerdict, rules, auxiliary.Filter.RpFilter, auxiliary.Filter.ForwardTcpMssClamp, auxiliary.Filter.ForwardTcpMssClampEnabled, auxiliary.Filter.RawOutput);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge, new(auxiliary.Priority, filter)), out updated, out diagnostics);
     }
 

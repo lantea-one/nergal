@@ -30,6 +30,7 @@ public enum DnatHook
 /// <param name="SourceObject">Optional immutable same-family source address-list version.</param>
 /// <param name="DestinationObject">Optional immutable same-family original-destination address-list version; never translated targets.</param>
 /// <param name="Hook">Destination NAT hook; OUTPUT has no ingress interface matcher.</param>
+/// <param name="CountPackets">Count packets and bytes reaching the translation. Established flows reuse the NAT binding and bypass rule evaluation.</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -50,7 +51,8 @@ public sealed record DnatRule(
     IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
     PolicyObjectReference? SourceObject = null,
     PolicyObjectReference? DestinationObject = null,
-    DnatHook Hook = DnatHook.Prerouting);
+    DnatHook Hook = DnatHook.Prerouting,
+    bool CountPackets = false);
 
 /// <summary>Postrouting action; exemptions return before later NAT rules.</summary>
 public enum NatPostroutingAction
@@ -65,7 +67,7 @@ public enum NatPostroutingAction
 
 /// <summary>An immutable ordered source NAT or exemption rule evaluated in the inet postrouting hook.</summary>
 /// <param name="Family">The explicit IP family.</param>
-/// <param name="Source">Canonical source network matched for source translation.</param>
+/// <param name="Source">Optional current-packet source network. Explicit SNAT requires a current-source restriction or DNAT status.</param>
 /// <param name="TranslatedAddress">Single translated address for explicit SNAT; must be null for masquerade or return.</param>
 /// <param name="Destination">Optional canonical destination network restriction.</param>
 /// <param name="OutputInterface">Optional egress interface name (<c>oifname</c>).</param>
@@ -85,6 +87,10 @@ public enum NatPostroutingAction
 /// <param name="DestinationPrefixes">Optional bounded destination prefix set, exclusive with a scalar or reference.</param>
 /// <param name="SourceObject">Optional immutable same-family address-list version, exclusive with source literals.</param>
 /// <param name="DestinationObject">Optional immutable same-family address-list version, exclusive with destination literals.</param>
+/// <param name="CountPackets">Count packets and bytes reaching this postrouting action. Established flows reuse the NAT binding and bypass rule evaluation.</param>
+/// <param name="MatchOriginalDestinationDnat">Require connection-tracking status DNAT before taking the action.</param>
+/// <param name="OriginalSourcePrefixes">Optional 1–64 literal original-direction source prefixes of the rule's IP family. Requires DNAT status. Multiple prefixes must be disjoint and nonadjacent.</param>
+/// <param name="OriginalDestinationPrefixes">Optional original-direction destination prefixes with the same bounds and family requirements as <paramref name="OriginalSourcePrefixes"/>.</param>
 public sealed record SnatRule(
     IpFamily Family,
     NetworkPrefix? Source,
@@ -106,7 +112,11 @@ public sealed record SnatRule(
     IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
     IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
     PolicyObjectReference? SourceObject = null,
-    PolicyObjectReference? DestinationObject = null);
+    PolicyObjectReference? DestinationObject = null,
+    bool CountPackets = false,
+    bool MatchOriginalDestinationDnat = false,
+    IReadOnlyList<NetworkPrefix>? OriginalSourcePrefixes = null,
+    IReadOnlyList<NetworkPrefix>? OriginalDestinationPrefixes = null);
 
 /// <summary>An immutable, versioned snapshot of ordered dual-stack DNAT and postrouting actions.</summary>
 public sealed class NatPolicy
@@ -133,6 +143,8 @@ public sealed class NatPolicy
         SnatRules = Array.AsReadOnly(snatRules.Select(r => r is null ? null : r with
         {
             DestinationPorts = r.DestinationPorts is null ? null : Array.AsReadOnly(r.DestinationPorts.ToArray()),
+            OriginalSourcePrefixes = r.OriginalSourcePrefixes is null ? null : Array.AsReadOnly(r.OriginalSourcePrefixes.ToArray()),
+            OriginalDestinationPrefixes = r.OriginalDestinationPrefixes is null ? null : Array.AsReadOnly(r.OriginalDestinationPrefixes.ToArray()),
             SourcePrefixes = r.SourcePrefixes is null ? null : Array.AsReadOnly(r.SourcePrefixes.ToArray()),
             DestinationPrefixes = r.DestinationPrefixes is null ? null : Array.AsReadOnly(r.DestinationPrefixes.ToArray()),
         }).ToArray());
@@ -162,10 +174,18 @@ public sealed class NatPolicy
         {
             features.Add(FirewallFeature.OutputDestinationNat);
         }
+        if (DnatRules.Any(rule => rule?.CountPackets == true) || SnatRules.Any(rule => rule?.CountPackets == true))
+        {
+            features.Add(FirewallFeature.InlineNatCounters);
+        }
 
         if (SnatRules.Any(r => r?.Action == NatPostroutingAction.Snat))
         {
             features.Add(FirewallFeature.ExplicitSourceNat);
+        }
+        if (SnatRules.Any(r => r?.MatchOriginalDestinationDnat == true || r?.OriginalSourcePrefixes is not null || r?.OriginalDestinationPrefixes is not null))
+        {
+            features.Add(FirewallFeature.OriginalConnectionTuple);
         }
 
         if (SnatRules.Any(r => r is not null && r.Action != NatPostroutingAction.Snat)) { features.Add(FirewallFeature.MasqueradeAndNatExemptions); }

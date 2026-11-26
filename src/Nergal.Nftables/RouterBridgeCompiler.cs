@@ -40,7 +40,7 @@ internal static class RouterBridgeCompiler
                 { if (iface is not null && !FilterPolicyValidation.IsValidInterfaceName(iface)) { errors.Add(new("interface.invalid", path)); } }
                 RouterFilterValidation.Require(r.NegateSourceMac, r.SourceMac is not null, path + ".negateSourceMac", errors);
                 RouterFilterValidation.Require(r.NegateDestinationMac, r.DestinationMac is not null, path + ".negateDestinationMac", errors);
-                if (r.Family is { } family && (!Enum.IsDefined(family) || (r.EtherType != BridgeEtherType.Any && r.EtherType != (family == IpFamily.IPv4 ? BridgeEtherType.IPv4 : BridgeEtherType.IPv6))))
+                if (r.Family is { } family && (family is not (IpFamily.IPv4 or IpFamily.IPv6) || (r.EtherType != BridgeEtherType.Any && r.EtherType != (family == IpFamily.IPv4 ? BridgeEtherType.IPv4 : BridgeEtherType.IPv6))))
                 { errors.Add(new("bridge.familyMismatch", path)); }
                 if ((r.SourcePrefixes is not null || r.DestinationPrefixes is not null) && !r.Family.HasValue) { errors.Add(new("bridge.familyRequired", path + ".family")); }
                 if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }

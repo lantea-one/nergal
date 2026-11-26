@@ -137,7 +137,10 @@ public sealed class RouterConstructTests
         var changedMac = NftTableObservation.Parse(original.Replace("02:00:00:00:00:01", "02:00:00:00:00:09", StringComparison.Ordinal));
         Assert.True(changedMac.IsSuccess);
         Assert.NotEqual(observed.Observation.StateDigest, changedMac.Observation!.StateDigest);
-        Assert.False(NftTableObservation.Parse(original.Replace("admin-prohibited", "port-unreachable", StringComparison.Ordinal)).IsSuccess);
+        var changedReject = NftTableObservation.Parse(original.Replace("admin-prohibited", "port-unreachable", StringComparison.Ordinal));
+        Assert.True(changedReject.IsSuccess);
+        Assert.NotEqual(observed.Observation.StateDigest, changedReject.Observation!.StateDigest);
+        Assert.False(NftTableObservation.Parse(original.Replace("admin-prohibited", "host-unreachable", StringComparison.Ordinal)).IsSuccess);
         var nat = NftNatTableObservation.Parse(Read("nat-list.json"));
         Assert.True(nat.IsSuccess);
         Assert.Equal(nat.Observation!.StateDigest, NftNatTableObservation.ParseReplacementEcho(Read("nat-echo.json")).Observation!.StateDigest);

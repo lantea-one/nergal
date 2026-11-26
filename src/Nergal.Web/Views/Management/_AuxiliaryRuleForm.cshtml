@@ -16,9 +16,31 @@
     <p id="@(prefix)-hint" class="hint">An independent inet filter rule. Empty optional matchers mean any; clearing them may broaden access. Except requires its matcher. Edits preserve enabled state, order and existing list pins. This changes only the draft.</p>
     <div class="form-grid">
         <div class="field"><label for="@(prefix)-chain">Chain</label><select id="@(prefix)-chain" name="chain"><option value="input" selected="@(r is null || r.Chain == FilterChainKind.Input)">Input</option><option value="forward" selected="@(r?.Chain == FilterChainKind.Forward)">Forward</option><option value="output" selected="@(r?.Chain == FilterChainKind.Output)">Output</option></select></div>
-        <div class="field"><label for="@(prefix)-family">IP family</label><select id="@(prefix)-family" name="family"><option value="ipv4" selected="@(r?.Family != IpFamily.IPv6)">IPv4</option><option value="ipv6" selected="@(r?.Family == IpFamily.IPv6)">IPv6</option></select></div>
+        <div class="field">
+            <label for="@(prefix)-family">IP family</label>
+            <select id="@(prefix)-family" name="family">
+                <option value="ipv4" selected="@(r is null || r.Family == IpFamily.IPv4)">IPv4</option>
+                <option value="ipv6" selected="@(r?.Family == IpFamily.IPv6)">IPv6</option>
+                @if (r?.CountPackets == true)
+                {
+                    <option value="dualStack" selected="@(r.Family == IpFamily.DualStack)">IPv4 and IPv6</option>
+                }
+            </select>
+        </div>
         <div class="field"><label for="@(prefix)-protocol">Protocol</label><select id="@(prefix)-protocol" name="protocol"><option value="any" selected="@(r is null || r.Protocol == FilterProtocol.Any)">Any</option><option value="tcp" selected="@(r?.Protocol == FilterProtocol.Tcp)">TCP</option><option value="udp" selected="@(r?.Protocol == FilterProtocol.Udp)">UDP</option><option value="icmp" selected="@(r?.Protocol == FilterProtocol.Icmp)">ICMP (IPv4)</option><option value="icmpv6" selected="@(r?.Protocol == FilterProtocol.IcmpV6)">ICMPv6</option></select></div>
-        <div class="field"><label for="@(prefix)-verdict">Verdict</label><select id="@(prefix)-verdict" name="verdict"><option value="accept" selected="@(r?.Verdict == FilterVerdict.Accept)">Accept</option><option value="drop" selected="@(r is null || r.Verdict == FilterVerdict.Drop)">Drop</option><option value="reject" selected="@(r?.Verdict == FilterVerdict.Reject)">Reject — ICMP admin prohibited</option></select></div>
+        <div class="field">
+            <label for="@(prefix)-verdict">Verdict</label>
+            <select id="@(prefix)-verdict" name="verdict">
+                <option value="accept" selected="@(r?.Verdict == FilterVerdict.Accept)">Accept</option>
+                <option value="drop" selected="@(r is null || r.Verdict == FilterVerdict.Drop)">Drop</option>
+                <option value="reject" selected="@(r?.Verdict == FilterVerdict.Reject)">Reject — ICMP admin prohibited</option>
+                <option value="rejectPortUnreachable" selected="@(r?.Verdict == FilterVerdict.RejectPortUnreachable)">Reject — ICMP port unreachable</option>
+                @if (r?.CountPackets == true)
+                {
+                    <option value="continue" selected="@(r.Verdict == FilterVerdict.Continue)">Count and continue</option>
+                }
+            </select>
+        </div>
         <div class="field"><label for="@(prefix)-sources">Source CIDR(s) (optional)</label><input type="text" id="@(prefix)-sources" name="sources" value="@sources" readonly="@(r?.SourceObject is not null)" aria-describedby="@(prefix)-sources-hint" /><span id="@(prefix)-sources-hint" class="hint">One CIDR or a comma-separated list of disjoint networks.</span></div>
         <div class="field"><label for="@(prefix)-destinations">Destination CIDR(s) (optional)</label><input type="text" id="@(prefix)-destinations" name="destinations" value="@destinations" readonly="@(r?.DestinationObject is not null)" aria-describedby="@(prefix)-destinations-hint" /><span id="@(prefix)-destinations-hint" class="hint">Use the selected IP family.</span></div>
         <div class="field"><label for="@(prefix)-destinationPorts">Destination port(s) (optional)</label><input type="text" id="@(prefix)-destinationPorts" name="destinationPorts" value="@ports" readonly="@(r?.DestinationPortObject is not null)" aria-describedby="@(prefix)-destinationPorts-hint" /><span id="@(prefix)-destinationPorts-hint" class="hint">One port or comma-separated ports, 1–65535; requires TCP or UDP.</span></div>

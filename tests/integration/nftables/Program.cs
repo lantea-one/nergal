@@ -57,14 +57,21 @@ if (mode == "import-native" && (args.Length == 4 || args is [_, _, _, _, "--rest
     Console.Write(output); return 0;
 }
 
-if (mode == "verify-import-native" && args.Length == 5)
+if (mode == "verify-import-native" && (args.Length == 6 || args is [_, _, _, _, _, _, "--renamed"]))
 {
-    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, true, false, false);
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, true, false, true);
     var filter = NftTableObservation.Parse(File.ReadAllText(args[3]));
     var nat = NftNatTableObservation.Parse(File.ReadAllText(args[4]));
-    if (!echo.IsSuccess || !filter.IsSuccess || !nat.IsSuccess)
+    var auxiliary = NftAuxiliaryTableObservation.Parse(File.ReadAllText(args[5]));
+    if (!echo.IsSuccess || !filter.IsSuccess || !nat.IsSuccess || auxiliary is null)
     { throw new InvalidOperationException($"Imported bundle observation failed: {echo.ErrorCode} {filter.ErrorCode} {nat.ErrorCode}"); }
-    var listed = NftTableObservation.Combine(filter.Observation!, nat.Observation!, null);
+    var listed = NftTableObservation.Combine(filter.Observation!, nat.Observation!, null, auxiliary);
+    if (args.Length == 7)
+    {
+        if (echo.Observation!.StateDigest == listed.StateDigest)
+        { throw new InvalidOperationException("Interface-index binding drift was not detected."); }
+        return 0;
+    }
     if (echo.Observation!.StateDigest != listed.StateDigest ||
         NftPolicyBundleCompiler.Compile(listed.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
     { throw new InvalidOperationException("Imported bundle native round-trip diverged."); }

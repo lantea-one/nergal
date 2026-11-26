@@ -126,7 +126,7 @@ public static partial class PolicyBundleJsonCodec
     public static PolicyJsonDecodeResult<FilterPolicy> TryParseFilterElement(JsonElement el)
     {
         if (el.ValueKind != JsonValueKind.Object ||
-            !HasOnlyProperties(el, "schemaVersion", "inputDefaultVerdict", "forwardDefaultVerdict", "outputDefaultVerdict", "rules", "rpFilter", "forwardTcpMssClamp", "forwardTcpMssClampEnabled") ||
+            !HasOnlyProperties(el, "schemaVersion", "inputDefaultVerdict", "forwardDefaultVerdict", "outputDefaultVerdict", "rules", "rpFilter", "rawOutput", "forwardTcpMssClamp", "forwardTcpMssClampEnabled") ||
             !el.TryGetProperty("schemaVersion", out var verEl) || verEl.ValueKind != JsonValueKind.Number || !verEl.TryGetInt32(out var version) ||
             !el.TryGetProperty("inputDefaultVerdict", out var inEl) || ParseVerdict(inEl) is not { } inVerdict ||
             !el.TryGetProperty("rules", out var rulesEl) || rulesEl.ValueKind != JsonValueKind.Array || rulesEl.GetArrayLength() > MaximumRulesPerSection)
@@ -152,10 +152,11 @@ public static partial class PolicyBundleJsonCodec
             if (item.ValueKind != JsonValueKind.Object ||
                 !HasOnlyProperties(item, "family", "protocol", "verdict", "source", "destination", "destinationPort",
                     "sourcePrefixes", "destinationPrefixes", "destinationPorts",
-                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject", "enabled", "countPackets") || !TryReadEnabled(item, out var enabled) ||
-                !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
+                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "negateInputInterface", "bindInputInterfaceIndex", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject", "enabled", "countPackets") || !TryReadEnabled(item, out var enabled) ||
+                !TryReadBool(item, "bindInputInterfaceIndex", out var bindInputInterfaceIndex) ||
+                !item.TryGetProperty("family", out var famEl) || ParseFilterFamily(famEl) is not { } family ||
                 !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
-                !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
+                !item.TryGetProperty("verdict", out var verdEl) || ParseFilterRuleVerdict(verdEl) is not { } verdict)
             {
                 return new(null, [new("filter.ruleFields", $"filter.rules[{index}]")]);
             }
@@ -309,17 +310,21 @@ public static partial class PolicyBundleJsonCodec
                 !TryReadObjectReference(item, "destinationObject", out var destinationObject) ||
                 !TryReadObjectReference(item, "destinationPortObject", out var portObject))
             { return new(null, [new("filter.objectReference", $"filter.rules[{index}]")]); }
+            if (!TryReadOriginalAddresses(item, "originalSourcePrefixes", out var originalSources) ||
+                !TryReadOriginalAddresses(item, "originalDestinationPrefixes", out var originalDestinations))
+            { return new(null, [new("filter.originalAddresses", $"filter.rules[{index}]")]); }
             rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports, description,
                 router.NegateInputInterface, router.NegateOutputInterface, router.NegateSource, router.NegateDestination,
-                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject, enabled, countPackets));
+                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject, enabled, countPackets, originalSources, originalDestinations, bindInputInterfaceIndex));
             index++;
         }
 
-        if (!TryReadOptionalInt(el, "forwardTcpMssClamp", out var mss) || !TryReadRpFilter(el, out var rp) || !TryReadEnabled(el, out var mssEnabled, "forwardTcpMssClampEnabled"))
+        if (!TryReadOptionalInt(el, "forwardTcpMssClamp", out var mss) || !TryReadRawChain(el, "rpFilter", out var rp) ||
+            !TryReadRawChain(el, "rawOutput", out var rawOutput) || !TryReadEnabled(el, out var mssEnabled, "forwardTcpMssClampEnabled"))
         { return new(null, [new("filter.routerFields", "filter")]); }
         try
         {
-            return new(new FilterPolicy(version, inVerdict, fwdVerdict.Value, outVerdict.Value, rules, rp, mss, mssEnabled), []);
+            return new(new FilterPolicy(version, inVerdict, fwdVerdict.Value, outVerdict.Value, rules, rp, mss, mssEnabled, rawOutput), []);
         }
         catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException)
         {
@@ -349,7 +354,8 @@ public static partial class PolicyBundleJsonCodec
             foreach (var item in dnatEl.EnumerateArray())
             {
                 if (item.ValueKind != JsonValueKind.Object ||
-                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "originalPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "translatedPort", "inputInterface", "source", "description", "negateSource", "negateDestination", "negateInputInterface", "enabled", "hook") || !TryReadEnabled(item, out var enabled) ||
+                    !HasOnlyProperties(item, "family", "protocol", "originalDestination", "translatedAddress", "originalPort", "originalPorts", "originalPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "translatedPort", "inputInterface", "source", "description", "negateSource", "negateDestination", "negateInputInterface", "enabled", "hook", "countPackets") || !TryReadEnabled(item, out var enabled) ||
+                    !TryReadBool(item, "countPackets", out var countPackets) ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family ||
                     !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
                     !TryReadOptionalString(item, "originalDestination", out var originalDestination) ||
@@ -414,7 +420,7 @@ public static partial class PolicyBundleJsonCodec
                         : null;
                     if (!TryReadBool(item, "negateSource", out var ns) || !TryReadBool(item, "negateDestination", out var nd) ||
                         !TryReadBool(item, "negateInputInterface", out var ni)) { return new(null, [new("nat.dnatFields", $"nat.dnatRules[{idx}]")]); }
-                    dnatRules.Add(new DnatRule(family, protocol, originalDestination is null ? null : new NetworkPrefix(originalDestination), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription, ns, nd, ni, enabled, originalPorts, originalPortObject, sourcePrefixes, destinationPrefixes, sourceObject, destinationObject, hook));
+                    dnatRules.Add(new DnatRule(family, protocol, originalDestination is null ? null : new NetworkPrefix(originalDestination), taEl.GetString()!, origPort, transPort, dnatIif, src, dnatDescription, ns, nd, ni, enabled, originalPorts, originalPortObject, sourcePrefixes, destinationPrefixes, sourceObject, destinationObject, hook, countPackets));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -438,7 +444,12 @@ public static partial class PolicyBundleJsonCodec
             {
                 if (item.ValueKind != JsonValueKind.Object ||
                     !HasOnlyProperties(item, "family", "source", "translatedAddress", "destination", "outputInterface", "description",
-                        "action", "inputInterface", "protocol", "destinationPort", "destinationPorts", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "enabled", "destinationPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject") || !TryReadEnabled(item, out var enabled) ||
+                        "action", "inputInterface", "protocol", "destinationPort", "destinationPorts", "negateSource", "negateDestination", "negateInputInterface", "negateOutputInterface", "enabled", "destinationPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "countPackets",
+                        "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes") || !TryReadEnabled(item, out var enabled) ||
+                    !TryReadBool(item, "countPackets", out var countPackets) ||
+                    !TryReadBool(item, "matchOriginalDestinationDnat", out var matchDnat) ||
+                    !TryReadOriginalAddresses(item, "originalSourcePrefixes", out var originalSources) ||
+                    !TryReadOriginalAddresses(item, "originalDestinationPrefixes", out var originalDestinations) ||
                     !item.TryGetProperty("family", out var famEl) || ParseFamily(famEl) is not { } family)
                 {
                     return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]);
@@ -475,7 +486,8 @@ public static partial class PolicyBundleJsonCodec
                         (item.TryGetProperty("destinationPorts", out var portsEl) && portsEl.ValueKind != JsonValueKind.Null && !TryParsePortList(portsEl, out ports)))
                     { return new(null, [new("nat.snatFields", $"nat.snatRules[{idx}]")]); }
                     snatRules.Add(new SnatRule(family, source is null ? null : new NetworkPrefix(source), target, dst, snatOif, snatDescription,
-                        action.Value, iif, protocol.Value, port, ports, ns, nd, ni, no, enabled, portObject, sourcePrefixes, destinationPrefixes, sourceObject, destinationObject));
+                        action.Value, iif, protocol.Value, port, ports, ns, nd, ni, no, enabled, portObject, sourcePrefixes, destinationPrefixes, sourceObject, destinationObject, countPackets,
+                        MatchOriginalDestinationDnat: matchDnat, OriginalSourcePrefixes: originalSources, OriginalDestinationPrefixes: originalDestinations));
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException)
                 {
@@ -625,10 +637,19 @@ public static partial class PolicyBundleJsonCodec
 
             writer.WriteStartObject();
             if (!r.Enabled) { writer.WriteBoolean("enabled", false); }
-            writer.WriteString("family", r.Family == IpFamily.IPv4 ? "ipv4" : "ipv6");
+            writer.WriteString("family", r.Family switch
+            {
+                IpFamily.IPv4 => "ipv4",
+                IpFamily.IPv6 => "ipv6",
+                IpFamily.DualStack => "dualStack",
+                _ => throw new ArgumentException("Unknown filter family."),
+            });
             writer.WriteString("protocol", ProtocolName(r.Protocol));
             writer.WriteString("verdict", VerdictName(r.Verdict));
             if (r.CountPackets) { writer.WriteBoolean("countPackets", true); }
+            if (r.BindInputInterfaceIndex) { writer.WriteBoolean("bindInputInterfaceIndex", true); }
+            WritePrefixSet(writer, "originalSourcePrefixes", r.OriginalSourcePrefixes);
+            WritePrefixSet(writer, "originalDestinationPrefixes", r.OriginalDestinationPrefixes);
             if (r.Source is not null) { writer.WriteString("source", r.Source.Value); }
             if (r.Destination is not null) { writer.WriteString("destination", r.Destination.Value); }
             if (r.DestinationPort.HasValue) { writer.WriteNumber("destinationPort", r.DestinationPort.Value); }
@@ -718,6 +739,7 @@ public static partial class PolicyBundleJsonCodec
             writer.WriteString("family", r.Family == IpFamily.IPv4 ? "ipv4" : "ipv6");
             writer.WriteString("protocol", ProtocolName(r.Protocol));
             if (r.OriginalDestination is not null) { writer.WriteString("originalDestination", r.OriginalDestination.Value); }
+            if (r.CountPackets) { writer.WriteBoolean("countPackets", true); }
             if (r.Hook != DnatHook.Prerouting)
             {
                 if (r.Hook != DnatHook.Output) { throw new ArgumentException("Unknown DNAT hook."); }
@@ -751,6 +773,10 @@ public static partial class PolicyBundleJsonCodec
             writer.WriteStartObject();
             WritePostroutingAddresses(writer, r);
             if (!r.Enabled) { writer.WriteBoolean("enabled", false); }
+            if (r.CountPackets) { writer.WriteBoolean("countPackets", true); }
+            if (r.MatchOriginalDestinationDnat) { writer.WriteBoolean("matchOriginalDestinationDnat", true); }
+            WritePrefixSet(writer, "originalSourcePrefixes", r.OriginalSourcePrefixes);
+            WritePrefixSet(writer, "originalDestinationPrefixes", r.OriginalDestinationPrefixes);
             writer.WriteString("family", r.Family == IpFamily.IPv4 ? "ipv4" : "ipv6");
             if (r.Source is not null) { writer.WriteString("source", r.Source.Value); }
             if (r.TranslatedAddress is not null) { writer.WriteString("translatedAddress", r.TranslatedAddress); }
@@ -864,11 +890,21 @@ public static partial class PolicyBundleJsonCodec
         return true;
     }
 
+    private static IpFamily? ParseFilterFamily(JsonElement el) =>
+        el.ValueKind == JsonValueKind.String && el.ValueEquals("dualStack") ? IpFamily.DualStack : ParseFamily(el);
+
     private static IpFamily? ParseFamily(JsonElement el) => el.ValueKind == JsonValueKind.String ? el.GetString() switch
     {
         "ipv4" => IpFamily.IPv4,
         "ipv6" => IpFamily.IPv6,
         _ => null,
+    } : null;
+
+    private static FilterVerdict? ParseFilterRuleVerdict(JsonElement el) => el.ValueKind == JsonValueKind.String ? el.GetString() switch
+    {
+        "continue" => FilterVerdict.Continue,
+        "rejectPortUnreachable" => FilterVerdict.RejectPortUnreachable,
+        _ => ParseVerdict(el),
     } : null;
 
     private static FilterVerdict? ParseVerdict(JsonElement el) => el.ValueKind == JsonValueKind.String ? el.GetString() switch
@@ -902,6 +938,8 @@ public static partial class PolicyBundleJsonCodec
         FilterVerdict.Accept => "accept",
         FilterVerdict.Drop => "drop",
         FilterVerdict.Reject => "reject",
+        FilterVerdict.Continue => "continue",
+        FilterVerdict.RejectPortUnreachable => "rejectPortUnreachable",
         _ => throw new ArgumentOutOfRangeException(nameof(v)),
     };
 

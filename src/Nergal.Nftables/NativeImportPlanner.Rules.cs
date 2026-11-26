@@ -15,6 +15,7 @@ public static partial class NativeImportPlanner
         internal string? Family;
         internal string Protocol = "any";
         internal bool ExplicitTransport;
+        internal bool CounterHasFamily;
         internal string? Action;
         internal string? Jump;
     }
@@ -94,11 +95,21 @@ public static partial class NativeImportPlanner
                 Require(++predicates <= 128, first, "import.ruleLimit");
                 var qualified = word == "meta";
                 if (qualified)
-                { word = c.Take().Text; Require(word is "nfproto" or "l4proto" or "iifname" or "oifname" or "ibrname", first, "import.metaExpressionUnsupported"); }
-                if (word is "accept" or "drop" or "return" or "reject" or "jump" or "dnat" or "snat" or "masquerade")
+                { word = c.Take().Text; Require(word is "nfproto" or "l4proto" or "iif" or "iifname" or "oifname" or "ibrname", first, "import.metaExpressionUnsupported"); }
+                if (word is "accept" or "drop" or "return" or "reject" or "jump" or "dnat" or "snat" or "masquerade" or "notrack")
                 {
                     rule.Action = word;
-                    if (word == "reject") { c.Expect("with"); c.Expect("icmpx"); c.Expect("type"); c.Expect("admin-prohibited"); }
+                    if (word == "reject")
+                    {
+                        rule.Action = "rejectPortUnreachable";
+                        if (c.Eat("with"))
+                        {
+                            c.Expect("icmpx"); c.Expect("type");
+                            var kind = c.Take();
+                            Require(kind.Text is "admin-prohibited" or "port-unreachable", kind, "import.rejectTypeUnsupported");
+                            if (kind.Text == "admin-prohibited") { rule.Action = "reject"; }
+                        }
+                    }
                     if (word == "jump") { rule.Jump = Name(c.Take()); }
                     if (word is "dnat" or "snat")
                     {
@@ -111,9 +122,16 @@ public static partial class NativeImportPlanner
                 switch (word)
                 {
                     case "counter":
-                        Require(!c.End && c.Peek.Text is "accept" or "drop" or "reject", first, "import.counterPlacementUnsupported");
-                        Require(rule.Family is not null, first, "import.counterFamilyRequired");
+                        rule.CounterHasFamily = rule.Family is not null;
                         Set("countPackets", JsonValue.Create(true), first);
+                        if (c.End || c.Peek.Text == "comment" || c.Eat("continue"))
+                        {
+                            if (c.Eat("comment")) { Set("description", JsonValue.Create(String(c.Take())), first); }
+                            Require(c.End, c.Peek, "import.ruleTrailingInput");
+                            rule.Action = "continue";
+                            return rule;
+                        }
+                        Require(c.Peek.Text is "accept" or "drop" or "reject" or "dnat" or "snat" or "masquerade" or "return", first, "import.counterPlacementUnsupported");
                         break;
                     case "nfproto":
                         Require(qualified, first, "import.metaKeywordRequired");
@@ -135,6 +153,15 @@ public static partial class NativeImportPlanner
                             rule.TransportAlternatives = transports;
                         }
                         break;
+                    case "iif":
+                        var negateIndex = c.Negation();
+                        var indexTerm = c.Take();
+                        var indexName = ((NativeInterfaceLiteral)Literal(NativeRuleField.InputInterface, indexTerm)).Name;
+                        Require(!indexName.All(char.IsAsciiDigit), indexTerm, "import.interfaceIndexUnsupported");
+                        Set("inputInterface", JsonValue.Create(indexName), first);
+                        Set("bindInputInterfaceIndex", JsonValue.Create(true), first);
+                        if (negateIndex) { Set("negateInputInterface", JsonValue.Create(true), first); }
+                        break;
                     case "iifname":
                     case "oifname":
                     case "ibrname":
@@ -146,7 +173,19 @@ public static partial class NativeImportPlanner
                         break;
                     case "ip":
                     case "ip6":
-                        var addressKey = c.Take(); Require(addressKey.Text is "saddr" or "daddr", addressKey, "import.addressExpressionUnsupported");
+                        var addressKey = c.Take();
+                        if (word == "ip" && addressKey.Text == "protocol")
+                        {
+                            Require(!c.Negation(), addressKey, "import.negationUnsupported");
+                            var headerProtocol = c.Take();
+                            // The following typed transport field already requires this IPv4 protocol.
+                            Require(headerProtocol.Text is "tcp" or "udp" && !c.End && c.Peek.Text == headerProtocol.Text,
+                                headerProtocol, "import.ipv4ProtocolGuardUnsupported");
+                            Family("ipv4", first);
+                            Protocol(headerProtocol.Text, headerProtocol);
+                            break;
+                        }
+                        Require(addressKey.Text is "saddr" or "daddr", addressKey, "import.addressExpressionUnsupported");
                         Family(word == "ip" ? "ipv4" : "ipv6", first);
                         MatchValues(table, c, rule, first, word == "ip" ? NativeRuleField.IpSource : NativeRuleField.Ip6Source, addressKey.Text == "saddr" ? "source" : "destination", Set); break;
                     case "ether":
@@ -177,6 +216,19 @@ public static partial class NativeImportPlanner
                     case "ct":
                         var ct = c.Take(); Require(!c.Negation(), first, "import.negationUnsupported");
                         if (ct.Text == "status") { c.Expect("dnat"); Set("matchOriginalDestinationDnat", JsonValue.Create(true), first); }
+                        else if (ct.Text == "original")
+                        {
+                            var tupleFamily = c.Take();
+                            Require(tupleFamily.Text is "ip" or "ip6", tupleFamily, "import.originalTupleFamilyUnsupported");
+                            Family(tupleFamily.Text == "ip" ? "ipv4" : "ipv6", tupleFamily);
+                            var tupleField = c.Take();
+                            Require(tupleField.Text is "saddr" or "daddr", tupleField, "import.originalTupleFieldUnsupported");
+                            Require(!c.Negation(), tupleField, "import.negationUnsupported");
+                            var addressField = tupleFamily.Text == "ip" ? NativeRuleField.IpSource : NativeRuleField.Ip6Source;
+                            var addresses = c.List().Select(term => ((NativeAddressLiteral)Literal(addressField, term)).Prefix.Value);
+                            Set(tupleField.Text == "saddr" ? "originalSourcePrefixes" : "originalDestinationPrefixes",
+                                new JsonArray(addresses.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray()), tupleField);
+                        }
                         else
                         {
                             Require(ct.Text == "state", ct, "import.connectionExpressionUnsupported"); var states = c.List();
@@ -189,7 +241,10 @@ public static partial class NativeImportPlanner
                     case "meter":
                     case "add":
                     case "update":
-                        Require(!rule.Data.ContainsKey("rateLimit"), first, "import.meterRepeated"); ReadMeter(table, c, rule, first, word is "add" or "update", word != "add"); break;
+                        Require(!rule.Data.ContainsKey("rateLimit"), first, "import.meterRepeated");
+                        ReadMeter(table, c, rule, first, word is "add" or "update", word != "add");
+                        Require(c.End || c.Peek.Text is "accept" or "drop" or "reject" or "counter", first, "import.meterPlacementUnsupported");
+                        break;
                     default: throw new ImportFailure("import.expressionUnsupported", first);
                 }
             }
@@ -280,8 +335,10 @@ public static partial class NativeImportPlanner
             m.Expect("timeout"); var timeout = m.Take(); var timeoutSeconds = MeterTimeoutSeconds(timeout);
             m.Expect("limit"); m.Expect("rate"); var rate = m.Take(); var parts = rate.Text.Split('/');
             Require(parts.Length == 2 && int.TryParse(parts[0], out _) && parts[1] is "second" or "minute", rate, "import.meterRateUnsupported");
-            m.Expect("burst"); var burst = m.Take(); m.Expect("packets"); Require(m.End, m.Peek, "import.meterTrailingInput");
-            rule.Data["rateLimit"] = new JsonObject { ["packetsPerWindow"] = int.Parse(parts[0], CultureInfo.InvariantCulture), ["windowUnit"] = parts[1], ["burst"] = Integer(burst), ["entryTimeoutSeconds"] = timeoutSeconds, ["keyKind"] = key.Text == "saddr" ? "sourceAddress" : "destinationAddress", ["refreshEntryTimeout"] = refresh };
+            var burst = 5; // nftables' implicit packet burst when the clause is omitted.
+            if (m.Eat("burst")) { burst = Integer(m.Take()); m.Expect("packets"); }
+            Require(m.End, m.Peek, "import.meterTrailingInput");
+            rule.Data["rateLimit"] = new JsonObject { ["packetsPerWindow"] = int.Parse(parts[0], CultureInfo.InvariantCulture), ["windowUnit"] = parts[1], ["burst"] = burst, ["entryTimeoutSeconds"] = timeoutSeconds, ["keyKind"] = key.Text == "saddr" ? "sourceAddress" : "destinationAddress", ["refreshEntryTimeout"] = refresh };
         }
 
         private static int MeterTimeoutSeconds(Term term)

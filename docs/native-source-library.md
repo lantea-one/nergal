@@ -55,21 +55,39 @@ This is a bounded v1 grammar, not support for arbitrary nftables language.
 | Definitions/includes | Ordered lexical `define`/`redefine`/`undefine`, with values captured at definition time; exact uploaded include bindings, cycle/depth and expansion bounds. No host/service name resolution. |
 | Native commands | Supported create/add table definitions and add chain/set/rule statements can describe the complete candidate. They are parsed as data and never executed. |
 
+Raw prerouting and raw output use priority −300 and retain ordered standalone
+`notrack` statements with supported predicates. The planner requires an
+accept-default raw chain. It rejects a `notrack` statement on an ordinary
+filter hook, where it would run after connection tracking.
+
 Positive sets of exact interface names and supported ICMP types can expand into
 disjoint ordered rules. The explicit `meta l4proto { tcp, udp }` guard supports
 shared `th sport` and `th dport` selectors where the destination policy accepts
 the respective port. Rules that would split a counter, meter or jump are rejected.
-Filter rules with an explicit address family support a plain inline `counter`
-immediately before the terminal verdict. Counters start at zero when the rule is
-installed. Output DNAT retains its own hook and order and requires an original
-destination restriction.
+Filter rules support a plain inline `counter` at the end of a rule or
+immediately before a final verdict. A counter-only rule evaluates the next rule
+after counting. A family-neutral rule with family-independent predicates
+compiles as one inet rule, so both IPv4 and IPv6 contribute to the same counter.
+Family-scoped NAT rules can count packets immediately before their action.
+Filter and postrouting rules can match DNAT connection status and literal
+original source or destination addresses. The original-address selectors require DNAT status
+and remain distinct from ordinary selectors on the translated packet.
+Counters start at zero when the rule is installed. Output DNAT retains its own
+hook and order and requires an original destination restriction. Bare inet
+`reject` maps to ICMPx port unreachable, and explicit ICMPx admin prohibited
+retains its distinct response.
+Named `iif` selectors resolve to an interface index when nftables installs the
+rule. The managed receipt distinguishes this binding from `iifname`, which
+matches the current name. A rename can change the name reported by the kernel
+and therefore invalidate the receipt, even when the bound index is unchanged.
 
 Named counters, seeded counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
 control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
 repeated restrictions and trailing input are explicit gaps. The narrowly supported
 dynamic set form is a private implementation of one bounded meter, with exact
 flags/size, key, per-entry timeout, rate and burst. Whole-second and whole-minute
-timeouts map to bounded seconds in managed policy. Shared arbitrary dynamic sets
+timeouts map to bounded seconds in managed policy. An omitted packet burst uses
+the native default of five packets. Shared arbitrary dynamic sets
 are unsupported. Full private migration acceptance remains M8.
 
 Native inline `meter` and explicit `update @set` refresh an entry's expiry on

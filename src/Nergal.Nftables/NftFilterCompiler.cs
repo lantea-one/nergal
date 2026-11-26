@@ -99,6 +99,17 @@ public static class NftFilterCompiler
             {
                 errors.Add(new("family.unknown", path + ".family"));
             }
+            if (rule.Family == IpFamily.DualStack &&
+                (policy.SchemaVersion != 2 || !rule.CountPackets ||
+                 rule.Protocol is not (FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp) ||
+                 rule.Source is not null || rule.Destination is not null ||
+                 rule.SourcePrefixes is not null || rule.DestinationPrefixes is not null ||
+                 rule.SourceObject is not null || rule.DestinationObject is not null ||
+                 rule.OriginalSourcePrefixes is not null || rule.OriginalDestinationPrefixes is not null ||
+                 rule.IcmpType is not null || rule.RateLimit is not null))
+            {
+                errors.Add(new("counter.dualStackScope", path + ".family"));
+            }
 
             if (!Enum.IsDefined(rule.Protocol))
             {
@@ -109,6 +120,17 @@ public static class NftFilterCompiler
             {
                 errors.Add(new("verdict.unknown", path + ".verdict"));
             }
+            if (rule.Verdict == FilterVerdict.Continue && (policy.SchemaVersion != 2 || !rule.CountPackets))
+            {
+                errors.Add(new("verdict.continueRequiresCounter", path + ".verdict"));
+            }
+            if (rule.BindInputInterfaceIndex &&
+                (policy.SchemaVersion != 2 || rule.InputInterface is null || rule.InputInterface.All(char.IsAsciiDigit)))
+            {
+                errors.Add(new("interface.indexBindingRequiresName", path + ".inputInterface"));
+            }
+            NftOriginalTuple.ValidateOriginalPrefixes(rule.OriginalSourcePrefixes, rule.Family, rule.MatchOriginalDestinationDnat, path + ".originalSourcePrefixes", errors);
+            NftOriginalTuple.ValidateOriginalPrefixes(rule.OriginalDestinationPrefixes, rule.Family, rule.MatchOriginalDestinationDnat, path + ".originalDestinationPrefixes", errors);
 
             if (rule.Source is not null && rule.Source.Family != rule.Family)
             {
@@ -290,7 +312,7 @@ public static class NftFilterCompiler
         }
 
         policy = new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict,
-            policy.Rules.Select((r, i) => NftStaticSetPlan.Attach(r!, intent.Rules[i]!)), policy.RpFilter, policy.ForwardTcpMssClamp, policy.ForwardTcpMssClampEnabled);
+            policy.Rules.Select((r, i) => NftStaticSetPlan.Attach(r!, intent.Rules[i]!)), policy.RpFilter, policy.ForwardTcpMssClamp, policy.ForwardTcpMssClampEnabled, policy.RawOutput);
 
         // create fails on collision: neither an existing reserved table nor foreign tables are changed.
         var text = new StringBuilder("create table inet " + TableName);
@@ -322,6 +344,11 @@ public static class NftFilterCompiler
         {
             text.Append("add chain inet " + TableName + " rpfilter { type filter hook prerouting priority raw; policy ")
                 .Append(Verdict(rp.DefaultVerdict)).Append("; }\n");
+        }
+
+        if (policy.RawOutput is not null)
+        {
+            text.Append("add chain inet " + TableName + " raw_output { type filter hook output priority raw; policy accept; }\n");
         }
 
         sets.Append(text, "inet", TableName);
@@ -365,23 +392,42 @@ public static class NftFilterCompiler
         }
         if (policy.RpFilter is { } raw)
         {
-            foreach (var rule in raw.Rules) { if (rule!.Enabled) { RouterFilterValidation.AppendRpFilterRule(text, rule); } }
+            foreach (var rule in raw.Rules) { if (rule!.Enabled) { RouterFilterValidation.AppendRawRule(text, rule, output: false); } }
         }
 
-        return sets.Finish(text.ToString());
+        if (policy.RawOutput is { } rawOutput)
+        {
+            foreach (var rule in rawOutput.Rules) { if (rule!.Enabled) { RouterFilterValidation.AppendRawRule(text, rule, output: true); } }
+        }
+
+        var result = sets.Finish(text.ToString());
+        if (result.Candidate is null || result.ObservationBudget > 0 ||
+            (policy.RawOutput is null && policy.RpFilter?.Rules.Any(r => r is { Enabled: true, Notrack: true }) != true))
+        {
+            return result;
+        }
+
+        // Every new raw projection must fit the complete handle-bearing echo, including the enclosing bundle.
+        var budget = NftStaticSetPlan.Estimate(result.Candidate);
+        return budget > 65536
+            ? new(null, [new("raw.nativeObservationTooLarge", policy.RawOutput is null ? "rpFilter" : "rawOutput")])
+            : new(result.Candidate, [], budget);
     }
 
     private static void AppendRule(StringBuilder text, FilterRule rule, string? rateLimitSetName)
     {
         var family = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
         text.Append("add rule inet " + TableName + ' ')
-            .Append(ChainToken(rule.Chain))
-            .Append(" meta nfproto ")
-            .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
+            .Append(ChainToken(rule.Chain)).Append(' ');
+        if (rule.Family != IpFamily.DualStack)
+        {
+            text.Append("meta nfproto ").Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
+        }
 
         if (rule.InputInterface is not null)
         {
-            text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
+            text.Append(rule.BindInputInterfaceIndex ? "iif " : "iifname ")
+                .Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
         }
 
         if (rule.OutputInterface is not null)
@@ -425,6 +471,8 @@ public static class NftFilterCompiler
         if (rule.MatchOriginalDestinationDnat)
         {
             text.Append("ct status dnat ");
+            NftOriginalTuple.AppendOriginalPrefixes(text, rule.Family, "saddr", rule.OriginalSourcePrefixes);
+            NftOriginalTuple.AppendOriginalPrefixes(text, rule.Family, "daddr", rule.OriginalDestinationPrefixes);
         }
 
         if (rule.ConnectionStates != ConnectionStateFlags.None)
@@ -477,8 +525,16 @@ public static class NftFilterCompiler
                 .Append(" burst ").Append(rateLimit.Burst.ToString(CultureInfo.InvariantCulture)).Append(" packets } ");
         }
 
-        if (rule.CountPackets) { text.Append("counter "); }
-        text.Append(Verdict(rule.Verdict)).Append('\n');
+        if (rule.Verdict == FilterVerdict.Continue)
+        {
+            text.Append("counter");
+        }
+        else
+        {
+            if (rule.CountPackets) { text.Append("counter "); }
+            text.Append(Verdict(rule.Verdict));
+        }
+        text.Append('\n');
     }
 
     private static string ChainToken(FilterChainKind chain) => chain switch
@@ -526,6 +582,7 @@ public static class NftFilterCompiler
         FilterVerdict.Accept => "accept",
         FilterVerdict.Drop => "drop",
         FilterVerdict.Reject => "reject with icmpx type admin-prohibited",
+        FilterVerdict.RejectPortUnreachable => "reject with icmpx type port-unreachable",
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
 

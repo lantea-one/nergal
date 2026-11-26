@@ -32,24 +32,29 @@ public static partial class NativeImportPlanner
             {
                 Attempt(chain.Origin, () =>
                 {
-                    Require(chain.Type == "filter" && chain.Hook is "input" or "forward" or "output" or "prerouting" && chain.Priority.HasValue && hooks.Add(chain.Hook), chain.Origin, "import.filterChainUnsupported");
-                    if (chain.Hook == "prerouting")
+                    var rawHook = chain.Hook is "prerouting" || chain.Hook is "output" && chain.Priority == -300;
+                    var rawProperty = chain.Hook == "output" ? "rawOutput" : "rpFilter";
+                    Require(chain.Type == "filter" && chain.Hook is "input" or "forward" or "output" or "prerouting" && chain.Priority.HasValue && hooks.Add(rawHook ? rawProperty : chain.Hook), chain.Origin, "import.filterChainUnsupported");
+                    if (rawHook)
                     {
-                        Require(!auxiliary && chain.Priority == -300 && chain.Policy == "accept", chain.Origin, "import.rawChainUnsupported");
-                        var raw = new JsonArray(); result["rpFilter"] = new JsonObject { ["defaultVerdict"] = "accept", ["rules"] = raw };
+                        Require(chain.Priority == -300 && chain.Policy == "accept", chain.Origin, "import.rawChainUnsupported");
+                        var raw = new JsonArray(); result[rawProperty] = new JsonObject { ["defaultVerdict"] = "accept", ["rules"] = raw };
                         foreach (var (origin, terms) in chain.Rules)
                         {
                             Attempt(origin, () =>
                             {
                                 foreach (var rule in ReadRules(table, origin, terms))
                                 {
-                                    Require(rule.Action is "accept" or "drop", origin, "import.rawActionUnsupported");
-                                    Allowed(rule, origin, "source", "negateSource", "inputInterface", "negateInputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description");
-                                    var data = rule.Data; data["verdict"] = rule.Action; data["protocol"] = rule.Protocol;
+                                    Require(rule.Action is "accept" or "drop" or "notrack", origin, "import.rawActionUnsupported");
+                                    Allowed(rule, origin, "source", "negateSource", "inputInterface", "negateInputInterface", "outputInterface", "negateOutputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description");
+                                    var data = rule.Data;
+                                    data["verdict"] = rule.Action == "notrack" ? "continue" : rule.Action;
+                                    if (rule.Action == "notrack") { data["notrack"] = true; }
+                                    data["protocol"] = rule.Protocol;
                                     if (rule.Family is not null) { data["family"] = rule.Family; }
                                     raw.Add(data);
                                 }
-                                Map(origin, "rule", "filter.rpFilter.rules");
+                                Map(origin, "rule", (auxiliary ? "auxiliaryFilter.filter." : "filter.") + rawProperty + ".rules");
                             });
                         }
                         return;
@@ -72,9 +77,9 @@ public static partial class NativeImportPlanner
                             }
                             foreach (var rule in ReadRules(table, origin, terms))
                             {
-                                Require(rule.Action is "accept" or "drop" or "reject", origin, "import.filterActionUnsupported");
-                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "description", "countPackets");
-                                foreach (var family in Families(rule))
+                                Require(rule.Action is "accept" or "drop" or "reject" or "rejectPortUnreachable" or "continue", origin, "import.filterActionUnsupported");
+                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "bindInputInterfaceIndex", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "countPackets");
+                                foreach (var family in Families(rule, shareCounter: true))
                                 {
                                     var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol; data["verdict"] = rule.Action; data["chain"] = chain.Hook; rules.Add(data);
                                 }
@@ -105,7 +110,11 @@ public static partial class NativeImportPlanner
                             foreach (var rule in ReadRules(table, origin, terms))
                             {
                                 Require(destinationNat ? rule.Action == "dnat" : rule.Action is "snat" or "masquerade" or "return", origin, "import.natActionUnsupported");
-                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "translatedAddress", "translatedPort", "description");
+                                Require(!rule.Data.ContainsKey("countPackets") || rule.CounterHasFamily, origin, "import.natCounterFamilyRequired");
+                                Require(!destinationNat || !rule.Data.ContainsKey("matchOriginalDestinationDnat") &&
+                                    !rule.Data.ContainsKey("originalSourcePrefixes") && !rule.Data.ContainsKey("originalDestinationPrefixes"),
+                                    origin, "import.matcherScopeUnsupported");
+                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "translatedAddress", "translatedPort", "description", "countPackets", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes");
                                 foreach (var family in Families(rule))
                                 {
                                     var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol;
@@ -170,7 +179,8 @@ public static partial class NativeImportPlanner
             return new JsonObject { ["schemaVersion"] = 1, ["priority"] = forward!.Priority!.Value, ["defaultVerdict"] = forward.Policy, ["rules"] = rules, ["subChains"] = subchains };
         }
 
-        private static IEnumerable<string> Families(RuleData rule) => rule.Family is not null ? [rule.Family] : ["ipv4", "ipv6"];
+        private static IEnumerable<string> Families(RuleData rule, bool shareCounter = false) =>
+            rule.Family is not null ? [rule.Family] : shareCounter && rule.Data.ContainsKey("countPackets") ? ["dualStack"] : ["ipv4", "ipv6"];
         private static void Rename(JsonObject data, string oldName, string newName)
         { if (data.Remove(oldName, out var value)) { data[newName] = value; } }
         private static void Allowed(RuleData rule, Term origin, params string[] properties)

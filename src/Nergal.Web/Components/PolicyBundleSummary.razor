@@ -70,13 +70,19 @@
                                 </td>
                                 <td><code>@(rule.NegateDestination ? "!= " : "")@(ObjectLabel(rule.DestinationObject) ?? FormatPrefixes(rule.Destination, rule.DestinationPrefixes))</code></td>
                                 <td><code>@(ObjectLabel(rule.DestinationPortObject) ?? FormatPorts(rule.DestinationPort, rule.DestinationPorts))</code></td>
-                                <td><code>@FormatInterfaces(rule.InputInterface is null ? null : (rule.NegateInputInterface ? "!= " : "") + rule.InputInterface, rule.OutputInterface is null ? null : (rule.NegateOutputInterface ? "!= " : "") + rule.OutputInterface)</code></td>
+                                <td><code>@FormatInterfaces(rule.InputInterface is null ? null : (rule.NegateInputInterface ? "!= " : "") + rule.InputInterface, rule.OutputInterface is null ? null : (rule.NegateOutputInterface ? "!= " : "") + rule.OutputInterface)</code>
+                                    @if (rule.BindInputInterfaceIndex) { <span class="rule-desc">Input interface bound by index</span> }
+                                </td>
                                 <td>
                                     <code>@FormatStates(rule.ConnectionStates)</code>
                                     @if (rule.MatchOriginalDestinationDnat)
                                     {
                                         <span class="badge badge-warning">ct dnat</span>
                                     }
+                                    @if (rule.OriginalSourcePrefixes is { } originalSources)
+                                    { <span class="rule-desc">Original source @string.Join(", ", originalSources.Select(p => p.Value))</span> }
+                                    @if (rule.OriginalDestinationPrefixes is { } originalDestinations)
+                                    { <span class="rule-desc">Original destination @string.Join(", ", originalDestinations.Select(p => p.Value))</span> }
                                 </td>
                                 <td><code>@FormatRateLimit(rule.RateLimit)</code></td>
                                 <td>@(rule.Enabled ? "Enabled" : "Disabled · omitted")</td>
@@ -98,6 +104,8 @@
         </details>
         @if (Bundle.Filter.RpFilter is { } rp)
         { <p>Raw rpfilter: @rp.Rules.Count rules.</p> }
+        @if (Bundle.Filter.RawOutput is { } rawOutput)
+        { <p>Raw output: @rawOutput.Rules.Count rules.</p> }
         @if (Bundle.Filter.ForwardTcpMssClamp is { } mss)
         { <p>Forward TCP SYN MSS clamp: @mss bytes · @(Bundle.Filter.ForwardTcpMssClampEnabled ? "Enabled" : "Disabled · omitted").</p> }
         @if (Bundle.RequiresExtendedApplySupport)

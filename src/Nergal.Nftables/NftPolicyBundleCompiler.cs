@@ -64,7 +64,7 @@ public static class NftPolicyBundleCompiler
         if (bundle.AuxiliaryFilter is { } auxiliary)
         {
             if (auxiliary.Priority is < -300 or > 300 || auxiliary.Filter is null || auxiliary.Filter.SchemaVersion != 2 ||
-                auxiliary.Filter.RpFilter is not null || auxiliary.Filter.ForwardTcpMssClamp is not null)
+                auxiliary.Filter.ForwardTcpMssClamp is not null)
             { errors.Add(new("auxiliary.invalid", "auxiliaryFilter")); }
             else
             {

@@ -7,17 +7,46 @@ table inet nergal_filter {
         ip saddr 192.0.2.2 tcp dport 19042 drop
         ip6 saddr 2001:db8::2 meta l4proto { tcp, udp } th dport 19042 drop
         iifname { "lo", "fixture-extra" } meta l4proto { tcp, udp } th dport 19042 accept
+        udp dport 19043 counter drop
         ct state untracked udp dport 19044 accept
-        udp dport 19046 accept
+        ct state untracked udp dport 19051 accept
+        iif "fixture-in" udp dport 19052 accept
+        iifname "fixture-in" udp dport 19053 accept
+        ct status dnat ct original ip daddr { 192.0.2.2, 192.0.2.4 } udp dport 19046 accept
+        ct status dnat ct original ip6 daddr { 2001:db8::2, 2001:db8::4 } udp dport 19046 accept
+        udp dport 19047 counter
+        udp dport 19047 accept
+        udp dport 19048 counter reject
+        udp dport 19049 meter test_v4 { ip saddr timeout 60s limit rate 1/minute } counter accept
+        udp dport 19049 meter test_v6 { ip6 saddr timeout 60s limit rate 1/minute } counter accept
+        icmp type destination-unreachable accept
+        icmpv6 type destination-unreachable accept
         icmp type { echo-request, echo-reply } accept
-        icmpv6 type { echo-request, echo-reply } accept
+        icmpv6 type { echo-request, echo-reply, nd-neighbor-solicit, nd-neighbor-advert } accept
+    }
+}
+
+table inet nergal_aux {
+    chain before_receive {
+        type filter hook prerouting priority raw; policy accept;
+        iifname "fixture-in" ip protocol udp udp dport 19051 notrack
+        iifname "fixture-in" meta nfproto ipv6 udp dport 19051 notrack
+    }
+    chain before_send {
+        type filter hook output priority raw; policy accept;
+        oifname "lo" udp sport 19050 notrack
     }
 }
 
 table inet nergal_nat {
     chain output {
         type nat hook output priority dstnat; policy accept;
-        ip daddr 192.0.2.2 udp dport 19045 dnat ip to 192.0.2.1:19046
-        ip6 daddr 2001:db8::2 udp dport 19045 dnat ip6 to [2001:db8::1]:19046
+        ip daddr { 192.0.2.2, 192.0.2.4, 192.0.2.8 } udp dport 19045 counter dnat ip to 192.0.2.1:19046
+        ip6 daddr { 2001:db8::2, 2001:db8::4, 2001:db8::8 } udp dport 19045 counter dnat ip6 to [2001:db8::1]:19046
+    }
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        ct status dnat ct original ip saddr 192.0.2.1 ct original ip daddr { 192.0.2.2, 192.0.2.6 } ip daddr 192.0.2.1 udp dport 19046 counter snat ip to 192.0.2.2
+        ct status dnat ct original ip6 saddr 2001:db8::1 ct original ip6 daddr { 2001:db8::2, 2001:db8::6 } ip6 daddr 2001:db8::1 udp dport 19046 counter snat ip6 to 2001:db8::2
     }
 }

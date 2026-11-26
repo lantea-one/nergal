@@ -1,7 +1,7 @@
 @model Nergal.Web.PolicyEditorViewModel
 @using Nergal.Core.Policy
 @{
-    var states = Model.Bundle is null ? [] : PolicyRuleStates.Enumerate(Model.Bundle).Where(s => s.Scope is PolicyRuleScope.Raw or PolicyRuleScope.Mss or PolicyRuleScope.Auxiliary or PolicyRuleScope.BridgeChain).ToArray();
+    var states = Model.Bundle is null ? [] : PolicyRuleStates.Enumerate(Model.Bundle).Where(s => s.Scope is PolicyRuleScope.Raw or PolicyRuleScope.RawOutput or PolicyRuleScope.AuxiliaryRaw or PolicyRuleScope.Mss or PolicyRuleScope.Auxiliary or PolicyRuleScope.BridgeChain).ToArray();
 }
 @if (states.Length > 0)
 {

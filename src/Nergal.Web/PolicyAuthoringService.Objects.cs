@@ -31,7 +31,7 @@ internal static partial class PolicyObjectAuthoring
             changed = slot switch { "source" => changed with { NegateSource = false }, "destination" => changed with { NegateDestination = false }, _ => changed };
         }
         var rules = current.Rules.ToArray(); rules[index] = changed;
-        var filter = new FilterPolicy(current.SchemaVersion == 1 ? 2 : current.SchemaVersion, current.InputDefaultVerdict, current.ForwardDefaultVerdict, current.OutputDefaultVerdict, rules, current.RpFilter, current.ForwardTcpMssClamp, current.ForwardTcpMssClampEnabled);
+        var filter = new FilterPolicy(current.SchemaVersion == 1 ? 2 : current.SchemaVersion, current.InputDefaultVerdict, current.ForwardDefaultVerdict, current.OutputDefaultVerdict, rules, current.RpFilter, current.ForwardTcpMssClamp, current.ForwardTcpMssClampEnabled, current.RawOutput);
         var next = scope == "primary"
             ? new FirewallPolicyBundle(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter)
             : new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge, new(bundle.AuxiliaryFilter!.Priority, filter));

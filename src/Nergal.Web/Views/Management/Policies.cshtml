@@ -292,6 +292,10 @@
                                                                     <select name="family" id="filter-edit-@idx-family">
                                                                         <option value="ipv4" selected="@(r.Family == IpFamily.IPv4)">ipv4</option>
                                                                         <option value="ipv6" selected="@(r.Family == IpFamily.IPv6)">ipv6</option>
+                                                                        @if (r.CountPackets)
+                                                                        {
+                                                                            <option value="dualStack" selected="@(r.Family == IpFamily.DualStack)">IPv4 and IPv6</option>
+                                                                        }
                                                                     </select>
                                                                 </div>
                                                                 <div class="field">
@@ -310,6 +314,11 @@
                                                                         <option value="accept" selected="@(r.Verdict == FilterVerdict.Accept)">accept</option>
                                                                         <option value="drop" selected="@(r.Verdict == FilterVerdict.Drop)">drop</option>
                                                                         <option value="reject" selected="@(r.Verdict == FilterVerdict.Reject)">reject — ICMP admin prohibited</option>
+                                                                        <option value="rejectPortUnreachable" selected="@(r.Verdict == FilterVerdict.RejectPortUnreachable)">reject — ICMP port unreachable</option>
+                                                                        @if (r.CountPackets)
+                                                                        {
+                                                                            <option value="continue" selected="@(r.Verdict == FilterVerdict.Continue)">count and continue</option>
+                                                                        }
                                                                     </select>
                                                                 </div>
                                                                 <div class="field span-2">
@@ -440,6 +449,7 @@
                                 <option value="accept">accept</option>
                                 <option value="drop">drop</option>
                             <option value="reject">reject — ICMP admin prohibited</option>
+                            <option value="rejectPortUnreachable">reject — ICMP port unreachable</option>
                             </select>
                         </div>
 
@@ -613,7 +623,10 @@
                                     <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : "any")) → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
                                     <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
 
-                                    <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
+                                    <td>
+                                        @(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)
+                                        @if (d.CountPackets) { <span class="hint">Inline counter</span> }
+                                    </td>
                                     @if (Model.CanMutate)
                                     {
                                         <td>
@@ -736,7 +749,13 @@
                                     <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterface ?? "any")</code></td>
                                     <td><code>@s.Protocol · @(s.DestinationPortObject is { } portList ? portList.Content.Name + " v" + portList.Version + " [" + string.Join(", ", portList.Content.Entries) + "]" : s.DestinationPort?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? (s.DestinationPorts is null ? "any" : string.Join(", ", s.DestinationPorts)))</code></td>
 
-                                    <td>@(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)</td>
+                                    <td>
+                                        @(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)
+                                        @if (s.CountPackets) { <span class="hint">Inline counter</span> }
+                                        @if (s.MatchOriginalDestinationDnat) { <span class="hint">Connection status: DNAT</span> }
+                                        @if (s.OriginalSourcePrefixes is { } originalSources) { <span class="hint">Original source @string.Join(", ", originalSources.Select(p => p.Value))</span> }
+                                        @if (s.OriginalDestinationPrefixes is { } originalDestinations) { <span class="hint">Original destination @string.Join(", ", originalDestinations.Select(p => p.Value))</span> }
+                                    </td>
                                     @if (Model.CanMutate)
                                     {
                                         <td>

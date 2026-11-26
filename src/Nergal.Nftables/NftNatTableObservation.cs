@@ -47,11 +47,12 @@ public sealed class NftNatTableObservation
         Policy = policy;
 
         var completeSets = dnatRules.Any(e => e.Rule.OriginalPorts is not null || e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null) || snatRules.Any(e => e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null);
-        var extended = outputChainHandle.HasValue || completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
+        var originalTuple = snatRules.Any(e => e.Rule.MatchOriginalDestinationDnat);
+        var extended = originalTuple || outputChainHandle.HasValue || completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
             snatRules.Any(e => e.Rule.Action != NatPostroutingAction.Snat || e.Rule.NegateSource || e.Rule.NegateDestination ||
                 e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any);
         var projection = new StringBuilder(string.Join('\n',
-            outputChainHandle.HasValue ? "nergal-nat-observation-v4" : completeSets ? "nergal-nat-observation-v3" : extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
+            originalTuple ? "nergal-nat-observation-v5" : outputChainHandle.HasValue ? "nergal-nat-observation-v4" : completeSets ? "nergal-nat-observation-v3" : extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
             identity.Comment,
             tableHandle.ToString(CultureInfo.InvariantCulture),
             string.Join(' ', preroutingChainHandle.ToString(CultureInfo.InvariantCulture), "inet", NftNatCompiler.TableName, "prerouting", "nat", "prerouting", "-100", "accept"),
@@ -72,6 +73,7 @@ public sealed class NftNatTableObservation
                 .Append(rule.OriginalDestination?.Value ?? "-").Append(' ')
                 .Append(rule.Protocol).Append(' ')
                 .Append(rule.OriginalPort?.ToString(CultureInfo.InvariantCulture) ?? "-").Append(' ')
+                .Append(rule.CountPackets ? "counter " : "")
                 .Append(rule.TranslatedAddress).Append(' ')
                 .Append(rule.TranslatedPort?.ToString(CultureInfo.InvariantCulture) ?? "-");
         }
@@ -84,6 +86,7 @@ public sealed class NftNatTableObservation
                 .Append(rule.OutputInterface ?? "-").Append(' ')
                 .Append(rule.Source?.Value ?? "-").Append(' ')
                 .Append(rule.Destination?.Value ?? "-").Append(' ')
+                .Append(rule.CountPackets ? "counter " : "")
                 .Append(rule.TranslatedAddress);
         }
 
@@ -302,7 +305,8 @@ public sealed class NftNatTableObservation
 
     private static DnatRule? ParseDnatRule(JsonElement expressions)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 6)
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 2 or > 7 ||
+            !TryReadCounter(expressions, out var matchCount, out var countPackets))
         {
             return null;
         }
@@ -360,7 +364,7 @@ public sealed class NftNatTableObservation
         var ns = false;
         var nd = false;
 
-        for (var index = 0; index < count - 1; index++)
+        for (var index = 0; index < matchCount; index++)
         {
             if (!NftJsonHelpers.Properties(expressions[index], "match")) { return null; }
             var match = expressions[index].GetProperty("match");
@@ -469,12 +473,13 @@ public sealed class NftNatTableObservation
             return null;
         }
 
-        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni, OriginalPorts: originalPorts, SourcePrefixes: sourcePrefixes, DestinationPrefixes: destinationPrefixes);
+        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni, OriginalPorts: originalPorts, SourcePrefixes: sourcePrefixes, DestinationPrefixes: destinationPrefixes, CountPackets: countPackets);
     }
 
     private static SnatRule? ParseSnatRule(JsonElement expressions)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 8) { return null; }
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 12 ||
+            !TryReadCounter(expressions, out var matchCount, out var countPackets)) { return null; }
         var terminal = expressions[expressions.GetArrayLength() - 1];
         var action = NatPostroutingAction.Snat;
         IpFamily? targetFamily = null;
@@ -495,16 +500,72 @@ public sealed class NftNatTableObservation
         else { return null; }
 
         var nodes = new JsonArray();
-        foreach (var expression in expressions.EnumerateArray().Take(expressions.GetArrayLength() - 1))
-        { nodes.Add(JsonNode.Parse(expression.GetRawText())); }
-        nodes.Add(JsonNode.Parse("{\"accept\":null}"));
-        using var doc = JsonDocument.Parse(nodes.ToJsonString());
-        var r = NftTableObservation.ParseFilterMatchers(doc.RootElement);
+        var index = 0;
+        while (index < matchCount && !NftOriginalTuple.IsDnatStatus(expressions[index]))
+        {
+            nodes.Add(JsonNode.Parse(expressions[index].GetRawText()));
+            index++;
+        }
+        var originalFamily = index + 1 < matchCount ? NftOriginalTuple.OriginalAddressFamily(expressions[index + 1]) : null;
+        var r = ParsePacketMatchers(nodes, originalFamily);
         if (r is null || (targetFamily.HasValue && targetFamily != r.Family) || r.SourceMac is not null || r.SourceMacs is not null ||
             r.ConnectionStates != ConnectionStateFlags.None || r.MatchOriginalDestinationDnat || r.RateLimit is not null || r.IcmpType is not null) { return null; }
+        var matchDnat = index < matchCount;
+        IReadOnlyList<NetworkPrefix>? originalSources = null, originalDestinations = null;
+        if (matchDnat)
+        {
+            index++;
+            originalSources = NftOriginalTuple.ReadOriginalPrefixes(expressions, ref index, matchCount, r.Family, "saddr");
+            originalDestinations = NftOriginalTuple.ReadOriginalPrefixes(expressions, ref index, matchCount, r.Family, "daddr");
+            if (index != matchCount) { return null; }
+        }
         return new(r.Family, r.Source, normalized, r.Destination, r.OutputInterface, Action: action,
             InputInterface: r.InputInterface, Protocol: r.Protocol, DestinationPort: r.DestinationPort, DestinationPorts: r.DestinationPorts,
-            NegateSource: r.NegateSource, NegateDestination: r.NegateDestination, NegateInputInterface: r.NegateInputInterface, NegateOutputInterface: r.NegateOutputInterface, SourcePrefixes: r.SourcePrefixes, DestinationPrefixes: r.DestinationPrefixes);
+            NegateSource: r.NegateSource, NegateDestination: r.NegateDestination, NegateInputInterface: r.NegateInputInterface, NegateOutputInterface: r.NegateOutputInterface,
+            SourcePrefixes: r.SourcePrefixes, DestinationPrefixes: r.DestinationPrefixes, CountPackets: countPackets,
+            MatchOriginalDestinationDnat: matchDnat, OriginalSourcePrefixes: originalSources, OriginalDestinationPrefixes: originalDestinations);
+    }
+
+    private static FilterRule? ParsePacketMatchers(JsonArray nodes, IpFamily? originalFamily)
+    {
+        nodes.Add(JsonNode.Parse("{\"accept\":null}"));
+        var rule = Parse(nodes);
+        if (rule is not null || originalFamily is null) { return rule; }
+
+        // nft can omit nfproto when the original tuple alone establishes the IP family.
+        // The address matcher providing that evidence must still be consumed in its exact position.
+        nodes.Insert(0, new JsonObject
+        {
+            ["match"] = new JsonObject
+            {
+                ["op"] = "==",
+                ["left"] = new JsonObject { ["meta"] = new JsonObject { ["key"] = "nfproto" } },
+                ["right"] = originalFamily == IpFamily.IPv4 ? "ipv4" : "ipv6"
+            }
+        });
+        return Parse(nodes);
+
+        static FilterRule? Parse(JsonArray matchers)
+        {
+            using var doc = JsonDocument.Parse(matchers.ToJsonString());
+            return NftTableObservation.ParseFilterMatchers(doc.RootElement);
+        }
+    }
+
+    // Only a counter immediately before the action can be reconstructed without changing what it counts.
+    private static bool TryReadCounter(JsonElement expressions, out int matchCount, out bool countPackets)
+    {
+        matchCount = expressions.GetArrayLength() - 1;
+        countPackets = matchCount > 0 && NftJsonHelpers.Properties(expressions[matchCount - 1], "counter");
+        if (!countPackets) { return true; }
+
+        matchCount--;
+        var counter = expressions[matchCount].GetProperty("counter");
+        if (!NftJsonHelpers.Properties(counter, "packets", "bytes")) { return false; }
+        var packets = counter.GetProperty("packets");
+        var bytes = counter.GetProperty("bytes");
+        return packets.ValueKind == JsonValueKind.Number && packets.TryGetUInt64(out _) &&
+            bytes.ValueKind == JsonValueKind.Number && bytes.TryGetUInt64(out _);
     }
 
     private static NftNatObservationResult Deny(string code) => new(null, code);

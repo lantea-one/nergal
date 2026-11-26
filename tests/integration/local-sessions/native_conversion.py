@@ -66,7 +66,7 @@ def check_native_conversion(browser, upload, ctrl_state):
     assert intent["filter"]["rules"][0]["sourceObject"]["id"] == pin["id"]
     assert browser.request("/manage/sources/download?sourceId=" + root_id, 200).encode() == root
     assert browser.request("/manage/sources/download?sourceId=" + child_id, 200).encode() == child
-    upload("Unsupported native source", b'table inet blocked { chain input { type filter hook input priority 0; counter accept; } }')
+    upload("Unsupported native source", b'table inet blocked { chain input { type filter hook input priority 0; counter packets 3 bytes 60 accept; } }')
     denied_source = parse_qs(urlsplit(browser.location).query)["sourceId"][0]
     browser.request(review_path, 302, {"Conversion.SourceId": denied_source, "Conversion.Tables[0].Family": "inet", "Conversion.Tables[0].Name": "blocked", "Conversion.Tables[0].Role": "Filter", "operation": "review", "__RequestVerificationToken": browser.token(source_path)})
     denied_id = parse_qs(urlsplit(browser.location).query)["planId"][0]

@@ -34,4 +34,8 @@ public enum FirewallFeature
     InlineFilterCounters,
     /// <summary>Translate locally generated traffic in the destination NAT output hook.</summary>
     OutputDestinationNat,
+    /// <summary>Count packets and bytes immediately before a NAT action.</summary>
+    InlineNatCounters,
+    /// <summary>Bind a named input interface to its current kernel index when installing a rule.</summary>
+    InputInterfaceIndexBinding,
 }

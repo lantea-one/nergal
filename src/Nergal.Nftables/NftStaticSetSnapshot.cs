@@ -86,7 +86,7 @@ internal sealed class NftStaticSetSnapshot
             foreach (var expr in expressions)
             {
                 if (expr?["match"] is not JsonObject match || match["right"] is not JsonValue right || !right.TryGetValue<string>(out var token) || !token.StartsWith('@')) { continue; }
-                if (!result.definitions.TryGetValue(token[1..], out var definition) || Required<string>(rule["chain"]) == "rpfilter") { throw Invalid(); }
+                if (!result.definitions.TryGetValue(token[1..], out var definition) || Required<string>(rule["chain"]) is "rpfilter" or "raw_output") { throw Invalid(); }
                 var payload = match["left"]?["payload"] as JsonObject;
                 if (payload is null) { throw Invalid(); }
                 RequireProperties(payload, "protocol", "field");

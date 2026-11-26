@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Nergal.Core.Policy;
 
@@ -12,7 +13,7 @@ public sealed partial class NftTableObservation
         return ParseSchema2Rule(expressions, FilterChainKind.Forward, [], ref index, allowCounter: false);
     }
 
-    private static bool HasRouterMatchers(FilterRule r) => r.Verdict == FilterVerdict.Reject ||
+    private static bool HasRouterMatchers(FilterRule r) => r.Verdict is FilterVerdict.Reject or FilterVerdict.RejectPortUnreachable ||
         r.NegateInputInterface || r.NegateOutputInterface || r.NegateSource || r.NegateDestination ||
         r.SourceMac is not null || r.SourceMacs is not null || r.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress;
 
@@ -21,16 +22,31 @@ public sealed partial class NftTableObservation
         r.NegateSourceMac, r.SourceMac?.Value ?? "-", r.SourceMacs is null ? "-" : string.Join(',', r.SourceMacs.Select(m => m.Value)),
         r.RateLimit?.KeyKind.ToString() ?? "-");
 
-    private static bool TryParseRawChain(JsonElement chain, HashSet<ulong> handles, out ulong handle, out FilterVerdict verdict)
+    private sealed record ObservedRawChain(ulong Handle, FilterVerdict DefaultVerdict)
     {
-        handle = 0;
-        verdict = FilterVerdict.Accept;
-        return Properties(chain, "family", "table", "name", "handle", "type", "hook", "prio", "policy") &&
-            chain.GetProperty("family").GetString() == "inet" && chain.GetProperty("table").GetString() == NftFilterCompiler.TableName &&
-            chain.GetProperty("name").GetString() == "rpfilter" && chain.GetProperty("type").GetString() == "filter" &&
-            chain.GetProperty("hook").GetString() == "prerouting" && chain.GetProperty("prio").TryGetInt32(out var prio) && prio == -300 &&
-            chain.GetProperty("handle").TryGetUInt64(out handle) && handle > 0 && handles.Add(handle) &&
-            TryParseVerdict(chain.GetProperty("policy").GetString(), out verdict);
+        internal List<(ulong Handle, RpFilterRule Rule)> Rules { get; } = [];
+        internal RpFilterPolicy ToPolicy() => new(DefaultVerdict, Rules.Select(r => r.Rule));
+
+        internal void AppendProjection(StringBuilder projection, bool output)
+        {
+            projection.Append(Handle.ToString(CultureInfo.InvariantCulture)).Append(' ').Append(VerdictToken(DefaultVerdict));
+            foreach (var (handle, rule) in Rules)
+            {
+                projection.Append('\n').Append(handle.ToString(CultureInfo.InvariantCulture)).Append(' ');
+                RouterFilterValidation.AppendRawRule(projection, rule, output);
+            }
+        }
+    }
+
+    private static ObservedRawChain? ParseRawChain(JsonElement chain, HashSet<ulong> handles, bool output)
+    {
+        if (!Properties(chain, "family", "table", "name", "handle", "type", "hook", "prio", "policy") ||
+            chain.GetProperty("family").GetString() != "inet" || chain.GetProperty("table").GetString() != NftFilterCompiler.TableName ||
+            chain.GetProperty("name").GetString() != (output ? "raw_output" : "rpfilter") || chain.GetProperty("type").GetString() != "filter" ||
+            chain.GetProperty("hook").GetString() != (output ? "output" : "prerouting") || !chain.GetProperty("prio").TryGetInt32(out var prio) || prio != -300 ||
+            !TryParseVerdict(chain.GetProperty("policy").GetString(), out var verdict) || (output && verdict != FilterVerdict.Accept) ||
+            !chain.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle)) { return null; }
+        return new(handle, verdict);
     }
 
     private static bool TryParseMss(JsonElement expr, out int mss)
@@ -51,21 +67,22 @@ public sealed partial class NftTableObservation
             mangle.GetProperty("value").TryGetInt32(out mss) && mss is >= 536 and <= 1460;
     }
 
-    private static RpFilterRule? ParseRpFilterRule(JsonElement expr)
+    private static RpFilterRule? ParseRawRule(JsonElement expr, bool output)
     {
         if (expr.ValueKind != JsonValueKind.Array || expr.GetArrayLength() is < 1 or > 8) { return null; }
         var terminal = expr[expr.GetArrayLength() - 1];
         var accept = Properties(terminal, "accept") && terminal.GetProperty("accept").ValueKind == JsonValueKind.Null;
         var drop = Properties(terminal, "drop") && terminal.GetProperty("drop").ValueKind == JsonValueKind.Null;
-        if (!accept && !drop) { return null; }
+        var notrack = Properties(terminal, "notrack") && terminal.GetProperty("notrack").ValueKind == JsonValueKind.Null;
+        if (!accept && !drop && !notrack) { return null; }
         IpFamily? family = null;
         NetworkPrefix? source = null;
-        string? iif = null;
+        string? iface = null;
         var protocol = FilterProtocol.Any;
         int? sport = null;
         int? dport = null;
         var ns = false;
-        var ni = false;
+        var negateInterface = false;
         var fib = false;
         var stage = -1;
         for (var i = 0; i < expr.GetArrayLength() - 1; i++)
@@ -87,9 +104,10 @@ public sealed partial class NftTableObservation
                         if (family is null) { return null; }
                         stage = 0;
                         break;
-                    case "iifname":
+                    case "iifname" when !output:
+                    case "oifname" when output:
                         if (stage >= 1 || right.ValueKind != JsonValueKind.String || !FilterPolicyValidation.IsValidInterfaceName(right.GetString())) { return null; }
-                        iif = right.GetString(); ni = op == "!="; stage = 1;
+                        iface = right.GetString(); negateInterface = op == "!="; stage = 1;
                         break;
                     case "l4proto":
                         if (stage >= 3 || op != "==") { return null; }
@@ -128,7 +146,7 @@ public sealed partial class NftTableObservation
             else if (Properties(left, "fib") && Properties(left.GetProperty("fib"), "result", "flags"))
             {
                 var lookup = left.GetProperty("fib");
-                if (stage >= 6 || op != "==" || lookup.GetProperty("result").GetString() != "oif" ||
+                if (output || stage >= 6 || op != "==" || lookup.GetProperty("result").GetString() != "oif" ||
                     lookup.GetProperty("flags").ValueKind != JsonValueKind.Array ||
                     !lookup.GetProperty("flags").EnumerateArray().Select(e => e.GetString()).SequenceEqual(new[] { "saddr", "iif" }) ||
                     right.ValueKind != JsonValueKind.String || right.GetString() != "0") { return null; }
@@ -136,6 +154,8 @@ public sealed partial class NftTableObservation
             }
             else { return null; }
         }
-        return new(accept ? FilterVerdict.Accept : FilterVerdict.Drop, family, protocol, source, ns, iif, ni, sport, dport, fib);
+        var verdict = accept ? FilterVerdict.Accept : drop ? FilterVerdict.Drop : FilterVerdict.Continue;
+        return new(verdict, family, protocol, source, ns, output ? null : iface, !output && negateInterface, sport, dport, fib,
+            Notrack: notrack, OutputInterface: output ? iface : null, NegateOutputInterface: output && negateInterface);
     }
 }
