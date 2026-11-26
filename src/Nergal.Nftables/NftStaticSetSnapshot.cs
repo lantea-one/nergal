@@ -99,7 +99,7 @@ internal sealed class NftStaticSetSnapshot
                     ("ip6", "saddr") when kind == ReusableObjectKind.Ipv6 => "source",
                     ("ip", "daddr") when kind == ReusableObjectKind.Ipv4 => "destination",
                     ("ip6", "daddr") when kind == ReusableObjectKind.Ipv6 => "destination",
-                    ("tcp" or "udp", "dport") when kind == ReusableObjectKind.Port => "port",
+                    ("tcp" or "udp" or "th", "dport") when kind == ReusableObjectKind.Port => "port",
                     _ => throw Invalid()
                 };
                 var handle = Required<ulong>(rule["handle"]);

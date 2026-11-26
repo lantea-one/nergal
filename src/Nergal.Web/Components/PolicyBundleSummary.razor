@@ -70,7 +70,7 @@
                                 </td>
                                 <td><code>@(rule.NegateDestination ? "!= " : "")@(ObjectLabel(rule.DestinationObject) ?? FormatPrefixes(rule.Destination, rule.DestinationPrefixes))</code></td>
                                 <td><code>@(ObjectLabel(rule.DestinationPortObject) ?? FormatPorts(rule.DestinationPort, rule.DestinationPorts))</code></td>
-                                <td><code>@FormatInterfaces(rule.InputInterface is null ? null : (rule.NegateInputInterface ? "!= " : "") + rule.InputInterface, rule.OutputInterface is null ? null : (rule.NegateOutputInterface ? "!= " : "") + rule.OutputInterface)</code>
+                                <td><code>@FormatInterfaces(FormatInterfaceMatch(rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface), FormatInterfaceMatch(rule.OutputInterface, rule.OutputInterfaceSelector, rule.NegateOutputInterface))</code>
                                     @if (rule.BindInputInterfaceIndex) { <span class="rule-desc">Input interface bound by index</span> }
                                 </td>
                                 <td>
@@ -142,6 +142,12 @@
         if (single.HasValue) { return single.Value.ToString(System.Globalization.CultureInfo.InvariantCulture); }
         if (set is { Count: > 0 }) { return "{ " + string.Join(", ", set) + " }"; }
         return "any";
+    }
+
+    private static string? FormatInterfaceMatch(string? name, InterfaceNameSelector? selector, bool negate)
+    {
+        var match = selector is null ? name : string.Join(", ", selector.Patterns.Select(pattern => pattern.Value));
+        return match is null ? null : (negate ? "!= " : "") + match;
     }
 
     private static string FormatInterfaces(string? iif, string? oif)

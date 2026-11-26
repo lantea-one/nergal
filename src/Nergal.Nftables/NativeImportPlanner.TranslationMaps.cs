@@ -88,7 +88,7 @@ public static partial class NativeImportPlanner
                 table.TranslationMaps.ContainsKey(reference.Text[1..]), reference, "import.mapUnresolved");
             var map = table.TranslationMaps[reference.Text[1..]];
             Require((rule.Family is null || rule.Family == map.Family) && !rule.Data.ContainsKey("countPackets") &&
-                rule.TransportAlternatives is null && rule.Alternatives.Count == 0, origin, "import.mapScopeUnsupported");
+                rule.Protocol != "tcpOrUdp" && rule.Alternatives.Count == 0, origin, "import.mapScopeUnsupported");
             if (map.TransportPortKey)
             {
                 Require(rule.Action == "dnat" && selector.Text is "tcp" or "udp" && key.Text == "dport" &&
@@ -111,22 +111,37 @@ public static partial class NativeImportPlanner
         {
             if (rule.TranslationMap is not { } map) { return [rule]; }
             var result = new List<RuleData>(map.Entries.Count);
-            foreach (var entry in map.Entries)
+            if (map.TransportPortKey)
             {
-                var projected = (JsonObject)rule.Data.DeepClone();
-                if (map.TransportPortKey)
+                var eligible = map.Entries.Select(entry => (Port: int.Parse(entry.Key, CultureInfo.InvariantCulture), entry.Address))
+                    .Where(entry => (rule.Data["destinationPort"] is not JsonValue scalar || scalar.GetValue<int>() == entry.Port) &&
+                        (rule.Data["destinationPorts"] is not JsonArray set || set.Any(value => value!.GetValue<int>() == entry.Port)));
+                foreach (var group in eligible.GroupBy(entry => entry.Address, StringComparer.Ordinal))
                 {
-                    var port = int.Parse(entry.Key, CultureInfo.InvariantCulture);
-                    if (projected["destinationPort"] is JsonValue scalar && scalar.GetValue<int>() != port ||
-                        projected["destinationPorts"] is JsonArray set && !set.Any(value => value!.GetValue<int>() == port)) { continue; }
+                    var ports = group.Select(entry => entry.Port).Order().ToArray();
+                    var projected = (JsonObject)rule.Data.DeepClone();
+                    projected.Remove("destinationPort");
                     projected.Remove("destinationPorts");
-                    projected["destinationPort"] = port;
+                    if (ports.Length == 1) { projected["destinationPort"] = ports[0]; }
+                    else { projected["destinationPorts"] = new JsonArray(ports.Select(port => (JsonNode?)JsonValue.Create(port)).ToArray()); }
+                    Add(projected, group.Key);
                 }
-                else
+            }
+            else
+            {
+                foreach (var entry in map.Entries)
                 {
+                    var projected = (JsonObject)rule.Data.DeepClone();
                     projected["source"] = entry.Key + (map.Family == "ipv4" ? "/32" : "/128");
+                    Add(projected, entry.Address);
                 }
-                projected["translatedAddress"] = entry.Address;
+            }
+            Require(result.Count != 0, origin, "import.mapNeverMatches");
+            return result;
+
+            void Add(JsonObject projected, string address)
+            {
+                projected["translatedAddress"] = address;
                 result.Add(new RuleData
                 {
                     Data = projected,
@@ -135,8 +150,6 @@ public static partial class NativeImportPlanner
                     Action = rule.Action,
                 });
             }
-            Require(result.Count != 0, origin, "import.mapNeverMatches");
-            return result;
         }
 
         // A DNAT-only regular chain leaves the packet unchanged until a
@@ -157,6 +170,8 @@ public static partial class NativeImportPlanner
                 if (data.TryGetPropertyValue(key, out var existing))
                 {
                     if (key == "description") { continue; }
+                    if (key is "inputInterfaceSelector" or "outputInterfaceSelector")
+                    { Require(JsonNode.DeepEquals(existing, value), origin, "import.natJumpSelectorIntersectionUnsupported"); }
                     if (!JsonNode.DeepEquals(existing, value)) { return null; }
                 }
                 else { data[key] = value?.DeepClone(); }

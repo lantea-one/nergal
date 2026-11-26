@@ -94,8 +94,18 @@ rule. The managed receipt distinguishes this binding from `iifname`, which
 matches the current name. A rename can change the name reported by the kernel
 and therefore invalidate the receipt, even when the bound index is unchanged.
 
+In inet filter and NAT rules, interface-name matches support validated exact
+names and nonempty prefixes with a terminal `*`. A supported interface-name
+set and a guarded TCP/UDP destination-port set can remain on one filter rule
+with a single shared counter. Regular filter calls retain their table-local
+chains and both explicit and implicit returns.
+
+Inline address sets remove redundant CIDRs and merge aligned siblings when
+the resulting network covers exactly the same addresses. A range that still
+requires adjacent, separate CIDRs remains a blocking diagnostic.
+
 Named counters, seeded counters, logging, other maps, concatenations, arbitrary/dynamic objects, unsupported
-control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
+control flow, unknown flags, other wildcard or escaped matchers, service names, unsupported
 repeated restrictions and trailing input are explicit gaps. The narrowly supported
 dynamic set form is a private implementation of one bounded meter, with exact
 flags/size, key, per-entry timeout, rate and burst. Whole-second and whole-minute

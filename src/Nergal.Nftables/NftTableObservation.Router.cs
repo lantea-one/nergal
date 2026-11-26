@@ -10,7 +10,9 @@ public sealed partial class NftTableObservation
     internal static FilterRule? ParseFilterMatchers(JsonElement expressions)
     {
         var index = 0;
-        return ParseSchema2Rule(expressions, FilterChainKind.Forward, [], ref index, allowCounter: false);
+        var rule = ParseSchema2Rule(expressions, FilterChainKind.Forward, [], ref index, allowCounter: false);
+        // NAT projects these matches onto its own rule type. Require every field it can carry.
+        return rule is { Protocol: not FilterProtocol.TcpOrUdp, BindInputInterfaceIndex: false, Family: not IpFamily.DualStack } ? rule : null;
     }
 
     private static bool HasRouterMatchers(FilterRule r) => r.Verdict is FilterVerdict.Reject or FilterVerdict.RejectPortUnreachable ||

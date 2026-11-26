@@ -45,6 +45,8 @@ public enum FilterProtocol
     Icmp,
     /// <summary>ICMPv6 for IPv6 only, without type restrictions.</summary>
     IcmpV6,
+    /// <summary>A single protocol set matching TCP and UDP, optionally guarding a generic transport destination port.</summary>
+    TcpOrUdp,
 }
 
 /// <summary>Filter base chains supported by policy schema versions 1 and 2.</summary>
@@ -200,6 +202,8 @@ public sealed class RpFilterPolicy
 /// <param name="BindInputInterfaceIndex">Resolve the input interface name to its index at install time, using native `iif` instead of `iifname`.</param>
 /// <param name="RegularChain">Declared chain containing this rule when Chain is Regular.</param>
 /// <param name="JumpTarget">Declared regular chain called by a Jump verdict in this table.</param>
+/// <param name="InputInterfaceSelector">Optional input name prefix or set, mutually exclusive with the scalar input name.</param>
+/// <param name="OutputInterfaceSelector">Optional output name prefix or set, mutually exclusive with the scalar output name.</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -234,8 +238,13 @@ public sealed record FilterRule(
     IReadOnlyList<NetworkPrefix>? OriginalDestinationPrefixes = null,
     bool BindInputInterfaceIndex = false,
     string? RegularChain = null,
-    string? JumpTarget = null)
+    string? JumpTarget = null,
+    InterfaceNameSelector? InputInterfaceSelector = null,
+    InterfaceNameSelector? OutputInterfaceSelector = null)
 {
+    /// <summary>Whether one native rule must preserve an interface or protocol selector.</summary>
+    public bool UsesNativeSelectors => InputInterfaceSelector is not null || OutputInterfaceSelector is not null || Protocol == FilterProtocol.TcpOrUdp;
+
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
     {
@@ -270,6 +279,7 @@ public sealed record FilterRule(
             string.Equals(Description, other.Description, StringComparison.Ordinal) &&
             NegateInputInterface == other.NegateInputInterface &&
             BindInputInterfaceIndex == other.BindInputInterfaceIndex &&
+            Equals(InputInterfaceSelector, other.InputInterfaceSelector) && Equals(OutputInterfaceSelector, other.OutputInterfaceSelector) &&
             NegateOutputInterface == other.NegateOutputInterface &&
             NegateSource == other.NegateSource &&
             NegateDestination == other.NegateDestination &&
@@ -307,6 +317,8 @@ public sealed record FilterRule(
         hash.Add(Description, StringComparer.Ordinal);
         hash.Add(NegateInputInterface);
         hash.Add(BindInputInterfaceIndex);
+        hash.Add(InputInterfaceSelector);
+        hash.Add(OutputInterfaceSelector);
         hash.Add(NegateOutputInterface);
         hash.Add(NegateSource);
         hash.Add(NegateDestination);
@@ -466,6 +478,7 @@ public sealed class FilterPolicy
         if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
         if (RegularChains.Count > 0) { features.Add(FirewallFeature.FilterChainCalls); }
         if (Rules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
+        if (Rules.Any(rule => rule?.UsesNativeSelectors == true)) { features.Add(FirewallFeature.FilterSelectorSets); }
         if (Rules.Any(rule => rule?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
         if (Rules.Any(rule => rule?.Verdict == FilterVerdict.ClampRouteMss)) { features.Add(FirewallFeature.RouteDerivedMss); }
         if (RpFilter is not null || RawOutput is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&

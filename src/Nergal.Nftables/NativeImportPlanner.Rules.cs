@@ -11,7 +11,6 @@ public static partial class NativeImportPlanner
     {
         internal JsonObject Data { get; init; } = [];
         internal Dictionary<string, string[]> Alternatives { get; } = new(StringComparer.Ordinal);
-        internal string[]? TransportAlternatives;
         internal string? Family;
         internal string Protocol = "any";
         internal bool ExplicitTransport;
@@ -45,7 +44,7 @@ public static partial class NativeImportPlanner
         private IReadOnlyList<RuleData> ReadRules(Table table, Term origin, Term[] terms)
         {
             var rule = ReadRule(table, origin, terms);
-            if (rule.Alternatives.Count == 0 && rule.TransportAlternatives is null) { return [rule]; }
+            if (rule.Alternatives.Count == 0) { return [rule]; }
             // Equality alternatives are disjoint on an unchanged packet. Never split a
             // meter, counter or jump, which could change state or packet fields.
             Require(rule.Action != "jump" && !rule.Data.ContainsKey("rateLimit") && !rule.Data.ContainsKey("countPackets"), origin, "import.alternativeStatefulUnsupported");
@@ -61,17 +60,15 @@ public static partial class NativeImportPlanner
                     return projected;
                 })).ToList();
             }
-            var protocols = rule.TransportAlternatives ?? [rule.Protocol];
-            Require(variants.Count * protocols.Length <= 128, origin, "import.alternativeLimit");
-            return variants.SelectMany(data => protocols.Select(protocol => new RuleData
+            return variants.Select(data => new RuleData
             {
                 Data = (JsonObject)data.DeepClone(),
                 Family = rule.Family,
-                Protocol = protocol,
+                Protocol = rule.Protocol,
                 ExplicitTransport = rule.ExplicitTransport,
                 Action = rule.Action,
                 Jump = rule.Jump,
-            })).ToArray();
+            }).ToArray();
         }
 
         private RuleData ReadRule(Table table, Term origin, Term[] terms)
@@ -89,7 +86,7 @@ public static partial class NativeImportPlanner
             void Family(string family, Term term)
             { Require(rule.Family is null || rule.Family == family, term, "import.familyConflict"); rule.Family = family; }
             void Protocol(string protocol, Term term)
-            { Require(protocol is "tcp" or "udp" or "icmp" or "icmpv6", term, "import.protocolUnsupported"); Require(rule.TransportAlternatives is null && (rule.Protocol == "any" || rule.Protocol == protocol), term, "import.protocolConflict"); rule.Protocol = protocol; }
+            { Require(protocol is "tcp" or "udp" or "icmp" or "icmpv6", term, "import.protocolUnsupported"); Require(rule.Protocol == "any" || rule.Protocol == protocol, term, "import.protocolConflict"); rule.Protocol = protocol; }
             while (!c.End)
             {
                 var first = c.Take(); var word = first.Text;
@@ -151,10 +148,10 @@ public static partial class NativeImportPlanner
                         }
                         else
                         {
-                            Require(rule.Protocol == "any" && rule.TransportAlternatives is null && transports.Length == 2
+                            Require(rule.Protocol == "any" && transports.Length == 2
                                 && transports.Contains("tcp", StringComparer.Ordinal) && transports.Contains("udp", StringComparer.Ordinal),
                                 first, "import.protocolAlternativesUnsupported");
-                            rule.TransportAlternatives = transports;
+                            rule.Protocol = "tcpOrUdp";
                         }
                         break;
                     case "iif":
@@ -170,10 +167,24 @@ public static partial class NativeImportPlanner
                     case "oifname":
                     case "ibrname":
                         var ni = c.Negation();
-                        var field = word == "iifname" ? NativeRuleField.InputInterface : word == "oifname" ? NativeRuleField.OutputInterface : NativeRuleField.InputBridge;
-                        var names = c.SelectorValues().Select(term => ((NativeInterfaceLiteral)Literal(field, term)).Name).ToArray();
                         var property = word == "iifname" ? "inputInterface" : word == "oifname" ? "outputInterface" : "bridgeName";
-                        SetAlternatives(property, names, first, ni); if (ni) { Set("negate" + char.ToUpperInvariant(property[0]) + property[1..], JsonValue.Create(true), first); }
+                        var values = c.SelectorValues();
+                        if (word == "ibrname")
+                        {
+                            SetAlternatives(property, values.Select(term => ((NativeInterfaceLiteral)Literal(NativeRuleField.InputBridge, term)).Name).ToArray(), first, ni);
+                        }
+                        else
+                        {
+                            var selector = InterfaceNameSelector.Create(values.Select(String));
+                            Require(selector is not null, first, "import.interfaceSelectorUnsupported");
+                            Require(!rule.Data.ContainsKey(property) && !rule.Data.ContainsKey(property + "Selector"),
+                                first, "import.repeatedMatcherUnsupported");
+                            if (selector!.Patterns is [{ IsPrefix: false } exact])
+                            { Set(property, JsonValue.Create(exact.Name), first); }
+                            else
+                            { Set(property + "Selector", new JsonArray(selector.Patterns.Select(p => (JsonNode?)JsonValue.Create(p.Value)).ToArray()), first); }
+                        }
+                        if (ni) { Set("negate" + char.ToUpperInvariant(property[0]) + property[1..], JsonValue.Create(true), first); }
                         break;
                     case "ip":
                     case "ip6":
@@ -209,7 +220,7 @@ public static partial class NativeImportPlanner
                     case "th":
                         var port = c.Take(); Require(port.Text is "sport" or "dport", port, "import.transportExpressionUnsupported");
                         if (word == "th")
-                        { Require(rule.ExplicitTransport && (rule.TransportAlternatives is not null || rule.Protocol is "tcp" or "udp"), first, "import.transportGuardRequired"); }
+                        { Require(rule.ExplicitTransport && rule.Protocol is ("tcpOrUdp" or "tcp" or "udp"), first, "import.transportGuardRequired"); }
                         else { Protocol(word, first); }
                         Require(!c.Negation(), first, "import.negationUnsupported");
                         MatchValues(table, c, rule, first, NativeRuleField.TcpDestinationPort, port.Text == "sport" ? "sourcePort" : "destinationPort", Set, false); break;
@@ -229,7 +240,7 @@ public static partial class NativeImportPlanner
                             Require(tupleField.Text is "saddr" or "daddr", tupleField, "import.originalTupleFieldUnsupported");
                             Require(!c.Negation(), tupleField, "import.negationUnsupported");
                             var addressField = tupleFamily.Text == "ip" ? NativeRuleField.IpSource : NativeRuleField.Ip6Source;
-                            var addresses = c.List().Select(term => ((NativeAddressLiteral)Literal(addressField, term)).Prefix.Value);
+                            var addresses = CollapseLiteralNetworks(c.List().Select(term => ((NativeAddressLiteral)Literal(addressField, term)).Prefix.Value));
                             Set(tupleField.Text == "saddr" ? "originalSourcePrefixes" : "originalDestinationPrefixes",
                                 new JsonArray(addresses.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray()), tupleField);
                         }
@@ -271,15 +282,21 @@ public static partial class NativeImportPlanner
             else
             {
                 var literals = values.Select(v => Literal(field, v)).ToArray();
+                if (field is NativeRuleField.IpSource or NativeRuleField.Ip6Source)
+                {
+                    var networks = CollapseLiteralNetworks(literals.Cast<NativeAddressLiteral>().Select(value => value.Prefix.Value));
+                    set(networks.Length == 1 ? key : key + "Prefixes", networks.Length == 1 ? JsonValue.Create(networks[0]) :
+                        new JsonArray(networks.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray()), origin);
+                    if (negated) { set("negate" + char.ToUpperInvariant(key[0]) + key[1..], JsonValue.Create(true), origin); }
+                    return;
+                }
                 JsonNode? Value(NativeRuleLiteral literal) => literal switch
                 {
-                    NativeAddressLiteral a => JsonValue.Create(a.Prefix.Value),
                     NativeMacLiteral m => JsonValue.Create(m.Address.Value),
                     NativePortLiteral p => JsonValue.Create((int)p.Port),
                     _ => null,
                 };
-                var plural = key is "source" or "destination" ? key + "Prefixes" : key + "s";
-                set(values.Length == 1 ? key : plural, values.Length == 1 ? Value(literals[0]) : new JsonArray(literals.Select(Value).ToArray()), origin);
+                set(values.Length == 1 ? key : key + "s", values.Length == 1 ? Value(literals[0]) : new JsonArray(literals.Select(Value).ToArray()), origin);
             }
             if (negated) { set("negate" + char.ToUpperInvariant(key[0]) + key[1..], JsonValue.Create(true), origin); }
         }

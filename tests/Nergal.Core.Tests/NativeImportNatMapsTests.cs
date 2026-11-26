@@ -27,6 +27,23 @@ public sealed class NativeImportNatMapsTests
         Assert.All(rules, rule => Assert.Equal(DnatHook.Output, rule!.Hook));
     }
 
+    /// <summary>Disjoint keys with the same immutable target can share one equivalent translation rule.</summary>
+    [Fact]
+    public void DnatMap_GroupsPortsWithIdenticalTargets()
+    {
+        var plan = Plan("""
+            map ports { type inet_service : ipv4_addr; elements = { 443 : 192.0.2.2, 8443 : 192.0.2.2 }; }
+            chain translate {
+              type nat hook output priority dstnat; policy accept;
+              ip daddr 198.51.100.1 dnat ip to tcp dport map @ports;
+            }
+            """);
+        Assert.True(plan.CanCreateRevision, string.Join(", ", plan.Gaps.Select(gap => gap.Code)));
+        var rule = Assert.Single(PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Nat!.DnatRules)!;
+        Assert.Equal([443, 8443], rule.OriginalPorts);
+        Assert.Equal("192.0.2.2", rule.TranslatedAddress);
+    }
+
     /// <summary>An address-keyed projection retains unrelated output-interface scope.</summary>
     [Fact]
     public void SnatMap_ProjectsExactSourceAndPreservesOtherMatches()
@@ -40,6 +57,22 @@ public sealed class NativeImportNatMapsTests
         Assert.Equal("2001:db8::2/128", rule.Source!.Value);
         Assert.Equal("2001:db8::4", rule.TranslatedAddress);
         Assert.Equal("edge0", rule.OutputInterface);
+    }
+
+    /// <summary>Aligned sibling networks collapse without adding a packet to the selected set.</summary>
+    [Fact]
+    public void InlineAddresses_PreserveUnionOfSiblingsAndRedundantMembers()
+    {
+        var plan = Plan("""
+            chain translate {
+              type nat hook postrouting priority srcnat; policy accept;
+              ip saddr { 192.0.2.0/28, 192.0.2.16/28, 192.0.2.4 } snat ip to 198.51.100.2;
+            }
+            """);
+        Assert.True(plan.CanCreateRevision, string.Join(", ", plan.Gaps.Select(gap => gap.Code)));
+        var rule = Assert.Single(PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Nat!.SnatRules)!;
+        Assert.Equal("192.0.2.0/27", rule.Source!.Value);
+        Assert.Null(rule.SourcePrefixes);
     }
 
     /// <summary>Declines calls and projections whose effects cannot be represented.</summary>

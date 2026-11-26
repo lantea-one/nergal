@@ -845,6 +845,12 @@ NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxili
 NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --named-sets
 ```
 
+The selector portion of `check-native-import.sh` sends IPv4 and IPv6 TCP and
+UDP packets to both ports of a guarded transport-header set. It checks the one
+counter shared across input names and transports, the output-name counter, and
+denial after renaming the veth to a near-miss prefix. Handle-bearing echo and
+listing must reconstruct the same candidate.
+
 The first fixture applies independently handwritten native router input and its
 converted candidate in separate disposable user/network namespaces. The same real
 packet assertions cover dual-stack NAT sources/negated exemptions, MAC+IP denial,

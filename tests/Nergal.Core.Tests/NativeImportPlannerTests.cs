@@ -145,13 +145,13 @@ public sealed class NativeImportPlannerTests
 
     /// <summary>Disjoint sets preserve each permitted packet class and adjacent rule order.</summary>
     [Fact]
-    public void PositiveEqualitySets_ExpandIntoOrderedDisjointRules()
+    public void InterfaceAndProtocolSets_StayOnOneOrderedRule()
     {
         var source = Source("""
             table inet sample {
               chain input {
                 type filter hook input priority 0; policy drop;
-                ip saddr 192.0.2.1 iifname { "edge0", "edge1" } meta l4proto { tcp, udp } th dport 443 accept;
+                ip saddr 192.0.2.1 iifname { "edge0", "edge1" } meta l4proto { tcp, udp } th dport { 53, 443 } counter accept;
                 icmpv6 type { echo-request, nd-neighbor-solicit } accept;
                 ip saddr 198.51.100.1 drop;
               }
@@ -161,21 +161,24 @@ public sealed class NativeImportPlannerTests
 
         Assert.True(plan.CanCreateRevision, Codes(plan));
         var rules = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter.Rules.Select(r => r!).ToArray();
-        Assert.Equal(7, rules.Length);
-        Assert.Equal(
-            [("edge0", FilterProtocol.Tcp), ("edge0", FilterProtocol.Udp), ("edge1", FilterProtocol.Tcp), ("edge1", FilterProtocol.Udp)],
-            rules.Take(4).Select(rule => (rule.InputInterface, rule.Protocol)));
-        Assert.All(rules.Take(4), rule => Assert.Equal(443, rule.DestinationPort));
-        Assert.Equal(["echo-request", "nd-neighbor-solicit"], rules.Skip(4).Take(2).Select(rule => rule.IcmpType));
+        Assert.Equal(4, rules.Length);
+        Assert.Equal(["edge0", "edge1"], rules[0].InputInterfaceSelector!.Patterns.Select(p => p.Value));
+        Assert.Equal(FilterProtocol.TcpOrUdp, rules[0].Protocol);
+        Assert.Equal(IpFamily.IPv4, rules[0].Family);
+        Assert.Equal([53, 443], rules[0].DestinationPorts);
+        Assert.True(rules[0].CountPackets);
+        Assert.Equal(["echo-request", "nd-neighbor-solicit"], rules.Skip(1).Take(2).Select(rule => rule.IcmpType));
         Assert.Equal(FilterVerdict.Drop, rules[^1].Verdict);
         Assert.Equal(3, plan.Mappings.Count(mapping => mapping.Disposition == "rule"));
     }
 
     /// <summary>Do not split negated sets, shared state, or unguarded transport-header matches.</summary>
     [Theory]
-    [InlineData("iifname != { edge0, edge1 } accept", "import.alternativeNegationUnsupported")]
-    [InlineData("iifname { edge0, edge1 } udp dport 443 meter bucket { ip saddr timeout 60s limit rate 1/minute burst 1 packets } accept", "import.alternativeStatefulUnsupported")]
-    [InlineData("ip saddr 192.0.2.1 iifname { edge0, edge1 } counter accept", "import.alternativeStatefulUnsupported")]
+    [InlineData("iifname { edge*, edge0 } counter accept", "import.interfaceSelectorUnsupported")]
+    [InlineData("iifname edge* iifname edge1 counter accept", "import.repeatedMatcherUnsupported")]
+    [InlineData("iifname edge* meta l4proto { tcp, udp } tcp dport 443 counter accept", "import.protocolConflict")]
+    [InlineData("iifname \"e*dge\" counter accept", "import.interfaceSelectorUnsupported")]
+    [InlineData("icmp type { echo-request, echo-reply } counter accept", "import.alternativeStatefulUnsupported")]
     [InlineData("ip saddr 192.0.2.1 counter udp dport 443 accept", "import.counterPlacementUnsupported")]
     [InlineData("udp dport 443 meter bucket { ip saddr timeout 60s limit rate 1/minute } iifname edge0 accept", "import.meterPlacementUnsupported")]
     [InlineData("th dport 443 accept", "import.transportGuardRequired")]

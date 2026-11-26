@@ -247,7 +247,7 @@ internal static partial class PolicyAuthoringService
 
         var nextRules = bundle.Filter.Rules.ToList();
         var previous = bundle.Filter.Rules[ruleIndex]!;
-        if (previous.Chain == FilterChainKind.Regular || previous.Verdict == FilterVerdict.Jump)
+        if (previous.Chain == FilterChainKind.Regular || previous.Verdict == FilterVerdict.Jump || previous.UsesNativeSelectors)
         { diagnostics = [new("filter.regularChainRequiresTypedEdit", "rules")]; return false; }
         nextRules[ruleIndex] = rule with
         {
@@ -256,6 +256,8 @@ internal static partial class PolicyAuthoringService
             OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
             OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
             BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
+            InputInterfaceSelector = previous.InputInterfaceSelector,
+            OutputInterfaceSelector = previous.OutputInterfaceSelector,
             SourceObject = previous.SourceObject,
             DestinationObject = previous.DestinationObject,
             DestinationPortObject = previous.DestinationPortObject,
@@ -712,7 +714,7 @@ internal static partial class PolicyAuthoringService
 
         var dnats = bundle.Nat.DnatRules.ToList();
         var previous = bundle.Nat.DnatRules[ruleIndex]!;
-        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, CountPackets = previous.CountPackets, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject, Hook = previous.Hook };
+        dnats[ruleIndex] = dnat with { Enabled = previous.Enabled, CountPackets = previous.CountPackets, NegateSource = previous.NegateSource, NegateDestination = previous.NegateDestination, NegateInputInterface = previous.NegateInputInterface, InputInterfaceSelector = previous.InputInterfaceSelector, OriginalPortObject = previous.OriginalPortObject, SourceObject = previous.SourceObject, DestinationObject = previous.DestinationObject, Hook = previous.Hook };
         var nextNat = new NatPolicy(NatPolicy.CurrentSchemaVersion, dnats, bundle.Nat.SnatRules.ToList());
         var nextBundle = new FirewallPolicyBundle(bundle.SchemaVersion, bundle.Filter, nextNat, bundle.Bridge, bundle.AuxiliaryFilter);
         var compiled = NftPolicyBundleCompiler.Compile(nextBundle);
@@ -885,6 +887,8 @@ internal static partial class PolicyAuthoringService
             MatchOriginalDestinationDnat = previous.MatchOriginalDestinationDnat,
             OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
             OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
+            InputInterfaceSelector = previous.InputInterfaceSelector,
+            OutputInterfaceSelector = previous.OutputInterfaceSelector,
             InputInterface = previous.InputInterface,
             Protocol = previous.Protocol,
             DestinationPort = previous.DestinationPort,

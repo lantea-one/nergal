@@ -31,6 +31,7 @@ public enum DnatHook
 /// <param name="DestinationObject">Optional immutable same-family original-destination address-list version; never translated targets.</param>
 /// <param name="Hook">Destination NAT hook; OUTPUT has no ingress interface matcher.</param>
 /// <param name="CountPackets">Count packets and bytes reaching the translation. Established flows reuse the NAT binding and bypass rule evaluation.</param>
+/// <param name="InputInterfaceSelector">Optional exact or prefix-based ingress names, exclusive with the scalar name.</param>
 public sealed record DnatRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -52,7 +53,8 @@ public sealed record DnatRule(
     PolicyObjectReference? SourceObject = null,
     PolicyObjectReference? DestinationObject = null,
     DnatHook Hook = DnatHook.Prerouting,
-    bool CountPackets = false);
+    bool CountPackets = false,
+    InterfaceNameSelector? InputInterfaceSelector = null);
 
 /// <summary>Postrouting action; exemptions return before later NAT rules.</summary>
 public enum NatPostroutingAction
@@ -91,6 +93,8 @@ public enum NatPostroutingAction
 /// <param name="MatchOriginalDestinationDnat">Require connection-tracking status DNAT before taking the action.</param>
 /// <param name="OriginalSourcePrefixes">Optional 1–64 literal original-direction source prefixes of the rule's IP family. Requires DNAT status. Multiple prefixes must be disjoint and nonadjacent.</param>
 /// <param name="OriginalDestinationPrefixes">Optional original-direction destination prefixes with the same bounds and family requirements as <paramref name="OriginalSourcePrefixes"/>.</param>
+/// <param name="InputInterfaceSelector">Optional exact or prefix-based ingress names, exclusive with the scalar name.</param>
+/// <param name="OutputInterfaceSelector">Optional exact or prefix-based egress names, exclusive with the scalar name.</param>
 public sealed record SnatRule(
     IpFamily Family,
     NetworkPrefix? Source,
@@ -116,7 +120,9 @@ public sealed record SnatRule(
     bool CountPackets = false,
     bool MatchOriginalDestinationDnat = false,
     IReadOnlyList<NetworkPrefix>? OriginalSourcePrefixes = null,
-    IReadOnlyList<NetworkPrefix>? OriginalDestinationPrefixes = null);
+    IReadOnlyList<NetworkPrefix>? OriginalDestinationPrefixes = null,
+    InterfaceNameSelector? InputInterfaceSelector = null,
+    InterfaceNameSelector? OutputInterfaceSelector = null);
 
 /// <summary>An immutable, versioned snapshot of ordered dual-stack DNAT and postrouting actions.</summary>
 public sealed class NatPolicy
@@ -188,6 +194,9 @@ public sealed class NatPolicy
             features.Add(FirewallFeature.OriginalConnectionTuple);
         }
 
+        if (DnatRules.Any(r => r?.InputInterfaceSelector is not null) ||
+            SnatRules.Any(r => r?.InputInterfaceSelector is not null || r?.OutputInterfaceSelector is not null))
+        { features.Add(FirewallFeature.FilterSelectorSets); }
         if (SnatRules.Any(r => r is not null && r.Action != NatPostroutingAction.Snat)) { features.Add(FirewallFeature.MasqueradeAndNatExemptions); }
         if (DnatRules.Any(r => r is not null && (r.NegateSource || r.NegateDestination || r.NegateInputInterface)) ||
             SnatRules.Any(r => r is not null && (r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface)))

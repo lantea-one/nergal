@@ -27,8 +27,8 @@ internal static class RouterFilterValidation
             if (policy.SchemaVersion != 2 && extended) { errors.Add(new("router.requiresSchema2", path)); }
             Require(r.NegateSource, r.Source is not null || r.SourcePrefixes is not null, path + ".negateSource", errors);
             Require(r.NegateDestination, r.Destination is not null || r.DestinationPrefixes is not null, path + ".negateDestination", errors);
-            Require(r.NegateInputInterface, r.InputInterface is not null, path + ".negateInputInterface", errors);
-            Require(r.NegateOutputInterface, r.OutputInterface is not null, path + ".negateOutputInterface", errors);
+            Require(r.NegateInputInterface, r.InputInterface is not null || r.InputInterfaceSelector is not null, path + ".negateInputInterface", errors);
+            Require(r.NegateOutputInterface, r.OutputInterface is not null || r.OutputInterfaceSelector is not null, path + ".negateOutputInterface", errors);
             Require(r.NegateSourceMac, r.SourceMac is not null || r.SourceMacs is not null, path + ".negateSourceMac", errors);
             if ((r.SourceMac is not null || r.SourceMacs is not null) && r.Chain == FilterChainKind.Output)
             { errors.Add(new("mac.chainMismatch", path + ".sourceMac")); }

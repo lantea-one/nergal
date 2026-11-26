@@ -42,4 +42,6 @@ public enum FirewallFeature
     RouteDerivedMss,
     /// <summary>Call and return from declared table-local inet filter regular chains.</summary>
     FilterChainCalls,
+    /// <summary>Keep native interface-name patterns and protocol sets on one inet rule.</summary>
+    FilterSelectorSets,
 }

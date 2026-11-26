@@ -104,8 +104,8 @@ public sealed partial class NftTableObservation
                         IpFamily.DualStack => "dualStack",
                         _ => throw new InvalidOperationException("Unobserved filter family."),
                     }).Append(' ')
-                    .Append(rule.InputInterface ?? "-").Append(' ')
-                    .Append(rule.OutputInterface ?? "-").Append(' ')
+                    .Append(NftInterfaceNames.Projection(rule.InputInterface, rule.InputInterfaceSelector)).Append(' ')
+                    .Append(NftInterfaceNames.Projection(rule.OutputInterface, rule.OutputInterfaceSelector)).Append(' ')
                     .Append(PrefixOrSetProjection(rule.Source, rule.SourcePrefixes)).Append(' ')
                     .Append(PrefixOrSetProjection(rule.Destination, rule.DestinationPrefixes)).Append(' ');
                 if (rule.BindInputInterfaceIndex) { projection.Append("iif-index "); }
@@ -1059,6 +1059,8 @@ public sealed partial class NftTableObservation
         IpFamily? family = null;
         string? inputInterface = null;
         string? outputInterface = null;
+        InterfaceNameSelector? inputSelector = null;
+        InterfaceNameSelector? outputSelector = null;
         NetworkPrefix? source = null;
         NetworkPrefix? destination = null;
         IReadOnlyList<NetworkPrefix>? sourcePrefixes = null;
@@ -1175,12 +1177,10 @@ public sealed partial class NftTableObservation
 
                 if (key is "iifname" or "iif")
                 {
-                    if (stage >= 1 || chain == FilterChainKind.Output || right.ValueKind != JsonValueKind.String) { return null; }
-                    var iface = right.GetString();
-                    if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
+                    if (stage >= 1 || chain == FilterChainKind.Output ||
+                        !NftInterfaceNames.TryRead(right, out inputInterface, out inputSelector)) { return null; }
                     bindInputInterfaceIndex = key == "iif";
-                    if (bindInputInterfaceIndex && iface!.All(char.IsAsciiDigit)) { return null; }
-                    inputInterface = iface;
+                    if (bindInputInterfaceIndex && (inputInterface is null || inputInterface.All(char.IsAsciiDigit))) { return null; }
                     negateInput = op == "!=";
                     stage = 1;
                     continue;
@@ -1188,10 +1188,8 @@ public sealed partial class NftTableObservation
 
                 if (key == "oifname")
                 {
-                    if (stage >= 2 || chain == FilterChainKind.Input || right.ValueKind != JsonValueKind.String) { return null; }
-                    var iface = right.GetString();
-                    if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
-                    outputInterface = iface;
+                    if (stage >= 2 || chain == FilterChainKind.Input ||
+                        !NftInterfaceNames.TryRead(right, out outputInterface, out outputSelector)) { return null; }
                     negateOutput = op == "!=";
                     stage = 2;
                     continue;
@@ -1199,7 +1197,15 @@ public sealed partial class NftTableObservation
 
                 if (key == "l4proto")
                 {
-                    if (op != "==" || stage >= 7 || right.ValueKind != JsonValueKind.String) { return null; }
+                    if (op != "==" || stage >= 7) { return null; }
+                    if (IsTcpUdpSet(right))
+                    {
+                        protocol = FilterProtocol.TcpOrUdp;
+                        hasL4Proto = true;
+                        stage = 7;
+                        continue;
+                    }
+                    if (right.ValueKind != JsonValueKind.String) { return null; }
                     (FilterProtocol Parsed, IpFamily? ImpliedFamily)? l4 = right.GetString() switch
                     {
                         "tcp" => (FilterProtocol.Tcp, null),
@@ -1285,7 +1291,14 @@ public sealed partial class NftTableObservation
 
                 if (field == "dport")
                 {
-                    if (op != "==" || stage >= 7 || payloadProtocol is not ("tcp" or "udp"))
+                    var transport = payloadProtocol switch
+                    {
+                        "th" when stage == 7 && protocol == FilterProtocol.TcpOrUdp => FilterProtocol.TcpOrUdp,
+                        "tcp" when stage < 7 => FilterProtocol.Tcp,
+                        "udp" when stage < 7 => FilterProtocol.Udp,
+                        _ => FilterProtocol.Any,
+                    };
+                    if (op != "==" || transport == FilterProtocol.Any)
                     {
                         return null;
                     }
@@ -1294,7 +1307,7 @@ public sealed partial class NftTableObservation
                     {
                         var portSet = ParsePortSet(right.GetProperty("set"));
                         if (portSet is null) { return null; }
-                        protocol = payloadProtocol == "tcp" ? FilterProtocol.Tcp : FilterProtocol.Udp;
+                        protocol = transport;
                         destinationPorts = portSet;
                         stage = 8;
                         continue;
@@ -1306,7 +1319,7 @@ public sealed partial class NftTableObservation
                         return null;
                     }
 
-                    protocol = payloadProtocol == "tcp" ? FilterProtocol.Tcp : FilterProtocol.Udp;
+                    protocol = transport;
                     destinationPort = port;
                     stage = 8;
                     continue;
@@ -1331,7 +1344,8 @@ public sealed partial class NftTableObservation
             return null;
         }
 
-        if (family is null && !countPackets && jump is null && !returns)
+        if (family is null && !countPackets && jump is null && !returns && inputInterface is null &&
+            outputInterface is null && inputSelector is null && outputSelector is null && protocol != FilterProtocol.TcpOrUdp)
         {
             return null;
         }
@@ -1341,8 +1355,8 @@ public sealed partial class NftTableObservation
             source is null && destination is null &&
             sourcePrefixes is null && destinationPrefixes is null &&
             icmpType is null && rateLimit is null &&
-            protocol is FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp;
-        var expectL4Proto = protocol != FilterProtocol.Any && !destinationPort.HasValue && destinationPorts is null && icmpType is null;
+            protocol is FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp or FilterProtocol.TcpOrUdp;
+        var expectL4Proto = protocol == FilterProtocol.TcpOrUdp || protocol != FilterProtocol.Any && !destinationPort.HasValue && destinationPorts is null && icmpType is null;
         // nft may keep an explicit nfproto predicate when the original-address
         // key implies the same family. Both shapes bind the same validated scope.
         if ((originalSources is null && originalDestinations is null && hasNfproto != expectNfproto) || hasL4Proto != expectL4Proto)
@@ -1363,10 +1377,18 @@ public sealed partial class NftTableObservation
             NegateInputInterface: negateInput, NegateOutputInterface: negateOutput, NegateSource: negateSource,
             NegateDestination: negateDestination, SourceMac: sourceMac, SourceMacs: sourceMacs, NegateSourceMac: negateMac,
             CountPackets: countPackets, OriginalSourcePrefixes: originalSources, OriginalDestinationPrefixes: originalDestinations,
-            BindInputInterfaceIndex: bindInputInterfaceIndex, JumpTarget: jump);
+            BindInputInterfaceIndex: bindInputInterfaceIndex, JumpTarget: jump,
+            InputInterfaceSelector: inputSelector, OutputInterfaceSelector: outputSelector);
     }
 
     // Native values are live unsigned totals. Validate their shape, then bind only the counter's position and presence.
+    private static bool IsTcpUdpSet(JsonElement value)
+    {
+        if (!Properties(value, "set") || value.GetProperty("set") is not { ValueKind: JsonValueKind.Array } array ||
+            array.GetArrayLength() != 2 || array.EnumerateArray().Any(v => v.ValueKind != JsonValueKind.String)) { return false; }
+        return (array[0].GetString(), array[1].GetString()) is ("tcp", "udp") or ("udp", "tcp");
+    }
+
     private static bool IsCounterValue(JsonElement value) => value.ValueKind == JsonValueKind.Number && value.TryGetUInt64(out _);
 
     internal static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
@@ -1637,6 +1659,7 @@ public sealed partial class NftTableObservation
         FilterProtocol.Any => "any",
         FilterProtocol.Tcp => "tcp",
         FilterProtocol.Udp => "udp",
+        FilterProtocol.TcpOrUdp => "tcpOrUdp",
         FilterProtocol.Icmp => "icmp",
         FilterProtocol.IcmpV6 => "ipv6-icmp",
         _ => throw new InvalidOperationException("Unvalidated protocol."),

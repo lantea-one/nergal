@@ -489,6 +489,31 @@ public sealed class NftResourceReceiptTests
         Assert.NotEqual(observed.Observation.StateDigest, changed.Observation!.StateDigest);
     }
 
+    /// <summary>The protocol set must guard th dport; changing a prefix into an exact name changes the receipt.</summary>
+    [Fact]
+    public void Schema2_BindsSelectorsAndRejectsMissingTransportGuard()
+    {
+        var listing = Schema2Listing();
+        var rule = listing["nftables"]![6]!["rule"]!;
+        rule["expr"] = JsonNode.Parse("""
+            [{"match":{"op":"!=","left":{"meta":{"key":"oifname"}},"right":{"set":["up*","edge0"]}}},
+             {"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":{"set":["tcp","udp"]}}},
+             {"match":{"op":"==","left":{"payload":{"protocol":"th","field":"dport"}},"right":{"set":[53,443]}}},
+             {"counter":{"packets":4,"bytes":200}},{"accept":null}]
+            """);
+        var observed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(observed.IsSuccess, observed.ErrorCode);
+        var expr = rule["expr"]!.AsArray();
+        expr[0]!["match"]!["right"]!["set"]![0] = "up";
+        var changed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(changed.IsSuccess, changed.ErrorCode);
+        Assert.NotEqual(observed.Observation!.StateDigest, changed.Observation!.StateDigest);
+        expr[1]!["match"]!["right"]!["set"]![1] = "icmp";
+        Reject(listing.ToJsonString(), "observation.rule");
+        expr.RemoveAt(1);
+        Reject(listing.ToJsonString(), "observation.rule");
+    }
+
     /// <summary>Schema-2 observations fail closed on incomplete chains, out-of-order rules, bad conntrack order, or wrong interface directions.</summary>
     [Fact]
     public void Schema2_RejectsIncompleteChainsAndUnsupportedMatchers()

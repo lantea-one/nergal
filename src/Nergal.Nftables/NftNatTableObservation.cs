@@ -48,9 +48,10 @@ public sealed class NftNatTableObservation
 
         var completeSets = dnatRules.Any(e => e.Rule.OriginalPorts is not null || e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null) || snatRules.Any(e => e.Rule.SourcePrefixes is not null || e.Rule.DestinationPrefixes is not null);
         var originalTuple = snatRules.Any(e => e.Rule.MatchOriginalDestinationDnat);
-        var extended = originalTuple || outputChainHandle.HasValue || completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface) ||
+        var extended = originalTuple || outputChainHandle.HasValue || completeSets || dnatRules.Any(e => e.Rule.NegateSource || e.Rule.NegateDestination || e.Rule.NegateInputInterface || e.Rule.InputInterfaceSelector is not null) ||
             snatRules.Any(e => e.Rule.Action != NatPostroutingAction.Snat || e.Rule.NegateSource || e.Rule.NegateDestination ||
-                e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any);
+                e.Rule.NegateInputInterface || e.Rule.NegateOutputInterface || e.Rule.InputInterface is not null || e.Rule.Protocol != FilterProtocol.Any ||
+                e.Rule.InputInterfaceSelector is not null || e.Rule.OutputInterfaceSelector is not null);
         var projection = new StringBuilder(string.Join('\n',
             originalTuple ? "nergal-nat-observation-v5" : outputChainHandle.HasValue ? "nergal-nat-observation-v4" : completeSets ? "nergal-nat-observation-v3" : extended ? "nergal-nat-observation-v2" : "nergal-nat-observation-v1",
             identity.Comment,
@@ -352,6 +353,7 @@ public sealed class NftNatTableObservation
         }
 
         string? inputInterface = null;
+        InterfaceNameSelector? inputSelector = null;
         NetworkPrefix? source = null;
         NetworkPrefix? originalDestination = null;
         IReadOnlyList<NetworkPrefix>? sourcePrefixes = null, destinationPrefixes = null;
@@ -385,10 +387,7 @@ public sealed class NftNatTableObservation
                 var keyName = key.GetString();
                 if (keyName == "iifname")
                 {
-                    if (stage >= 0 || right.ValueKind != JsonValueKind.String) { return null; }
-                    var iface = right.GetString();
-                    if (!FilterPolicyValidation.IsValidInterfaceName(iface)) { return null; }
-                    inputInterface = iface;
+                    if (stage >= 0 || !NftInterfaceNames.TryRead(right, out inputInterface, out inputSelector)) { return null; }
                     ni = negate;
                     stage = 0;
                     continue;
@@ -473,7 +472,7 @@ public sealed class NftNatTableObservation
             return null;
         }
 
-        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni, OriginalPorts: originalPorts, SourcePrefixes: sourcePrefixes, DestinationPrefixes: destinationPrefixes, CountPackets: countPackets);
+        return new(targetFamily.Value, protocol, originalDestination, normalizedAddr, originalPort, translatedPort, inputInterface, source, NegateSource: ns, NegateDestination: nd, NegateInputInterface: ni, OriginalPorts: originalPorts, SourcePrefixes: sourcePrefixes, DestinationPrefixes: destinationPrefixes, CountPackets: countPackets, InputInterfaceSelector: inputSelector);
     }
 
     private static SnatRule? ParseSnatRule(JsonElement expressions)
@@ -523,7 +522,8 @@ public sealed class NftNatTableObservation
             InputInterface: r.InputInterface, Protocol: r.Protocol, DestinationPort: r.DestinationPort, DestinationPorts: r.DestinationPorts,
             NegateSource: r.NegateSource, NegateDestination: r.NegateDestination, NegateInputInterface: r.NegateInputInterface, NegateOutputInterface: r.NegateOutputInterface,
             SourcePrefixes: r.SourcePrefixes, DestinationPrefixes: r.DestinationPrefixes, CountPackets: countPackets,
-            MatchOriginalDestinationDnat: matchDnat, OriginalSourcePrefixes: originalSources, OriginalDestinationPrefixes: originalDestinations);
+            MatchOriginalDestinationDnat: matchDnat, OriginalSourcePrefixes: originalSources, OriginalDestinationPrefixes: originalDestinations,
+            InputInterfaceSelector: r.InputInterfaceSelector, OutputInterfaceSelector: r.OutputInterfaceSelector);
     }
 
     private static FilterRule? ParsePacketMatchers(JsonArray nodes, IpFamily? originalFamily)

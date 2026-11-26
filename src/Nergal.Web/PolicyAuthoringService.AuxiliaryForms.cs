@@ -46,7 +46,8 @@ internal static partial class PolicyAuthoringService
         }
         else
         {
-            if (index is { } existingIndex && rules[existingIndex]?.Verdict == FilterVerdict.ClampRouteMss)
+            if (index is { } existingIndex && rules[existingIndex] is { } existingRule &&
+                (existingRule.Verdict == FilterVerdict.ClampRouteMss || existingRule.UsesNativeSelectors))
             { diagnostics = [new("mss.routeRuleUsesStructuredEditor", "auxiliaryFilter.filter.rules")]; return false; }
             if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null) { return false; }
             if (index is { } position && rules[position] is { } previous)
@@ -60,6 +61,8 @@ internal static partial class PolicyAuthoringService
                     OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
                     OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
                     BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
+                    InputInterfaceSelector = previous.InputInterfaceSelector,
+                    OutputInterfaceSelector = previous.OutputInterfaceSelector,
                     SourceObject = previous.SourceObject,
                     DestinationObject = previous.DestinationObject,
                     DestinationPortObject = previous.DestinationPortObject,

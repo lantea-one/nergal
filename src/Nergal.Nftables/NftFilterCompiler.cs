@@ -103,8 +103,9 @@ public static class NftFilterCompiler
                 errors.Add(new("family.unknown", path + ".family"));
             }
             if (rule.Family == IpFamily.DualStack &&
-                (policy.SchemaVersion != 2 || (!rule.CountPackets && rule.Verdict is not (FilterVerdict.Jump or FilterVerdict.Return)) ||
-                 rule.Protocol is not (FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp) ||
+                (policy.SchemaVersion != 2 || (!rule.CountPackets && !rule.UsesNativeSelectors && rule.InputInterface is null &&
+                 rule.OutputInterface is null && rule.Verdict is not (FilterVerdict.Jump or FilterVerdict.Return)) ||
+                 rule.Protocol is not (FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp or FilterProtocol.TcpOrUdp) ||
                  rule.Source is not null || rule.Destination is not null ||
                  rule.SourcePrefixes is not null || rule.DestinationPrefixes is not null ||
                  rule.SourceObject is not null || rule.DestinationObject is not null ||
@@ -127,6 +128,14 @@ public static class NftFilterCompiler
             {
                 errors.Add(new("verdict.continueRequiresCounter", path + ".verdict"));
             }
+            if (policy.SchemaVersion != 2 && rule.UsesNativeSelectors)
+            { errors.Add(new("selector.requiresSchema2", path)); }
+            if (rule.InputInterfaceSelector is not null && (rule.InputInterface is not null || rule.BindInputInterfaceIndex) ||
+                rule.OutputInterfaceSelector is not null && rule.OutputInterface is not null)
+            { errors.Add(new("interface.selectorConflict", path)); }
+            if (rule.InputInterfaceSelector is not null && rule.Chain == FilterChainKind.Output ||
+                rule.OutputInterfaceSelector is not null && rule.Chain == FilterChainKind.Input)
+            { errors.Add(new("interface.chainMismatch", path)); }
             if (rule.BindInputInterfaceIndex &&
                 (policy.SchemaVersion != 2 || rule.InputInterface is null || rule.InputInterface.All(char.IsAsciiDigit)))
             {
@@ -156,7 +165,7 @@ public static class NftFilterCompiler
                 errors.Add(new("port.outOfRange", path + ".destinationPort"));
             }
 
-            if (rule.DestinationPort.HasValue && rule.Protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp))
+            if (rule.DestinationPort.HasValue && rule.Protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp or FilterProtocol.TcpOrUdp))
             {
                 errors.Add(new("port.requiresTransport", path + ".destinationPort"));
             }
@@ -410,8 +419,10 @@ public static class NftFilterCompiler
         }
 
         var result = sets.Finish(text.ToString());
+        var hasNativeSelectors = policy.Rules.Any(r => r is { Enabled: true, UsesNativeSelectors: true });
         if (result.Candidate is null || result.ObservationBudget > 0 ||
-            (policy.RegularChains.Count == 0 && policy.RawOutput is null && policy.RpFilter?.Rules.Any(r => r is { Enabled: true, Notrack: true }) != true))
+            (!hasNativeSelectors && policy.RegularChains.Count == 0 && policy.RawOutput is null &&
+             policy.RpFilter?.Rules.Any(r => r is { Enabled: true, Notrack: true }) != true))
         {
             return result;
         }
@@ -419,7 +430,9 @@ public static class NftFilterCompiler
         // Bound the complete handle-bearing echo, including the enclosing bundle.
         var budget = NftStaticSetPlan.Estimate(result.Candidate);
         return budget > 65536
-            ? new(null, [policy.RegularChains.Count > 0 ? new("chain.nativeObservationTooLarge", "regularChains") : new("raw.nativeObservationTooLarge", policy.RawOutput is null ? "rpFilter" : "rawOutput")])
+            ? new(null, [hasNativeSelectors ? new("selector.nativeObservationTooLarge", "rules") :
+                policy.RegularChains.Count > 0 ? new("chain.nativeObservationTooLarge", "regularChains") :
+                new("raw.nativeObservationTooLarge", policy.RawOutput is null ? "rpFilter" : "rawOutput")])
             : new(result.Candidate, [], budget);
     }
 
@@ -438,16 +451,9 @@ public static class NftFilterCompiler
             text.Append("meta nfproto ").Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
         }
 
-        if (rule.InputInterface is not null)
-        {
-            text.Append(rule.BindInputInterfaceIndex ? "iif " : "iifname ")
-                .Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
-        }
-
-        if (rule.OutputInterface is not null)
-        {
-            text.Append("oifname ").Append(rule.NegateOutputInterface ? "!= " : "").Append("\"").Append(rule.OutputInterface).Append("\" ");
-        }
+        NftInterfaceNames.Append(text, rule.BindInputInterfaceIndex ? "iif" : "iifname",
+            rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface);
+        NftInterfaceNames.Append(text, "oifname", rule.OutputInterface, rule.OutputInterfaceSelector, rule.NegateOutputInterface);
 
         if (rule.SourceMac is not null || rule.SourceMacs is not null)
         {
@@ -505,11 +511,12 @@ public static class NftFilterCompiler
             {
                 FilterProtocol.Tcp => "tcp",
                 FilterProtocol.Udp => "udp",
+                FilterProtocol.TcpOrUdp => "th",
                 FilterProtocol.Icmp => "icmp",
                 FilterProtocol.IcmpV6 => "ipv6-icmp",
                 _ => throw new InvalidOperationException("Unvalidated protocol."),
             };
-            text.Append("meta l4proto ").Append(protocol).Append(' ');
+            text.Append("meta l4proto ").Append(rule.Protocol == FilterProtocol.TcpOrUdp ? "{ tcp, udp }" : protocol).Append(' ');
             if (rule.DestinationPortObject is { NativeSet: true } portSet)
             { text.Append(protocol).Append(" dport @").Append(NftStaticSetPlan.Name(portSet)).Append(' '); }
             else if (rule.DestinationPort.HasValue)
@@ -700,7 +707,7 @@ public static class NftFilterCompiler
             return;
         }
 
-        if (protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp))
+        if (protocol is not (FilterProtocol.Tcp or FilterProtocol.Udp or FilterProtocol.TcpOrUdp))
         {
             errors.Add(new("port.requiresTransport", path));
         }

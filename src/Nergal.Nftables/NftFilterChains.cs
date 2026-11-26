@@ -69,8 +69,8 @@ internal static class NftFilterChains
         for (var index = 0; index < policy.Rules.Count; index++)
         {
             if (policy.Rules[index] is not { RegularChain: { } name } rule) { continue; }
-            if ((reachable.Contains((FilterChainKind.Input, name)) && rule.OutputInterface is not null) ||
-                (reachable.Contains((FilterChainKind.Output, name)) && (rule.InputInterface is not null || rule.SourceMac is not null || rule.SourceMacs is not null)))
+            if ((reachable.Contains((FilterChainKind.Input, name)) && (rule.OutputInterface is not null || rule.OutputInterfaceSelector is not null)) ||
+                (reachable.Contains((FilterChainKind.Output, name)) && (rule.InputInterface is not null || rule.InputInterfaceSelector is not null || rule.SourceMac is not null || rule.SourceMacs is not null)))
             { errors.Add(new("chain.callerHookMismatch", "rules[" + index.ToString(CultureInfo.InvariantCulture) + "]")); }
         }
     }

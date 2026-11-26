@@ -53,6 +53,7 @@ for family, flag, address, blocked, other_destination, denied_destination in (
 ):
     for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
         assert admitted(family, kind, address, address, 19042), "Allowed transport or family was omitted"
+        assert admitted(family, kind, address, address, 19054), "Second member of transport port set failed"
         assert not admitted(family, kind, blocked, address, 19042), "Earlier drop lost its order"
         assert not admitted(family, kind, address, address, 19043), "Unselected port was admitted"
     run("ping", flag, "-n", "-c", "1", "-W", "1", address)
@@ -89,7 +90,7 @@ for family, flag, address, blocked, other_destination, denied_destination in (
             pass
         else:
             raise AssertionError("Filter admitted a translated packet with an unselected original destination")
-    for port in (19054, 19055):
+    for port in (19060, 19061):
         with socket.socket(family, socket.SOCK_DGRAM) as server, socket.socket(family, socket.SOCK_DGRAM) as client:
             server.settimeout(0.4)
             server.bind((address, port))
@@ -97,7 +98,7 @@ for family, flag, address, blocked, other_destination, denied_destination in (
             client.sendto(b"map", (blocked, port))
             payload, source = server.recvfrom(64)
             assert payload == b"map", f"Map indirection or missing-key fallthrough failed on port {port}"
-            assert source[0] == (blocked if port == 19054 else address), "Address-keyed SNAT map changed the wrong packet"
+            assert source[0] == (blocked if port == 19060 else address), "Address-keyed SNAT map changed the wrong packet"
 
 
 def send_from_peer(family, target, port, peer):
@@ -125,10 +126,21 @@ with subprocess.Popen(
             run("ip", "address", "add", f"{target}/{prefix}", "dev", "fixture-in", "nodad")
             run(*peer, "ip", "address", "add", f"{origin}/{prefix}", "dev", "fixture-peer", "nodad")
             with socket.socket(family, socket.SOCK_DGRAM) as server:
+                server.bind((target, 19054))
+                server.settimeout(1)
+                send_from_peer(family, target, 19054, peer)
+                assert server.recv(64) == b"from-peer", "Prefix member of the input selector set failed"
+            with socket.socket(family, socket.SOCK_DGRAM) as server:
                 server.bind((target, 19051))
                 server.settimeout(1)
                 send_from_peer(family, target, 19051, peer)
                 assert server.recv(64) == b"from-peer", "Raw prerouting failed to mark ingress untracked"
+            translated = "192.0.2.1" if family == socket.AF_INET else "2001:db8::1"
+            with socket.socket(family, socket.SOCK_DGRAM) as server:
+                server.bind((translated, 19058))
+                server.settimeout(1)
+                send_from_peer(family, target, 19057, peer)
+                assert server.recv(64) == b"from-peer", "Wildcard ingress set failed to select the DNAT rule"
         run("ip", "link", "set", "fixture-in", "name", "fixture-renamed")
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as by_index, socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as by_name:
             by_index.bind(("198.51.100.1", 19052))
@@ -144,6 +156,17 @@ with subprocess.Popen(
                 pass
             else:
                 raise AssertionError("A renamed input interface still matched its old name")
+        run("ip", "link", "set", "fixture-renamed", "name", "fixturex")
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server:
+            server.bind(("198.51.100.1", 19054))
+            server.settimeout(0.4)
+            send_from_peer(socket.AF_INET, "198.51.100.1", 19054, peer)
+            try:
+                server.recv(64)
+            except TimeoutError:
+                pass
+            else:
+                raise AssertionError("Prefix matched a name missing its literal hyphen")
     finally:
         sender.terminate()
 
@@ -158,7 +181,7 @@ def counter_totals(table):
     ]
 
 
-assert counter_totals("nergal_filter") == [1, 2, 2, 2, 5, 5], "Counters must count both families once per match and respect meter exhaustion"
+assert counter_totals("nergal_filter") == [1, 10, 2, 2, 2, 5, 5, 2], "Counters must count both families once per match and respect meter exhaustion"
 assert counter_totals("nergal_nat") == [3, 3, 1, 1], "DNAT and SNAT counters must follow their respective selectors"
 
 print("PASS: selector sets, ordered denial, shared counters, port rejection, raw notrack on prerouting and output, and counted local DNAT")

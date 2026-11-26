@@ -72,7 +72,7 @@ public static class NftNatCompiler
             {
                 errors.Add(new("nat.hookUnsupported", path + ".hook"));
             }
-            if (rule.Hook == DnatHook.Output && rule.InputInterface is not null)
+            if (rule.Hook == DnatHook.Output && (rule.InputInterface is not null || rule.InputInterfaceSelector is not null))
             {
                 errors.Add(new("interface.chainMismatch", path + ".inputInterface"));
             }
@@ -216,10 +216,7 @@ public static class NftNatCompiler
             text.Append("add rule inet " + TableName + " ").Append(chainName).Append(" meta nfproto ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
 
-            if (rule.InputInterface is not null)
-            {
-                text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
-            }
+            NftInterfaceNames.Append(text, "iifname", rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface);
 
             if (rule.SourceObject is { NativeSet: true } sourceSet)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
@@ -274,12 +271,8 @@ public static class NftNatCompiler
             text.Append("add rule inet " + TableName + " postrouting meta nfproto ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
 
-            if (rule.InputInterface is not null)
-            { text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append('"').Append(rule.InputInterface).Append("\" "); }
-            if (rule.OutputInterface is not null)
-            {
-                text.Append("oifname ").Append(rule.NegateOutputInterface ? "!= " : "").Append("\"").Append(rule.OutputInterface).Append("\" ");
-            }
+            NftInterfaceNames.Append(text, "iifname", rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface);
+            NftInterfaceNames.Append(text, "oifname", rule.OutputInterface, rule.OutputInterfaceSelector, rule.NegateOutputInterface);
 
             if (rule.SourceObject is { NativeSet: true } sourceSet)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
@@ -319,6 +312,13 @@ public static class NftNatCompiler
             text.Append('\n');
         }
 
-        return sets.Finish(text.ToString());
+        var result = sets.Finish(text.ToString());
+        var selectors = policy.DnatRules.Any(r => r is { Enabled: true, InputInterfaceSelector: not null }) ||
+            policy.SnatRules.Any(r => r is { Enabled: true } && (r.InputInterfaceSelector is not null || r.OutputInterfaceSelector is not null));
+        if (result.Candidate is null || result.ObservationBudget > 0 || !selectors) { return result; }
+        var budget = NftStaticSetPlan.Estimate(result.Candidate);
+        return budget > 65536
+            ? new(null, [new("selector.nativeObservationTooLarge", "nat")])
+            : new(result.Candidate, [], budget);
     }
 }

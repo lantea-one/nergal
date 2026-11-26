@@ -269,7 +269,8 @@
                                                         <button type="submit" class="btn btn-secondary btn-sm" title="Move down">↓</button>
                                                     </form>
                                                 }
-                                                @if (r.Verdict != FilterVerdict.ClampRouteMss)
+                                                @if (r.Verdict is not (FilterVerdict.ClampRouteMss or FilterVerdict.Jump) &&
+                                                    r.Chain != FilterChainKind.Regular && !r.UsesNativeSelectors)
                                                 {
                                                 <details class="inline-edit-details">
                                                     <summary class="btn btn-secondary btn-sm">Edit</summary>
@@ -624,7 +625,7 @@
                                     <td><code>@(d.NegateDestination ? "!= " : "")@(d.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : d.OriginalDestination?.Value ?? string.Join(", ", d.DestinationPrefixes!.Select(p => p.Value)))</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
                                     <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : "any")) → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
-                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
+                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterfaceSelector is { } names ? string.Join(", ", names.Patterns.Select(p => p.Value)) : d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
 
                                     <td>
                                         @(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)
@@ -749,7 +750,7 @@
                                     <td><code>@(s.NegateSource ? "!= " : "")@(s.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : s.Source?.Value ?? (s.SourcePrefixes is { } sourceSet ? "{ " + string.Join(", ", sourceSet.Select(p => p.Value)) + " }" : "any"))</code></td>
                                     <td><code>@(s.Action == NatPostroutingAction.Snat ? s.TranslatedAddress : s.Action.ToString().ToLowerInvariant())</code></td>
                                     <td><code>@(s.NegateDestination ? "!= " : "")@(s.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : s.Destination?.Value ?? (s.DestinationPrefixes is { } destinationSet ? "{ " + string.Join(", ", destinationSet.Select(p => p.Value)) + " }" : "any"))</code></td>
-                                    <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterface ?? "any")</code></td>
+                                    <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterfaceSelector is { } inputNames ? string.Join(", ", inputNames.Patterns.Select(p => p.Value)) : s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterfaceSelector is { } outputNames ? string.Join(", ", outputNames.Patterns.Select(p => p.Value)) : s.OutputInterface ?? "any")</code></td>
                                     <td><code>@s.Protocol · @(s.DestinationPortObject is { } portList ? portList.Content.Name + " v" + portList.Version + " [" + string.Join(", ", portList.Content.Entries) + "]" : s.DestinationPort?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? (s.DestinationPorts is null ? "any" : string.Join(", ", s.DestinationPorts)))</code></td>
 
                                     <td>

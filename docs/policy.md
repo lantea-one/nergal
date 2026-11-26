@@ -122,6 +122,26 @@ Schema 1 remains a narrow in-process contract without a raw-text extension point
 The [decision record](decisions/0002-filter-compiler.md) explains why create-only
 provisioning is the compiler overload boundary. The agent implements separate native validation, ownership checks, confirmed apply and independent timed rollback; see [the complete receipt decision](decisions/0036-complete-bundle-observation-and-rollback.md).
 
+## Schema-2 filter interface and protocol selectors
+
+A filter rule can use an `inputInterfaceSelector` or `outputInterfaceSelector` array.
+For example, `["uplink0", "veth-*"]` matches the exact name `uplink0` or any
+interface whose name starts with `veth-`. Use one to 64 disjoint members. Each
+member uses the scalar name alphabet, starts with an ASCII letter or digit, and
+fits in 15 characters including an optional terminal `*`. Empty prefixes,
+escaping, other glob syntax, overlapping matches and simultaneous scalar and
+selector fields on the same side are rejected. Interface-index binding requires
+a scalar exact input name. Negation applies to the entire name predicate.
+
+`"protocol": "tcpOrUdp"` generates one `meta l4proto { tcp, udp }` guard.
+With `"destinationPorts": [53, 443]`, the following `th dport { 53, 443 }`
+predicate checks the same port numbers for either protocol. A family-neutral
+inet filter source with these selectors stays one dual-stack rule. An explicit
+family or family-specific address matcher retains its restriction. With
+`"countPackets": true`, packets reaching the verdict share one native counter
+across all members. Kernel observation binds the guard, members, negation,
+family and presence of the counter to the receipt.
+
 ## Router extensions
 
 See [router constructs](router-constructs.md) for optional schema-2 raw prerouting,
