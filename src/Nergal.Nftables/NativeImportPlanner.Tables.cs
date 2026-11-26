@@ -76,7 +76,15 @@ public static partial class NativeImportPlanner
                 Read(unit, NativeSourceDeclarationParser.Partition(unit.Analysis.Lexical.Document!, terms[^1].Node.Children, true), chain.Scope, table, chain, depth);
                 return;
             }
-            Require(first.Text == "set" && !table.Sets.ContainsKey(name), first, "import.objectUnsupported");
+            if (first.Text == "map" && table.Role == NativeImportTableRole.Nat)
+            {
+                Require(!table.Sets.ContainsKey(name) && !table.TranslationMaps.ContainsKey(name) && table.TranslationMaps.Count < 64,
+                    first, "import.mapDuplicateOrLimit");
+                table.TranslationMaps.Add(name, ReadStaticTranslationMap(terms[2], scope));
+                Map(first, "static-nat-map", table.Role.ToString());
+                return;
+            }
+            Require(first.Text == "set" && !table.Sets.ContainsKey(name) && !table.TranslationMaps.ContainsKey(name), first, "import.objectUnsupported");
             ReadSet(terms[2], scope, table, name); Map(first, "named-object", table.Role.ToString());
         }
 

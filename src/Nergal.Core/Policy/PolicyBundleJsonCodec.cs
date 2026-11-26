@@ -904,6 +904,7 @@ public static partial class PolicyBundleJsonCodec
     {
         "continue" => FilterVerdict.Continue,
         "rejectPortUnreachable" => FilterVerdict.RejectPortUnreachable,
+        "clampRouteMss" => FilterVerdict.ClampRouteMss,
         _ => ParseVerdict(el),
     } : null;
 
@@ -940,6 +941,7 @@ public static partial class PolicyBundleJsonCodec
         FilterVerdict.Reject => "reject",
         FilterVerdict.Continue => "continue",
         FilterVerdict.RejectPortUnreachable => "rejectPortUnreachable",
+        FilterVerdict.ClampRouteMss => "clampRouteMss",
         _ => throw new ArgumentOutOfRangeException(nameof(v)),
     };
 

@@ -46,6 +46,8 @@ internal static partial class PolicyAuthoringService
         }
         else
         {
+            if (index is { } existingIndex && rules[existingIndex]?.Verdict == FilterVerdict.ClampRouteMss)
+            { diagnostics = [new("mss.routeRuleUsesStructuredEditor", "auxiliaryFilter.filter.rules")]; return false; }
             if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null) { return false; }
             if (index is { } position && rules[position] is { } previous)
             {

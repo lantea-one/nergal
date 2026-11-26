@@ -234,6 +234,11 @@ internal static partial class PolicyAuthoringService
             diagnostics = [new("rule.indexOutOfRange", "filter.rules")];
             return false;
         }
+        if (bundle.Filter.Rules[ruleIndex]?.Verdict == FilterVerdict.ClampRouteMss)
+        {
+            diagnostics = [new("mss.routeRuleUsesStructuredEditor", "filter.rules")];
+            return false;
+        }
 
         if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null)
         {

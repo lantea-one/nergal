@@ -284,6 +284,28 @@ public sealed class NativeImportPlannerTests
         Assert.Contains("iifname \"edge0\" drop", native, StringComparison.Ordinal);
     }
 
+    /// <summary>Route MSS is an ordered, nonterminal forward rule with native routing semantics.</summary>
+    [Fact]
+    public void RouteMss_KeepsItsPositionBetweenOrdinaryRules()
+    {
+        const string expression = "tcp flags syn tcp option maxseg size set rt mtu";
+        var source = Source("table inet sample { chain forward { type filter hook forward priority 0; ip saddr 192.0.2.1 drop; " +
+            expression + "; ip saddr 198.51.100.1 accept; } }");
+        var binding = new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter);
+        var plan = NativeImportPlanner.Plan(Request(source, binding), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var filter = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter;
+        Assert.Equal([FilterVerdict.Drop, FilterVerdict.ClampRouteMss, FilterVerdict.Accept], filter.Rules.Select(rule => rule!.Verdict));
+        var nativeRules = NftFilterCompiler.Compile(filter).Candidate!.Split('\n')
+            .Where(line => line.StartsWith("add rule ", StringComparison.Ordinal)).ToArray();
+        Assert.EndsWith("forward " + expression, nativeRules[1], StringComparison.Ordinal);
+
+        var input = Source("table inet sample { chain input { type filter hook input priority 0; " + expression + "; } }");
+        var denied = NativeImportPlanner.Plan(Request(input, binding), [input]);
+        Assert.Contains(denied.Gaps, gap => gap.Code == "import.mssRouteHookUnsupported");
+        Assert.Null(denied.PolicyJson);
+    }
+
     /// <summary>An explicit but empty output hook requires a policy representation before import.</summary>
     [Fact]
     public void EmptyOutputNat_DeniesWholeCandidate()

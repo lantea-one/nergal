@@ -213,7 +213,7 @@
                                     <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Filter, idx, null, r.Enabled, "Filter rule " + (idx + 1))))</td>
                                     <td>
                                         <span class="badge @(r.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                            @r.Verdict.ToString().ToLowerInvariant()
+                                            @(r.Verdict == FilterVerdict.ClampRouteMss ? "Clamp MSS to route MTU" : r.Verdict.ToString().ToLowerInvariant())
                                         </span>
                                     </td>
                                     <td class="rule-location"><code>@r.Chain.ToString().ToLowerInvariant()</code>
@@ -269,6 +269,8 @@
                                                         <button type="submit" class="btn btn-secondary btn-sm" title="Move down">↓</button>
                                                     </form>
                                                 }
+                                                @if (r.Verdict != FilterVerdict.ClampRouteMss)
+                                                {
                                                 <details class="inline-edit-details">
                                                     <summary class="btn btn-secondary btn-sm">Edit</summary>
                                                     <div class="inline-edit-popover">
@@ -385,6 +387,7 @@
                                                         </form>
                                                     </div>
                                                 </details>
+                                                }
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/rules/remove")">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />

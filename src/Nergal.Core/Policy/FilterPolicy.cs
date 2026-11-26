@@ -24,6 +24,8 @@ public enum FilterVerdict
     Continue,
     /// <summary>Actively reject with ICMP/ICMPv6 port unreachable, the default inet reject (schema 2 only).</summary>
     RejectPortUnreachable,
+    /// <summary>Set the TCP SYN MSS from the native route MTU and continue evaluating the forward chain.</summary>
+    ClampRouteMss,
 }
 
 /// <summary>Protocols supported without semantic approximation.</summary>
@@ -446,6 +448,7 @@ public sealed class FilterPolicy
         if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
         if (Rules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
         if (Rules.Any(rule => rule?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
+        if (Rules.Any(rule => rule?.Verdict == FilterVerdict.ClampRouteMss)) { features.Add(FirewallFeature.RouteDerivedMss); }
         if (RpFilter is not null || RawOutput is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&
             (r.SourceMac is not null || r.SourceMacs is not null || r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface || r.Verdict is FilterVerdict.Reject or FilterVerdict.RejectPortUnreachable)))
         { features.Add(FirewallFeature.RouterFiltering); }

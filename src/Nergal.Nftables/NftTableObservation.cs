@@ -589,7 +589,10 @@ public sealed partial class NftTableObservation
                     lastChain = chainKind.Value;
                     if (!rule.GetProperty("handle").TryGetUInt64(out var handle) || handle == 0 || !handles.Add(handle))
                     { return Deny("observation.handle"); }
-                    var parsed = ParseSchema2Rule(rule.GetProperty("expr"), chainKind.Value, sets, ref nextSetIndex, allowCounter: true);
+                    var expressions = rule.GetProperty("expr");
+                    var parsed = chainKind == FilterChainKind.Forward && IsRouteMssClamp(expressions)
+                        ? new FilterRule(IpFamily.DualStack, FilterProtocol.Tcp, FilterVerdict.ClampRouteMss, Chain: FilterChainKind.Forward)
+                        : ParseSchema2Rule(expressions, chainKind.Value, sets, ref nextSetIndex, allowCounter: true);
                     if (parsed is null) { return Deny("observation.rule"); }
                     rules.Add((handle, parsed));
                 }
@@ -1623,6 +1626,7 @@ public sealed partial class NftTableObservation
         FilterVerdict.Reject => "reject",
         FilterVerdict.Continue => "continue",
         FilterVerdict.RejectPortUnreachable => "rejectPortUnreachable",
+        FilterVerdict.ClampRouteMss => "clampRouteMss",
         _ => throw new InvalidOperationException("Unvalidated verdict."),
     };
 

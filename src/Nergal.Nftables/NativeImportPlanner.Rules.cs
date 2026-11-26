@@ -18,6 +18,7 @@ public static partial class NativeImportPlanner
         internal bool CounterHasFamily;
         internal string? Action;
         internal string? Jump;
+        internal StaticTranslationMap? TranslationMap;
     }
     private sealed class Cursor(Term[] terms)
     {
@@ -114,7 +115,10 @@ public static partial class NativeImportPlanner
                     if (word is "dnat" or "snat")
                     {
                         if (!c.End && c.Peek.Text is "ip" or "ip6") { Family(c.Take().Text == "ip" ? "ipv4" : "ipv6", first); }
-                        c.Expect("to"); Translation(c, rule, first);
+                        c.Expect("to");
+                        if (c.Peek.Text is "tcp" or "udp" or "ip" or "ip6")
+                        { ReadTranslationMapSelector(table, c, rule, first); }
+                        else { Translation(c, rule, first); }
                     }
                     if (c.Eat("comment")) { Set("description", JsonValue.Create(String(c.Take())), first); }
                     Require(c.End, c.Peek, "import.ruleTrailingInput"); return rule;

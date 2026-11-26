@@ -47,7 +47,7 @@ for variant in independent imported; do
         filter="$fixture/imported-filter.nft"
         nat="$fixture/imported-nat.nft"
     fi
-    unshare --user --map-root-user --net python3 -B tests/integration/nftables/router_constructs_check.py \
+    NERGAL_TEST_ROUTE_MSS=1 unshare --user --map-root-user --net python3 -B tests/integration/nftables/router_constructs_check.py \
         "$filter" "$nat" "$fixture/roundtrip-filter.nft" "$fixture/router-nat.nft" "$fixture" \
         "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
 done

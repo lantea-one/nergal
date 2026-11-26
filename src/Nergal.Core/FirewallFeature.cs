@@ -38,4 +38,6 @@ public enum FirewallFeature
     InlineNatCounters,
     /// <summary>Bind a named input interface to its current kernel index when installing a rule.</summary>
     InputInterfaceIndexBinding,
+    /// <summary>Derive TCP SYN MSS from native routing state on the forward path.</summary>
+    RouteDerivedMss,
 }

@@ -68,6 +68,14 @@ public static partial class NativeImportPlanner
                         var (origin, terms) = chain.Rules[index];
                         Attempt(origin, () =>
                         {
+                            if (terms.Length == 10 && terms[8].Text == "rt" && terms[9].Text == "mtu" &&
+                                string.Join(' ', terms.Take(8).Select(t => t.Text)) == "tcp flags syn tcp option maxseg size set")
+                            {
+                                Require(chain.Hook == "forward", origin, "import.mssRouteHookUnsupported");
+                                rules.Add(new JsonObject { ["family"] = "dualStack", ["protocol"] = "tcp", ["chain"] = "forward", ["verdict"] = "clampRouteMss" });
+                                Map(origin, "mss", auxiliary ? "auxiliaryFilter.filter.rules" : "filter.rules");
+                                return;
+                            }
                             if (terms.Length == 8 && terms[0].Text == "tcp" && terms[1].Text == "flags" && terms[2].Text == "syn" && terms[3].Text == "tcp" && terms[4].Text == "option" && terms[5].Text == "maxseg" && terms[6].Text == "size" && terms[7].Text == "set")
                             { throw new ImportFailure("import.mssValueRequired", origin); }
                             if (terms.Length == 9 && string.Join(' ', terms.Take(8).Select(t => t.Text)) == "tcp flags syn tcp option maxseg size set")
@@ -96,19 +104,57 @@ public static partial class NativeImportPlanner
         private JsonObject Nat(Table table)
         {
             var dnat = new JsonArray(); var snat = new JsonArray(); var hooks = new HashSet<string>(StringComparer.Ordinal);
+            var regular = new HashSet<string>(StringComparer.Ordinal);
+            var visiting = new HashSet<string>(StringComparer.Ordinal);
+            var budget = 4096;
             foreach (var chain in table.Chains.Values)
             {
+                if (chain.Type is null && !chain.HasPolicy) { continue; }
                 Attempt(chain.Origin, () =>
                 {
                     Require(chain.Type == "nat" && chain.Policy == "accept" && chain.Hook is "prerouting" or "output" or "postrouting" && hooks.Add(chain.Hook) && chain.Priority == (chain.Hook == "postrouting" ? 100 : -100), chain.Origin, "import.natChainUnsupported");
                     Require(chain.Hook != "output" || chain.Rules.Count != 0, chain.Origin, "import.emptyNatOutputUnsupported");
-                    var destinationNat = chain.Hook is "prerouting" or "output";
-                    foreach (var (origin, terms) in chain.Rules)
+                    LowerChain(chain, chain.Hook!, null);
+                });
+            }
+            foreach (var chain in table.Chains.Values.Where(c => c.Type is null && !regular.Contains(c.Name)))
+            { AddGap(chain.Origin, "import.natRegularChainUnused"); }
+            Require(hooks.Count > 0, table.Origin, "import.natChainRequired");
+            return new JsonObject { ["schemaVersion"] = 1, ["dnatRules"] = dnat, ["snatRules"] = snat };
+
+            void LowerChain(Chain chain, string hook, RuleData? guard)
+            {
+                Require(visiting.Count < 9 && visiting.Add(chain.Name), chain.Origin, "import.natJumpCycleOrDepth");
+                try
+                {
+                    var destinationNat = hook is "prerouting" or "output";
+                    for (var i = 0; i < chain.Rules.Count; i++)
                     {
+                        var (origin, terms) = chain.Rules[i];
                         Attempt(origin, () =>
                         {
-                            foreach (var rule in ReadRules(table, origin, terms))
+                            Require(--budget >= 0, origin, "import.natJumpExpansionLimit");
+                            foreach (var sourceRule in ReadRules(table, origin, terms).SelectMany(rule => ProjectTranslationMap(rule, origin)))
                             {
+                                if (guard is not null && sourceRule.Action == "return")
+                                {
+                                    Require(i == chain.Rules.Count - 1 && sourceRule.Family is null && sourceRule.Protocol == "any" &&
+                                        sourceRule.Data.All(pair => pair.Key == "description"), origin, "import.natRegularReturnUnsupported");
+                                    continue;
+                                }
+                                var rule = guard is null ? sourceRule : IntersectNatJump(guard, sourceRule, origin);
+                                if (rule is null) { continue; }
+                                if (rule.Action == "jump")
+                                {
+                                    Require(destinationNat && rule.Jump is not null && table.Chains.TryGetValue(rule.Jump, out _) &&
+                                        table.Chains[rule.Jump].Type is null && !table.Chains[rule.Jump].HasPolicy,
+                                        origin, "import.natJumpTargetUnsupported");
+                                    Allowed(rule, origin, "source", "sourcePrefixes", "destination", "destinationPrefixes",
+                                        "destinationPort", "destinationPorts", "inputInterface", "outputInterface", "description");
+                                    regular.Add(rule.Jump!);
+                                    LowerChain(table.Chains[rule.Jump!], hook, rule);
+                                    continue;
+                                }
                                 Require(destinationNat ? rule.Action == "dnat" : rule.Action is "snat" or "masquerade" or "return", origin, "import.natActionUnsupported");
                                 Require(!rule.Data.ContainsKey("countPackets") || rule.CounterHasFamily, origin, "import.natCounterFamilyRequired");
                                 Require(!destinationNat || !rule.Data.ContainsKey("matchOriginalDestinationDnat") &&
@@ -117,23 +163,23 @@ public static partial class NativeImportPlanner
                                 Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "translatedAddress", "translatedPort", "description", "countPackets", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes");
                                 foreach (var family in Families(rule))
                                 {
+                                    Require(dnat.Count + snat.Count < 4096, origin, "import.natJumpExpansionLimit");
                                     var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol;
                                     if (destinationNat)
                                     {
                                         Rename(data, "destination", "originalDestination"); Rename(data, "destinationPort", "originalPort"); Rename(data, "destinationPorts", "originalPorts"); Rename(data, "destinationPortObject", "originalPortObject");
-                                        if (chain.Hook == "output") { data["hook"] = "output"; }
+                                        if (hook == "output") { data["hook"] = "output"; }
                                         dnat.Add(data);
                                     }
                                     else { data["action"] = rule.Action; snat.Add(data); }
                                 }
                             }
-                            Map(origin, "rule", destinationNat ? "nat.dnatRules" : "nat.snatRules");
+                            if (!completed.Contains(origin)) { Map(origin, "rule", destinationNat ? "nat.dnatRules" : "nat.snatRules"); }
                         });
                     }
-                });
+                }
+                finally { visiting.Remove(chain.Name); }
             }
-            Require(hooks.Count > 0, table.Origin, "import.natChainRequired");
-            return new JsonObject { ["schemaVersion"] = 1, ["dnatRules"] = dnat, ["snatRules"] = snat };
         }
 
         private JsonObject Bridge(Table table)

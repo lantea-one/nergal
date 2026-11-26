@@ -89,6 +89,15 @@ for family, flag, address, blocked, other_destination, denied_destination in (
             pass
         else:
             raise AssertionError("Filter admitted a translated packet with an unselected original destination")
+    for port in (19054, 19055):
+        with socket.socket(family, socket.SOCK_DGRAM) as server, socket.socket(family, socket.SOCK_DGRAM) as client:
+            server.settimeout(0.4)
+            server.bind((address, port))
+            client.bind((address, 0))
+            client.sendto(b"map", (blocked, port))
+            payload, source = server.recvfrom(64)
+            assert payload == b"map", f"Map indirection or missing-key fallthrough failed on port {port}"
+            assert source[0] == (blocked if port == 19054 else address), "Address-keyed SNAT map changed the wrong packet"
 
 
 def send_from_peer(family, target, port, peer):

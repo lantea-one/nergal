@@ -95,6 +95,15 @@ public static class NftFilterCompiler
                 continue;
             }
 
+            if (rule.Verdict == FilterVerdict.ClampRouteMss)
+            {
+                var nativeRule = new FilterRule(IpFamily.DualStack, FilterProtocol.Tcp, FilterVerdict.ClampRouteMss,
+                    Chain: FilterChainKind.Forward, Description: rule.Description, Enabled: rule.Enabled);
+                if (policy.SchemaVersion != 2 || rule != nativeRule)
+                { errors.Add(new("mss.routeRuleScope", path)); }
+                continue;
+            }
+
             if (!Enum.IsDefined(rule.Family))
             {
                 errors.Add(new("family.unknown", path + ".family"));
@@ -416,6 +425,11 @@ public static class NftFilterCompiler
 
     private static void AppendRule(StringBuilder text, FilterRule rule, string? rateLimitSetName)
     {
+        if (rule.Verdict == FilterVerdict.ClampRouteMss)
+        {
+            text.Append("add rule inet ").Append(TableName).Append(" forward tcp flags syn tcp option maxseg size set rt mtu\n");
+            return;
+        }
         var family = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
         text.Append("add rule inet " + TableName + ' ')
             .Append(ChainToken(rule.Chain)).Append(' ');

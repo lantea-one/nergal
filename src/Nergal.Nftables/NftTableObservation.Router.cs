@@ -52,10 +52,22 @@ public sealed partial class NftTableObservation
     private static bool TryParseMss(JsonElement expr, out int mss)
     {
         mss = 0;
+        return TryReadMssValue(expr, out var value) && value.ValueKind == JsonValueKind.Number &&
+            value.TryGetInt32(out mss) && mss is >= 536 and <= 1460;
+    }
+
+    private static bool IsRouteMssClamp(JsonElement expr) =>
+        TryReadMssValue(expr, out var value) && Properties(value, "rt") &&
+        Properties(value.GetProperty("rt"), "key") &&
+        value.GetProperty("rt").GetProperty("key").ValueEquals("mtu");
+
+    private static bool TryReadMssValue(JsonElement expr, out JsonElement value)
+    {
+        value = default;
         if (expr.ValueKind != JsonValueKind.Array || expr.GetArrayLength() != 2 || !Properties(expr[0], "match") || !Properties(expr[1], "mangle")) { return false; }
         var match = expr[0].GetProperty("match");
         var mangle = expr[1].GetProperty("mangle");
-        return Properties(match, "op", "left", "right") && match.GetProperty("op").GetString() == "in" &&
+        if (!(Properties(match, "op", "left", "right") && match.GetProperty("op").GetString() == "in" &&
             Properties(match.GetProperty("left"), "payload") && Properties(match.GetProperty("left").GetProperty("payload"), "protocol", "field") &&
             match.GetProperty("left").GetProperty("payload").GetProperty("protocol").GetString() == "tcp" &&
             match.GetProperty("left").GetProperty("payload").GetProperty("field").GetString() == "flags" &&
@@ -63,8 +75,9 @@ public sealed partial class NftTableObservation
             Properties(mangle, "key", "value") && Properties(mangle.GetProperty("key"), "tcp option") &&
             Properties(mangle.GetProperty("key").GetProperty("tcp option"), "name", "field") &&
             mangle.GetProperty("key").GetProperty("tcp option").GetProperty("name").GetString() == "maxseg" &&
-            mangle.GetProperty("key").GetProperty("tcp option").GetProperty("field").GetString() == "size" &&
-            mangle.GetProperty("value").TryGetInt32(out mss) && mss is >= 536 and <= 1460;
+            mangle.GetProperty("key").GetProperty("tcp option").GetProperty("field").GetString() == "size")) { return false; }
+        value = mangle.GetProperty("value");
+        return true;
     }
 
     private static RpFilterRule? ParseRawRule(JsonElement expr, bool output)

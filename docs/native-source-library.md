@@ -55,6 +55,19 @@ This is a bounded v1 grammar, not support for arbitrary nftables language.
 | Definitions/includes | Ordered lexical `define`/`redefine`/`undefine`, with values captured at definition time; exact uploaded include bindings, cycle/depth and expansion bounds. No host/service name resolution. |
 | Native commands | Supported create/add table definitions and add chain/set/rule statements can describe the complete candidate. They are parsed as data and never executed. |
 
+An unconditional forward-chain `tcp flags syn tcp option maxseg size set rt mtu`
+becomes an ordered, nonterminal rule. The kernel derives its MSS from routing
+state for each matching packet, and the rule retains its position relative to
+accepts and drops. The fixed MSS setting remains separately configurable.
+
+Static NAT maps support destination-port to address lookups for DNAT and
+source-address to address lookups for SNAT. Conversion emits a typed translation
+for each eligible key and preserves fallthrough when the key is absent.
+Destination NAT jumps can call bounded acyclic regular chains whose eligible
+rules only translate, jump, or end with an unconditional return. Conversion
+intersects each reachable rule with the jump's matches and preserves its order.
+Counters, negation, and conditional returns in a projected call deny conversion.
+
 Raw prerouting and raw output use priority −300 and retain ordered standalone
 `notrack` statements with supported predicates. The planner requires an
 accept-default raw chain. It rejects a `notrack` statement on an ordinary
@@ -81,7 +94,7 @@ rule. The managed receipt distinguishes this binding from `iifname`, which
 matches the current name. A rename can change the name reported by the kernel
 and therefore invalidate the receipt, even when the bound index is unchanged.
 
-Named counters, seeded counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
+Named counters, seeded counters, logging, other maps, concatenations, arbitrary/dynamic objects, unsupported
 control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
 repeated restrictions and trailing input are explicit gaps. The narrowly supported
 dynamic set form is a private implementation of one bounded meter, with exact

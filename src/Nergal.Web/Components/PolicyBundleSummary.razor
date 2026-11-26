@@ -88,7 +88,7 @@
                                 <td>@(rule.Enabled ? "Enabled" : "Disabled · omitted")</td>
                                 <td>
                                     <span class="badge @(rule.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                        @rule.Verdict.ToString().ToLowerInvariant()
+                                        @(rule.Verdict == FilterVerdict.ClampRouteMss ? "Clamp MSS to route MTU" : rule.Verdict.ToString().ToLowerInvariant())
                                     </span>
                                     @if (rule.CountPackets) { <span class="muted">counter</span> }
                                 </td>
