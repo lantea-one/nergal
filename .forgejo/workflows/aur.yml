@@ -4,6 +4,9 @@ on:
     paths:
       - '.forgejo/workflows/aur.yml'
       - 'deploy/aur/**'
+      - 'deploy/container/release-version.py'
+      - 'deploy/systemd/**'
+      - 'Directory.Build.props'
       - 'global.json'
       - 'scripts/package-release.sh'
       - 'tests/aur-*.test.*'
@@ -33,24 +36,24 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || '' }}
       - name: Verify release selection and stage recipes
+        env:
+          AUR_RELEASE_ID: ${{ github.event.release.id }}
         run: |
           python3 -B scripts/test-ci-runner-policy.py
           python3 -B tests/aur-release.test.py
           python3 -B tests/aur-attachment.test.py
-          stage="$(mktemp -d)"
+          if [[ "$GITHUB_EVENT_NAME" == release ]]; then
+            [[ "${AUR_RELEASE_ID:?Missing release ID}" =~ ^[1-9][0-9]*$ ]]
+            # Compiled debug metadata includes build paths. Use the same path
+            # in each disposable job container so the archive survives retries.
+            stage="/tmp/nergal-aur-release-$AUR_RELEASE_ID"
+            mkdir -m 0700 "$stage"
+          else
+            stage="$(mktemp -d)"
+          fi
           cp -R deploy/aur/nergal-bin deploy/aur/nergal-git deploy/aur/update-bin.py "$stage/"
           chown -R nergal-builder "$stage"
           echo "AUR_STAGE=$stage" >> "$GITHUB_ENV"
-      - name: Refresh the binary recipe from the published release
-        if: github.event_name != 'pull_request'
-        env:
-          AUR_RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          selection=()
-          if [[ "$GITHUB_EVENT_NAME" == release ]]; then
-            selection=(--tag "${AUR_RELEASE_TAG:?Missing release tag}")
-          fi
-          runuser -u nergal-builder -- python3 -B "$AUR_STAGE/update-bin.py" "${selection[@]}"
       - name: Verify current package recipe builds this revision
         if: github.event_name != 'workflow_dispatch'
         run: |
@@ -62,13 +65,46 @@ jobs:
           # makepkg intentionally ignores the build user's Git configuration.
           git config --file "$AUR_STAGE/gitconfig" url."file://$AUR_STAGE/candidate".insteadOf https://git.lantea.one/lantea-one/nergal.git
           echo "MAKEPKG_GIT_CONFIG=$AUR_STAGE/gitconfig" >> "$GITHUB_ENV"
-      - name: Build both variants with makepkg and install with pacman
+      - name: Build the Git package and its verified Linux archive
         run: |
-          bash tests/aur-packages.test.sh "$AUR_STAGE" nergal-builder
+          revision=$(git rev-parse HEAD)
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          cd "$AUR_STAGE/nergal-git"
+          runuser -u nergal-builder -- makepkg --printsrcinfo | diff -u .SRCINFO -
+          runuser -u nergal-builder -- makepkg --noconfirm
           if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch ]]; then
-            built=$(runuser -u nergal-builder -- git -C "$AUR_STAGE/nergal-git/src/nergal" rev-parse HEAD)
-            test "$built" = "$(git rev-parse HEAD)"
+            built=$(runuser -u nergal-builder -- git -C src/nergal rev-parse HEAD)
+            test "$built" = "$revision"
           fi
+      - name: Attach the Linux archive and checksum to the Forgejo release
+        if: github.event_name == 'release'
+        env:
+          AUR_RELEASE_ID: ${{ github.event.release.id }}
+          AUR_RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TOKEN: ${{ forgejo.token }}
+        run: |
+          version=$(python3 -B deploy/container/release-version.py version "refs/tags/$AUR_RELEASE_TAG")
+          payload="$AUR_STAGE/nergal-git/src/payload"
+          (cd "$payload" && sha256sum --check --strict SHA256SUMS)
+          bash deploy/aur/attach-release-assets.sh "$payload/nergal_${version}_linux-x64.tar.gz" "$payload/SHA256SUMS"
+      - name: Refresh the binary recipe from the published release
+        if: github.event_name != 'pull_request'
+        env:
+          AUR_RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          selection=()
+          if [[ "$GITHUB_EVENT_NAME" == release ]]; then
+            selection=(--tag "${AUR_RELEASE_TAG:?Missing release tag}")
+          fi
+          runuser -u nergal-builder -- python3 -B "$AUR_STAGE/update-bin.py" "${selection[@]}"
+      - name: Build and install the binary package and verify both variants
+        run: |
+          (
+            cd "$AUR_STAGE/nergal-bin"
+            runuser -u nergal-builder -- makepkg --printsrcinfo | diff -u .SRCINFO -
+            runuser -u nergal-builder -- makepkg --noconfirm
+          )
+          bash tests/aur-packages.test.sh "$AUR_STAGE"
       - name: Stage both tested recipes
         if: github.event_name != 'pull_request'
         run: |
@@ -93,4 +129,4 @@ jobs:
           AUR_RELEASE_ID: ${{ github.event.release.id }}
           AUR_RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_TOKEN: ${{ forgejo.token }}
-        run: bash deploy/aur/attach-recipes.sh "$AUR_STAGE/nergal-aur-recipes.zip"
+        run: bash deploy/aur/attach-release-assets.sh "$AUR_STAGE/nergal-aur-recipes.zip"

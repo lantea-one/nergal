@@ -1,16 +1,7 @@
 #!/usr/bin/env bash
-# Run in a disposable Arch root with dependencies installed and an unprivileged builder.
+# Install the two built packages in a disposable Arch root with dependencies installed.
 set -euo pipefail
-cd "${1:?Supply the staged AUR recipe directory}"
-builder=${2:?Supply the unprivileged build user}
-
-for package in nergal-bin nergal-git; do
-    (
-        cd "$package"
-        runuser -u "$builder" -- makepkg --printsrcinfo | diff -u .SRCINFO -
-        runuser -u "$builder" -- makepkg --noconfirm
-    )
-done
+cd "${1:?Supply the staged AUR package directory}"
 
 binary=(nergal-bin/*.pkg.tar.zst)
 source=(nergal-git/*.pkg.tar.zst)
