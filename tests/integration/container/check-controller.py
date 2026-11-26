@@ -60,7 +60,7 @@ class Deployment:
                     "NERGAL_SETTINGS_FILE": str(root / "controller.env")}
         (root / "controller.env").write_text("AllowedHosts=127.0.0.1\n")
         self.compose_args = ["compose", "--project-name", self.project, "--env-file", "/dev/null",
-                             "--file", str(ROOT / "deploy/container/compose.yaml")]
+                             "--file", str(ROOT / "docker-compose.yml")]
 
     def docker(self, *args, **kwargs):
         return subprocess.run(["docker", *args], cwd=ROOT, env=self.env, check=kwargs.pop("check", True),

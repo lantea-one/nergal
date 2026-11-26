@@ -25,12 +25,19 @@ and account databases, then provision the first Administrator. Run
 enabling its control service. Register the local Unix socket in the controller
 or use pinned mutual TLS for a remote host.
 
-## Containerized controller
+## Container images and Compose
 
-Build the image from the repository and use Compose with private persistent
-application and session key volumes and read-only HTTPS credentials. The web
-container runs as a dedicated non-root UID with zero Linux capabilities.
-Managed hosts run the separate native agent and connect over pinned mutual TLS.
+Version tags build and publish Linux AMD64 images for both roles to the Forgejo
+Registry. Use the same release tag for `git.lantea.one/lantea-one/nergal/controller`
+and `git.lantea.one/lantea-one/nergal/agent`, or select the recorded image digests.
+
+Run the controller with the repository-root `docker-compose.yml`. The controller
+runs as a dedicated non-root user with zero Linux capabilities, private state and
+session key volumes, and read-only HTTPS credentials. On each managed Linux host,
+use `deploy/container/docker-compose.agent.yml` with the separate agent image and
+its protected journal and TLS credentials. Enroll the agent explicitly and
+connect the controller over pinned mutual TLS. Native systemd agent installation
+also works with the containerized controller.
 
 Follow the [deployment guide](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/deployment.md)
 for exact package, bootstrap, and container commands.

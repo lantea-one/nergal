@@ -242,36 +242,123 @@ ordering have been established.
 
 ## Containerized controller
 
-Build the unprivileged controller image from this checkout and initialize its
-private named volumes with the offline administrator service.
+The repository-root `docker-compose.yml` starts the unprivileged controller
+and provides an offline administrator service. Use Docker Compose 2.20.3 or newer
+for Compose file inclusion. Select one image source from the checkout root.
 
 ```sh
+# Build from the local checkout.
 sh deploy/container/build.sh
-docker compose -f deploy/container/compose.yaml run --rm admin account init /var/lib/nergal/state/accounts
-docker compose -f deploy/container/compose.yaml run --rm admin account provision /var/lib/nergal/state/accounts admin
-docker compose -f deploy/container/compose.yaml run --rm admin controller init /var/lib/nergal/state/controller
 ```
 
-Set `NERGAL_CREDENTIALS_DIR` to a directory containing `https.crt`,
+```sh
+# Or select and pull a published release tag.
+export NERGAL_IMAGE=git.lantea.one/lantea-one/nergal/controller:vVERSION
+docker compose pull controller
+```
+
+For authenticated pulls, sign in with `docker login git.lantea.one` before pulling.
+Set `NERGAL_CREDENTIALS_DIR` to the absolute path of a directory containing `https.crt`,
 `https.key`, and `wrapping.pfx`. Give the directory mode `0700` and the private
 files mode `0600`. Both must be owned by UID/GID 1654 as seen from the container.
-The mount is read-only.
-Use `NERGAL_SETTINGS_FILE` for private deployment overrides. The example
-publishes the HTTPS port on IPv4 loopback. For remote browser access, configure
-the intended HTTPS entry point and hostname.
+The mount is read-only. Set `NERGAL_SETTINGS_FILE` to the absolute path of a
+private environment file if you need deployment-specific settings. The example
+publishes HTTPS on IPv4 loopback. Use `NERGAL_HTTPS_PORT` to choose a different
+published port. For remote browser access, configure the intended HTTPS entry
+point and hostname.
+
+Initialize both stores and provision the first administrator on a fresh
+installation. The administrator service uses the same selected image and
+controller state volume.
 
 ```sh
-docker compose -f deploy/container/compose.yaml up -d --no-build controller
+docker compose run --rm admin account init /var/lib/nergal/state/accounts
+docker compose run --rm admin account provision /var/lib/nergal/state/accounts admin
+docker compose run --rm admin controller init /var/lib/nergal/state/controller
+docker compose up -d --no-build controller
 ```
 
 The controller has no Linux capabilities and uses separate volumes for
 application state and the encrypted session key ring. Preserve both volumes
-and the wrapping certificate when replacing the container. Run the privileged
-agent as its own service on each managed Linux host and connect over pinned
-mutual TLS. Configure the controller's client certificate and private key as
-read-only files in the credentials directory using
+and the wrapping certificate when replacing the container. Configure the
+controller's client certificate and private key as read-only files in its
+credentials directory using
 `ControllerState__TlsClientCertificatePath` and
-`ControllerState__TlsClientKeyPath`.
+`ControllerState__TlsClientKeyPath`. Register the agent's management endpoint
+and its server certificate pin in **Hosts**.
+
+## Containerized agent
+
+Run the agent Compose file on each managed Linux host with a rootful Docker
+engine and native nftables support. The container shares the host network
+namespace so its nftables commands act on that host. Treat starting the agent
+and enrolling a firewall as separate operator actions. Use one agent deployment
+for each managed host and preserve its private journal across container replacement.
+
+Select one image source from the checkout root.
+
+```sh
+# Build from the local checkout.
+NERGAL_COMPONENT=agent sh deploy/container/build.sh
+```
+
+```sh
+# Or select a published release tag.
+export NERGAL_AGENT_IMAGE=git.lantea.one/lantea-one/nergal/agent:vVERSION
+```
+
+Prepare the agent server certificate and controller client fingerprint as
+described in [Remote TLS 1.3 mutual authentication](#remote-tls-13-mutual-authentication-agents-tls-serve).
+Use dedicated journal and TLS directories owned by UID/GID 1654 with mode
+`0700`. Install `server.crt` and `server.key` into the TLS directory. Make the
+private key an owner-only regular file with mode `0600`.
+
+```sh
+export NERGAL_AGENT_STATE_DIR=/var/lib/nergal-container/agent
+export NERGAL_AGENT_TLS_DIR=/etc/nergal-container/agent
+sudo install -d -m 0700 -o 1654 -g 1654 "$NERGAL_AGENT_STATE_DIR" "$NERGAL_AGENT_TLS_DIR"
+sudo install -m 0644 -o 1654 -g 1654 server.crt "$NERGAL_AGENT_TLS_DIR/server.crt"
+sudo install -m 0600 -o 1654 -g 1654 server.key "$NERGAL_AGENT_TLS_DIR/server.key"
+export NERGAL_AGENT_LISTEN=192.0.2.10:9443
+export NERGAL_AGENT_CLIENT_SHA256="$(openssl x509 -in controller-client.crt -outform DER | sha256sum | cut -d ' ' -f 1)"
+```
+
+Use the host's intended management IP and port for `NERGAL_AGENT_LISTEN`.
+The agent accepts a comma-separated list of controller client fingerprints. If
+you selected a registry image, run
+`docker compose -f deploy/container/docker-compose.agent.yml pull agent` now.
+For a fresh journal, enroll explicitly and then start the listener.
+
+```sh
+docker compose -f deploy/container/docker-compose.agent.yml run --rm agent enroll /var/lib/nergal/agent
+docker compose -f deploy/container/docker-compose.agent.yml up -d --no-build agent
+```
+
+Register the endpoint and the agent's server certificate fingerprint in the
+controller and check the authenticated status. After a reboot, run
+`docker compose -f deploy/container/docker-compose.agent.yml run --rm agent reconcile /var/lib/nergal/agent`
+before starting the listener. The image's launcher drops to UID/GID 1654 with
+only `CAP_NET_ADMIN` and the agent's TLS bind is read-only. The Compose stop grace
+period permits the independent watchdog to finish while the container shuts down.
+Forced container termination can interrupt the watchdog. Follow the agent recovery
+procedure and verify the observed policy before resuming control.
+
+## Publishing the container images
+
+The **Release Docker images** workflow builds Linux AMD64 controller and agent
+images on the shared rootless CI engine. A version tag such as `vVERSION` publishes
+both images under that tag in the Forgejo Registry.
+
+- `git.lantea.one/lantea-one/nergal/controller:vVERSION`
+- `git.lantea.one/lantea-one/nergal/agent:vVERSION`
+
+Set the repository variable `REGISTRY_USERNAME` to a publishing account with
+write access to the organization's packages. Store a Forgejo access token
+with `write:package` scope for that account in the repository secret
+`REGISTRY_TOKEN`. The workflow records both pushed digests in its summary.
+Use a version tag or the corresponding digest when deploying. Same-repository
+packaging pull requests and manual runs exercise the build with publication
+credentials reserved for tag pushes.
 
 ## Operational boundaries
 

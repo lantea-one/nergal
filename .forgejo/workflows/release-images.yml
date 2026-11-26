@@ -1,0 +1,78 @@
+name: Release Docker images
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - '.forgejo/workflows/release-images.yml'
+      - 'deploy/container/**'
+      - 'docker-compose.yml'
+  workflow_dispatch:
+
+jobs:
+  images:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: asgard-ci
+    timeout-minutes: 25
+    env:
+      CI_IMAGE_TAG: ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: https://github.com/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Verify the shared CI build engine
+        run: |
+          python3 -B scripts/test-ci-runner-policy.py
+          security_options=$(docker info --format '{{json .SecurityOptions}}')
+          grep -q 'name=rootless' <<< "$security_options"
+          docker buildx version
+      - name: Build and check both images
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+          NERGAL_AGENT_STATE_DIR=/tmp/nergal-ci-journal NERGAL_AGENT_TLS_DIR=/tmp/nergal-ci-tls \
+            docker compose -f deploy/container/docker-compose.agent.yml config --quiet
+          revision=$(git rev-parse HEAD)
+          for component in controller agent; do
+            image="nergal-$component:$CI_IMAGE_TAG"
+            NERGAL_COMPONENT="$component" NERGAL_IMAGE="$image" sh deploy/container/build.sh \
+              --platform linux/amd64 \
+              --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.revision=$revision"
+            test "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image")" = linux/amd64
+          done
+      # PRs and manual runs exercise the same build without receiving publishing credentials.
+      - name: Publish versioned images to Forgejo Registry
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          REGISTRY_USERNAME: ${{ vars.REGISTRY_USERNAME }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag=${GITHUB_REF#refs/tags/}
+          [[ "$tag" =~ ^v[0-9][a-zA-Z0-9_.-]{0,126}$ ]] || { echo 'Invalid Docker release tag' >&2; exit 1; }
+          [[ "$GITHUB_SERVER_URL" =~ ^https://[a-zA-Z0-9.-]+(:[0-9]+)?/?$ ]] || exit 1
+          registry=${GITHUB_SERVER_URL#https://}
+          registry=${registry%/}
+          repository="$registry/${GITHUB_REPOSITORY,,}"
+          : "${REGISTRY_USERNAME:?Configure the REGISTRY_USERNAME repository variable}"
+          : "${REGISTRY_TOKEN:?Configure the REGISTRY_TOKEN repository secret}"
+          config_dir=$(mktemp -d)
+          export DOCKER_CONFIG="$config_dir"
+          cleanup() {
+            rm -rf -- "$config_dir"
+            docker image rm "$repository/controller:$tag" "$repository/agent:$tag" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          printf '%s\n' "$REGISTRY_TOKEN" | docker login "$registry" --username "$REGISTRY_USERNAME" --password-stdin
+          for component in controller agent; do
+            image="$repository/$component:$tag"
+            docker tag "nergal-$component:$CI_IMAGE_TAG" "$image"
+            docker push "$image"
+            digest=$(docker buildx imagetools inspect "$image" --format '{{.Manifest.Digest}}')
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            printf -- '- `%s` at `%s`\n' "$image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+          done
+      - name: Remove temporary build tags
+        if: always()
+        run: |
+          docker image rm "nergal-controller:$CI_IMAGE_TAG" "nergal-agent:$CI_IMAGE_TAG" >/dev/null 2>&1 || true

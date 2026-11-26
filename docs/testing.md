@@ -298,6 +298,28 @@ authenticated drift detection and recovery. The controller's restored settings,
 reviewed policy, credential state, host observations and audit are checked over
 HTTPS. Run this separately from the default shared CI job.
 
+## Container acceptance
+
+Run `python3 -B tests/integration/container/check-controller.py` on a local
+Docker engine to verify the root Compose example with disposable credentials
+and volumes. It checks HTTPS sign-in, offline provisioning, and session and
+settings persistence across restart and recreation.
+
+Build the agent image and prepare a Debian base disk using the installed-system
+guide above. Stage a Linux AMD64 static Docker Engine archive from Docker and
+its published SHA-256 digest. The agent test opens that archive in a QEMU guest
+with no external network or host mounts. It starts Docker in an isolated guest
+network namespace and checks explicit enrollment, effective capabilities,
+pinned TLS and packet restoration after graceful container shutdown. Supply a
+static AMD64 Compose executable as the last argument to run the checked-in agent
+Compose example in the guest.
+
+```sh
+NERGAL_COMPONENT=agent sh deploy/container/build.sh
+NERGAL_QEMU_ACCELERATOR=kvm bash tests/integration/container/check-agent.sh \
+    BASE_QCOW2 nergal-agent:local DOCKER_STATIC_AMD64_TGZ DOCKER_SHA256 STATIC_COMPOSE_AMD64
+```
+
 ## Continuous integration
 
 The Forgejo workflow builds, checks formatting, runs unit tests with coverage

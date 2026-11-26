@@ -1,0 +1,44 @@
+services:
+  agent:
+    image: ${NERGAL_AGENT_IMAGE:-nergal-agent:local}
+    build:
+      context: ../..
+      dockerfile: deploy/container/agent.Dockerfile
+    user: "0:0"
+    # Native nftables commands must see the managed Linux host's network namespace.
+    network_mode: host
+    restart: "no"
+    # Allow an armed watchdog its maximum confirmation window plus rollback time.
+    stop_grace_period: 65m
+    read_only: true
+    cap_drop: [ALL]
+    # The launcher switches to UID/GID 1654 and retains only NET_ADMIN.
+    cap_add: [NET_ADMIN, SETUID, SETGID, SETPCAP]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,mode=0700,uid=1654,gid=1654,size=64m"]
+    # Set NERGAL_AGENT_LISTEN to the management IP:port and
+    # NERGAL_AGENT_CLIENT_SHA256 to the controller's SHA-256 pin(s).
+    # The listener requires both values. Offline command overrides can omit them:
+    # docker compose -f deploy/container/docker-compose.agent.yml run --rm agent enroll /var/lib/nergal/agent
+    # docker compose -f deploy/container/docker-compose.agent.yml run --rm agent reconcile /var/lib/nergal/agent
+    command:
+      - tls-serve
+      - /var/lib/nergal/agent
+      - "${NERGAL_AGENT_LISTEN:-}"
+      - "${NERGAL_AGENT_TLS_CERT_PATH:-/etc/nergal/agent/private/server.crt}"
+      - "${NERGAL_AGENT_TLS_KEY_PATH:-/etc/nergal/agent/private/server.key}"
+      - "${NERGAL_AGENT_CLIENT_SHA256:-}"
+    volumes:
+      # Pre-create these directories with owner 1654:1654 and mode 0700.
+      # Keep journal files and the TLS private key owner-only (0600).
+      - type: bind
+        source: ${NERGAL_AGENT_STATE_DIR:?Set the path to the protected agent journal directory}
+        target: /var/lib/nergal/agent
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${NERGAL_AGENT_TLS_DIR:?Set the path to the protected agent TLS directory}
+        target: /etc/nergal/agent/private
+        read_only: true
+        bind:
+          create_host_path: false
