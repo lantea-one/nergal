@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>‚Außer‘ negiert einen vorhandenen Matcher; er entfernt ihn nicht. Translation, Ports, Position und aktivierter Zustand bleiben erhalten. Eine Eingabeschnittstelle oder Quelle muss konfiguriert werden, bevor sie negiert wird. DNAT Vorsicht: es betrifft Anrufer außerhalb der ausgewählten Quelle.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Regel {1} der zusätzlichen raw-Kette {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>CT-Zustände (durch Kommas getrennt: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Wählen Sie für eine Quellbeschränkung genau eine IP-Familie. Bearbeiten Sie Quellmengen unter „Erweitertes JSON“.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>MSS auf die MTU der Route begrenzen</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Verbindungsstatus: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Zählen und fortfahren</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>DNAT-Regeln</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Zielbeschränkung: {0}. Bearbeiten Sie diese Beschränkung unter „Erweitertes JSON“.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Verbindungsverfolgung deaktivieren und fortfahren</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>Hook</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Zähler in der Regel</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Eingangsschnittstelle über Index gebunden</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>Bei der Installation wird der Name des Eingangsports an seinen Schnittstellenindex gebunden.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>Bei der Installation wird der Name der Eingangsschnittstelle an ihren Index gebunden.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>Keine DNAT-Regeln definiert.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Ursprüngliche Quelle (conntrack): {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Ursprüngliches Ziel (conntrack): {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>DNAT-Regeln im Ausgang:</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>DNAT-Regeln im Prerouting:</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>raw-Aktion</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>raw-Ausgangsregel {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>raw-Ausgang: {0} Regeln.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Ablehnen — ICMP „Port nicht erreichbar“</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Diese Regel zählt passende Frames und Bytes, bevor sie ihre Aktion ausführt.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Diese Regel zählt passende Pakete und Bytes, bevor sie ihre Filterentscheidung trifft.</value>
+    </data>
 </root>

@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>"Except" एक मौजूदा मैचर को नकारात्मक करता है; यह इसे हटा नहीं देता है। अनुवाद, बंदरगाह, स्थिति और सक्षम राज्य बनाए रखा गया है। एक इनपुट इंटरफ़ेस या स्रोत को इसे नकारात्मक होने से पहले कॉन्फ़िगर किया जाना चाहिए। DNAT ध्यान से: यह चयनित स्रोत के बाहर कॉलर को प्रभावित करता है।</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>सहायक raw चेन {0} का नियम {1}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>कनेक्शन ट्रैकिंग (CT) की अवस्थाएँ (अल्पविराम से अलग करें: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>स्रोत प्रतिबंध के लिए केवल एक IP परिवार चुनें। स्रोत सेट उन्नत JSON में संपादित करें।</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>मार्ग की MTU के अनुसार MSS सीमित करें</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>कनेक्शन की स्थिति: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>गिनें और प्रोसेसिंग जारी रखें</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>DNAT नियम</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>गंतव्य प्रतिबंध: {0}। यह प्रतिबंध उन्नत JSON में संपादित करें।</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>कनेक्शन ट्रैकिंग बंद करें और प्रोसेसिंग जारी रखें</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>हुक (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>नियम में अंतर्निहित काउंटर</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>इनपुट इंटरफ़ेस इंडेक्स से बँधा है</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>इंस्टॉलेशन के समय प्रवेश पोर्ट का नाम उसके इंटरफ़ेस इंडेक्स से बाँधा जाता है।</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>इंस्टॉलेशन के समय इनपुट इंटरफ़ेस का नाम उसके इंडेक्स से बाँधा जाता है।</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>कोई DNAT नियम परिभाषित नहीं है।</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>कनेक्शन का मूल गंतव्य: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>कनेक्शन का मूल स्रोत: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>आउटपुट (output) के DNAT नियम:</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>प्रीरूटिंग (prerouting) के DNAT नियम:</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>raw कार्रवाई</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>आउटपुट (output) का raw नियम {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>आउटपुट (output) में raw नियमों की संख्या: {0}।</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>अस्वीकार करें — पोर्ट तक पहुँच न होने का ICMP संदेश</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>यह नियम अपनी कार्रवाई से पहले मेल खाने वाले फ़्रेम और उनके बाइट गिनता है।</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>यह नियम अपना निर्णय लागू करने से पहले मेल खाने वाले पैकेट और उनके बाइट गिनता है।</value>
+    </data>
 </root>

@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>“ Ngoại trừ trường hợp của người ta không chấp nhận sự trùng khớp mà không loại bỏ nó.  Người ta giữ lại việc dịch thuật, cảng, vị trí và tình trạng có hiệu lực.  Cần phải cấu hình một giao diện hay nguồn nhập trước khi cân nhắc nó.  Xem lại mã nguồn mật mã DNAT cẩn thận: nó ảnh hưởng đến người gọi bên ngoài nguồn đã chọn.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Quy tắc {1} trong chuỗi raw phụ trợ {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>Trạng thái theo dõi kết nối (CT) (phân cách bằng dấu phẩy: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Chọn một họ IP duy nhất để giới hạn nguồn. Chỉnh sửa các tập hợp nguồn trong mục JSON nâng cao.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>Giới hạn MSS theo MTU của tuyến đường</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Trạng thái kết nối: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Đếm và tiếp tục xử lý</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>Quy tắc DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Giới hạn đích: {0}. Chỉnh sửa giới hạn này trong mục JSON nâng cao.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Tắt theo dõi kết nối và tiếp tục xử lý</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>Điểm xử lý (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Bộ đếm trong quy tắc</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Giao diện đầu vào được liên kết theo chỉ số</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>Khi cài đặt, tên cổng vào được liên kết với chỉ số giao diện của cổng.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>Khi cài đặt, tên giao diện đầu vào được liên kết với chỉ số của giao diện đó.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>Chưa có quy tắc DNAT nào được định nghĩa.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Đích ban đầu của kết nối: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Nguồn ban đầu của kết nối: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>Quy tắc DNAT ở bước đầu ra (output):</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>Quy tắc DNAT ở bước trước khi định tuyến (prerouting):</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>Thao tác raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>Quy tắc raw đầu ra (output) {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>Số quy tắc raw ở bước đầu ra (output): {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Từ chối — thông báo ICMP không thể đến cổng</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Quy tắc này đếm các khung khớp và số byte của chúng trước khi thực hiện thao tác.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Quy tắc này đếm các gói tin khớp và số byte của chúng trước khi áp dụng quyết định xử lý.</value>
+    </data>
 </root>

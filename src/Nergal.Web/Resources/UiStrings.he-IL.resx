@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>"קבל" שולל את המתאם הקיים; הוא אינו מסיר אותו.תרגום, נמלים, מיקום והמדינה התאפשרה נשמרים.יש להגדיר ממשק קלט או מקור לפני מחיקתו. Review negated-source DNAT בקפידה: הוא משפיע על קוראנים מחוץ למקור שנבחר.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>כלל {1} בשרשרת העזר raw ‏{0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>מצבי מעקב חיבורים (CT) (מופרדים בפסיקים: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>יש לבחור משפחת IP אחת להגבלת המקור. ניתן לערוך את קבוצות המקור במקטע JSON מתקדם.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>הגבלת MSS לפי ה‑MTU של הנתיב</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>מצב החיבור: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>ספירה והמשך עיבוד</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>כללי DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>הגבלת יעד: {0}. ניתן לערוך הגבלה זו במקטע JSON מתקדם.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>השבתת מעקב החיבורים והמשך עיבוד</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>נקודת עיבוד (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>מונה בתוך הכלל</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>ממשק הקלט משויך לפי האינדקס שלו</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>בעת ההתקנה, שם הפורט הנכנס משויך לאינדקס הממשק שלו.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>בעת ההתקנה, שם ממשק הקלט משויך לאינדקס שלו.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>לא הוגדרו כללי DNAT.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>היעד המקורי של החיבור: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>המקור המקורי של החיבור: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>כללי DNAT בשלב הפלט (output):</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>כללי DNAT בשלב שלפני הניתוב (prerouting):</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>פעולת raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>כלל raw מס׳ {0} בשלב הפלט (output)</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>מספר כללי raw בשלב הפלט (output): {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>דחייה — הודעת ICMP על פורט שאינו נגיש</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>כלל זה סופר את המסגרות שתואמות לו ואת הבתים שלהן לפני ביצוע הפעולה.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>כלל זה סופר את המנות שתואמות לו ואת הבתים שלהן לפני קבלת ההכרעה.</value>
+    </data>
 </root>

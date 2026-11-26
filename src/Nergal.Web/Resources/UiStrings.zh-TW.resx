@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>「Except（排除）」會將現有比對條件反轉，並不會移除該條件。轉換、連接埠、位置和啟用狀態都會保留。反轉輸入介面或來源條件前，必須先設定相應的條件。請仔細審查反轉來源條件的 DNAT，因為它會影響來自所選來源範圍之外的連線。</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>輔助 raw 鏈 {0} 的規則 {1}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>CT 狀態（以逗號分隔：new, established, related, invalid, untracked）</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>來源限制只能選擇一種 IP 位址家族。請在進階 JSON 中編輯來源位址集合。</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>將 MSS 限制在路由 MTU 允許的範圍內</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>連線狀態：DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>計數後繼續評估規則</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>DNAT 規則</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>目的地限制：{0}。請在進階 JSON 中編輯此限制。</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>停用連線追蹤並繼續處理</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>掛鉤</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>內嵌計數器</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>依索引繫結的輸入介面</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>安裝規則時，會將入站連接埠的名稱繫結至其介面索引。</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>安裝規則時，會將輸入介面的名稱繫結至其介面索引。</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>未定義 DNAT 規則。</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>連線的原始目的地：{0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>連線的原始來源：{0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>輸出（output）DNAT 規則：</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>路由前（prerouting）DNAT 規則：</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>raw 規則動作</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>raw 輸出規則 {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>raw 輸出規則共 {0} 條。</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>拒絕 — ICMP 連接埠無法到達</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>這項規則會在執行動作前統計符合條件的訊框數和位元組數。</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>這項規則會在作出判定前統計符合條件的封包數和位元組數。</value>
+    </data>
 </root>

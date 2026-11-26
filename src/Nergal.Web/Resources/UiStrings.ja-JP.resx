@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>「Except（除外）」は既存の照合条件を否定するもので、その条件を削除するものではありません。変換、ポート、位置、有効状態は維持されます。入力インターフェースまたは送信元の条件を否定するには、該当する項目を先に設定してください。送信元条件を否定した DNAT は、選択した送信元以外からの通信に影響するため、慎重にレビューしてください。</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>補助 raw チェーン {0} のルール {1}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>CT 状態（カンマ区切り: new, established, related, invalid, untracked）</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>送信元の制限には IP アドレスファミリーを 1 つ選択してください。送信元セットは高度な JSON で編集できます。</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>経路の MTU に合わせて MSS を制限</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>接続ステータス: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>カウントしてルール評価を続行</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>DNAT ルール</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>宛先の制限: {0}。この制限は高度な JSON で編集できます。</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>接続追跡を無効にして処理を続行</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>フック</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>インラインカウンター</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>入力インターフェースをインデックスで指定</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>ルールのインストール時に、受信ポート名が対応するインターフェースのインデックスにひも付けられます。</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>ルールのインストール時に、入力インターフェース名がそのインデックスにひも付けられます。</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>DNAT ルールが定義されていません。</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>接続の元の宛先: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>接続の元の送信元: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>output フックの DNAT ルール:</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>prerouting フックの DNAT ルール:</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>raw ルールのアクション</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>raw の output ルール {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>raw の output ルール: {0} 件。</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>拒否 — ICMP ポート到達不能</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>このルールは、アクションの実行前に、一致したフレーム数とバイト数を数えます。</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>このルールは、判定を下す前に、一致したパケット数とバイト数を数えます。</value>
+    </data>
 </root>

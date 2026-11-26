@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>"За исключением" отрицает существующий спичечный элемент; он не удаляет его. Перевод, порты, положение и включенное состояние сохраняются. Перед его отрицанием должен быть настроен входной интерфейс или источник. Проверка отрицаемого источника DNAT тщательно: он влияет на абонентов вне выбранного источника.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Правило {1} вспомогательной цепочки raw {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>Состояния CT (через запятую: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Для ограничения по источнику выберите одно семейство IP. Наборы источников можно изменить в разделе расширенного редактирования JSON.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>Ограничить MSS с учётом MTU маршрута</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Статус соединения: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Подсчитать и продолжить проверку правил</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>Правила DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Ограничение по назначению: {0}. Измените это ограничение в разделе расширенного редактирования JSON.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Отключить отслеживание соединений и продолжить обработку</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>Точка перехвата</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Встроенный счётчик</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Входной интерфейс привязан по индексу</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>При установке правила имя входного порта привязывается к индексу его интерфейса.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>При установке правила имя входного интерфейса привязывается к его индексу.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>Правила DNAT не определены.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Исходное назначение соединения: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Исходный источник соединения: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>Правила DNAT для исходящего трафика (output):</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>Правила DNAT до маршрутизации (prerouting):</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>Действие правила raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>Правило raw для исходящего трафика {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>Исходящий трафик raw — число правил: {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Отклонить с ответом ICMP о недоступности порта</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Это правило подсчитывает подходящие кадры и их байты перед выполнением действия.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Это правило подсчитывает подходящие пакеты и их байты перед вынесением вердикта.</value>
+    </data>
 </root>

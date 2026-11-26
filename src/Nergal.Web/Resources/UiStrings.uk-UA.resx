@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>“Except” заперечує існуючий матчер; він не видаляє його. Переклад, порти, положення та ввімкнений стан зберігаються. Інтерфейс введення або джерело необхідно налаштувати до його обмотування. Огляд negated-source DNAT ретельно: він впливає на дзвінки за межі вибраного джерела.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Правило {1} допоміжного ланцюжка raw {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>Стани CT (через кому: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Для обмеження за джерелом виберіть одне сімейство IP. Набори джерел можна змінити в розділі розширеного редагування JSON.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>Обмежити MSS з урахуванням MTU маршруту</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Статус з’єднання: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Підрахувати й продовжити перевірку правил</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>Правила DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Обмеження за призначенням: {0}. Змініть це обмеження в розділі розширеного редагування JSON.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Вимкнути відстеження з’єднань і продовжити обробку</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>Точка перехоплення</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Вбудований лічильник</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Вхідний інтерфейс прив’язано за індексом</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>Під час установлення правила назва вхідного порту прив’язується до індексу його інтерфейсу.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>Під час установлення правила назва вхідного інтерфейсу прив’язується до його індексу.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>Правил DNAT не визначено.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Початкове призначення з’єднання: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Початкове джерело з’єднання: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>Правила DNAT для вихідного трафіку (output):</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>Правила DNAT до маршрутизації (prerouting):</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>Дія правила raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>Правило raw для вихідного трафіку {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>Вихідний трафік raw — кількість правил: {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Відхилити з відповіддю ICMP про недоступність порту</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Це правило підраховує кадри, що відповідають умовам, і їхні байти перед виконанням дії.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Це правило підраховує пакети, що відповідають умовам, і їхні байти перед винесенням вердикту.</value>
+    </data>
 </root>

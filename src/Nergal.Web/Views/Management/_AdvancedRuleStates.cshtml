@@ -14,6 +14,8 @@
                 var label = state.Scope switch
                 {
                     PolicyRuleScope.Raw => L["Raw prerouting rule {0}", state.Index + 1].Value,
+                    PolicyRuleScope.RawOutput => L["Raw output rule {0}", state.Index + 1].Value,
+                    PolicyRuleScope.AuxiliaryRaw => L["Auxiliary raw {0} rule {1}", state.Chain ?? "", state.Index + 1].Value,
                     PolicyRuleScope.Mss => L["Forward SYN MSS clamp"].Value,
                     PolicyRuleScope.Auxiliary => L["Early inet filter rule {0}", state.Index + 1].Value,
                     PolicyRuleScope.BridgeChain => L["Bridge {0} rule {1}", state.Chain ?? "", state.Index + 1].Value,

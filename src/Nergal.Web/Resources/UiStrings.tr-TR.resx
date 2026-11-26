@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>"Except" mevcut bir maççıyı ihmal ediyor; onu kaldırmıyor. Çeviri, limanlar, pozisyon ve etkinleştirilen devlet korunmuştur. Bir giriş arayüzü veya kaynak onu olumsuzlamadan önce yapılandırılmalıdır. Review negated-source DNAT dikkatle: seçilen kaynağın dışındaki çağrıcılar etkiler.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Yardımcı raw zinciri {0}, kural {1}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>Bağlantı izleme (CT) durumları (virgülle ayırın: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Kaynak kısıtlaması için tek bir IP ailesi seçin. Kaynak kümelerini Gelişmiş JSON bölümünde düzenleyin.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>MSS’yi rotanın MTU değerine göre sınırla</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Bağlantı durumu: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Say ve işlemeye devam et</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>DNAT kuralları</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Hedef kısıtlaması: {0}. Bu kısıtlamayı Gelişmiş JSON bölümünde düzenleyin.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Bağlantı izlemeyi devre dışı bırak ve işlemeye devam et</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>İşleme noktası (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Kural içi sayaç</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Giriş arabirimi dizinine göre bağlı</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>Kurulum sırasında gelen trafiğin giriş portunun adı, portun arabirim dizinine bağlanır.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>Kurulum sırasında giriş arabiriminin adı, arabirim dizinine bağlanır.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>Tanımlı DNAT kuralı yok.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Bağlantının özgün hedefi: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Bağlantının özgün kaynağı: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>Çıkış (output) DNAT kuralları:</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>Yönlendirme öncesi (prerouting) DNAT kuralları:</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>Raw eylemi</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>Çıkış (output) raw kuralı {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>Çıkış (output) raw kuralı sayısı: {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Reddet — ICMP bağlantı noktasına erişilemiyor bildirimi</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Bu kural, eylemini gerçekleştirmeden önce eşleşen çerçeveleri ve bu çerçevelerin baytlarını sayar.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Bu kural, kararını uygulamadan önce eşleşen paketleri ve bu paketlerin baytlarını sayar.</value>
+    </data>
 </root>

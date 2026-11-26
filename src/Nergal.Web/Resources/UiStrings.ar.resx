@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>" باستثناء " يلغي تطابقا قائما، ولا يزيله، ويحتفظ بالترجمة والموانئ والموقع ومكنت الدولة، ولا بد من تشكيل واجهة للمدخلات أو المصدر قبل إلغائه، واستعراض المصدر الملغى DNAT بعناية، وهو يؤثر على المتلقين خارج المصدر المختار.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>القاعدة {1} في سلسلة raw المساعدة {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>حالات تتبّع الاتصالات (CT) (مفصولة بفواصل: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>اختر عائلة IP واحدة لقيد المصدر. عدّل مجموعات المصدر في قسم JSON المتقدم.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>اضبط الحد الأقصى لـ MSS وفق قيمة MTU للمسار</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>حالة الاتصال: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>العدّ ثم المتابعة</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>قواعد DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>قيد الوجهة: {0}. عدّل هذا القيد في قسم JSON المتقدم.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>عطّل تتبّع الاتصالات ثم تابع</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>نقطة المعالجة (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>عدّاد ضمن القاعدة</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>واجهة الإدخال مرتبطة بفهرسها</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>عند التثبيت، يُربط اسم منفذ الدخول بفهرس واجهته.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>عند التثبيت، يُربط اسم واجهة الإدخال بفهرسها.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>لم تُحدَّد أي قواعد DNAT.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>الوجهة الأصلية للاتصال: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>المصدر الأصلي للاتصال: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>قواعد DNAT في مرحلة الإخراج (output):</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>قواعد DNAT في مرحلة ما قبل التوجيه (prerouting):</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>إجراء raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>قاعدة raw للإخراج (output) رقم {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>قواعد raw للإخراج (output): {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>رفض — رسالة ICMP تفيد بتعذّر الوصول إلى المنفذ</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>تعدّ هذه القاعدة الإطارات المطابقة وبايتاتها قبل تنفيذ الإجراء.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>تعدّ هذه القاعدة الحزم المطابقة وبايتاتها قبل إصدار الحكم.</value>
+    </data>
 </root>

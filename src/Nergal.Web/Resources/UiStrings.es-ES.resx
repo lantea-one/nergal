@@ -4305,4 +4305,79 @@
     <data name="{0}/{1} per source (burst {2}, {3}s, {4})" xml:space="preserve">
         <value>{0}/{1} por fuente (desembolso {2}, {3}s, {4})</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Regla {1} de la cadena raw auxiliar {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>Estados de CT (separados por comas: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Elija una sola familia IP para restringir el origen. Edite los conjuntos de origen en JSON avanzado.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>Limitar el MSS a la MTU de la ruta</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Estado de la conexión: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Contar y continuar</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>Reglas de DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Restricción de destino: {0}. Edite esta restricción en JSON avanzado.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Desactivar el seguimiento de conexiones y continuar</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>Punto de enlace (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Contador en la regla</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Interfaz de entrada vinculada por índice</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>Durante la instalación, el nombre del puerto de entrada se vincula a su índice de interfaz.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>Durante la instalación, el nombre de la interfaz de entrada se vincula a su índice.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>No hay reglas de DNAT definidas.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Origen original (conntrack): {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Destino original (conntrack): {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>Reglas de DNAT de salida:</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>Reglas de DNAT de prerouting:</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>Acción de raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>Regla {0} de raw de salida</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>Raw de salida: {0} reglas.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Rechazar — ICMP «puerto inalcanzable»</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Esta regla cuenta las tramas que coinciden y sus bytes antes de ejecutar su acción.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Esta regla cuenta los paquetes que coinciden y sus bytes antes de emitir su veredicto.</value>
+    </data>
 </root>

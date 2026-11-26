@@ -4305,4 +4305,79 @@
     <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
         <value>“Kecuali” menegasikan kondisi pencocokan yang sudah ada tanpa menghapusnya. Translasi, port, posisi, dan status aktif tetap dipertahankan. Antarmuka masukan atau sumber harus dikonfigurasi sebelum kondisinya dapat dinegasikan. Tinjau DNAT dengan kondisi sumber yang dinegasikan secara cermat karena aturan ini memengaruhi pemanggil di luar sumber yang dipilih.</value>
     </data>
+    <data name="Auxiliary raw {0} rule {1}" xml:space="preserve">
+        <value>Aturan {1} pada rantai raw tambahan {0}</value>
+    </data>
+    <data name="CT states (comma-separated: new, established, related, invalid, untracked)" xml:space="preserve">
+        <value>Status pelacakan koneksi (CT) (dipisahkan dengan koma: new, established, related, invalid, untracked)</value>
+    </data>
+    <data name="Choose a single IP family for a source restriction. Edit source sets in Advanced JSON." xml:space="preserve">
+        <value>Pilih satu keluarga IP untuk pembatasan sumber. Edit himpunan sumber di JSON tingkat lanjut.</value>
+    </data>
+    <data name="Clamp MSS to route MTU" xml:space="preserve">
+        <value>Batasi MSS sesuai MTU rute</value>
+    </data>
+    <data name="Connection status: DNAT" xml:space="preserve">
+        <value>Status koneksi: DNAT</value>
+    </data>
+    <data name="Count and continue" xml:space="preserve">
+        <value>Hitung dan lanjutkan pemrosesan</value>
+    </data>
+    <data name="DNAT rules" xml:space="preserve">
+        <value>Aturan DNAT</value>
+    </data>
+    <data name="Destination restriction: {0}. Edit this restriction in Advanced JSON." xml:space="preserve">
+        <value>Pembatasan tujuan: {0}. Edit pembatasan ini di JSON tingkat lanjut.</value>
+    </data>
+    <data name="Disable connection tracking and continue" xml:space="preserve">
+        <value>Nonaktifkan pelacakan koneksi dan lanjutkan pemrosesan</value>
+    </data>
+    <data name="Hook" xml:space="preserve">
+        <value>Titik pemrosesan (hook)</value>
+    </data>
+    <data name="Inline counter" xml:space="preserve">
+        <value>Penghitung dalam aturan</value>
+    </data>
+    <data name="Input interface bound by index" xml:space="preserve">
+        <value>Antarmuka masukan diikat berdasarkan indeks</value>
+    </data>
+    <data name="Installation binds the ingress port name to its interface index." xml:space="preserve">
+        <value>Saat pemasangan, nama port masuk diikat ke indeks antarmukanya.</value>
+    </data>
+    <data name="Installation binds the input name to its interface index." xml:space="preserve">
+        <value>Saat pemasangan, nama antarmuka masukan diikat ke indeksnya.</value>
+    </data>
+    <data name="No DNAT rules defined." xml:space="preserve">
+        <value>Belum ada aturan DNAT yang ditetapkan.</value>
+    </data>
+    <data name="Original destination: {0}" xml:space="preserve">
+        <value>Tujuan asli koneksi: {0}</value>
+    </data>
+    <data name="Original source: {0}" xml:space="preserve">
+        <value>Sumber asli koneksi: {0}</value>
+    </data>
+    <data name="Output DNAT rules:" xml:space="preserve">
+        <value>Aturan DNAT pada tahap keluaran (output):</value>
+    </data>
+    <data name="Prerouting DNAT rules:" xml:space="preserve">
+        <value>Aturan DNAT pada tahap praperutean (prerouting):</value>
+    </data>
+    <data name="Raw action" xml:space="preserve">
+        <value>Tindakan raw</value>
+    </data>
+    <data name="Raw output rule {0}" xml:space="preserve">
+        <value>Aturan raw keluaran (output) {0}</value>
+    </data>
+    <data name="Raw output: {0} rules." xml:space="preserve">
+        <value>Jumlah aturan raw pada tahap keluaran (output): {0}.</value>
+    </data>
+    <data name="Reject — ICMP port unreachable" xml:space="preserve">
+        <value>Tolak — pesan ICMP bahwa port tidak dapat dijangkau</value>
+    </data>
+    <data name="This rule counts matching frames and bytes before its action." xml:space="preserve">
+        <value>Aturan ini menghitung frame yang cocok beserta jumlah byte-nya sebelum menjalankan tindakan.</value>
+    </data>
+    <data name="This rule counts matching packets and bytes before its verdict." xml:space="preserve">
+        <value>Aturan ini menghitung paket yang cocok beserta jumlah byte-nya sebelum menerapkan putusan.</value>
+    </data>
 </root>
