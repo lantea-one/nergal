@@ -428,6 +428,25 @@ public sealed class NativeImportPlannerTests
         Assert.Equal(5, plan.Sources.Count);
     }
 
+    /// <summary>Unmapped, cyclic or non-call control flow blocks every source rule in the candidate.</summary>
+    [Theory]
+    [InlineData("jump unknown", "return")]
+    [InlineData("jump input", "return")]
+    [InlineData("return", "return")]
+    [InlineData("goto inner", "return")]
+    [InlineData("jump inner", "jump inner")]
+    [InlineData("jump inner drop", "return")]
+    [InlineData("jump inner", "policy drop")]
+    public void InvalidFilterCallsBlockConversion(string caller, string body)
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; " + caller +
+            "; } chain inner { " + body + "; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.False(plan.CanCreateRevision);
+        Assert.Null(plan.PolicyJson);
+        Assert.Null(plan.CandidateDigest);
+    }
+
     private static NativeImportRequest Request(NativeSourceSnapshot source, params NativeImportTableBinding[] tables) => new(source.Summary.Id, tables, []);
     private static NativeSourceSnapshot Source(string text)
     {

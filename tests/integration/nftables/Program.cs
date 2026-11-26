@@ -57,6 +57,19 @@ if (mode == "import-native" && (args.Length == 4 || args is [_, _, _, _, "--rest
     Console.Write(output); return 0;
 }
 
+if (mode == "verify-filter-calls" && args.Length == 5)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, false, false, true);
+    var primary = NftTableObservation.Parse(File.ReadAllText(args[3]));
+    var auxiliary = NftAuxiliaryTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!echo.IsSuccess || !primary.IsSuccess || auxiliary is null)
+    { throw new InvalidOperationException($"Filter call observation failed: {echo.ErrorCode} {primary.ErrorCode}"); }
+    var listing = NftTableObservation.Combine(primary.Observation!, auxiliary: auxiliary);
+    if (listing.StateDigest != echo.Observation!.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listing.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Filter call native round-trip diverged."); }
+    return 0;
+}
 if (mode == "verify-import-native" && (args.Length == 6 || args is [_, _, _, _, _, _, "--renamed"]))
 {
     var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, true, false, true);

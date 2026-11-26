@@ -26,6 +26,10 @@ public enum FilterVerdict
     RejectPortUnreachable,
     /// <summary>Set the TCP SYN MSS from the native route MTU and continue evaluating the forward chain.</summary>
     ClampRouteMss,
+    /// <summary>Call the declared table-local regular chain and resume at the next rule on return.</summary>
+    Jump,
+    /// <summary>Resume the calling chain at its next rule. Valid only in a regular chain.</summary>
+    Return,
 }
 
 /// <summary>Protocols supported without semantic approximation.</summary>
@@ -52,6 +56,8 @@ public enum FilterChainKind
     Forward,
     /// <summary>Traffic originating from the local host (`hook output`).</summary>
     Output,
+    /// <summary>A declared, unhooked chain identified by FilterRule.RegularChain.</summary>
+    Regular,
 }
 
 /// <summary>Connection-tracking states matched against kernel conntrack state in schema version 2.</summary>
@@ -192,6 +198,8 @@ public sealed class RpFilterPolicy
 /// <param name="OriginalSourcePrefixes">Optional original-direction source addresses for a DNAT connection.</param>
 /// <param name="OriginalDestinationPrefixes">Optional original-direction destination addresses for a DNAT connection.</param>
 /// <param name="BindInputInterfaceIndex">Resolve the input interface name to its index at install time, using native `iif` instead of `iifname`.</param>
+/// <param name="RegularChain">Declared chain containing this rule when Chain is Regular.</param>
+/// <param name="JumpTarget">Declared regular chain called by a Jump verdict in this table.</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -224,7 +232,9 @@ public sealed record FilterRule(
     bool CountPackets = false,
     IReadOnlyList<NetworkPrefix>? OriginalSourcePrefixes = null,
     IReadOnlyList<NetworkPrefix>? OriginalDestinationPrefixes = null,
-    bool BindInputInterfaceIndex = false)
+    bool BindInputInterfaceIndex = false,
+    string? RegularChain = null,
+    string? JumpTarget = null)
 {
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
@@ -245,7 +255,7 @@ public sealed record FilterRule(
             Equals(Source, other.Source) &&
             Equals(Destination, other.Destination) &&
             DestinationPort == other.DestinationPort &&
-            Chain == other.Chain &&
+            Chain == other.Chain && RegularChain == other.RegularChain && JumpTarget == other.JumpTarget &&
             string.Equals(InputInterface, other.InputInterface, StringComparison.Ordinal) &&
             string.Equals(OutputInterface, other.OutputInterface, StringComparison.Ordinal) &&
             ConnectionStates == other.ConnectionStates &&
@@ -281,6 +291,8 @@ public sealed record FilterRule(
         hash.Add(Destination);
         hash.Add(DestinationPort);
         hash.Add(Chain);
+        hash.Add(RegularChain);
+        hash.Add(JumpTarget);
         hash.Add(InputInterface, StringComparer.Ordinal);
         hash.Add(OutputInterface, StringComparer.Ordinal);
         hash.Add(ConnectionStates);
@@ -366,6 +378,7 @@ public sealed class FilterPolicy
     /// <param name="outputDefaultVerdict">Decision for unmatched traffic on the output hook.</param>
     /// <param name="rules">Ordered rules; null entries are retained for diagnostics.</param>
     /// <param name="rpFilter">Optional raw prerouting reverse-path filter chain (schema 2 only).</param>
+    /// <param name="regularChains">Ordered names of local regular chains, including empty chains.</param>
     /// <param name="rawOutput">Optional raw output chain (schema 2 only, accept default).</param>
     /// <param name="forwardTcpMssClampEnabled">Whether the retained MSS clamp contributes to native enforcement.</param>
     /// <param name="forwardTcpMssClamp">Optional forward-chain TCP SYN MSS clamp in bytes (536–1460; schema 2 only).</param>
@@ -379,7 +392,8 @@ public sealed class FilterPolicy
         RpFilterPolicy? rpFilter = null,
         int? forwardTcpMssClamp = null,
         bool forwardTcpMssClampEnabled = true,
-        RpFilterPolicy? rawOutput = null)
+        RpFilterPolicy? rawOutput = null,
+        IEnumerable<string>? regularChains = null)
     {
         ArgumentNullException.ThrowIfNull(rules);
         SchemaVersion = schemaVersion;
@@ -397,9 +411,13 @@ public sealed class FilterPolicy
         }).ToArray());
         RpFilter = rpFilter;
         RawOutput = rawOutput;
+        RegularChains = Array.AsReadOnly(regularChains?.ToArray() ?? []);
         ForwardTcpMssClamp = forwardTcpMssClamp;
         ForwardTcpMssClampEnabled = forwardTcpMssClampEnabled;
     }
+
+    /// <summary>Gets the ordered, snapshotted regular-chain declarations.</summary>
+    public IReadOnlyList<string> RegularChains { get; }
 
     /// <summary>Gets the schema version, validated before compilation.</summary>
     public int SchemaVersion { get; }
@@ -446,6 +464,7 @@ public sealed class FilterPolicy
 
         if (Rules.Any(rule => rule?.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)) { features.Add(FirewallFeature.PerDestinationRateLimiting); }
         if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
+        if (RegularChains.Count > 0) { features.Add(FirewallFeature.FilterChainCalls); }
         if (Rules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
         if (Rules.Any(rule => rule?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
         if (Rules.Any(rule => rule?.Verdict == FilterVerdict.ClampRouteMss)) { features.Add(FirewallFeature.RouteDerivedMss); }

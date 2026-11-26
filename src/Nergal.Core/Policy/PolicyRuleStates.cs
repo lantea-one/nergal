@@ -126,5 +126,5 @@ public static class PolicyRuleStates
 
     private static FilterPolicy Copy(FilterPolicy policy, IEnumerable<FilterRule?>? rules = null, RpFilterPolicy? raw = null, bool? mssEnabled = null, RpFilterPolicy? rawOutput = null) =>
         new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict, rules ?? policy.Rules,
-            raw ?? policy.RpFilter, policy.ForwardTcpMssClamp, mssEnabled ?? policy.ForwardTcpMssClampEnabled, rawOutput ?? policy.RawOutput);
+            raw ?? policy.RpFilter, policy.ForwardTcpMssClamp, mssEnabled ?? policy.ForwardTcpMssClampEnabled, rawOutput ?? policy.RawOutput, policy.RegularChains);
 }

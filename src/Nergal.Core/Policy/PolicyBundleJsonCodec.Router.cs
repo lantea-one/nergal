@@ -69,7 +69,7 @@ public static partial class PolicyBundleJsonCodec
         foreach (var item in rulesEl.EnumerateArray())
         {
             if (!HasOnlyProperties(item, "verdict", "family", "protocol", "source", "negateSource", "inputInterface", "negateInputInterface", "outputInterface", "negateOutputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "notrack", "description", "enabled") || !TryReadEnabled(item, out var enabled) ||
-                !item.TryGetProperty("verdict", out var vEl) || ParseFilterRuleVerdict(vEl) is not { } v ||
+                !item.TryGetProperty("verdict", out var vEl) || ParseFilterRuleVerdict(vEl) is not { } v || v is FilterVerdict.Jump or FilterVerdict.Return ||
                 !TryReadBool(item, "negateSource", out var ns) || !TryReadBool(item, "negateInputInterface", out var ni) ||
                 !TryReadBool(item, "negateOutputInterface", out var no) || !TryReadOptionalString(item, "outputInterface", out var oif) ||
                 !TryReadBool(item, "notrack", out var notrack) ||

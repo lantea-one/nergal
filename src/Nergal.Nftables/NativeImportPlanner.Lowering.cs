@@ -27,6 +27,17 @@ public static partial class NativeImportPlanner
         {
             var rules = new JsonArray();
             var result = new JsonObject { ["schemaVersion"] = 2, ["inputDefaultVerdict"] = "accept", ["forwardDefaultVerdict"] = "accept", ["outputDefaultVerdict"] = "accept", ["rules"] = rules };
+            var regular = new Dictionary<string, string>(StringComparer.Ordinal);
+            var declarations = new JsonArray();
+            foreach (var chain in table.Chains.Values.Where(chain => chain.Type is null))
+            {
+                Require(!chain.HasPolicy && regular.Count < 32, chain.Origin, "import.regularChainUnsupported");
+                var name = NftFilterChains.FromNative(chain.Name) ?? chain.Name;
+                Require(NftFilterChains.IsName(name) && !regular.ContainsValue(name), chain.Origin, "import.regularChainNameUnsupported");
+                regular.Add(chain.Name, name);
+                declarations.Add(name);
+            }
+            if (declarations.Count > 0) { result["regularChains"] = declarations; }
             int? priority = null; var hooks = new HashSet<string>(StringComparer.Ordinal);
             foreach (var chain in table.Chains.Values)
             {
@@ -34,7 +45,8 @@ public static partial class NativeImportPlanner
                 {
                     var rawHook = chain.Hook is "prerouting" || chain.Hook is "output" && chain.Priority == -300;
                     var rawProperty = chain.Hook == "output" ? "rawOutput" : "rpFilter";
-                    Require(chain.Type == "filter" && chain.Hook is "input" or "forward" or "output" or "prerouting" && chain.Priority.HasValue && hooks.Add(rawHook ? rawProperty : chain.Hook), chain.Origin, "import.filterChainUnsupported");
+                    var isRegular = regular.TryGetValue(chain.Name, out var regularName);
+                    Require(isRegular || chain.Type == "filter" && chain.Hook is "input" or "forward" or "output" or "prerouting" && chain.Priority.HasValue && hooks.Add(rawHook ? rawProperty : chain.Hook), chain.Origin, "import.filterChainUnsupported");
                     if (rawHook)
                     {
                         Require(chain.Priority == -300 && chain.Policy == "accept", chain.Origin, "import.rawChainUnsupported");
@@ -59,10 +71,13 @@ public static partial class NativeImportPlanner
                         }
                         return;
                     }
-                    if (auxiliary)
-                    { Require(priority is null || priority == chain.Priority, chain.Origin, "import.priorityConflict"); priority = chain.Priority; }
-                    else { Require(chain.Priority == 0, chain.Origin, "import.primaryPriorityUnsupported"); }
-                    result[chain.Hook + "DefaultVerdict"] = chain.Policy;
+                    if (!isRegular)
+                    {
+                        if (auxiliary)
+                        { Require(priority is null || priority == chain.Priority, chain.Origin, "import.priorityConflict"); priority = chain.Priority; }
+                        else { Require(chain.Priority == 0, chain.Origin, "import.primaryPriorityUnsupported"); }
+                        result[chain.Hook + "DefaultVerdict"] = chain.Policy;
+                    }
                     for (var index = 0; index < chain.Rules.Count; index++)
                     {
                         var (origin, terms) = chain.Rules[index];
@@ -85,11 +100,16 @@ public static partial class NativeImportPlanner
                             }
                             foreach (var rule in ReadRules(table, origin, terms))
                             {
-                                Require(rule.Action is "accept" or "drop" or "reject" or "rejectPortUnreachable" or "continue", origin, "import.filterActionUnsupported");
+                                Require(rule.Action is "accept" or "drop" or "reject" or "rejectPortUnreachable" or "continue" or "jump" || (rule.Action == "return" && isRegular), origin, "import.filterActionUnsupported");
+                                if (rule.Action == "jump")
+                                { Require(rule.Jump is not null && regular.ContainsKey(rule.Jump), origin, "import.jumpTargetUnresolved"); }
                                 Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "bindInputInterfaceIndex", "outputInterface", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "countPackets");
                                 foreach (var family in Families(rule, shareCounter: true))
                                 {
-                                    var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol; data["verdict"] = rule.Action; data["chain"] = chain.Hook; rules.Add(data);
+                                    var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol; data["verdict"] = rule.Action; data["chain"] = isRegular ? "regular" : chain.Hook;
+                                    if (isRegular) { data["regularChain"] = regularName; }
+                                    if (rule.Jump is not null) { data["jumpTarget"] = regular[rule.Jump]; }
+                                    rules.Add(data);
                                 }
                             }
                             Map(origin, "rule", auxiliary ? "auxiliaryFilter.filter.rules" : "filter.rules");
@@ -226,7 +246,7 @@ public static partial class NativeImportPlanner
         }
 
         private static IEnumerable<string> Families(RuleData rule, bool shareCounter = false) =>
-            rule.Family is not null ? [rule.Family] : shareCounter && rule.Data.ContainsKey("countPackets") ? ["dualStack"] : ["ipv4", "ipv6"];
+            rule.Family is not null ? [rule.Family] : shareCounter && (rule.Data.ContainsKey("countPackets") || rule.Action is "jump" or "return") ? ["dualStack"] : ["ipv4", "ipv6"];
         private static void Rename(JsonObject data, string oldName, string newName)
         { if (data.Remove(oldName, out var value)) { data[newName] = value; } }
         private static void Allowed(RuleData rule, Term origin, params string[] properties)

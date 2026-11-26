@@ -126,7 +126,7 @@ public static partial class PolicyBundleJsonCodec
     public static PolicyJsonDecodeResult<FilterPolicy> TryParseFilterElement(JsonElement el)
     {
         if (el.ValueKind != JsonValueKind.Object ||
-            !HasOnlyProperties(el, "schemaVersion", "inputDefaultVerdict", "forwardDefaultVerdict", "outputDefaultVerdict", "rules", "rpFilter", "rawOutput", "forwardTcpMssClamp", "forwardTcpMssClampEnabled") ||
+            !HasOnlyProperties(el, "schemaVersion", "inputDefaultVerdict", "forwardDefaultVerdict", "outputDefaultVerdict", "rules", "rpFilter", "rawOutput", "regularChains", "forwardTcpMssClamp", "forwardTcpMssClampEnabled") ||
             !el.TryGetProperty("schemaVersion", out var verEl) || verEl.ValueKind != JsonValueKind.Number || !verEl.TryGetInt32(out var version) ||
             !el.TryGetProperty("inputDefaultVerdict", out var inEl) || ParseVerdict(inEl) is not { } inVerdict ||
             !el.TryGetProperty("rules", out var rulesEl) || rulesEl.ValueKind != JsonValueKind.Array || rulesEl.GetArrayLength() > MaximumRulesPerSection)
@@ -145,6 +145,15 @@ public static partial class PolicyBundleJsonCodec
             return new(null, [new("filter.verdict", "filter")]);
         }
 
+        var regularChains = new List<string>();
+        if (el.TryGetProperty("regularChains", out var declarations))
+        {
+            if (version != 2 || declarations.ValueKind != JsonValueKind.Array || declarations.GetArrayLength() > 32 ||
+                declarations.EnumerateArray().Any(n => n.ValueKind != JsonValueKind.String))
+            { return new(null, [new("filter.regularChains", "filter.regularChains")]); }
+            regularChains.AddRange(declarations.EnumerateArray().Select(n => n.GetString()!));
+        }
+
         var rules = new List<FilterRule?>(rulesEl.GetArrayLength());
         var index = 0;
         foreach (var item in rulesEl.EnumerateArray())
@@ -152,7 +161,9 @@ public static partial class PolicyBundleJsonCodec
             if (item.ValueKind != JsonValueKind.Object ||
                 !HasOnlyProperties(item, "family", "protocol", "verdict", "source", "destination", "destinationPort",
                     "sourcePrefixes", "destinationPrefixes", "destinationPorts",
-                    "chain", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "negateInputInterface", "bindInputInterfaceIndex", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject", "enabled", "countPackets") || !TryReadEnabled(item, out var enabled) ||
+                    "chain", "regularChain", "jumpTarget", "inputInterface", "outputInterface", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "negateInputInterface", "bindInputInterfaceIndex", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject", "enabled", "countPackets") || !TryReadEnabled(item, out var enabled) ||
+                !TryReadOptionalString(item, "regularChain", out var regularChain) ||
+                !TryReadOptionalString(item, "jumpTarget", out var jumpTarget) ||
                 !TryReadBool(item, "bindInputInterfaceIndex", out var bindInputInterfaceIndex) ||
                 !item.TryGetProperty("family", out var famEl) || ParseFilterFamily(famEl) is not { } family ||
                 !item.TryGetProperty("protocol", out var protoEl) || ParseProtocol(protoEl) is not { } protocol ||
@@ -315,7 +326,7 @@ public static partial class PolicyBundleJsonCodec
             { return new(null, [new("filter.originalAddresses", $"filter.rules[{index}]")]); }
             rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports, description,
                 router.NegateInputInterface, router.NegateOutputInterface, router.NegateSource, router.NegateDestination,
-                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject, enabled, countPackets, originalSources, originalDestinations, bindInputInterfaceIndex));
+                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject, enabled, countPackets, originalSources, originalDestinations, bindInputInterfaceIndex, regularChain, jumpTarget));
             index++;
         }
 
@@ -324,7 +335,7 @@ public static partial class PolicyBundleJsonCodec
         { return new(null, [new("filter.routerFields", "filter")]); }
         try
         {
-            return new(new FilterPolicy(version, inVerdict, fwdVerdict.Value, outVerdict.Value, rules, rp, mss, mssEnabled, rawOutput), []);
+            return new(new FilterPolicy(version, inVerdict, fwdVerdict.Value, outVerdict.Value, rules, rp, mss, mssEnabled, rawOutput, regularChains), []);
         }
         catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException)
         {
@@ -627,6 +638,12 @@ public static partial class PolicyBundleJsonCodec
         writer.WriteString("forwardDefaultVerdict", VerdictName(policy.ForwardDefaultVerdict));
         writer.WriteString("outputDefaultVerdict", VerdictName(policy.OutputDefaultVerdict));
         WriteRouterPolicy(writer, policy);
+        if (policy.RegularChains.Count != 0)
+        {
+            writer.WriteStartArray("regularChains");
+            foreach (var name in policy.RegularChains) { writer.WriteStringValue(name); }
+            writer.WriteEndArray();
+        }
         writer.WriteStartArray("rules");
         foreach (var r in policy.Rules)
         {
@@ -678,6 +695,8 @@ public static partial class PolicyBundleJsonCodec
             WriteObjectReference(writer, "destinationPortObject", r.DestinationPortObject);
             WriteRouterMatchers(writer, r);
             writer.WriteString("chain", ChainName(r.Chain));
+            if (r.RegularChain is not null) { writer.WriteString("regularChain", r.RegularChain); }
+            if (r.JumpTarget is not null) { writer.WriteString("jumpTarget", r.JumpTarget); }
             if (r.InputInterface is not null) { writer.WriteString("inputInterface", r.InputInterface); }
             if (r.OutputInterface is not null) { writer.WriteString("outputInterface", r.OutputInterface); }
             if (r.ConnectionStates != ConnectionStateFlags.None)
@@ -903,6 +922,8 @@ public static partial class PolicyBundleJsonCodec
     private static FilterVerdict? ParseFilterRuleVerdict(JsonElement el) => el.ValueKind == JsonValueKind.String ? el.GetString() switch
     {
         "continue" => FilterVerdict.Continue,
+        "jump" => FilterVerdict.Jump,
+        "return" => FilterVerdict.Return,
         "rejectPortUnreachable" => FilterVerdict.RejectPortUnreachable,
         "clampRouteMss" => FilterVerdict.ClampRouteMss,
         _ => ParseVerdict(el),
@@ -931,6 +952,7 @@ public static partial class PolicyBundleJsonCodec
         "input" => FilterChainKind.Input,
         "forward" => FilterChainKind.Forward,
         "output" => FilterChainKind.Output,
+        "regular" => FilterChainKind.Regular,
         _ => null,
     } : null;
 
@@ -940,6 +962,8 @@ public static partial class PolicyBundleJsonCodec
         FilterVerdict.Drop => "drop",
         FilterVerdict.Reject => "reject",
         FilterVerdict.Continue => "continue",
+        FilterVerdict.Jump => "jump",
+        FilterVerdict.Return => "return",
         FilterVerdict.RejectPortUnreachable => "rejectPortUnreachable",
         FilterVerdict.ClampRouteMss => "clampRouteMss",
         _ => throw new ArgumentOutOfRangeException(nameof(v)),
@@ -960,6 +984,7 @@ public static partial class PolicyBundleJsonCodec
         FilterChainKind.Input => "input",
         FilterChainKind.Forward => "forward",
         FilterChainKind.Output => "output",
+        FilterChainKind.Regular => "regular",
         _ => throw new ArgumentOutOfRangeException(nameof(c)),
     };
 

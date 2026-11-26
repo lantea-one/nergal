@@ -40,4 +40,6 @@ public enum FirewallFeature
     InputInterfaceIndexBinding,
     /// <summary>Derive TCP SYN MSS from native routing state on the forward path.</summary>
     RouteDerivedMss,
+    /// <summary>Call and return from declared table-local inet filter regular chains.</summary>
+    FilterChainCalls,
 }

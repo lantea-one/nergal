@@ -12,7 +12,7 @@ internal static partial class PolicyAuthoringService
         if (!TryDecodeBundle(json, out var bundle, out diagnostics) || bundle is null) { return false; }
         if (operation == "remove")
         {
-            if (bundle.AuxiliaryFilter is null || bundle.AuxiliaryFilter.Filter.Rules.Count != 0 ||
+            if (bundle.AuxiliaryFilter is null || bundle.AuxiliaryFilter.Filter.Rules.Count != 0 || bundle.AuxiliaryFilter.Filter.RegularChains.Count != 0 ||
                 bundle.AuxiliaryFilter.Filter.RpFilter is not null || bundle.AuxiliaryFilter.Filter.RawOutput is not null ||
                 priority.HasValue || inputDefault is not null || forwardDefault is not null || outputDefault is not null)
             { diagnostics = [new("auxiliary.removeRequiresEmptyTable", "auxiliaryFilter")]; return false; }
@@ -23,7 +23,7 @@ internal static partial class PolicyAuthoringService
         { diagnostics = [new("auxiliary.defaultsInvalid", "auxiliaryFilter")]; return false; }
         var previous = bundle.AuxiliaryFilter?.Filter;
         var auxiliary = new AuxiliaryFilterPolicy(priority.Value, new(previous?.SchemaVersion ?? 2, input, forward, output, previous?.Rules ?? [],
-            previous?.RpFilter, previous?.ForwardTcpMssClamp, previous?.ForwardTcpMssClampEnabled ?? true, previous?.RawOutput));
+            previous?.RpFilter, previous?.ForwardTcpMssClamp, previous?.ForwardTcpMssClampEnabled ?? true, previous?.RawOutput, previous?.RegularChains));
         return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge, auxiliary), out updated, out diagnostics);
     }
 
@@ -51,6 +51,8 @@ internal static partial class PolicyAuthoringService
             if (!TryParseVisualRule(input, out var rule, out diagnostics) || rule is null) { return false; }
             if (index is { } position && rules[position] is { } previous)
             {
+                if (previous.Chain == FilterChainKind.Regular || previous.Verdict == FilterVerdict.Jump)
+                { diagnostics = [new("filter.regularChainRequiresTypedEdit", "rules")]; return false; }
                 rule = rule with
                 {
                     Enabled = previous.Enabled,
@@ -68,7 +70,7 @@ internal static partial class PolicyAuthoringService
             if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
         }
         var filter = new FilterPolicy(auxiliary.Filter.SchemaVersion, auxiliary.Filter.InputDefaultVerdict, auxiliary.Filter.ForwardDefaultVerdict,
-            auxiliary.Filter.OutputDefaultVerdict, rules, auxiliary.Filter.RpFilter, auxiliary.Filter.ForwardTcpMssClamp, auxiliary.Filter.ForwardTcpMssClampEnabled, auxiliary.Filter.RawOutput);
+            auxiliary.Filter.OutputDefaultVerdict, rules, auxiliary.Filter.RpFilter, auxiliary.Filter.ForwardTcpMssClamp, auxiliary.Filter.ForwardTcpMssClampEnabled, auxiliary.Filter.RawOutput, auxiliary.Filter.RegularChains);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, bundle.Filter, bundle.Nat, bundle.Bridge, new(auxiliary.Priority, filter)), out updated, out diagnostics);
     }
 

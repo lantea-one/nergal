@@ -73,7 +73,7 @@ public static class FilterObjectResolver
                 DestinationPortObject = null
             };
         });
-        return new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict, rules, policy.RpFilter, policy.ForwardTcpMssClamp, policy.ForwardTcpMssClampEnabled, policy.RawOutput);
+        return new(policy.SchemaVersion, policy.InputDefaultVerdict, policy.ForwardDefaultVerdict, policy.OutputDefaultVerdict, rules, policy.RpFilter, policy.ForwardTcpMssClamp, policy.ForwardTcpMssClampEnabled, policy.RawOutput, policy.RegularChains);
     }
     private static NetworkPrefix[]? Prefixes(PolicyObjectReference? reference, bool conflict, IpFamily family, string path, ICollection<PolicyObjectDiagnostic> diagnostics)
     {

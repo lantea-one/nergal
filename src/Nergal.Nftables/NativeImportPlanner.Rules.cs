@@ -135,7 +135,7 @@ public static partial class NativeImportPlanner
                             rule.Action = "continue";
                             return rule;
                         }
-                        Require(c.Peek.Text is "accept" or "drop" or "reject" or "dnat" or "snat" or "masquerade" or "return", first, "import.counterPlacementUnsupported");
+                        Require(c.Peek.Text is "accept" or "drop" or "reject" or "dnat" or "snat" or "masquerade" or "return" or "jump", first, "import.counterPlacementUnsupported");
                         break;
                     case "nfproto":
                         Require(qualified, first, "import.metaKeywordRequired");

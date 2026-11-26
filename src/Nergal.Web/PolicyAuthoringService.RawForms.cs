@@ -110,7 +110,7 @@ internal static partial class PolicyAuthoringService
         out string? updated, out IReadOnlyList<PolicyDiagnostic> diagnostics)
     {
         var filter = new FilterPolicy(bundle.Filter.SchemaVersion == 1 ? 2 : bundle.Filter.SchemaVersion, bundle.Filter.InputDefaultVerdict, bundle.Filter.ForwardDefaultVerdict,
-            bundle.Filter.OutputDefaultVerdict, bundle.Filter.Rules, raw, mss, mssEnabled, bundle.Filter.RawOutput);
+            bundle.Filter.OutputDefaultVerdict, bundle.Filter.Rules, raw, mss, mssEnabled, bundle.Filter.RawOutput, bundle.Filter.RegularChains);
         return TryCompileVisualBundle(new(bundle.SchemaVersion, filter, bundle.Nat, bundle.Bridge, bundle.AuxiliaryFilter), out updated, out diagnostics);
     }
 }

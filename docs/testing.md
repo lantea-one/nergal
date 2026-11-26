@@ -810,6 +810,17 @@ saves and inline disable/re-enable, including omission/restoration of unused nat
 objects. Existing literal-projection tests remain for older revisions. See
 [the native static-set guide](native-static-lists.md) and ADR 0048 for support limits.
 
+## Inet filter regular-chain calls
+
+Run `bash tests/integration/nftables/check-filter-calls.sh` after a Release
+build. The fixture compares an independently authored policy to its converted
+primary and auxiliary filters in separate disposable namespaces. Dual-stack
+UDP probes distinguish a terminal accept in a callee, explicit return, nested
+fall-through, continuation in the caller and an earlier auxiliary drop. The
+fixture compares the complete native creation echo with independent listings
+and recompiles the exact candidate. `FilterChainCallTests` covers drift in
+handles, targets and rule order, malformed evidence, and graph validation.
+
 ## Source-bound semantic conversion
 
 `NativeImportPlannerTests` covers explicit table roles, whole-candidate round trips,
