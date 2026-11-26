@@ -2,13 +2,23 @@
 
 nergal uses Calendar Versioning (`YYYY.MM.DD` and `YYYY.MM.DD.N` for same-day releases) and targets `.NET 10` LTS.
 
+## Current development baseline
+
+The prerelease baseline uses fresh controller schema 6 and account schema 8.
+Native source conversion supports the [declared v1 grammar](native-source-library.md).
+The [users and profiles guide](local-users-and-profiles.md) covers local accounts,
+LDAP, provider profile defaults and email or TOTP MFA. Optional identity providers
+include [OIDC](oidc-connection.md) and [OAuth](oauth-connection.md).
+See the [milestone overview](milestones.md) for current acceptance status. The older
+development entries below record when individual capabilities were introduced.
+
 ## Unreleased OIDC profile defaults
 
 [Profile mapping](oidc-profile-defaults.md) now selects literal signed ID-token
 fields per exact issuer. Current provider observations stay separate from local
 name/email overrides, and mapping edits retire stale defaults immediately.
 Completed protocol validation precedes storage; metadata never changes roles,
-links accounts, verifies delivery or enrolls MFA. Fresh account schema 3 persists
+links accounts, verifies delivery or enrolls MFA. The account store persists
 mappings, observations, personal metadata and atomic identity audit.
 
 ## Unreleased local users and resilient console navigation
@@ -18,22 +28,22 @@ Rule, account and settings enablement use shared labelled on/off switches with
 keyboard and assistive-technology support; submission remains explicit.
 Personal profiles and current-password changes use versioned database state;
 last-enabled-admin checks and identity audit commit with the account change.
-The fresh unreleased account schema is version 3. Signed OIDC metadata mapping and per-field overrides
-are implemented; LDAP/OAuth adapters and email/TOTP MFA
-remain open M5 gates. See [users and profiles](local-users-and-profiles.md).
+Signed OIDC metadata mapping and per-field overrides are implemented.
+See [users and profiles](local-users-and-profiles.md).
 
 Browser challenges return to sign-in, and themed errors retain their HTTP status
 without depending on profile storage. Sidebar links have icons, content fills the
 available width, shared fields have uniform styling, and the browser timezone
 appears at the bottom of the sidebar. Page footers have been removed.
 
-## Source conversion and controller schema 4
+## Source conversion and durable plans
 
 Source viewing and conversion share one bounded lossless frontend. Guided table
 roles and ordered uploaded include bindings lead to immutable source/digest-bound
 plans with complete mappings and blocking gaps. Separate reviewed commit atomically
 creates one revision and pinned lists; imports never apply firewall changes. Unknown
-semantics cannot be discarded. Explicit offline schema-1/2/3 upgrades retain history.
+semantics cannot be discarded. Current prerelease installations use the fresh schema
+listed above.
 Native meter refresh and creation expiry are preserved separately in compiler and
 complete receipts, with real continued-traffic expiry and imported rollback checks.
 See the [source guide](native-source-library.md) for support limits and workflow.
@@ -66,7 +76,7 @@ The combined source viewer/import analysis now builds a bounded delimiter tree
 over the exact token document. Missing/mismatched delimiters and nesting beyond
 64 groups produce value-free source positions without partial trees/inventories.
 Schema-2 reports and viewer diagnostics share the same summary. Unknown input and
-exact originals remain intact; semantic conversion is still blocked. See
+exact originals remain intact and feed separately reviewed source-bound plans. See
 [the source workflow](native-source-library.md).
 
 ## Unreleased native-only product scope
@@ -74,16 +84,16 @@ exact originals remain intact; semantic conversion is still blocked. See
 Native nftables on Linux is now the sole firewall target. Other firewall adapters
 and Windows-native service deployments are outside scope. Existing pure contracts,
 native capability validation, owned-table safety and rollback remain required.
-This narrows firewall/platform scope; independent deployments and the three SQL
-engine targets remain. See [architecture](architecture.md).
+The product supports independent Linux deployments and the SQL baselines listed
+in the [milestone overview](milestones.md). See [architecture](architecture.md).
 
 ## Unreleased shared source analysis
 
 Native source viewing/review and import now share one bounded, lossless analysis
 pipeline with exact token spans and physical positions. It retains unknown input
 and opaque values, handles continuations/CRLF/CR/LF, and rejects controls or capacity
-exhaustion without a partial document. Conversion remains blocked until semantic
-mapping is complete. See [the source workflow](native-source-library.md).
+exhaustion without a partial document. A conversion plan requires complete semantic
+mapping for its declared scope. See [the source workflow](native-source-library.md).
 
 ## Unreleased saved revision exports
 
@@ -103,8 +113,8 @@ or conflicting data is denied. A conservative echo budget rejects oversized new
 projections before mutation. No SQL migration is added. Upgrade controller and
 agent together. See [native static lists](native-static-lists.md).
 
-M3 is complete for the declared static-list slice. Semantic source conversion and
-persisted mappings/gaps and semantic round-trip acceptance remain M4; charts/profiles/local account UI remain M5.
+M3 is complete for the declared static-list slice. The [milestone overview](milestones.md)
+records subsequent source conversion and console acceptance.
 
 ## `2026.11.21.1` (Milestone E)
 
@@ -161,9 +171,9 @@ This local development work is not a published release.
 ## Source-bound migration review
 
 Native source inspection includes a bounded lexical inventory, line references
-and a private administrator-only report download. Conversion remains blocked:
-review signals do not establish syntax validity, exhaustive coverage or semantic
-equivalence. Named maps, tracking bypass and counters need explicit preservation
+and a private administrator-only report download. The review reports signals about
+syntax and provenance; a separate conversion plan must account for every statement.
+Named maps, tracking bypass and counters need explicit preservation
 work. No private sources or topology are published in these notes.
 
 ## Database-backed native source library (unreleased)
@@ -171,9 +181,8 @@ work. No private sources or topology are published in these notes.
 Administrators can upload bounded UTF-8 native sources into immutable controller
 schema-2 records, review one source, download its exact original bytes and obtain a
 source-bound lexical report. Optional file-directory snapshots are staging only.
-Imports and their audit records are atomic; no configuration is executed or
-converted. Existing controllers require an explicit offline `controller upgrade`.
-Additional SQL providers remain M6 work. Source-bound native conversion now supports the [declared grammar](native-source-library.md).
+Original source imports and their audit records are atomic. A separate source-bound
+conversion workflow supports the [declared grammar](native-source-library.md).
 Saved revision exports are now available as described above. See [the source library guide](native-source-library.md).
 
 ## Local timestamp display (unreleased)
@@ -188,10 +197,9 @@ JavaScript/Intl. Database and API timestamps remain UTC.
 
 [Sets & IP lists](reusable-object-library.md) now supports typed IPv4/IPv6/port
 lists with accessible forms, search, immutable version history, UTC storage/local
-display, transactional audit and stale-edit protection. Controller schema 3 has an
-explicit offline upgrade preserving schema-1/2 state. Policy references, native
-named sets and impact review remain a separate milestone; library saves do not
-change policies or firewalls.
+display, transactional audit and stale-edit protection. Later additions include
+policy references, native named sets and impact review. Library saves leave
+policy enforcement to the separately authorized apply workflow.
 
 ## Unreleased pinned policy references
 
@@ -215,7 +223,7 @@ Native compilation omits disabled enforcement/meters; an intent diff preserves
 review of dormant changes. Rule state follows revision save and confirmed apply,
 with dual-stack packet/NAT exemption and mapped-identity watchdog acceptance.
 
-## Guided router forms (M2 in progress)
+## Guided router forms
 
 Primary filter forms now expose explicit ICMP reject, MAC restrictions/negation,
 IP/interface negation and source/destination meter keys. Complete postrouting
@@ -229,7 +237,7 @@ Guided raw-chain forms now cover FIB reverse-path matching, UDP source ports,
 source/interface negation, defaults and ordered exceptions. MSS configuration
 preserves disabled state on resize and has explicit removal. DNAT negation and
 whole-rule NAT reordering are available without editing JSON. Auxiliary and
-extended bridge/sub-chain forms are also implemented; broader UX remains M5.
+extended bridge/sub-chain forms are also implemented.
 
 Auxiliary inet table priority/defaults and complete ordered filter-rule forms are
 now available. They preserve dormant state and other policy sections and require
@@ -276,22 +284,22 @@ complete filter/NAT/bridge/auxiliary collection. Denied, malformed or changing
 generation queries make collection unavailable. Isolated tests cover same-handle
 set-element drift, actual dynamic-meter packets and capability denial. This guards
 collection consistency; competing privileged writers remain unsupported and native
-static references are now implemented; semantic import remains M4. No UI or screenshot changes accompany
-this internal observation boundary.
+static references and source-bound import now follow their documented scope.
 
-## Appliance navigation and focused overview (M5 in progress)
+## Appliance navigation and focused overview
 
 Add a persistent appliance-style sidebar, focused host connection management and
 state-based overview guidance. Put rule tables and Add actions before expandable
 advanced sections. Preserve unsaved draft fields during local firewall navigation,
 provide accessible keyboard tabs/mobile Menu, and retain authorization, pinned
 references and confirmed-apply boundaries. Shared application/Pages styling stays
-identical. See the [console guide](appliance-console.md); local people/profiles and observation-backed charts remain M5 work.
+identical. See the [console guide](appliance-console.md) for the current workflow.
 
 ## UI-managed OIDC connection and solution organization
 
 [OIDC connection settings](oidc-connection.md) now take effect without restart,
 with encrypted write-only secrets and retired sessions/callbacks after replacement.
-Local sign-in remains independent. LDAP/OAuth adapters and MFA remain M5 work.
+Local sign-in remains independent. The [users guide](local-users-and-profiles.md)
+covers the later LDAP and MFA support.
 The solution is `Nergal.slnx`; application projects are at root and unit/integration
 fixture projects share the `Tests` solution folder.

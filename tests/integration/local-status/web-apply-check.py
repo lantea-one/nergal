@@ -97,11 +97,12 @@ class WebClient:
 
     def login(self, username, password):
         csrf = self.token('/login')
-        self.request('/login', 302, form={
+        _, location = self.request('/login', 302, form={
             'username': username,
             'password': password,
             '__RequestVerificationToken': csrf,
-        }, expected_location_contains='/session')
+        })
+        require(location == '/manage', f'Controller sign-in should open the Overview, got {location!r}')
 
 
 def run(arguments, text=None, env=None):

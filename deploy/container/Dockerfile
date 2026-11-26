@@ -1,11 +1,22 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0.404@sha256:8c6edfb26c85153f236d26efebd9ad349aec403583f343f201ee67838b23658d AS build
 WORKDIR /source
 COPY global.json Directory.Build.props ./
+COPY LICENSE scripts/collect-nuget-notices.py ./
+COPY scripts/nuget-license-texts/ ./nuget-license-texts/
+COPY deploy/LinuxRelease.targets ./LinuxRelease.targets
 COPY src/ src/
+RUN apt-get update --error-on=any \
+    && apt-get install -y --no-install-recommends python3 \
+    && rm -rf /var/lib/apt/lists/*
 RUN dotnet restore src/Nergal.Web/Nergal.Web.csproj --locked-mode \
     && dotnet restore src/Nergal.Admin/Nergal.Admin.csproj --locked-mode \
-    && dotnet publish src/Nergal.Web/Nergal.Web.csproj -c Release --no-restore -p:UseAppHost=false -o /publish/web \
-    && dotnet publish src/Nergal.Admin/Nergal.Admin.csproj -c Release --no-restore -p:UseAppHost=false -o /publish/admin
+    && dotnet publish src/Nergal.Web/Nergal.Web.csproj -c Release --no-restore -p:UseAppHost=false \
+        -p:CustomAfterMicrosoftCommonTargets=/source/LinuxRelease.targets -o /publish/web \
+    && dotnet publish src/Nergal.Admin/Nergal.Admin.csproj -c Release --no-restore -p:UseAppHost=false \
+        -p:CustomAfterMicrosoftCommonTargets=/source/LinuxRelease.targets -o /publish/admin \
+    && python3 -B collect-nuget-notices.py --output /publish/notices \
+        --assets src/Nergal.Web/obj/project.assets.json --assets src/Nergal.Admin/obj/project.assets.json \
+    && install -m 0644 LICENSE /publish/notices/LICENSE
 # The SDK embeds compression time in its generated static asset HTTP metadata.
 # Reproducible builds use the source revision timestamp for Last-Modified.
 ARG SOURCE_DATE_EPOCH
@@ -23,6 +34,7 @@ RUN install -d -o 1654 -g 1654 -m 0700 \
     && install -d -m 0755 /etc/nergal/credentials
 COPY --from=build /publish/web /opt/nergal/web
 COPY --from=build /publish/admin /opt/nergal/admin
+COPY --from=build /publish/notices/ /usr/share/licenses/nergal/
 COPY --chmod=0555 deploy/container/dotnet-private /usr/local/bin/dotnet-private
 WORKDIR /opt/nergal/web
 ENV ASPNETCORE_URLS=https://+:8443 \

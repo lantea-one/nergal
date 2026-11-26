@@ -7,7 +7,7 @@ arch=('x86_64')
 url='https://git.lantea.one/lantea-one/nergal'
 license=('MIT')
 depends=('dotnet-runtime-10.0' 'aspnet-runtime-10.0' 'nftables' 'systemd')
-makedepends=('git')
+makedepends=('git' 'python')
 provides=("nergal=$pkgver")
 conflicts=('nergal')
 options=('!strip' '!debug')

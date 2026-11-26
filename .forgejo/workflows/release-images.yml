@@ -6,6 +6,9 @@ on:
     paths:
       - '.forgejo/workflows/release-images.yml'
       - 'deploy/container/**'
+      - 'deploy/LinuxRelease.targets'
+      - 'scripts/collect-nuget-notices.py'
+      - 'scripts/nuget-license-texts/**'
       - 'docker-compose.yml'
   workflow_dispatch:
 
@@ -50,6 +53,12 @@ jobs:
               --label "org.opencontainers.image.revision=$revision" \
               --label "org.opencontainers.image.version=$version"
             test "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image")" = linux/amd64
+            docker run --rm --network none --read-only --entrypoint /bin/sh "$image" -ec '
+              test -s /usr/share/licenses/nergal/LICENSE
+              test -s /usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt
+              test -z "$(find /opt/nergal -path "*/runtimes/win*" -print -quit)"
+              ! grep -Fq Microsoft.Data.SqlClient.SNI.runtime /usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt
+            '
           done
       # PRs and manual runs exercise the same build without receiving publishing credentials.
       - name: Publish versioned images to Forgejo Registry

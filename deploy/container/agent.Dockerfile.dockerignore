@@ -1,6 +1,10 @@
 **
 !global.json
 !Directory.Build.props
+!LICENSE
+!scripts/collect-nuget-notices.py
+!scripts/nuget-license-texts/*.txt
+!deploy/LinuxRelease.targets
 !src/Nergal.Agent/*.cs
 !src/Nergal.Agent/*.csproj
 !src/Nergal.Agent/packages.lock.json

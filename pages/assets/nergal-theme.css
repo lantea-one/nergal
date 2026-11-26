@@ -4,6 +4,9 @@ body { overflow-x: hidden; }
 .docs-topbar { position: fixed; inset: 0 0 auto; z-index: 50; }
 .docs-topbar .topbar-inner { max-width: none; }
 .docs-topbar .nav-links, .docs-topbar nav.app-nav { display: flex !important; position: static; inset: auto; margin: 0 0 0 auto; padding: 0; }
+/* Switch the label and background together so the old theme cannot obscure the new label. */
+.docs-topbar [data-theme-toggle] { transition: none; }
+.docs-topbar [data-theme-toggle]:focus-visible { outline: 2px solid var(--success); }
 .skip-link { position: fixed; top: -100px; left: 1rem; z-index: 100; padding: .6rem 1rem; background: var(--surface); }
 .skip-link:focus { top: .5rem; }
 .sidebar, body.sticky .sidebar {

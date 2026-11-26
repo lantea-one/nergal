@@ -1,0 +1,10 @@
+<Project>
+  <!-- Portable publish includes native files for other platforms by default.
+       Linux release artifacts omit Windows runtime files, including SqlClient SNI. -->
+  <Target Name="RemoveWindowsRuntimeFilesFromRelease" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('runtimes/win'))" />
+    </ItemGroup>
+  </Target>
+</Project>
