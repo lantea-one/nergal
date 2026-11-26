@@ -11,6 +11,7 @@ on:
       - 'deploy/container/release-version.py'
       - 'Directory.Build.props'
       - 'scripts/package-release.sh'
+      - 'scripts/normalize-static-asset-endpoints.py'
       - 'tests/package-release.test.sh'
       - 'scripts/collect-nuget-notices.py'
       - 'scripts/nuget-license-texts/**'
