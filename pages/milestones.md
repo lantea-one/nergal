@@ -133,9 +133,9 @@ Verify first-use and everyday tasks with synthetic installations in light, dark,
 keyboard and mobile workflows. Retain clear draft/saved/pending/applied/observed/
 recovery states and expert detail without weakening authorization, change review
 or confirmed apply. Charts need measured data or explicit missing-data states.
-M7 retains installation/trust-bootstrap integration; the UI must guide that boundary
-without exposing host privileges to the browser. These are planned acceptance
-requirements, not a claim that the current screens are already simplified.
+The installation acceptance exercises operator-controlled trust bootstrap and
+authenticated host registration in the controller. These workflows preserve the
+separation between the browser and the privileged agent.
 
 M5 also includes UI internationalization (i18n). Use translatable resources for
 navigation, forms, validation and status messages. Define locale selection and

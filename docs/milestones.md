@@ -150,8 +150,8 @@ exercises the first-use and everyday workflow gates below.
 
 Retain the complete native detail for expert review. Simplifying the default view
 must preserve explicit change review, authorization, ownership and confirmed-apply
-safety. M7 still owns installation/trust-bootstrap integration; M5 must guide the
-operator through that boundary without exposing host privileges to the browser.
+safety. The installation acceptance exercises the operator's explicit trust
+bootstrap and the controller's authenticated host registration across that boundary.
 
 M5 identity scope now also includes direct LDAP sign-in and profile mapping,
 configurable OIDC/OAuth profile defaults with local overrides, local email and
