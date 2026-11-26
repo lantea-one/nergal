@@ -62,7 +62,7 @@ jobs:
           done
       # PRs and manual runs exercise the same build without receiving publishing credentials.
       - name: Publish versioned images to Forgejo Registry
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && vars.REGISTRY_USERNAME != ''
         env:
           REGISTRY_USERNAME: ${{ vars.REGISTRY_USERNAME }}
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
@@ -102,6 +102,10 @@ jobs:
             test "$(docker buildx imagetools inspect "$image:latest" --format '{{.Manifest.Digest}}')" = "$digest"
             printf -- '- `%s:latest` points to `%s` at `%s`\n' "$image" "$latest" "$digest" >> "$GITHUB_STEP_SUMMARY"
           done
+      - name: Record operator publication mode
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && vars.REGISTRY_USERNAME == ''
+        run: |
+          echo 'Both release images passed the build checks. This repository has no configured Registry publishing account. Publish both versioned images from the tagged revision and verify their digests before promoting latest.' >> "$GITHUB_STEP_SUMMARY"
       - name: Remove temporary build tags
         if: always()
         run: |

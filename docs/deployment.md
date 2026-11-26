@@ -379,6 +379,10 @@ Set the repository variable `REGISTRY_USERNAME` to a publishing account with
 write access to the organization's packages. Store a Forgejo access token
 with `write:package` scope for that account in the repository secret
 `REGISTRY_TOKEN`. The workflow records both pushed digests in its summary.
+Without a configured publishing account, the tag workflow still builds and
+checks both images and records that Registry publication is an operator step.
+Publish each image from the tagged revision and promote `latest` only after
+verifying both CalVer image digests.
 Use a version tag or the corresponding digest when deploying. Same-repository
 packaging pull requests and manual runs exercise the build with publication
 credentials reserved for tag pushes.
