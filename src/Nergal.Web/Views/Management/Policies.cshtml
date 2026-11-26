@@ -11,6 +11,17 @@
     ViewData["ShowManageNav"] = true;
     string TextLanguage(string key) => Nergal.Web.UiLocalization.MessageLanguage(L[key]);
     ViewData["PolicySection"] = Model.InitialSection ?? "filter";
+    // Lowercase English UI labels preserve the compact policy display.
+    string Compact(Microsoft.Extensions.Localization.LocalizedString label) =>
+        label.ResourceNotFound ? label.Value.ToLowerInvariant() : label.Value;
+    var acceptLabel = Compact(L["Accept"]);
+    var anyLabel = Compact(L["Any"]);
+    var dropLabel = Compact(L["Drop"]);
+    var minuteLabel = Compact(L["Minute"]);
+    var secondLabel = Compact(L["Second"]);
+    var rejectExplanation = L["Reject — ICMP admin prohibited"];
+    var icmpV4Label = L["ICMP (IPv4)"];
+    var familyLabel = L["IP family"];
     var bundle = Model.Bundle;
     var filterCount = bundle?.Filter.Rules.Count ?? 0;
     var natCount = (bundle?.Nat?.DnatRules.Count ?? 0) + (bundle?.Nat?.SnatRules.Count ?? 0);
@@ -28,7 +39,7 @@
             @if (Model.Compatibility is { } compat)
             {
                 <span class="badge @(compat.IsCompatible ? "badge-success" : "badge-danger")">
-                    @compat.BackendId: @(compat.IsCompatible ? "compatible" : "incompatible")
+                    @compat.BackendId: @(compat.IsCompatible ? L["compatible"] : L["incompatible"])
                 </span>
             }
             @if (!string.IsNullOrEmpty(Model.CandidateDigest))
@@ -41,11 +52,11 @@
     @if (Model.Diagnostics.Count > 0)
     {
         <div class="alert alert-danger" role="alert">
-            <strong>Validation diagnostics (@Model.Diagnostics.Count)</strong>
+            <strong>@L["Validation diagnostics ({0})", Model.Diagnostics.Count]</strong>
             <ul style="margin: 0.4rem 0 0; padding-left: 1.25rem;">
                 @foreach (var d in Model.Diagnostics)
                 {
-                    <li><code>@d.Code</code> at <code>@d.Path</code></li>
+                    <li><code>@d.Code</code> @L["at"] <code>@d.Path</code></li>
                 }
             </ul>
         </div>
@@ -113,10 +124,10 @@
     <div class="tab-panel" id="tab-filter" tabindex="-1" data-tab-panel="tab-filter">
         @if (Model.CanMutate && bundle is not null)
         {
-            <details class="card settings-disclosure"><summary>Default actions and policy version</summary>
+            <details class="card settings-disclosure"><summary>@L["Default actions and policy version"]</summary>
                 <div class="card-header">
-                    <h2>Filter chain defaults (<code>inet nergal_filter</code>)</h2>
-                    <span class="badge badge-primary">Schema v@(bundle.Filter.SchemaVersion)</span>
+                    <h2>@L["Filter chain defaults ("]<code>inet nergal_filter</code>)</h2>
+                    <span class="badge badge-primary">@L["Schema v{0}", bundle.Filter.SchemaVersion]</span>
                 </div>
                 <form method="post" action="@Url.Content("~/manage/policies/filter/defaults")">
                     @Html.AntiForgeryToken()
@@ -125,35 +136,35 @@
                     <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                     <div class="form-grid">
                         <div class="field">
-                            <label for="f-schema">Schema version</label>
+                            <label for="f-schema">@L["Schema version"]</label>
                             <select id="f-schema" name="schemaVersion">
-                                <option value="2" selected="@(bundle.Filter.SchemaVersion == 2)">Schema 2 (Multi-chain, stateful, sets)</option>
-                                <option value="1" selected="@(bundle.Filter.SchemaVersion == 1)">Schema 1 (Input-only stateless)</option>
+                                <option value="2" selected="@(bundle.Filter.SchemaVersion == 2)">@L["Schema 2 (Multi-chain, stateful, sets)"]</option>
+                                <option value="1" selected="@(bundle.Filter.SchemaVersion == 1)">@L["Schema 1 (Input-only stateless)"]</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="f-in-def">Input default</label>
+                            <label for="f-in-def">@L["Input default"]</label>
                             <select id="f-in-def" name="inputDefaultVerdict">
-                                <option value="drop" selected="@(bundle.Filter.InputDefaultVerdict == FilterVerdict.Drop)">drop</option>
-                                <option value="accept" selected="@(bundle.Filter.InputDefaultVerdict == FilterVerdict.Accept)">accept</option>
+                                <option value="drop" selected="@(bundle.Filter.InputDefaultVerdict == FilterVerdict.Drop)">@dropLabel</option>
+                                <option value="accept" selected="@(bundle.Filter.InputDefaultVerdict == FilterVerdict.Accept)">@acceptLabel</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="f-fwd-def">Forward default</label>
+                            <label for="f-fwd-def">@L["Forward default"]</label>
                             <select id="f-fwd-def" name="forwardDefaultVerdict">
-                                <option value="drop" selected="@(bundle.Filter.ForwardDefaultVerdict == FilterVerdict.Drop)">drop</option>
-                                <option value="accept" selected="@(bundle.Filter.ForwardDefaultVerdict == FilterVerdict.Accept)">accept</option>
+                                <option value="drop" selected="@(bundle.Filter.ForwardDefaultVerdict == FilterVerdict.Drop)">@dropLabel</option>
+                                <option value="accept" selected="@(bundle.Filter.ForwardDefaultVerdict == FilterVerdict.Accept)">@acceptLabel</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="f-out-def">Output default</label>
+                            <label for="f-out-def">@L["Output default"]</label>
                             <select id="f-out-def" name="outputDefaultVerdict">
-                                <option value="accept" selected="@(bundle.Filter.OutputDefaultVerdict == FilterVerdict.Accept)">accept</option>
-                                <option value="drop" selected="@(bundle.Filter.OutputDefaultVerdict == FilterVerdict.Drop)">drop</option>
+                                <option value="accept" selected="@(bundle.Filter.OutputDefaultVerdict == FilterVerdict.Accept)">@acceptLabel</option>
+                                <option value="drop" selected="@(bundle.Filter.OutputDefaultVerdict == FilterVerdict.Drop)">@dropLabel</option>
                             </select>
                         </div>
                         <div class="field">
-                            <button type="submit" class="btn btn-secondary">Update defaults</button>
+                            <button type="submit" class="btn btn-secondary">@L["Update defaults"]</button>
                         </div>
                     </div>
                 </form>
@@ -162,12 +173,12 @@
 
         <section class="card">
             <div class="card-header">
-                <h2>Filter rules (@filterCount)</h2>
-                @if (Model.CanMutate) { <a class="btn btn-secondary btn-sm" href="#new-filter-rule" data-open-details>Add rule</a> }
+                <h2>@L["Filter rules ({0})", filterCount]</h2>
+                @if (Model.CanMutate) { <a class="btn btn-secondary btn-sm" href="#new-filter-rule" data-open-details>@L["Add rule"]</a> }
             </div>
             @if (bundle is null || bundle.Filter.Rules.Count == 0)
             {
-                <p class="muted mb-0">No filter rules yet. Add a rule using the form below.</p>
+                <p class="muted mb-0">@L["No filter rules yet. Add a rule using the form below."]</p>
             }
             else
             {
@@ -175,16 +186,16 @@
                     <table class="policy-rules-table rule-state-table">
                         <thead>
                             <tr>
-                                <th>#</th><th>Enabled state</th><th>Verdict</th>
-                                <th>Chain / interfaces</th>
-                                <th>Family / protocol</th>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Ports</th>
-                                <th>Conditions / description</th>
+                                <th>#</th><th>@L["Enabled state"]</th><th>@L["Verdict"]</th>
+                                <th>@L["Chain / interfaces"]</th>
+                                <th>@L["Family / protocol"]</th>
+                                <th>@L["Source"]</th>
+                                <th>@L["Destination"]</th>
+                                <th>@L["Ports"]</th>
+                                <th>@L["Conditions / description"]</th>
                                 @if (Model.CanMutate)
                                 {
-                                    <th>Order / Edit / Remove</th>
+                                    <th>@L["Order / Edit / Remove"]</th>
                                 }
                             </tr>
                         </thead>
@@ -193,9 +204,9 @@
                             {
                                 var r = bundle.Filter.Rules[idx];
                                 if (r is null) { continue; }
-                                var srcText = r.SourceObject is { } sr ? sr.Content.Name + " v" + sr.Version + " [" + string.Join(", ", sr.Content.Entries) + "]" : r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } sp ? "{ " + string.Join(", ", sp.Select(p => p.Value)) + " }" : "any");
-                                var dstText = r.DestinationObject is { } dr ? dr.Content.Name + " v" + dr.Version + " [" + string.Join(", ", dr.Content.Entries) + "]" : r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } dp ? "{ " + string.Join(", ", dp.Select(p => p.Value)) + " }" : "any");
-                                var portText = r.DestinationPortObject is { } pr ? pr.Content.Name + " v" + pr.Version + " [" + string.Join(", ", pr.Content.Entries) + "]" : r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } ps ? "{ " + string.Join(", ", ps) + " }" : "any");
+                                var srcText = r.SourceObject is { } sr ? sr.Content.Name + " v" + sr.Version + " [" + string.Join(", ", sr.Content.Entries) + "]" : r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } sp ? "{ " + string.Join(", ", sp.Select(p => p.Value)) + " }" : anyLabel);
+                                var dstText = r.DestinationObject is { } dr ? dr.Content.Name + " v" + dr.Version + " [" + string.Join(", ", dr.Content.Entries) + "]" : r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } dp ? "{ " + string.Join(", ", dp.Select(p => p.Value)) + " }" : anyLabel);
+                                var portText = r.DestinationPortObject is { } pr ? pr.Content.Name + " v" + pr.Version + " [" + string.Join(", ", pr.Content.Entries) + "]" : r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } ps ? "{ " + string.Join(", ", ps) + " }" : anyLabel);
                                 var editSources = r.Source?.Value ?? (r.SourcePrefixes is { Count: > 0 } esp ? string.Join(", ", esp.Select(p => p.Value)) : "");
                                 var editDests = r.Destination?.Value ?? (r.DestinationPrefixes is { Count: > 0 } edp ? string.Join(", ", edp.Select(p => p.Value)) : "");
                                 var editPorts = r.DestinationPort?.ToString() ?? (r.DestinationPorts is { Count: > 0 } eps ? string.Join(", ", eps) : "");
@@ -207,21 +218,21 @@
                                 var editStates = string.Join(", ", editStatesList);
                                 var ifaceText = (r.InputInterface, r.OutputInterface) switch
                                 {
-                                    (null, null) => "any",
-                                    (string i, null) => $"in:{(r.NegateInputInterface ? "!= " : "")}{i}",
-                                    (null, string o) => $"out:{(r.NegateOutputInterface ? "!= " : "")}{o}",
-                                    (string i, string o) => $"in:{(r.NegateInputInterface ? "!= " : "")}{i} out:{(r.NegateOutputInterface ? "!= " : "")}{o}",
+                                    (null, null) => null,
+                                    (string i, null) => L["in:{0}{1}", r.NegateInputInterface ? "!= " : "", i].Value,
+                                    (null, string o) => L["out:{0}{1}", r.NegateOutputInterface ? "!= " : "", o].Value,
+                                    (string i, string o) => L["in:{0}{1} out:{2}{3}", r.NegateInputInterface ? "!= " : "", i, r.NegateOutputInterface ? "!= " : "", o].Value,
                                 };
                                 <tr>
                                     <td>@(idx + 1)</td>
-                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Filter, idx, null, r.Enabled, "Filter rule " + (idx + 1))))</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Filter, idx, null, r.Enabled, L["Filter rule {0}", idx + 1].Value)))</td>
                                     <td>
                                         <span class="badge @(r.Verdict == FilterVerdict.Accept ? "badge-success" : "badge-danger")">
-                                            @r.Verdict.ToString().ToLowerInvariant()
+                                            @(r.Verdict == FilterVerdict.Accept ? acceptLabel : r.Verdict == FilterVerdict.Drop ? dropLabel : Compact(L["Reject"]))
                                         </span>
                                     </td>
                                     <td class="rule-location"><code>@r.Chain.ToString().ToLowerInvariant()</code>
-                                        @if (ifaceText != "any") { <span class="rule-desc">@ifaceText</span> }
+                                        @if (ifaceText is not null) { <span class="rule-desc">@ifaceText</span> }
                                     </td>
                                     <td class="rule-protocol">
                                         <code>@r.Family.ToString().ToLowerInvariant() · @r.Protocol.ToString().ToLowerInvariant()</code>
@@ -239,8 +250,8 @@
                                     <td>
                                         @if (r.ConnectionStates != ConnectionStateFlags.None) { <code>@r.ConnectionStates</code> }
                                         @if (r.MatchOriginalDestinationDnat) { <span class="badge badge-warning">ct dnat</span> }
-                                        @if (r.RateLimit is { } rl) { <span class="badge badge-neutral">@rl.PacketsPerWindow/@rl.WindowUnit.ToString().ToLowerInvariant() · @(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? "per destination" : "per source")</span> }
-                                        @if (r.ConnectionStates == ConnectionStateFlags.None && !r.MatchOriginalDestinationDnat && r.RateLimit is null) { <span class="muted">stateless</span> }
+                                        @if (r.RateLimit is { } rl) { <span class="badge badge-neutral">@rl.PacketsPerWindow/@(rl.WindowUnit == RateLimitTimeUnit.Minute ? minuteLabel : secondLabel) · @(rl.KeyKind == RateLimitKeyKind.DestinationAddress ? L["per destination"] : L["per source"])</span> }
+                                        @if (r.ConnectionStates == ConnectionStateFlags.None && !r.MatchOriginalDestinationDnat && r.RateLimit is null) { <span class="muted">@L["stateless"]</span> }
                                         @if (!string.IsNullOrEmpty(r.Description)) { <span class="rule-desc">@r.Description</span> }
                                     </td>
 
@@ -258,7 +269,7 @@
                                                         <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                                                         <input type="hidden" name="ruleIndex" value="@idx" />
                                                         <input type="hidden" name="direction" value="-1" />
-                                                        <button type="submit" class="btn btn-secondary btn-sm" title="Move up">↑</button>
+                                                        <button type="submit" class="btn btn-secondary btn-sm" title="@L["Move up"]">↑</button>
                                                     </form>
                                                 }
                                                 @if (idx + 1 < bundle.Filter.Rules.Count)
@@ -270,11 +281,11 @@
                                                         <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                                                         <input type="hidden" name="ruleIndex" value="@idx" />
                                                         <input type="hidden" name="direction" value="1" />
-                                                        <button type="submit" class="btn btn-secondary btn-sm" title="Move down">↓</button>
+                                                        <button type="submit" class="btn btn-secondary btn-sm" title="@L["Move down"]">↓</button>
                                                     </form>
                                                 }
                                                 <details class="inline-edit-details">
-                                                    <summary class="btn btn-secondary btn-sm">Edit</summary>
+                                                    <summary class="btn btn-secondary btn-sm">@L["Edit"]</summary>
                                                     <div class="inline-edit-popover">
                                                         <form method="post" action="@Url.Content("~/manage/policies/rules/edit")">
                                                             @Html.AntiForgeryToken()
@@ -284,7 +295,7 @@
                                                             <input type="hidden" name="ruleIndex" value="@idx" />
                                                             <div class="form-grid">
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-chain">Chain</label>
+                                                                    <label for="filter-edit-@idx-chain">@L["Chain"]</label>
                                                                     <select name="chain" id="filter-edit-@idx-chain">
                                                                         <option value="input" selected="@(r.Chain == FilterChainKind.Input)">input</option>
                                                                         <option value="forward" selected="@(r.Chain == FilterChainKind.Forward)">forward</option>
@@ -292,79 +303,79 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-family">Family</label>
+                                                                    <label for="filter-edit-@idx-family">@L["Family"]</label>
                                                                     <select name="family" id="filter-edit-@idx-family">
                                                                         <option value="ipv4" selected="@(r.Family == IpFamily.IPv4)">ipv4</option>
                                                                         <option value="ipv6" selected="@(r.Family == IpFamily.IPv6)">ipv6</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-protocol">Protocol</label>
+                                                                    <label for="filter-edit-@idx-protocol">@L["Protocol"]</label>
                                                                     <select name="protocol" id="filter-edit-@idx-protocol">
                                                                         <option value="tcp" selected="@(r.Protocol == FilterProtocol.Tcp)">tcp</option>
                                                                         <option value="udp" selected="@(r.Protocol == FilterProtocol.Udp)">udp</option>
                                                                         <option value="icmp" selected="@(r.Protocol == FilterProtocol.Icmp)">icmp</option>
                                                                         <option value="icmpv6" selected="@(r.Protocol == FilterProtocol.IcmpV6)">icmpv6</option>
-                                                                        <option value="any" selected="@(r.Protocol == FilterProtocol.Any)">any</option>
+                                                                        <option value="any" selected="@(r.Protocol == FilterProtocol.Any)">@anyLabel</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-verdict">Verdict</label>
+                                                                    <label for="filter-edit-@idx-verdict">@L["Verdict"]</label>
                                                                     <select name="verdict" id="filter-edit-@idx-verdict">
-                                                                        <option value="accept" selected="@(r.Verdict == FilterVerdict.Accept)">accept</option>
-                                                                        <option value="drop" selected="@(r.Verdict == FilterVerdict.Drop)">drop</option>
-                                                                        <option value="reject" selected="@(r.Verdict == FilterVerdict.Reject)">reject — ICMP admin prohibited</option>
+                                                                        <option value="accept" selected="@(r.Verdict == FilterVerdict.Accept)">@acceptLabel</option>
+                                                                        <option value="drop" selected="@(r.Verdict == FilterVerdict.Drop)">@dropLabel</option>
+                                                                        <option value="reject" selected="@(r.Verdict == FilterVerdict.Reject)">@(rejectExplanation.ResourceNotFound ? "reject — ICMP admin prohibited" : rejectExplanation.Value)</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="field span-2">
-                                                                    <label for="filter-edit-@idx-sources">Source CIDR(s)</label>
-                                                                    <input type="text" name="sources" value="@editSources" readonly="@(r.SourceObject is not null)" aria-label="Source literals; pinned lists are managed separately" id="filter-edit-@idx-sources" />
+                                                                    <label for="filter-edit-@idx-sources">@L["Source CIDR(s)"]</label>
+                                                                    <input type="text" name="sources" value="@editSources" readonly="@(r.SourceObject is not null)" aria-label="@L["Source literals; pinned lists are managed separately"]" id="filter-edit-@idx-sources" />
                                                                 </div>
                                                                 <div class="field span-2">
-                                                                    <label for="filter-edit-@idx-destinations">Destination CIDR(s)</label>
-                                                                    <input type="text" name="destinations" value="@editDests" readonly="@(r.DestinationObject is not null)" aria-label="Destination literals; pinned lists are managed separately" id="filter-edit-@idx-destinations" />
+                                                                    <label for="filter-edit-@idx-destinations">@L["Destination CIDR(s)"]</label>
+                                                                    <input type="text" name="destinations" value="@editDests" readonly="@(r.DestinationObject is not null)" aria-label="@L["Destination literals; pinned lists are managed separately"]" id="filter-edit-@idx-destinations" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-destinationPorts">Dest port(s)</label>
-                                                                    <input type="text" name="destinationPorts" value="@editPorts" readonly="@(r.DestinationPortObject is not null)" aria-label="Port literals; pinned lists are managed separately" id="filter-edit-@idx-destinationPorts" />
+                                                                    <label for="filter-edit-@idx-destinationPorts">@L["Dest port(s)"]</label>
+                                                                    <input type="text" name="destinationPorts" value="@editPorts" readonly="@(r.DestinationPortObject is not null)" aria-label="@L["Port literals; pinned lists are managed separately"]" id="filter-edit-@idx-destinationPorts" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-icmpType">ICMP type</label>
+                                                                    <label for="filter-edit-@idx-icmpType">@L["ICMP type"]</label>
                                                                     <input type="text" name="icmpType" value="@r.IcmpType" id="filter-edit-@idx-icmpType" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-inputInterface">Input iface</label>
+                                                                    <label for="filter-edit-@idx-inputInterface">@L["Input iface"]</label>
                                                                     <input type="text" name="inputInterface" value="@r.InputInterface" maxlength="15" id="filter-edit-@idx-inputInterface" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-outputInterface">Output iface</label>
+                                                                    <label for="filter-edit-@idx-outputInterface">@L["Output iface"]</label>
                                                                     <input type="text" name="outputInterface" value="@r.OutputInterface" maxlength="15" id="filter-edit-@idx-outputInterface" />
                                                                 </div>
                                                                 <div class="field span-2">
-                                                                    <label for="filter-edit-@idx-connectionStates">CT states (comma-separated: new, established, related, invalid)</label>
+                                                                    <label for="filter-edit-@idx-connectionStates">@L["CT states (comma-separated: new, established, related, invalid)"]</label>
                                                                     <input type="text" name="connectionStates" value="@editStates" id="filter-edit-@idx-connectionStates" />
                                                                 </div>
                                                                 <div class="field span-2">
-                                                                    <label for="filter-edit-@idx-description">Description (optional)</label>
-                                                                    <input type="text" name="description" value="@r.Description" maxlength="160" placeholder="Purpose of this rule" id="filter-edit-@idx-description" />
+                                                                    <label for="filter-edit-@idx-description">@L["Description (optional)"]</label>
+                                                                    <input type="text" name="description" value="@r.Description" maxlength="160" placeholder="@L["Purpose of this rule"]" id="filter-edit-@idx-description" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-rateLimitPackets">Rate limit pkts</label>
+                                                                    <label for="filter-edit-@idx-rateLimitPackets">@L["Rate limit pkts"]</label>
                                                                     <input type="number" name="rateLimitPackets" value="@r.RateLimit?.PacketsPerWindow" min="1" max="1000000" id="filter-edit-@idx-rateLimitPackets" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-rateLimitUnit">Rate limit unit</label>
+                                                                    <label for="filter-edit-@idx-rateLimitUnit">@L["Rate limit unit"]</label>
                                                                     <select name="rateLimitUnit" id="filter-edit-@idx-rateLimitUnit">
-                                                                        <option value="second" selected="@(r.RateLimit?.WindowUnit != RateLimitTimeUnit.Minute)">second</option>
-                                                                        <option value="minute" selected="@(r.RateLimit?.WindowUnit == RateLimitTimeUnit.Minute)">minute</option>
+                                                                        <option value="second" selected="@(r.RateLimit?.WindowUnit != RateLimitTimeUnit.Minute)">@secondLabel</option>
+                                                                        <option value="minute" selected="@(r.RateLimit?.WindowUnit == RateLimitTimeUnit.Minute)">@minuteLabel</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-rateLimitBurst">Rate limit burst</label>
+                                                                    <label for="filter-edit-@idx-rateLimitBurst">@L["Rate limit burst"]</label>
                                                                     <input type="number" name="rateLimitBurst" value="@r.RateLimit?.Burst" min="1" max="10000" id="filter-edit-@idx-rateLimitBurst" />
                                                                 </div>
                                                                 <div class="field">
-                                                                    <label for="filter-edit-@idx-rateLimitTimeout">Rate limit timeout</label>
+                                                                    <label for="filter-edit-@idx-rateLimitTimeout">@L["Rate limit timeout"]</label>
                                                                     <input type="number" name="rateLimitTimeout" value="@(r.RateLimit?.EntryTimeoutSeconds ?? 60)" min="1" max="86400" id="filter-edit-@idx-rateLimitTimeout" />
                                                                 </div>
                                                                 <div class="field span-2">
@@ -375,7 +386,7 @@
                                                                 </div>
                                                             </div>
                                                             <div class="mt-2">
-                                                                <button type="submit" class="btn btn-sm">Save rule #@(idx + 1)</button>
+                                                                <button type="submit" class="btn btn-sm">@L["Save rule #{0}", idx + 1]</button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -386,7 +397,7 @@
                                                     <input type="hidden" name="summary" value="@Model.Summary" />
                                                     <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                                                     <input type="hidden" name="ruleIndex" value="@idx" />
-                                                    <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm">@L["Remove"]</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -401,10 +412,10 @@
 
         @if (Model.CanMutate)
         {
-            <details class="card settings-disclosure" id="new-filter-rule" open="@(filterCount == 0)"><summary>Add filter rule</summary>
+            <details class="card settings-disclosure" id="new-filter-rule" open="@(filterCount == 0)"><summary>@L["Add filter rule"]</summary>
                 <div class="card-header">
-                    <h2>Add filter rule</h2>
-                    <span class="badge badge-neutral">Supports inline CIDR/port sets &amp; rate limiting</span>
+                    <h2>@L["Add filter rule"]</h2>
+                    <span class="badge badge-neutral">@L["Supports inline CIDR/port sets & rate limiting"]</span>
                 </div>
                 <form method="post" action="@Url.Content("~/manage/policies/rules/add")">
                     @Html.AntiForgeryToken()
@@ -414,7 +425,7 @@
 
                     <div class="form-grid">
                         <div class="field">
-                            <label for="r-chain">Chain</label>
+                            <label for="r-chain">@L["Chain"]</label>
                             <select id="r-chain" name="chain">
                                 <option value="input">input</option>
                                 <option value="forward">forward</option>
@@ -422,84 +433,84 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label for="r-family">IP Family</label>
+                            <label for="r-family">@(familyLabel.ResourceNotFound ? "IP Family" : familyLabel.Value)</label>
                             <select id="r-family" name="family">
                                 <option value="ipv4">ipv4</option>
                                 <option value="ipv6">ipv6</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="r-protocol">Protocol</label>
+                            <label for="r-protocol">@L["Protocol"]</label>
                             <select id="r-protocol" name="protocol" data-filter-protocol>
                                 <option value="tcp">tcp</option>
                                 <option value="udp">udp</option>
-                                <option value="icmp">icmp (IPv4)</option>
-                                <option value="icmpv6">icmpv6 (IPv6)</option>
-                                <option value="any">any</option>
+                                <option value="icmp">@(icmpV4Label.ResourceNotFound ? "icmp (IPv4)" : icmpV4Label.Value)</option>
+                                <option value="icmpv6">@L["icmpv6 (IPv6)"]</option>
+                                <option value="any">@anyLabel</option>
                             </select>
                         </div>
                         <div class="field">
-                            <label for="r-verdict">Verdict</label>
+                            <label for="r-verdict">@L["Verdict"]</label>
                             <select id="r-verdict" name="verdict">
-                                <option value="accept">accept</option>
-                                <option value="drop">drop</option>
-                            <option value="reject">reject — ICMP admin prohibited</option>
+                                <option value="accept">@acceptLabel</option>
+                                <option value="drop">@dropLabel</option>
+                            <option value="reject">@(rejectExplanation.ResourceNotFound ? "reject — ICMP admin prohibited" : rejectExplanation.Value)</option>
                             </select>
                         </div>
 
                     </div>
                     <div class="form-grid form-grid-addresses mt-2">
                         <div class="field">
-                            <label for="r-sources">Source CIDR(s)</label>
+                            <label for="r-sources">@L["Source CIDR(s)"]</label>
                             <input id="r-sources" type="text" name="sources" placeholder="192.0.2.0/24" aria-describedby="r-sources-hint" />
-                            <span id="r-sources-hint" class="hint">Leave blank for any source. Separate multiple disjoint networks with commas.</span>
+                            <span id="r-sources-hint" class="hint">@L["Leave blank for any source. Separate multiple disjoint networks with commas."]</span>
                         </div>
                         <div class="field">
-                            <label for="r-dests">Destination CIDR(s)</label>
+                            <label for="r-dests">@L["Destination CIDR(s)"]</label>
                             <input id="r-dests" type="text" name="destinations" placeholder="203.0.113.0/24" aria-describedby="r-dests-hint" />
-                            <span id="r-dests-hint" class="hint">Leave blank for any destination. Use networks from the selected IP family.</span>
+                            <span id="r-dests-hint" class="hint">@L["Leave blank for any destination. Use networks from the selected IP family."]</span>
                         </div>
 
                     </div>
                     <div class="form-grid form-grid-route mt-2">
                         <div class="field" data-proto-group="transport">
-                            <label for="r-ports">Destination port(s)</label>
-                            <input id="r-ports" type="text" name="destinationPorts" placeholder="443 or 80, 443" aria-describedby="r-ports-hint" />
-                            <span id="r-ports-hint" class="hint">1 port or comma-separated set (1–65535).</span>
+                            <label for="r-ports">@L["Destination port(s)"]</label>
+                            <input id="r-ports" type="text" name="destinationPorts" placeholder="@L["443 or 80, 443"]" aria-describedby="r-ports-hint" />
+                            <span id="r-ports-hint" class="hint">@L["1 port or comma-separated set (1–65535)."]</span>
                         </div>
                         <div class="field" data-proto-group="icmp">
-                            <label for="r-icmp">ICMP / ICMPv6 type</label>
+                            <label for="r-icmp">@L["ICMP / ICMPv6 type"]</label>
                             <select id="r-icmp" name="icmpType">
-                                <option value="">(any ICMP type)</option>
-                                <option value="echo-request">echo-request (IPv4 &amp; IPv6)</option>
-                                <option value="echo-reply">echo-reply (IPv4 &amp; IPv6)</option>
-                                <option value="destination-unreachable">destination-unreachable (IPv4 &amp; IPv6)</option>
-                                <option value="time-exceeded">time-exceeded (IPv4 &amp; IPv6)</option>
-                                <option value="parameter-problem">parameter-problem (IPv4 &amp; IPv6)</option>
-                                <option value="packet-too-big">packet-too-big (IPv6)</option>
-                                <option value="nd-router-solicit">nd-router-solicit (IPv6 ND)</option>
-                                <option value="nd-router-advert">nd-router-advert (IPv6 ND)</option>
-                                <option value="nd-neighbor-solicit">nd-neighbor-solicit (IPv6 ND)</option>
-                                <option value="nd-neighbor-advert">nd-neighbor-advert (IPv6 ND)</option>
+                                <option value="">@L["(any ICMP type)"]</option>
+                                <option value="echo-request">@L["echo-request (IPv4 & IPv6)"]</option>
+                                <option value="echo-reply">@L["echo-reply (IPv4 & IPv6)"]</option>
+                                <option value="destination-unreachable">@L["destination-unreachable (IPv4 & IPv6)"]</option>
+                                <option value="time-exceeded">@L["time-exceeded (IPv4 & IPv6)"]</option>
+                                <option value="parameter-problem">@L["parameter-problem (IPv4 & IPv6)"]</option>
+                                <option value="packet-too-big">@L["packet-too-big (IPv6)"]</option>
+                                <option value="nd-router-solicit">@L["nd-router-solicit (IPv6 ND)"]</option>
+                                <option value="nd-router-advert">@L["nd-router-advert (IPv6 ND)"]</option>
+                                <option value="nd-neighbor-solicit">@L["nd-neighbor-solicit (IPv6 ND)"]</option>
+                                <option value="nd-neighbor-advert">@L["nd-neighbor-advert (IPv6 ND)"]</option>
                             </select>
                         </div>
 
                         <div class="field">
-                            <label for="r-iif">Input interface (<code>iifname</code>)</label>
+                            <label for="r-iif">@L["Input interface ("]<code>iifname</code>)</label>
                             <input id="r-iif" type="text" name="inputInterface" placeholder="eth0" maxlength="15" />
                         </div>
                         <div class="field">
-                            <label for="r-oif">Output interface (<code>oifname</code>)</label>
+                            <label for="r-oif">@L["Output interface ("]<code>oifname</code>)</label>
                             <input id="r-oif" type="text" name="outputInterface" placeholder="wan0" maxlength="15" />
                         </div>
                         <div class="field form-full">
-                            <label for="r-desc">Description (optional)</label>
-                            <input id="r-desc" type="text" name="description" placeholder="Allow HTTPS ingress from management subnet" maxlength="160" />
+                            <label for="r-desc">@L["Description (optional)"]</label>
+                            <input id="r-desc" type="text" name="description" placeholder="@L["Allow HTTPS ingress from management subnet"]" maxlength="160" />
                         </div>
                     </div>
 
                     <div class="mt-2">
-                        <label class="field-label">Connection tracking states (<code>ct state</code>)</label>
+                        <label class="field-label">@L["Connection tracking states ("]<code>ct state</code>)</label>
                         <input type="hidden" name="connectionStates" value="" data-ct-state-value />
                         <div class="checkbox-group mt-1">
                             <label class="checkbox-row"><input type="checkbox" value="new" data-ct-state-cb /> new</label>
@@ -507,46 +518,46 @@
                             <label class="checkbox-row"><input type="checkbox" value="related" data-ct-state-cb /> related</label>
                             <label class="checkbox-row"><input type="checkbox" value="invalid" data-ct-state-cb /> invalid</label>
                             <label class="checkbox-row" style="margin-left: 1rem;">
-                                <input type="checkbox" name="matchOriginalDestinationDnat" value="true" /> Match DNAT (<code>ct status dnat</code>)
+                                <input type="checkbox" name="matchOriginalDestinationDnat" value="true" /> @L["Match DNAT ("]<code>ct status dnat</code>)
                             </label>
                         </div>
                     </div>
 
                     <details class="disclosure mt-2">
-                        <summary>Optional: Per-source token-bucket rate limit (dynamic nftables set)</summary>
+                        <summary>@L["Optional: Per-source token-bucket rate limit (dynamic nftables set)"]</summary>
                         <div class="form-grid mt-2">
                             <div class="field">
-                                <label for="rl-packets">Packets per window</label>
-                                <input id="rl-packets" type="number" name="rateLimitPackets" min="1" max="1000000" placeholder="e.g. 20" />
+                                <label for="rl-packets">@L["Packets per window"]</label>
+                                <input id="rl-packets" type="number" name="rateLimitPackets" min="1" max="1000000" placeholder="@L["e.g. 20"]" />
                             </div>
                             <div class="field">
-                                <label for="rl-unit">Window unit</label>
+                                <label for="rl-unit">@L["Window unit"]</label>
                                 <select id="rl-unit" name="rateLimitUnit">
-                                    <option value="second">per second</option>
-                                    <option value="minute">per minute</option>
+                                    <option value="second">@L["per second"]</option>
+                                    <option value="minute">@L["per minute"]</option>
                                 </select>
                             </div>
                             <div class="field">
-                                <label for="rl-burst">Burst (packets)</label>
-                                <input id="rl-burst" type="number" name="rateLimitBurst" min="1" max="10000" placeholder="e.g. 10" />
+                                <label for="rl-burst">@L["Burst (packets)"]</label>
+                                <input id="rl-burst" type="number" name="rateLimitBurst" min="1" max="10000" placeholder="@L["e.g. 10"]" />
                             </div>
                             <div class="field">
-                                <label for="rl-timeout">Entry timeout (seconds)</label>
+                                <label for="rl-timeout">@L["Entry timeout (seconds)"]</label>
                                 <input id="rl-timeout" type="number" name="rateLimitTimeout" min="1" max="86400" value="60" />
                             </div>
                         </div>
                     </details>
 
                     <div class="mt-2">
-                        <button type="submit">Add filter rule to draft</button>
+                        <button type="submit">@L["Add filter rule to draft"]</button>
                     </div>
                 </form>
             </details>
         }
         @if (Model.CanMutate && bundle is not null && bundle.Filter.Rules.Count > 0)
         {
-            <details class="card settings-disclosure"><summary>MAC, negation and meter conditions</summary>
-                <h2 id="filter-conditions-heading">MAC, negation &amp; meter conditions</h2>
+            <details class="card settings-disclosure"><summary>@L["MAC, negation and meter conditions"]</summary>
+                <h2 id="filter-conditions-heading">@L["MAC, negation & meter conditions"]</h2>
                 @for (var i = 0; i < bundle.Filter.Rules.Count; i++)
                 {
                     if (bundle.Filter.Rules[i] is not null)
@@ -555,10 +566,10 @@
             </details>
         }
 
-        <details class="disclosure mb-0 mt-2"><summary>Early filtering table</summary>@await Html.PartialAsync("_AuxiliaryForms", Model)</details>
-        <details class="disclosure mb-0 mt-2"><summary>Reverse-path filtering and TCP MSS</summary>@await Html.PartialAsync("_RawMssForms", Model)</details>
+        <details class="disclosure mb-0 mt-2"><summary>@L["Early filtering table"]</summary>@await Html.PartialAsync("_AuxiliaryForms", Model)</details>
+        <details class="disclosure mb-0 mt-2"><summary>@L["Reverse-path filtering and TCP MSS"]</summary>@await Html.PartialAsync("_RawMssForms", Model)</details>
         @await Html.PartialAsync("_AdvancedRuleStates", Model)
-        <details class="disclosure mb-0 mt-2"><summary>Alias references and pinned list versions</summary>@await Html.PartialAsync("_PolicyObjects", Model)</details>
+        <details class="disclosure mb-0 mt-2"><summary>@L["Alias references and pinned list versions"]</summary>@await Html.PartialAsync("_PolicyObjects", Model)</details>
 
 
     </div>
@@ -567,7 +578,7 @@
     <div class="tab-panel" id="tab-nat" tabindex="-1" data-tab-panel="tab-nat">
         <section class="card">
             <div class="card-header">
-                <h2>Prerouting DNAT rules (<code>inet nergal_nat</code>)</h2>
+                <h2>@L["Prerouting DNAT rules ("]<code>inet nergal_nat</code>)</h2>
                 @if (Model.CanMutate && bundle?.Nat is not null)
                 {
                     <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/clear")">
@@ -575,13 +586,13 @@
                         <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
                         <input type="hidden" name="summary" value="@Model.Summary" />
                         <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-                        <button type="submit" class="btn btn-danger btn-sm">Clear entire NAT section</button>
+                        <button type="submit" class="btn btn-danger btn-sm">@L["Clear entire NAT section"]</button>
                     </form>
                 }
             </div>
             @if (bundle?.Nat is null || bundle.Nat.DnatRules.Count == 0)
             {
-                <p class="muted mb-0">No prerouting DNAT rules defined.</p>
+                <p class="muted mb-0">@L["No prerouting DNAT rules defined."]</p>
             }
             else
             {
@@ -589,15 +600,15 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th><th>Enabled state</th>
-                                <th>Family</th>
-                                <th>Protocol</th>
-                                <th>Original Dest</th>
-                                <th>Translated Addr</th>
-                                <th>Ports</th>
-                                <th>Iface / Source</th>
-                                <th>Description</th>
-                                @if (Model.CanMutate) { <th>Action</th> }
+                                <th>#</th><th>@L["Enabled state"]</th>
+                                <th>@L["Family"]</th>
+                                <th>@L["Protocol"]</th>
+                                <th>@L["Original Dest"]</th>
+                                <th>@L["Translated Addr"]</th>
+                                <th>@L["Ports"]</th>
+                                <th>@L["Iface / Source"]</th>
+                                <th>@L["Description"]</th>
+                                @if (Model.CanMutate) { <th>@L["Action"]</th> }
                             </tr>
                         </thead>
                         <tbody>
@@ -605,15 +616,17 @@
                             {
                                 var d = bundle.Nat.DnatRules[i];
                                 if (d is null) { continue; }
+                                var ruleLabel = L["DNAT rule {0}", i + 1];
+                                var accessibleRuleLabel = ruleLabel.ResourceNotFound ? "Dnat rule " + (i + 1) : ruleLabel.Value;
                                 <tr>
                                     <td>@(i + 1)</td>
-                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Dnat, i, null, d.Enabled, "Dnat rule " + (i + 1))))</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Dnat, i, null, d.Enabled, accessibleRuleLabel)))</td>
                                     <td><code>@d.Family.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@d.Protocol.ToString().ToLowerInvariant()</code></td>
                                     <td><code>@(d.NegateDestination ? "!= " : "")@(d.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : d.OriginalDestination?.Value ?? string.Join(", ", d.DestinationPrefixes!.Select(p => p.Value)))</code></td>
                                     <td><code>@d.TranslatedAddress</code></td>
-                                    <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : "any")) → @(d.TranslatedPort?.ToString() ?? "same")</code></td>
-                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? "any")</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : "any"))</code></td>
+                                    <td><code>@(d.OriginalPortObject is { } portPin ? portPin.Content.Name + " v" + portPin.Version : d.OriginalPort?.ToString() ?? (d.OriginalPorts is { } originalSet ? string.Join(", ", originalSet) : anyLabel)) → @(d.TranslatedPort?.ToString() ?? L["same"].Value)</code></td>
+                                    <td><code>@(d.NegateInputInterface ? "!= " : "")@(d.InputInterface ?? anyLabel)</code> · <code>@(d.NegateSource ? "!= " : "")@(d.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : d.Source?.Value ?? (d.SourcePrefixes is { } sources ? string.Join(", ", sources.Select(p => p.Value)) : anyLabel))</code></td>
 
                                     <td>@(string.IsNullOrEmpty(d.Description) ? "—" : d.Description)</td>
                                     @if (Model.CanMutate)
@@ -621,14 +634,14 @@
                                         <td>
                                             <div class="btn-group">
                                                 @await Html.PartialAsync("_NatRuleMove", new Nergal.Web.NatRuleMoveModel(Model, "dnat", i, bundle.Nat.DnatRules.Count))
-                                                <a class="btn btn-secondary btn-sm" href="#dnat-editor-@i">Edit DNAT #@(i + 1)</a>
+                                                <a class="btn btn-secondary btn-sm" href="#dnat-editor-@i">@L["Edit DNAT #{0}", i + 1]</a>
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/remove")">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
                                                     <input type="hidden" name="summary" value="@Model.Summary" />
                                                     <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                                                     <input type="hidden" name="ruleIndex" value="@i" />
-                                                    <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm">@L["Remove"]</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -644,7 +657,7 @@
 
             @if (Model.CanMutate)
             {
-                <h3 class="mt-2">Add DNAT rule</h3>
+                <h3 class="mt-2">@L["Add DNAT rule"]</h3>
                 <form class="router-form" method="post" action="@Url.Content("~/manage/policies/nat/dnat/add")">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
@@ -652,60 +665,60 @@
                     <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                     <div class="form-grid">
                         <div class="field">
-                            <label for="dnat-new-family">Family</label>
+                            <label for="dnat-new-family">@L["Family"]</label>
                             <select name="family" id="dnat-new-family"><option value="ipv4">ipv4</option><option value="ipv6">ipv6</option></select>
                         </div>
                         <div class="field">
-                            <label for="dnat-new-protocol">Protocol</label>
-                            <select name="protocol" id="dnat-new-protocol"><option value="tcp">tcp</option><option value="udp">udp</option><option value="any">any</option></select>
+                            <label for="dnat-new-protocol">@L["Protocol"]</label>
+                            <select name="protocol" id="dnat-new-protocol"><option value="tcp">tcp</option><option value="udp">udp</option><option value="any">@anyLabel</option></select>
                         </div>
                         <div class="field">
-                            <label for="dnat-new-originalDestination">Original destination CIDR(s)</label>
-                            <input type="text" name="originalDestination" placeholder="192.0.2.1/32" required id="dnat-new-originalDestination" aria-describedby="dnat-new-originalDestination-hint" /><span class="hint" id="dnat-new-originalDestination-hint">Required before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family; every match uses the same translated target.</span>
+                            <label for="dnat-new-originalDestination">@L["Original destination CIDR(s)"]</label>
+                            <input type="text" name="originalDestination" placeholder="192.0.2.1/32" required id="dnat-new-originalDestination" aria-describedby="dnat-new-originalDestination-hint" /><span class="hint" id="dnat-new-originalDestination-hint">@L["Required before translation. One CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family; every match uses the same translated target."]</span>
                         </div>
                         <div class="field">
-                            <label for="dnat-new-translatedAddress">Translated IP address</label>
+                            <label for="dnat-new-translatedAddress">@L["Translated IP address"]</label>
                             <input type="text" name="translatedAddress" placeholder="198.51.100.2" required id="dnat-new-translatedAddress" />
                         </div>
                         <div class="field">
-                            <label for="dnat-new-originalPort">Original destination port(s) (optional)</label>
+                            <label for="dnat-new-originalPort">@L["Original destination port(s) (optional)"]</label>
                             <input type="text" name="originalPorts" placeholder="80,443" id="dnat-new-originalPort" aria-describedby="dnat-new-originalPort-hint" />
-                            <span class="hint" id="dnat-new-originalPort-hint">One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. Every original port maps to the same target; leave blank for any.</span>
+                            <span class="hint" id="dnat-new-originalPort-hint">@L["One port or 2–64 distinct comma-separated ports, 1–65535; requires TCP or UDP. Every original port maps to the same target; leave blank for any."]</span>
                         </div>
                         <div class="field">
-                            <label for="dnat-new-translatedPort">Translated port (optional)</label>
+                            <label for="dnat-new-translatedPort">@L["Translated port (optional)"]</label>
                             <input type="number" name="translatedPort" min="1" max="65535" placeholder="8443" id="dnat-new-translatedPort" />
                         </div>
                         <div class="field">
-                            <label for="dnat-new-inputInterface">Input interface (optional)</label>
+                            <label for="dnat-new-inputInterface">@L["Input interface (optional)"]</label>
                             <input type="text" name="inputInterface" placeholder="wan0" maxlength="15" id="dnat-new-inputInterface" />
                         </div>
                         <div class="field">
-                            <label for="dnat-new-source">Source CIDR(s) (optional)</label>
-                            <input type="text" name="source" placeholder="203.0.113.0/24" id="dnat-new-source" aria-describedby="dnat-new-source-hint" /><span class="hint" id="dnat-new-source-hint">Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family.</span>
+                            <label for="dnat-new-source">@L["Source CIDR(s) (optional)"]</label>
+                            <input type="text" name="source" placeholder="203.0.113.0/24" id="dnat-new-source" aria-describedby="dnat-new-source-hint" /><span class="hint" id="dnat-new-source-hint">@L["Empty means any; one CIDR or 2–64 disjoint/non-adjacent CIDRs of the selected family."]</span>
                         </div>
                         <div class="field span-2">
-                            <label for="dnat-new-description">Description (optional)</label>
-                            <input type="text" name="description" placeholder="Forward HTTPS to reverse proxy" maxlength="160" id="dnat-new-description" />
+                            <label for="dnat-new-description">@L["Description (optional)"]</label>
+                            <input type="text" name="description" placeholder="@L["Forward HTTPS to reverse proxy"]" maxlength="160" id="dnat-new-description" />
                         </div>
                     </div>
-                    <div class="mt-2"><button type="submit">Add DNAT rule</button></div>
+                    <div class="mt-2"><button type="submit">@L["Add DNAT rule"]</button></div>
                 </form>
             }
         </section>
 
         @if (bundle?.Nat is { } dnatPolicy)
-        { @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model, "dnat", null, dnatPolicy.DnatRules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, "Rule " + (i + 1) + " · " + r?.Family + " · " + r?.Protocol)).ToArray())) }
+        { @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model, "dnat", null, dnatPolicy.DnatRules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, L["Rule {0} · {1} · {2}", i + 1, r?.Family.ToString() ?? "", r?.Protocol.ToString() ?? ""].Value)).ToArray())) }
 
         @await Html.PartialAsync("_DnatConditions", Model)
 
         <section class="card">
             <div class="card-header">
-                <h2>Postrouting NAT rules (<code>inet nergal_nat</code>)</h2>
+                <h2>@L["Postrouting NAT rules ("]<code>inet nergal_nat</code>)</h2>
             </div>
             @if (bundle?.Nat is null || bundle.Nat.SnatRules.Count == 0)
             {
-                <p class="muted mb-0">No postrouting rules defined.</p>
+                <p class="muted mb-0">@L["No postrouting rules defined."]</p>
             }
             else
             {
@@ -713,14 +726,14 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th><th>Enabled state</th>
-                                <th>Family</th>
-                                <th>Source CIDR</th>
-                                <th>Action / translated source</th>
-                                <th>Destination CIDR</th>
-                                <th>Interfaces</th><th>Protocol / destination ports</th>
-                                <th>Description</th>
-                                @if (Model.CanMutate) { <th>Action</th> }
+                                <th>#</th><th>@L["Enabled state"]</th>
+                                <th>@L["Family"]</th>
+                                <th>@L["Source CIDR"]</th>
+                                <th>@L["Action / translated source"]</th>
+                                <th>@L["Destination CIDR"]</th>
+                                <th>@L["Interfaces"]</th><th>@L["Protocol / destination ports"]</th>
+                                <th>@L["Description"]</th>
+                                @if (Model.CanMutate) { <th>@L["Action"]</th> }
                             </tr>
                         </thead>
                         <tbody>
@@ -730,13 +743,13 @@
                                 if (s is null) { continue; }
                                 <tr>
                                     <td>@(i + 1)</td>
-                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Postrouting, i, null, s.Enabled, "Postrouting rule " + (i + 1))))</td>
+                                    <td>@await Html.PartialAsync("_RuleStateControl", new Nergal.Web.RuleStateControlModel(Model, new(PolicyRuleScope.Postrouting, i, null, s.Enabled, L["Postrouting rule {0}", i + 1].Value)))</td>
                                     <td><code>@s.Family.ToString().ToLowerInvariant()</code></td>
-                                    <td><code>@(s.NegateSource ? "!= " : "")@(s.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : s.Source?.Value ?? (s.SourcePrefixes is { } sourceSet ? "{ " + string.Join(", ", sourceSet.Select(p => p.Value)) + " }" : "any"))</code></td>
+                                    <td><code>@(s.NegateSource ? "!= " : "")@(s.SourceObject is { } sourcePin ? sourcePin.Content.Name + " v" + sourcePin.Version + " [" + string.Join(", ", sourcePin.Content.Entries) + "]" : s.Source?.Value ?? (s.SourcePrefixes is { } sourceSet ? "{ " + string.Join(", ", sourceSet.Select(p => p.Value)) + " }" : anyLabel))</code></td>
                                     <td><code>@(s.Action == NatPostroutingAction.Snat ? s.TranslatedAddress : s.Action.ToString().ToLowerInvariant())</code></td>
-                                    <td><code>@(s.NegateDestination ? "!= " : "")@(s.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : s.Destination?.Value ?? (s.DestinationPrefixes is { } destinationSet ? "{ " + string.Join(", ", destinationSet.Select(p => p.Value)) + " }" : "any"))</code></td>
-                                    <td><code>in @(s.NegateInputInterface ? "!= " : "")@(s.InputInterface ?? "any") · out @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterface ?? "any")</code></td>
-                                    <td><code>@s.Protocol · @(s.DestinationPortObject is { } portList ? portList.Content.Name + " v" + portList.Version + " [" + string.Join(", ", portList.Content.Entries) + "]" : s.DestinationPort?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? (s.DestinationPorts is null ? "any" : string.Join(", ", s.DestinationPorts)))</code></td>
+                                    <td><code>@(s.NegateDestination ? "!= " : "")@(s.DestinationObject is { } destinationPin ? destinationPin.Content.Name + " v" + destinationPin.Version + " [" + string.Join(", ", destinationPin.Content.Entries) + "]" : s.Destination?.Value ?? (s.DestinationPrefixes is { } destinationSet ? "{ " + string.Join(", ", destinationSet.Select(p => p.Value)) + " }" : anyLabel))</code></td>
+                                    <td><code>@L["in"] @(s.NegateInputInterface ? "!= " : "")@(s.InputInterface ?? anyLabel) · @L["out"] @(s.NegateOutputInterface ? "!= " : "")@(s.OutputInterface ?? anyLabel)</code></td>
+                                    <td><code>@s.Protocol · @(s.DestinationPortObject is { } portList ? portList.Content.Name + " v" + portList.Version + " [" + string.Join(", ", portList.Content.Entries) + "]" : s.DestinationPort?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? (s.DestinationPorts is null ? anyLabel : string.Join(", ", s.DestinationPorts)))</code></td>
 
                                     <td>@(string.IsNullOrEmpty(s.Description) ? "—" : s.Description)</td>
                                     @if (Model.CanMutate)
@@ -744,14 +757,14 @@
                                         <td>
                                             <div class="btn-group">
                                                 @await Html.PartialAsync("_NatRuleMove", new Nergal.Web.NatRuleMoveModel(Model, "postrouting", i, bundle.Nat.SnatRules.Count))
-                                                <a class="btn btn-secondary btn-sm" href="#postrouting-editor-@i">Edit postrouting #@(i + 1)</a>
+                                                <a class="btn btn-secondary btn-sm" href="#postrouting-editor-@i">@L["Edit postrouting #{0}", i + 1]</a>
                                                 <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/snat/remove")">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
                                                     <input type="hidden" name="summary" value="@Model.Summary" />
                                                     <input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
                                                     <input type="hidden" name="ruleIndex" value="@i" />
-                                                    <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm">@L["Remove"]</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -772,20 +785,20 @@
                         if (bundle.Nat.SnatRules[i] is { } rule)
                         {
                             <details class="router-form-details" id="postrouting-editor-@i">
-                                <summary>Edit postrouting #@(i + 1) · @rule.Family · @rule.Action · @(rule.Description ?? "No description")</summary>
+                                <summary>@L["Edit postrouting #{0}", i + 1] · @rule.Family · @rule.Action · @(rule.Description ?? L["No description"].Value)</summary>
                                 <div class="router-form-body">@await Html.PartialAsync("_PostroutingForm", new Nergal.Web.PostroutingFormModel(Model, i))</div>
                             </details>
                         }
                     }
                 }
-                <h3 class="mt-2">Add postrouting rule</h3>
+                <h3 class="mt-2">@L["Add postrouting rule"]</h3>
                 @await Html.PartialAsync("_PostroutingForm", new Nergal.Web.PostroutingFormModel(Model, null))
             }
         </section>
         @if (Model.CanMutate && bundle?.Nat is { SnatRules.Count: > 0 } portNat)
         {
-            <section class="card"><h2>Reusable postrouting lists</h2>
-                @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model, "postrouting", null, portNat.SnatRules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, "Rule " + (i + 1) + " · " + r?.Family + " · " + r?.Protocol + " · " + r?.Action)).ToArray()))
+            <section class="card"><h2>@L["Reusable postrouting lists"]</h2>
+                @await Html.PartialAsync("_TransportReferences", new Nergal.Web.TransportReferenceFormModel(Model, "postrouting", null, portNat.SnatRules.Select((r, i) => new Nergal.Web.TransportReferenceRuleOption(i, L["Rule {0} · {1} · {2} · {3}", i + 1, r?.Family.ToString() ?? "", r?.Protocol.ToString() ?? "", r?.Action.ToString() ?? ""].Value)).ToArray()))
             </section>
         }
     </div>
@@ -884,7 +897,38 @@
                 <div class="field">
                     <label for="raw-bundle-json">@L["Bundle JSON"]</label>
                     <p id="bundle-editor-help" class="muted">@L["JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics."]</p>
-                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json" data-editor-label="@L["Policy bundle JSON"]" aria-describedby="bundle-editor-help">@Model.BundleJson</textarea>
+                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json"
+                              aria-describedby="bundle-editor-help" data-editor-label="@L["Policy bundle JSON"]"
+                              data-editor-indent-lines="@L["Indent lines"]"
+                              data-editor-indentation-updated="@L["Indentation updated. Preview checks policy compatibility."]"
+                              data-editor-find="@L["Find"]"
+                              data-editor-replace="@L["Replace"]"
+                              data-editor-next="@L["next"]"
+                              data-editor-previous="@L["previous"]"
+                              data-editor-all="@L["all"]"
+                              data-editor-match-case="@L["match case"]"
+                              data-editor-regexp="@L["regexp"]"
+                              data-editor-by-word="@L["by word"]"
+                              data-editor-replace-all="@L["replace all"]"
+                              data-editor-close="@L["close"]"
+                              data-editor-current-match="@L["current match"]"
+                              data-editor-on-line="@L["on line"]"
+                              data-editor-replaced-match-on-line="@L["replaced match on line $"]"
+                              data-editor-replaced-matches="@L["replaced $ matches"]"
+                              data-editor-go-to-line="@L["Go to line"]"
+                              data-editor-go="@L["go"]"
+                              data-editor-folded-lines="@L["Folded lines"]"
+                              data-editor-unfolded-lines="@L["Unfolded lines"]"
+                              data-editor-to="@L["to"]"
+                              data-editor-folded-code="@L["folded code"]"
+                              data-editor-unfold="@L["unfold"]"
+                              data-editor-fold-line="@L["Fold line"]"
+                              data-editor-unfold-line="@L["Unfold line"]"
+                              data-editor-diagnostics="@L["Diagnostics"]"
+                              data-editor-no-diagnostics="@L["No diagnostics"]"
+                              data-editor-selection-deleted="@L["Selection deleted"]"
+                              data-editor-control-character="@L["Control character"]"
+                              data-editor-completions="@L["Completions"]">@Model.BundleJson</textarea>
                 </div>
                 <div class="btn-group mt-2">
                     <button type="submit" class="btn btn-secondary">@L["Preview compatibility & nftables diff"]</button>

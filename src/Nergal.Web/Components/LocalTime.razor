@@ -1,5 +1,6 @@
 @using System.Globalization
-<time data-local-time datetime="@UtcInstant" title="Stored UTC: @UtcInstant">@Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)</time>
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
+<time data-local-time datetime="@UtcInstant" title="@(L["Stored UTC: {0}", UtcInstant].Value)">@Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)</time>
 
 @code {
     /// <summary>The stored instant; the shared browser formatter displays local time without changing this UTC representation.</summary>

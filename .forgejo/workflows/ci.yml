@@ -26,7 +26,7 @@ jobs:
         run: |
           npm ci --prefix tools/web-assets --ignore-scripts
           npm run verify --prefix tools/web-assets
-          node --test scripts/navigation.test.mjs scripts/app-theme.test.mjs scripts/pages-theme.test.mjs scripts/local-time.test.mjs
+          node --test scripts/navigation.test.mjs scripts/app-theme.test.mjs scripts/pages-theme.test.mjs scripts/local-time.test.mjs tools/web-assets/code-editor.test.mjs
           python3 -B scripts/test-dev-watch.py
       - name: Restore locked dependencies
         run: dotnet restore Nergal.slnx --locked-mode
@@ -49,6 +49,8 @@ jobs:
         run: python3 -B tests/integration/oidc/check.py
       - name: Verify Forgejo Pages documentation portal
         run: python3 -B scripts/verify-pages.py
+      - name: Verify localization catalogs and report translation coverage
+        run: python3 -B scripts/check-ui-catalogs.py
       - name: Assemble and verify the Linux release archive
         run: |
           bash scripts/package-release.sh --format tar --verify

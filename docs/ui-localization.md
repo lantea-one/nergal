@@ -1,17 +1,21 @@
 # MVC display languages
 
 The console offers 20 display languages. Every language covers the shared shell,
-navigation and sign-in, including the local, LDAP, OAuth and OIDC options. Arabic
-and Hebrew render the shell and sign-in right to left.
+navigation, local and federated sign-in, the authenticator challenge and
+recovery, verification-code emails, and the primary firewall verdict and
+confirmed-apply buttons. Arabic
+and Hebrew render shared and fully translated screens right to left. Recovery
+keys and numeric authenticator codes retain left-to-right order.
 
 The choices are English, Arabic, Chinese (Simplified and Traditional), Dutch,
 French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish,
 Portuguese (Brazil), Russian, Spanish, Turkish, Ukrainian and Vietnamese.
 
 Spanish also covers Overview and host observations, Hosts registration and
-validation, the OAuth connection form, audit history, browser errors, sign-in
-verification and recovery, native source import and conversion review, and key
-policy review and confirmed-apply controls. English is the fallback for views and
+validation, the OAuth connection form, audit history, browser errors, native
+source import and conversion review, and portions of identity management,
+settings, policy authoring and confirmed apply. The JSON editor's toolbar,
+search, folding and status announcements have Spanish text. English is the fallback for views and
 messages outside a catalog's coverage. Untranslated main content explicitly
 declares English and left-to-right direction so assistive technology can interpret
 it correctly.
@@ -43,6 +47,13 @@ To add a language, add its exact culture and native display name to `UiLocalizat
 and create a matching `UiStrings.<culture>.resx` with the shared navigation and
 sign-in messages from a shipped catalog. Preserve placeholders and protocol names.
 Run the localization tests before making the language available in the selector.
+
+Run `python3 -B scripts/check-ui-catalogs.py` for per-locale counts and structural
+validation. `--json` reports the exact missing messages, and `--require-complete`
+exits unsuccessfully while any catalog has gaps. The inventory counts literal
+resource lookups and catalog entries. Review computed messages, plain text in
+templates, and dependency-provided text as well. Review firewall and identity
+instructions for meaning in each language before publishing translations.
 
 Apply locale formatting to display values such as the counts on the Hosts and
 Audit pages. Keep form field names and tokens, identifiers, fingerprints,

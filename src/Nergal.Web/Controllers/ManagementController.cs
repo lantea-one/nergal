@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Localization;
 using Nergal.ControllerState;
 using Nergal.Core.Agent;
 using Nergal.Core.Controller;
@@ -14,8 +15,27 @@ namespace Nergal.Web.Controllers;
 /// <summary>RBAC-gated fleet dashboard, policy authoring, compatibility/diff preview, confirmed apply, system settings, and audit viewer.</summary>
 [SupportedOSPlatform("linux")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed partial class ManagementController(ControllerStateStore store, ApplyWorkflowService? applyWorkflow = null, NativePolicySourceCatalog? nativeSources = null) : Controller
+public sealed partial class ManagementController(
+    ControllerStateStore store,
+    ApplyWorkflowService? applyWorkflow = null,
+    NativePolicySourceCatalog? nativeSources = null,
+    IStringLocalizer<UiStrings>? localizer = null) : Controller
 {
+    private IStringLocalizer L { get; } = (IStringLocalizer?)localizer ?? EnglishFallback.Instance;
+
+    // Preserve English fallback for callers that construct the controller outside MVC.
+    private sealed class EnglishFallback : IStringLocalizer
+    {
+        internal static readonly EnglishFallback Instance = new();
+
+        public LocalizedString this[string name] => new(name, name, resourceNotFound: true);
+
+        public LocalizedString this[string name, params object[] arguments] =>
+            new(name, string.Format(CultureInfo.CurrentCulture, name, arguments), resourceNotFound: true);
+
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
+    }
+
     /// <summary>Populates live branding settings for the shared layout before action execution.</summary>
     public override void OnActionExecuting(ActionExecutingContext context)
     {
@@ -811,9 +831,9 @@ public sealed partial class ManagementController(ControllerStateStore store, App
 
         var noticeMessage = notice switch
         {
-            "appliedPendingConfirmation" => "Candidate applied with watchdog armed; confirm before timeout or agent will roll back automatically.",
-            "confirmed" => "Candidate confirmed as current baseline revision.",
-            "rolledBack" => "Explicit rollback completed and verified.",
+            "appliedPendingConfirmation" => L["Candidate applied with watchdog armed; confirm before timeout or agent will roll back automatically."].Value,
+            "confirmed" => L["Candidate confirmed as current baseline revision."].Value,
+            "rolledBack" => L["Explicit rollback completed and verified."].Value,
             _ => null,
         };
 
@@ -837,27 +857,27 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             revision is null or 0)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Apply", await BuildApplyModelAsync(actorId, role, null, revision, null, "Select both a managed host and a saved policy revision.", HttpContext.RequestAborted));
+            return View("Apply", await BuildApplyModelAsync(actorId, role, null, revision, null, L["Select both a managed host and a saved policy revision."].Value, HttpContext.RequestAborted));
         }
 
         var timeout = confirmationTimeoutSeconds ?? ApplyWorkflowService.DefaultConfirmationTimeoutSeconds;
         if (timeout is < ApplyWorkflowService.MinimumConfirmationTimeoutSeconds or > ApplyWorkflowService.MaximumConfirmationTimeoutSeconds)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, revision, null, "Confirmation timeout must be between 1 and 3600 seconds.", HttpContext.RequestAborted));
+            return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, revision, null, L["Confirmation timeout must be between 1 and 3600 seconds."].Value, HttpContext.RequestAborted));
         }
 
         var result = await workflow.StartApplyAsync(parsedHostId, revision.Value, timeout, actorId, role, HttpContext.RequestAborted);
         if (!result.HostFound)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
-            return View("Apply", await BuildApplyModelAsync(actorId, role, null, revision, null, "Selected managed host was not found.", HttpContext.RequestAborted));
+            return View("Apply", await BuildApplyModelAsync(actorId, role, null, revision, null, L["Selected managed host was not found."].Value, HttpContext.RequestAborted));
         }
 
         if (!result.RevisionFound || result.Reply is null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
-            return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, null, null, "Selected policy revision was not found.", HttpContext.RequestAborted));
+            return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, null, null, L["Selected policy revision was not found."].Value, HttpContext.RequestAborted));
         }
 
         if (result.Reply.Outcome == AgentControlOutcome.AppliedPendingConfirmation)
@@ -869,7 +889,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         var reason = string.IsNullOrEmpty(result.Reply.ErrorCode)
             ? ControllerStateHost.FormatOutcome(result.Reply.Outcome)
             : $"{ControllerStateHost.FormatOutcome(result.Reply.Outcome)} ({result.Reply.ErrorCode})";
-        return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, revision, null, $"Apply start failed: {reason}.", HttpContext.RequestAborted, result.Reply));
+        return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, revision, null, L["Apply start failed: {0}.", reason].Value, HttpContext.RequestAborted, result.Reply));
     }
 
     /// <summary>Confirms an awaiting-confirmation candidate before the watchdog expires (Administrator only).</summary>
@@ -903,7 +923,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             !Guid.TryParseExact(watchdogId, "D", out var parsedWdId) || parsedWdId == Guid.Empty)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            return View("Apply", await BuildApplyModelAsync(actorId, role, null, targetRevision, null, "Operation or watchdog identifier is invalid.", HttpContext.RequestAborted));
+            return View("Apply", await BuildApplyModelAsync(actorId, role, null, targetRevision, null, L["Operation or watchdog identifier is invalid."].Value, HttpContext.RequestAborted));
         }
 
         var result = isConfirm
@@ -913,7 +933,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         if (!result.HostFound || result.Reply is null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
-            return View("Apply", await BuildApplyModelAsync(actorId, role, null, targetRevision, null, "Selected managed host was not found.", HttpContext.RequestAborted));
+            return View("Apply", await BuildApplyModelAsync(actorId, role, null, targetRevision, null, L["Selected managed host was not found."].Value, HttpContext.RequestAborted));
         }
 
         var expectedOutcome = isConfirm ? AgentControlOutcome.Confirmed : AgentControlOutcome.RolledBack;
@@ -928,8 +948,8 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         var reason = string.IsNullOrEmpty(result.Reply.ErrorCode)
             ? ControllerStateHost.FormatOutcome(result.Reply.Outcome)
             : $"{ControllerStateHost.FormatOutcome(result.Reply.Outcome)} ({result.Reply.ErrorCode})";
-        var label = isConfirm ? "Confirm" : "Rollback";
-        return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, targetRevision, null, $"{label} failed: {reason}.", HttpContext.RequestAborted, result.Reply));
+        var errorMessage = isConfirm ? L["Confirm failed: {0}.", reason].Value : L["Rollback failed: {0}.", reason].Value;
+        return View("Apply", await BuildApplyModelAsync(actorId, role, parsedHostId, targetRevision, null, errorMessage, HttpContext.RequestAborted, result.Reply));
     }
 
     /// <summary>Displays append-only audit log and immutable policy revision history (read-only for Auditors).</summary>
@@ -968,7 +988,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             CanMutate = role == NergalRoles.Administrator,
             Settings = settings.Settings,
             SavedVersion = settings,
-            StatusMessage = notice == "saved" ? "System settings saved and recorded in the append-only audit log." : null,
+            StatusMessage = notice == "saved" ? L["System settings saved and recorded in the append-only audit log."].Value : null,
             ValidationErrors = [],
         };
         return View(model);
@@ -1105,7 +1125,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             CanMutate = true,
             Settings = candidate,
             SavedVersion = saved,
-            ErrorMessage = "One or more settings failed validation. Review the highlighted codes below.",
+            ErrorMessage = L["One or more settings failed validation. Review the highlighted codes below."].Value,
             ValidationErrors = errors,
         });
     }
@@ -1121,7 +1141,7 @@ public sealed partial class ManagementController(ControllerStateStore store, App
             CanMutate = true,
             Settings = saved.Settings,
             SavedVersion = saved,
-            ErrorMessage = "System settings changed while you were editing. Review the current settings and reapply your changes.",
+            ErrorMessage = L["System settings changed while you were editing. Review the current settings and reapply your changes."].Value,
             ValidationErrors = [],
         });
     }

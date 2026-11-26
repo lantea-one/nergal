@@ -59,6 +59,9 @@ def exercise(temp):
         arabic = unescape(browser.request("/login", 200))
         assert '<html lang="ar" dir="rtl"' in arabic and 'كلمة المرور' in arabic
         assert '<div lang="en-US"' not in arabic
+        recovery = unescape(browser.request("/login/recovery", 200))
+        assert '<html lang="ar" dir="rtl"' in recovery and "استرداد تطبيق المصادقة" in recovery
+        assert '<div lang="en-US"' not in recovery
         assert select_language(browser, {**fields, "returnPath": "//example.invalid/"}, 302) == "/"
         assert select_language(browser, fields, 302) == "/login"
         browser.login()

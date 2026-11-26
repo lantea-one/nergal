@@ -1,38 +1,39 @@
 @model Nergal.Web.ObjectLibraryPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @if (Model.Selected is { } selected)
 {
     var baselineVersion = Model.Comparison?.Baseline.Version ?? Model.History.FirstOrDefault(v => v.Version != selected.Version)?.Version ?? selected.Version;
     <section class="card mt-2" aria-labelledby="list-comparison-heading">
-        <h2 id="list-comparison-heading">Compare list versions</h2>
+        <h2 id="list-comparison-heading">@L["Compare list versions"]</h2>
         <form method="get" action="@Url.Action("Objects")" aria-describedby="list-comparison-hint">
             <input type="hidden" name="objectId" value="@selected.Id" />
             <div class="form-grid">
-                <div class="field"><label for="comparison-from">From version</label><select id="comparison-from" name="compareToVersion">
-                    @foreach (var item in Model.History) { <option value="@item.Version" selected="@(item.Version == baselineVersion)">Version @item.Version · @item.Content.Entries.Count entries</option> }
+                <div class="field"><label for="comparison-from">@L["From version"]</label><select id="comparison-from" name="compareToVersion">
+                    @foreach (var item in Model.History) { <option value="@item.Version" selected="@(item.Version == baselineVersion)">@L["Version {0} · {1} entries", item.Version, item.Content.Entries.Count]</option> }
                 </select></div>
-                <div class="field"><label for="comparison-to">To version</label><select id="comparison-to" name="version">
-                    @foreach (var item in Model.History) { <option value="@item.Version" selected="@(item.Version == selected.Version)">Version @item.Version · @item.Content.Entries.Count entries</option> }
+                <div class="field"><label for="comparison-to">@L["To version"]</label><select id="comparison-to" name="version">
+                    @foreach (var item in Model.History) { <option value="@item.Version" selected="@(item.Version == selected.Version)">@L["Version {0} · {1} entries", item.Version, item.Content.Entries.Count]</option> }
                 </select></div>
             </div>
-            <p id="list-comparison-hint" class="hint">Compare exact stored entries in either direction. Added and removed CIDRs are entry changes, not a calculation of address coverage or allowed traffic. Existing policy pins stay unchanged. Viewing a comparison does not save or apply anything.</p>
-            <button type="submit" class="btn btn-secondary">Compare versions</button>
+            <p id="list-comparison-hint" class="hint">@L["Compare exact stored entries in either direction. Added and removed CIDRs are entry changes, not a calculation of address coverage or allowed traffic. Existing policy pins stay unchanged. Viewing a comparison does not save or apply anything."]</p>
+            <button type="submit" class="btn btn-secondary">@L["Compare versions"]</button>
         </form>
         @if (Model.Comparison is { } comparison)
         {
-            <h3>Version @comparison.Baseline.Version → version @comparison.Target.Version</h3>
-            <p>From saved @await Html.PartialAsync("_LocalTime", comparison.Baseline.UpdatedAtUtc) to saved @await Html.PartialAsync("_LocalTime", comparison.Target.UpdatedAtUtc).</p>
-            <p><strong>@comparison.AddedEntries.Count added</strong> · <strong>@comparison.RemovedEntries.Count removed</strong> · @comparison.UnchangedEntryCount unchanged entries.</p>
+            <h3>@L["Version {0} → version {1}", comparison.Baseline.Version, comparison.Target.Version]</h3>
+            <p>@L["From saved"] @await Html.PartialAsync("_LocalTime", comparison.Baseline.UpdatedAtUtc) @L["to saved"] @await Html.PartialAsync("_LocalTime", comparison.Target.UpdatedAtUtc).</p>
+            <p><strong>@L["{0} added", comparison.AddedEntries.Count]</strong> · <strong>@L["{0} removed", comparison.RemovedEntries.Count]</strong> · @L["{0} unchanged entries.", comparison.UnchangedEntryCount]</p>
             <div class="form-grid">
-                <div><h4>Added entries</h4>@if (comparison.AddedEntries.Count == 0) { <p class="muted">No added entries.</p> } else { <ul>@foreach (var entry in comparison.AddedEntries) { <li><code>@entry</code></li> }</ul> }</div>
-                <div><h4>Removed entries</h4>@if (comparison.RemovedEntries.Count == 0) { <p class="muted">No removed entries.</p> } else { <ul>@foreach (var entry in comparison.RemovedEntries) { <li><code>@entry</code></li> }</ul> }</div>
+                <div><h4>@L["Added entries"]</h4>@if (comparison.AddedEntries.Count == 0) { <p class="muted">@L["No added entries."]</p> } else { <ul>@foreach (var entry in comparison.AddedEntries) { <li><code>@entry</code></li> }</ul> }</div>
+                <div><h4>@L["Removed entries"]</h4>@if (comparison.RemovedEntries.Count == 0) { <p class="muted">@L["No removed entries."]</p> } else { <ul>@foreach (var entry in comparison.RemovedEntries) { <li><code>@entry</code></li> }</ul> }</div>
             </div>
             @if (comparison.DescriptionChanged)
             {
-                <h4>Description changed</h4>
-                <dl><dt>From version @comparison.Baseline.Version</dt><dd>@comparison.Baseline.Content.Description</dd><dt>To version @comparison.Target.Version</dt><dd>@comparison.Target.Content.Description</dd></dl>
+                <h4>@L["Description changed"]</h4>
+                <dl><dt>@L["From version {0}", comparison.Baseline.Version]</dt><dd>@comparison.Baseline.Content.Description</dd><dt>@L["To version {0}", comparison.Target.Version]</dt><dd>@comparison.Target.Content.Description</dd></dl>
             }
-            else { <p class="muted">Description unchanged.</p> }
-            <p class="hint">Saved references: @((Model.Usage ?? []).Count(u => u.ObjectVersion == comparison.Baseline.Version)) to version @comparison.Baseline.Version; @((Model.Usage ?? []).Count(u => u.ObjectVersion == comparison.Target.Version)) to version @comparison.Target.Version. See the revision links above for locations. These counts include historical revisions and dormant rules; they do not establish active host use.</p>
+            else { <p class="muted">@L["Description unchanged."]</p> }
+            <p class="hint">@L["Saved references: {0} to version {1}; {2} to version {3}. See the revision links above for locations. These counts include historical revisions and dormant rules; they do not establish active host use.", (Model.Usage ?? []).Count(u => u.ObjectVersion == comparison.Baseline.Version), comparison.Baseline.Version, (Model.Usage ?? []).Count(u => u.ObjectVersion == comparison.Target.Version), comparison.Target.Version]</p>
         }
     </section>
 }

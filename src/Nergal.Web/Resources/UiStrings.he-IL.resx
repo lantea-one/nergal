@@ -147,4 +147,103 @@
     <data name="Sign in with identity provider" xml:space="preserve">
         <value>כניסה באמצעות ספק זהות</value>
     </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>אימות כניסה</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>הלוגו של Nergal Guardian</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>יש להזין את הקוד הנוכחי בן שש הספרות מיישום האימות.</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>לא ניתן היה לאמת את הקוד. יש לנסות שוב עם הקוד הנוכחי שמוצג ביישום האימות.</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>קוד מיישום האימות</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>אימות וכניסה</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>חזרה לכניסה</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>שחזור יישום האימות</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>יש להכין את הרשאת השחזור ואת יישום האימות, ולבחור בחשבון המשמש בדרך כלל לכניסה.</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>חשבון ספרייה</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>חשבון מקומי</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>הרשאת שחזור</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>הגדרת יישום אימות חדש</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>לא ניתן היה להתחיל בשחזור</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>יש לבדוק את הרשאת השחזור ואת פרטי הכניסה. אם תוקף ההרשאה פג או שההגדרה כבר החלה, יש לבקש הרשאה חדשה.</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>חזרה לשחזור יישום האימות</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>אישור יישום האימות החלופי</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>יש להוסיף ביישום האימות חשבון עבור Nergal שמפיק קודים מבוססי זמן, ולהזין את מפתח ההגדרה הסודי הזה.</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>האימות נכשל. יש לנסות את הקוד הנוכחי מיישום האימות החדש. אם פג תוקף השחזור או מוצו ניסיונות האימות, יש לבקש הרשאת שחזור חדשה.</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>קוד מיישום האימות החדש</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>לאחר האישור יש להיכנס שוב באמצעות הסיסמה והקוד הבא מיישום האימות החדש.</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>אישור יישום האימות</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>קבלה</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>השמטה</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>דחייה</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>כל ערך</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>מופעל</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>מושבת</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>התחלת החלה הדורשת אישור</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>אישור ההחלה הנוכחית</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>חזרה מיידית למצב הקודם</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>קוד האימות של Nergal</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>קוד האימות שלך ב-Nergal הוא {0}. יש להשתמש בו רק עבור הבקשה שיזמת.</value>
+    </data>
 </root>

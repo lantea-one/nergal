@@ -2,7 +2,7 @@
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["LocalizedContent"] = true;
+    ViewData["LocalizedForAllLanguages"] = true;
     ViewData["Title"] = "Verify sign-in";
 }
 <main id="main-content" tabindex="-1" class="container-narrow">
@@ -21,7 +21,7 @@
             @Html.AntiForgeryToken()
             <div class="field">
                 <label for="mfa-code">@L["Authenticator code"]</label>
-                <input id="mfa-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" aria-describedby="mfa-code-hint" required autofocus />
+                <input id="mfa-code" name="code" type="text" dir="ltr" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" aria-describedby="mfa-code-hint" required autofocus />
             </div>
             <div class="btn-group">
                 <button type="submit">@L["Verify and sign in"]</button>

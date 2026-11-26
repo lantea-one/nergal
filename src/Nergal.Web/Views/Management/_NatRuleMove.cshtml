@@ -1,9 +1,10 @@
 @model Nergal.Web.NatRuleMoveModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @foreach (var direction in new[] { -1, 1 })
 {
     <form class="inline-form" method="post" action="@Url.Content("~/manage/policies/nat/move")">
         @Html.AntiForgeryToken()
         <input type="hidden" name="bundleJson" value="@Model.Editor.BundleJson" /><input type="hidden" name="summary" value="@Model.Editor.Summary" /><input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" /><input type="hidden" name="kind" value="@Model.Kind" /><input type="hidden" name="ruleIndex" value="@Model.Index" /><input type="hidden" name="direction" value="@direction" />
-        <button type="submit" class="btn btn-secondary btn-sm" disabled="@(direction == -1 ? Model.Index == 0 : Model.Index == Model.Count - 1)" aria-label="Move @Model.Kind rule @(Model.Index + 1) @(direction == -1 ? "up" : "down")">@(direction == -1 ? "↑" : "↓")</button>
+        <button type="submit" class="btn btn-secondary btn-sm" disabled="@(direction == -1 ? Model.Index == 0 : Model.Index == Model.Count - 1)" aria-label="@(direction == -1 ? L["Move {0} rule {1} up", Model.Kind, Model.Index + 1] : L["Move {0} rule {1} down", Model.Kind, Model.Index + 1])">@(direction == -1 ? "↑" : "↓")</button>
     </form>
 }

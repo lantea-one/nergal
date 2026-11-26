@@ -147,4 +147,103 @@
     <data name="Sign in with identity provider" xml:space="preserve">
         <value>Đăng nhập qua nhà cung cấp danh tính</value>
     </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>Xác minh đăng nhập</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>Biểu trưng Nergal Guardian</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>Nhập mã 6 chữ số đang hiển thị trong ứng dụng xác thực của bạn.</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>Không xác minh được mã. Hãy thử lại với mã đang hiển thị trong ứng dụng xác thực.</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>Mã từ ứng dụng xác thực</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>Xác minh và đăng nhập</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>Quay lại trang đăng nhập</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>Khôi phục ứng dụng xác thực</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>Hãy chuẩn bị mã cấp quyền khôi phục và ứng dụng xác thực, rồi chọn tài khoản bạn thường dùng để đăng nhập.</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>Tài khoản dịch vụ thư mục</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>Tài khoản cục bộ</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>Mã cấp quyền khôi phục</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>Thiết lập ứng dụng xác thực mới</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>Không thể bắt đầu khôi phục</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>Hãy kiểm tra mã cấp quyền khôi phục và thông tin đăng nhập. Nếu mã đã hết hạn hoặc bạn đã bắt đầu thiết lập, hãy yêu cầu cấp mã mới.</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>Quay lại trang khôi phục ứng dụng xác thực</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>Xác nhận ứng dụng xác thực mới</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>Trong ứng dụng xác thực, hãy thêm tài khoản Nergal, chọn loại mã dùng một lần dựa trên thời gian rồi nhập khóa thiết lập bí mật bên dưới.</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>Xác minh thất bại. Hãy thử lại với mã đang hiển thị trong ứng dụng xác thực mới. Nếu phiên khôi phục đã hết hạn hoặc bạn đã dùng hết số lần thử, hãy yêu cầu cấp mã khôi phục mới.</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>Mã từ ứng dụng xác thực mới</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>Sau khi xác nhận, hãy đăng nhập lại bằng mật khẩu và mã tiếp theo do ứng dụng xác thực mới tạo.</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>Xác nhận ứng dụng xác thực</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>Cho phép</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>Loại bỏ không phản hồi</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>Từ chối có phản hồi</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>Bất kỳ</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>Đã bật</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>Đã tắt</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>Bắt đầu áp dụng với yêu cầu xác nhận</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>Xác nhận lần áp dụng đang diễn ra</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>Khôi phục ngay trạng thái trước</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>Mã xác minh Nergal</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>Mã xác minh Nergal của bạn là {0}. Chỉ dùng mã này cho yêu cầu do chính bạn khởi tạo.</value>
+    </data>
 </root>

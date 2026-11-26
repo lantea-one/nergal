@@ -59,6 +59,21 @@
         @if (Model.SelectedHost is { } selectedHost)
         {
             var outcomeStr = Model.LiveReply is { } lr ? Nergal.Web.ControllerStateHost.FormatOutcome(lr.Outcome) : "unknown";
+            var outcomeLabel = outcomeStr switch
+            {
+                "matched" => L["matched"],
+                "drift" => L["drift"],
+                "unbound" => L["unbound"],
+                "appliedPendingConfirmation" => L["appliedPendingConfirmation"],
+                "confirmed" => L["confirmed"],
+                "rolledBack" => L["rolledBack"],
+                "rejected" => L["rejected"],
+                "busy" => L["busy"],
+                "unavailable" => L["unavailable"],
+                "denied" => L["denied"],
+                "invalidRequest" => L["invalidRequest"],
+                _ => L["unknown"],
+            };
             var outcomeBadge = outcomeStr is "matched" or "confirmed"
                 ? "badge-success"
                 : outcomeStr is "appliedPendingConfirmation" or "busy"
@@ -73,7 +88,7 @@
                             @L["Transport"] <code>@selectedHost.TransportKind</code> @L["at"] <code>@selectedHost.Endpoint</code> · @L["Controller revision"] <code>@selectedHost.LastKnownRevision</code>
                         </p>
                     </div>
-                    <span class="badge @outcomeBadge">@outcomeStr</span>
+                    <span class="badge @outcomeBadge">@outcomeLabel</span>
                 </div>
 
                 @if (Model.LiveReply is { } reply)
@@ -163,7 +178,7 @@
                                 {
                                     <input type="hidden" name="targetRevision" value="@selRev" />
                                 }
-                                <button type="submit" class="btn btn-success">@L["Confirm active apply"]</button>
+                                <button type="submit" class="btn btn-success" lang="@TextLanguage("Confirm active apply")" dir="auto">@L["Confirm active apply"]</button>
                             </form>
                             <form class="inline-form" method="post" action="@Url.Content("~/manage/apply/rollback")">
                                 @Html.AntiForgeryToken()
@@ -174,7 +189,7 @@
                                 {
                                     <input type="hidden" name="targetRevision" value="@rbRev" />
                                 }
-                                <button type="submit" class="btn btn-danger">@L["Immediate rollback"]</button>
+                                <button type="submit" class="btn btn-danger" lang="@TextLanguage("Immediate rollback")" dir="auto">@L["Immediate rollback"]</button>
                             </form>
                         </div>
                     </section>
@@ -207,7 +222,7 @@
                                 </div>
                             </div>
                             <div class="mt-2">
-                                <button type="submit">@L["Start confirmed apply"]</button>
+                                <button type="submit" lang="@TextLanguage("Start confirmed apply")" dir="auto">@L["Start confirmed apply"]</button>
                             </div>
                         </form>
                     </section>
@@ -225,12 +240,12 @@
 
     <section class="card">
         <div class="card-header">
-            <h2>Recent apply &amp; controller audit activity</h2>
-            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/audit")">View full log</a>
+            <h2>@L["Recent apply & controller audit activity"]</h2>
+            <a class="btn btn-secondary btn-sm" href="@Url.Content("~/manage/audit")">@L["View full log"]</a>
         </div>
         @if (Model.RecentAudit.Count == 0)
         {
-            <p class="muted mb-0">No audit records yet.</p>
+            <p class="muted mb-0">@L["No audit records yet."]</p>
         }
         else
         {
@@ -238,12 +253,12 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Seq</th>
-                            <th>Timestamp (local time)</th>
-                            <th>Actor</th>
-                            <th>Action</th>
-                            <th>Target</th>
-                            <th>Outcome</th>
+                            <th>@L["Seq"]</th>
+                            <th>@L["Timestamp (local time)"]</th>
+                            <th>@L["Actor"]</th>
+                            <th>@L["Action"]</th>
+                            <th>@L["Target"]</th>
+                            <th>@L["Outcome"]</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -13,6 +13,7 @@ Using Node.js 24 and npm, rebuild after changing the editor or dependencies:
 ```sh
 npm ci --prefix tools/web-assets --ignore-scripts
 npm run build --prefix tools/web-assets
+npm test --prefix tools/web-assets
 npm run verify --prefix tools/web-assets
 ```
 
@@ -23,6 +24,10 @@ numbers, syntax highlighting, folding, history, bracket matching, search and JSO
 syntax diagnostics. Tab retains normal focus navigation; Enter indents lines, and
 **Indent lines** uses the parser's indentation rules. All colors follow the console
 light/dark theme, including changes while an editor is open.
+
+The policy view supplies editor labels and CodeMirror phrases in Razor-encoded
+data attributes using the same UI resource localizer as the surrounding form.
+CodeMirror substitutes line numbers and match counts in phrases containing `$`.
 
 Browser QA should cover invalid JSON retention and diagnostics, edited text posted
 to preview, syntax valid but unsupported policy denial, duplicate-key rejection,

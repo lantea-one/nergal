@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "test": "node --test code-editor.test.mjs",
     "verify": "node build.mjs --verify"
   },
   "dependencies": {
@@ -13,6 +14,7 @@
     "@codemirror/view": "6.44.0",
     "@codemirror/language": "6.13.1",
     "@codemirror/lint": "6.9.8",
+    "@codemirror/state": "6.7.6",
     "@lezer/highlight": "1.2.5"
   },
   "devDependencies": {

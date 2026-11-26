@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Mail;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
+using System.Text;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -10,7 +12,8 @@ namespace Nergal.Web;
 
 /// <summary>Sends reserved email codes through the exact configured SMTP STARTTLS generation.</summary>
 [SupportedOSPlatform("linux")]
-internal sealed class EmailMfaSmtpSender(LocalAdministratorAccounts accounts, IDataProtectionProvider keys) : IMfaEmailSender
+internal sealed class EmailMfaSmtpSender(LocalAdministratorAccounts accounts, IDataProtectionProvider keys,
+    IStringLocalizer<UiStrings> L) : IMfaEmailSender
 {
     public async Task SendAsync(EmailMfaDelivery delivery, CancellationToken cancellationToken)
     {
@@ -36,8 +39,10 @@ internal sealed class EmailMfaSmtpSender(LocalAdministratorAccounts accounts, ID
 
             using var message = new MailMessage(settings.FromAddress, delivery.Address)
             {
-                Subject = "Nergal verification code",
-                Body = "Your Nergal verification code is " + delivery.Code + ". Use it only for the request you initiated."
+                Subject = L["Nergal verification code"].Value,
+                SubjectEncoding = Encoding.UTF8,
+                Body = L["Your Nergal verification code is {0}. Use it only for the request you initiated.", delivery.Code].Value,
+                BodyEncoding = Encoding.UTF8,
             };
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             deadline.CancelAfter(TimeSpan.FromSeconds(10));

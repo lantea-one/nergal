@@ -1,23 +1,24 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @if (Model.CanMutate && Model.Bundle is { } bundle)
 {
     var raw = bundle.Filter.RpFilter;
     <section class="card" aria-labelledby="raw-heading">
-        <h2 id="raw-heading">Raw prerouting &amp; reverse-path filtering</h2>
-        <p class="hint"><code>chain rpfilter · hook prerouting priority raw</code>. Accept here continues to later hooks; it does not override later filter drops. Changing the raw default to Drop can interrupt traffic before ordinary filter rules run.</p>
+        <h2 id="raw-heading">@L["Raw prerouting & reverse-path filtering"]</h2>
+        <p class="hint"><code>chain rpfilter · hook prerouting priority raw</code>@L[". Accept here continues to later hooks; it does not override later filter drops. Changing the raw default to Drop can interrupt traffic before ordinary filter rules run."]</p>
         <form method="post" action="@Url.Content("~/manage/policies/raw/default")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" />
-            <div class="field"><label for="raw-default">Raw chain default</label><select id="raw-default" name="verdict"><option value="accept" selected="@(raw?.DefaultVerdict != FilterVerdict.Drop)">Accept</option><option value="drop" selected="@(raw?.DefaultVerdict == FilterVerdict.Drop)">Drop</option></select></div>
-            <button type="submit" class="btn btn-secondary btn-sm">@(raw is null ? "Create raw chain in draft" : "Update raw chain default")</button>
+            <div class="field"><label for="raw-default">@L["Raw chain default"]</label><select id="raw-default" name="verdict"><option value="accept" selected="@(raw?.DefaultVerdict != FilterVerdict.Drop)">@L["Accept"]</option><option value="drop" selected="@(raw?.DefaultVerdict == FilterVerdict.Drop)">@L["Drop"]</option></select></div>
+            <button type="submit" class="btn btn-secondary btn-sm">@(raw is null ? L["Create raw chain in draft"] : L["Update raw chain default"])</button>
         </form>
         @if (raw is not null && raw.Rules.Count == 0)
         {
             <form class="mt-2" method="post" action="@Url.Content("~/manage/policies/raw/default")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="verdict" value="remove" />
-                <button type="submit" class="btn btn-secondary btn-sm">Remove empty raw chain from draft</button>
+                <button type="submit" class="btn btn-secondary btn-sm">@L["Remove empty raw chain from draft"]</button>
             </form>
         }
         @if (raw is not null)
@@ -26,7 +27,7 @@
             {
                 var rule = raw.Rules[i]; if (rule is null) { continue; }
                 <details class="router-form-details">
-                    <summary>Raw rule @(i + 1) · @(rule.Family?.ToString() ?? "IPv4 and IPv6") · @rule.Protocol · @rule.Verdict · @(rule.Enabled ? "Enabled" : "Disabled") · @(rule.Description ?? "No description")</summary>
+                    <summary>@L["Raw rule {0}", i + 1] · @(rule.Family?.ToString() ?? L["IPv4 and IPv6"].Value) · @rule.Protocol · @rule.Verdict · @(rule.Enabled ? L["Enabled"] : L["Disabled"]) · @(rule.Description ?? L["No description"].Value)</summary>
                     <div class="router-form-body">
                         @await Html.PartialAsync("_RawRuleForm", new Nergal.Web.RawRuleFormModel(Model, i))
                         <div class="btn-group mt-2">
@@ -35,7 +36,7 @@
                                 <form method="post" action="@Url.Content("~/manage/policies/raw/rule")">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="ruleIndex" value="@i" /><input type="hidden" name="operation" value="@operation" />
-                                    <button type="submit" class="btn btn-secondary btn-sm" disabled="@((operation == "up" && i == 0) || (operation == "down" && i == raw.Rules.Count - 1))">@(operation == "remove" ? "Remove raw rule from draft" : "Move raw rule " + operation)</button>
+                                    <button type="submit" class="btn btn-secondary btn-sm" disabled="@((operation == "up" && i == 0) || (operation == "down" && i == raw.Rules.Count - 1))">@(operation == "remove" ? L["Remove raw rule from draft"] : operation == "up" ? L["Move raw rule up"] : L["Move raw rule down"])</button>
                                 </form>
                             }
                         </div>
@@ -43,23 +44,23 @@
                 </details>
             }
         }
-        <details class="router-form-details"><summary>Add raw prerouting rule</summary><div class="router-form-body">@await Html.PartialAsync("_RawRuleForm", new Nergal.Web.RawRuleFormModel(Model, null))</div></details>
+        <details class="router-form-details"><summary>@L["Add raw prerouting rule"]</summary><div class="router-form-body">@await Html.PartialAsync("_RawRuleForm", new Nergal.Web.RawRuleFormModel(Model, null))</div></details>
     </section>
     <section class="card" aria-labelledby="mss-heading">
-        <h2 id="mss-heading">Forward TCP MSS clamping</h2>
-        <p class="hint">Sets the TCP maximum segment size on forwarded SYN packets in both IP families. This does not accept traffic. Pick a size appropriate for the path MTU; review connectivity with disposable packet tests.</p>
+        <h2 id="mss-heading">@L["Forward TCP MSS clamping"]</h2>
+        <p class="hint">@L["Sets the TCP maximum segment size on forwarded SYN packets in both IP families. This does not accept traffic. Pick a size appropriate for the path MTU; review connectivity with disposable packet tests."]</p>
         <form method="post" action="@Url.Content("~/manage/policies/mss")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="set" />
-            <div class="field"><label for="mss-size">Maximum segment size (bytes)</label><input type="number" id="mss-size" name="size" value="@bundle.Filter.ForwardTcpMssClamp" placeholder="1360" min="536" max="1460" required aria-describedby="mss-hint" /><span id="mss-hint" class="hint">Valid range: 536–1460. Updating a configured clamp preserves its enabled state. Use its separate Enabled switch to disable while retaining this size.</span></div>
-            <button type="submit" class="btn btn-secondary btn-sm">Update MSS draft</button>
+            <div class="field"><label for="mss-size">@L["Maximum segment size (bytes)"]</label><input type="number" id="mss-size" name="size" value="@bundle.Filter.ForwardTcpMssClamp" placeholder="1360" min="536" max="1460" required aria-describedby="mss-hint" /><span id="mss-hint" class="hint">@L["Valid range: 536–1460. Updating a configured clamp preserves its enabled state. Use its separate Enabled switch to disable while retaining this size."]</span></div>
+            <button type="submit" class="btn btn-secondary btn-sm">@L["Update MSS draft"]</button>
         </form>
         @if (bundle.Filter.ForwardTcpMssClamp is not null)
         {
             <form class="mt-2" method="post" action="@Url.Content("~/manage/policies/mss")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="remove" />
-                <button type="submit" class="btn btn-secondary btn-sm">Remove MSS configuration from draft</button>
+                <button type="submit" class="btn btn-secondary btn-sm">@L["Remove MSS configuration from draft"]</button>
             </form>
         }
     </section>

@@ -1,4 +1,5 @@
 @model Nergal.Web.Controllers.EmailMfaEnrollmentPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Email verification";
@@ -6,48 +7,48 @@
 }
 <main id="main-content" tabindex="-1" class="container">
     <div class="page-header">
-        <div><h1>Email verification</h1><p class="page-subtitle">Verify a mailbox for sign-in codes. If you enroll an authenticator app, sign-in uses that app.</p></div>
-        <a class="btn btn-secondary" href="@Url.Content("~/profile")">Back to my profile</a>
+        <div><h1>@L["Email verification"]</h1><p class="page-subtitle">@L["Verify a mailbox for sign-in codes. If you enroll an authenticator app, sign-in uses that app."]</p></div>
+        <a class="btn btn-secondary" href="@Url.Content("~/profile")">@L["Back to my profile"]</a>
     </div>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
     <section class="card">
         @if (Model.Enrollment is { } enrollment)
         {
-            <h2>Enter the code we sent</h2>
+            <h2>@L["Enter the code we sent"]</h2>
             <form class="form-stack" method="post" action="@Url.Content("~/profile/mfa/email/confirm")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="enrollmentId" value="@enrollment.Id" />
                 <div class="field">
-                    <label for="email-enrollment-code">Email code</label>
+                    <label for="email-enrollment-code">@L["Email code"]</label>
                     <input id="email-enrollment-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" aria-describedby="email-enrollment-hint" required />
-                    <span id="email-enrollment-hint" class="hint">Enter the six-digit code within five minutes. When setup completes, you’ll sign in again.</span>
+                    <span id="email-enrollment-hint" class="hint">@L["Enter the six-digit code within five minutes. When setup completes, you’ll sign in again."]</span>
                 </div>
-                <div><button type="submit">Verify email</button></div>
+                <div><button type="submit">@L["Verify email"]</button></div>
             </form>
-            <p><a href="@Url.Content("~/profile/mfa/email")">Start email setup again</a></p>
+            <p><a href="@Url.Content("~/profile/mfa/email")">@L["Start email setup again"]</a></p>
         }
         else if (Model.Status.Enrolled)
         {
-            <h2>Email verified</h2>
-            <p>Your verified mailbox can receive sign-in codes.</p>
+            <h2>@L["Email verified"]</h2>
+            <p>@L["Your verified mailbox can receive sign-in codes."]</p>
         }
         else if (Model.Status.CanStart)
         {
-            <h2>Verify a mailbox</h2>
+            <h2>@L["Verify a mailbox"]</h2>
             <form class="form-stack" method="post" action="@Url.Content("~/profile/mfa/email/begin")">
                 @Html.AntiForgeryToken()
                 <div class="field">
-                    <label for="email-enrollment-address">Delivery address</label>
+                    <label for="email-enrollment-address">@L["Delivery address"]</label>
                     <input id="email-enrollment-address" name="address" type="email" maxlength="254" aria-describedby="email-address-hint" required />
-                    <span id="email-address-hint" class="hint">Enter a mailbox you can access. Sign-in codes use this verified address independently of your profile email.</span>
+                    <span id="email-address-hint" class="hint">@L["Enter a mailbox you can access. Sign-in codes use this verified address independently of your profile email."]</span>
                 </div>
-                <div><button type="submit">Send verification code</button></div>
+                <div><button type="submit">@L["Send verification code"]</button></div>
             </form>
         }
         else
         {
-            <h2>Email setup unavailable</h2>
-            <p>Your account’s MFA policy and the current mail delivery settings determine whether email setup is available.</p>
+            <h2>@L["Email setup unavailable"]</h2>
+            <p>@L["Your account’s MFA policy and the current mail delivery settings determine whether email setup is available."]</p>
         }
     </section>
 </main>

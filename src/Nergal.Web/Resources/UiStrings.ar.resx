@@ -147,4 +147,103 @@
     <data name="Sign in with identity provider" xml:space="preserve">
         <value>تسجيل الدخول عبر موفّر الهوية</value>
     </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>التحقق من تسجيل الدخول</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>شعار Nergal Guardian</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>أدخل الرمز الحالي المكوّن من ستة أرقام من تطبيق المصادقة.</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>تعذّر التحقق من الرمز. أعد المحاولة باستخدام الرمز الحالي في تطبيق المصادقة.</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>رمز تطبيق المصادقة</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>تحقّق وسجّل الدخول</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>العودة إلى تسجيل الدخول</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>استرداد تطبيق المصادقة</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>جهّز تصريح الاسترداد وتطبيق المصادقة. اختر الحساب الذي تستخدمه عادةً لتسجيل الدخول.</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>حساب الدليل</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>حساب محلي</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>تصريح الاسترداد</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>إعداد تطبيق مصادقة جديد</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>تعذّر بدء الاسترداد</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>تحقّق من تصريح الاسترداد وبيانات تسجيل الدخول. إذا انتهت صلاحية التصريح أو بدأ الإعداد بالفعل، فاطلب تصريحًا جديدًا.</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>العودة إلى استرداد تطبيق المصادقة</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>تأكيد تطبيق المصادقة البديل</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>أضف حسابًا لـ Nergal يستخدم رموزًا تستند إلى الوقت في تطبيق المصادقة، ثم أدخل مفتاح الإعداد السري هذا.</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>تعذّر التحقق. جرّب الرمز الحالي في تطبيق المصادقة الجديد. إذا انتهت مهلة الاسترداد أو استنفدت محاولاتك، فاطلب تصريح استرداد جديدًا.</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>رمز تطبيق المصادقة الجديد</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>بعد التأكيد، سجّل الدخول مجددًا باستخدام كلمة المرور والرمز التالي من تطبيق المصادقة الجديد.</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>تأكيد تطبيق المصادقة</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>سماح</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>إسقاط</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>رفض</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>أي قيمة</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>مفعّل</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>معطّل</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>بدء التطبيق مع اشتراط التأكيد</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>تأكيد التطبيق الجاري</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>تراجع فوري</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>رمز التحقق من Nergal</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>رمز التحقق من Nergal هو {0}. استخدمه فقط للطلب الذي بدأته.</value>
+    </data>
 </root>

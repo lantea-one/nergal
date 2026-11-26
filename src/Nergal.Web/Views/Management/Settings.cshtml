@@ -1,4 +1,5 @@
 @model Nergal.Web.SystemSettingsViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "System settings";
@@ -8,21 +9,23 @@
     var s = Model.Settings;
     var localAdministrator = Model.CanMutate && User.Identity?.AuthenticationType == Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme;
     var disabledAttr = Model.CanMutate ? null : "disabled";
-    var accentColors = new[] { "blue", "emerald", "violet", "amber", "rose", "slate" };
-    var themes = new[] { "system", "light", "dark" };
+    var accentColors = new[] { ("blue", L["blue"]), ("emerald", L["emerald"]), ("violet", L["violet"]), ("amber", L["amber"]), ("rose", L["rose"]), ("slate", L["slate"]) };
+    string Label(string token, Microsoft.Extensions.Localization.LocalizedString label) =>
+        label.ResourceNotFound ? token : label.Value;
+    var themes = new[] { ("system", L["System"]), ("light", L["light"]), ("dark", L["dark"]) };
     var dbProviders = new[] { "sqlite", "postgresql", "mariadb", "mysql", "sqlserver" };
-    var tlsModes = new[] { "disable", "prefer", "require", "verify-full" };
-    var verdicts = new[] { "accept", "drop" };
+    var tlsModes = new[] { ("disable", L["disable"]), ("prefer", L["prefer"]), ("require", L["require"]), ("verify-full", L["verify-full"]) };
+    var verdicts = new[] { ("accept", L["Accept"]), ("drop", L["Drop"]) };
 }
 <main id="main-content" tabindex="-1" class="container">
     <div class="page-header">
         <div>
-            <h1>System settings</h1>
-            <p class="page-subtitle">Manage appearance and saved configuration intent. Use the dedicated OIDC and LDAP connection screens for live provider settings. Storage and apply safety retain their protected host boundaries.</p>
+            <h1>@L["System settings"]</h1>
+            <p class="page-subtitle">@L["Manage appearance and saved configuration intent. Use the dedicated OIDC and LDAP connection screens for live provider settings. Storage and apply safety retain their protected host boundaries."]</p>
         </div>
         <div class="btn-group">
-            <a class="btn btn-secondary" href="@Url.Content("~/manage")">Back to Dashboard</a>
-            <a class="btn btn-secondary" href="@Url.Content("~/manage/audit")">Audit Log</a>
+            <a class="btn btn-secondary" href="@Url.Content("~/manage")">@L["Back to Dashboard"]</a>
+            <a class="btn btn-secondary" href="@Url.Content("~/manage/audit")">@L["Audit Log"]</a>
         </div>
     </div>
 
@@ -50,21 +53,19 @@
     @if (!Model.CanMutate)
     {
         <div class="alert alert-warning" role="status">
-            Signed in as <code>@Model.ActorRole</code> (read-only). Only Administrators can save system settings.
+            @L["Signed in as"] <code>@Model.ActorRole</code> @L["(read-only). Only Administrators can save system settings."]
         </div>
     }
 
     <div class="alert alert-info" role="status">
-        Appearance changes apply to management pages. Authentication, database, and firewall fields below are saved preferences;
-        they do not reconfigure the running services. Configure the running controller database at deployment.
-        Keep local access and protected host configuration available when planning changes.
+        @L["Appearance changes apply to management pages. Authentication, database, and firewall fields below are saved preferences; they do not reconfigure the running services. Configure the running controller database at deployment. Keep local access and protected host configuration available when planning changes."]
     </div>
 
-    <div class="tabs" role="tablist" aria-label="System settings sections">
-        <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab-target="branding">Branding &amp; Theme</button>
-        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="auth">Authentication (Local / OIDC / LDAP)</button>
-        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="database">Database Backend</button>
-        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="firewall">Firewall Defaults</button>
+    <div class="tabs" role="tablist" aria-label="@L["System settings sections"]">
+        <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab-target="branding">@L["Branding & Theme"]</button>
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="auth">@L["Authentication (Local / OIDC / LDAP)"]</button>
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="database">@L["Database Backend"]</button>
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab-target="firewall">@L["Firewall Defaults"]</button>
     </div>
 
     <form method="post" action="@Url.Content("~/manage/settings/save")">
@@ -72,84 +73,84 @@
         <input type="hidden" name="settingsToken" value="@Model.SavedVersion.FormToken" />
         @if (Model.SavedVersion.UpdatedAtUtc is DateTimeOffset updated)
         {
-            <p class="hint">Saved version @Model.SavedVersion.Version · @await Html.PartialAsync("_LocalTime", updated)</p>
+            <p class="hint">@L["Saved version {0}", Model.SavedVersion.Version] · @await Html.PartialAsync("_LocalTime", updated)</p>
         }
 
         <section class="card" data-tab-panel="branding">
             <div class="card-header">
-                <h2>Branding &amp; appearance</h2>
-                <span class="badge badge-primary">Live applied</span>
+                <h2>@L["Branding & appearance"]</h2>
+                <span class="badge badge-primary">@L["Live applied"]</span>
             </div>
             <div class="form-grid">
                 <div class="field">
-                    <label for="s-app-name">Application name</label>
+                    <label for="s-app-name">@L["Application name"]</label>
                     <input id="s-app-name" type="text" name="applicationName" value="@s.Branding.ApplicationName" maxlength="64" required disabled="@disabledAttr" />
-                    <span class="hint">Displayed in the top navigation bar and page titles.</span>
+                    <span class="hint">@L["Displayed in the top navigation bar and page titles."]</span>
                 </div>
                 <div class="field">
-                    <label for="s-subtitle">Instance subtitle</label>
+                    <label for="s-subtitle">@L["Instance subtitle"]</label>
                     <input id="s-subtitle" type="text" name="instanceSubtitle" value="@s.Branding.InstanceSubtitle" maxlength="160" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-accent">Accent color</label>
+                    <label for="s-accent">@L["Accent color"]</label>
                     <select id="s-accent" name="accentColor" disabled="@disabledAttr">
-                        @foreach (var color in accentColors)
+                        @foreach (var (color, label) in accentColors)
                         {
-                            <option value="@color" selected="@(s.Branding.AccentColor == color)">@color</option>
+                            <option value="@color" selected="@(s.Branding.AccentColor == color)">@label</option>
                         }
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-theme">Default theme</label>
+                    <label for="s-theme">@L["Default theme"]</label>
                     <select id="s-theme" name="defaultTheme" disabled="@disabledAttr">
-                        @foreach (var theme in themes)
+                        @foreach (var (theme, label) in themes)
                         {
-                            <option value="@theme" selected="@(s.Branding.DefaultTheme == theme)">@theme</option>
+                            <option value="@theme" selected="@(s.Branding.DefaultTheme == theme)">@Label(theme, label)</option>
                         }
                     </select>
                 </div>
                 <div class="field span-2">
-                    <label for="s-banner">Saved login notice (not displayed yet)</label>
-                    <input id="s-banner" type="text" name="loginBanner" value="@s.Branding.LoginBanner" maxlength="256" placeholder="Authorized firewall administrators only. All changes are audited." disabled="@disabledAttr" />
+                    <label for="s-banner">@L["Saved login notice (not displayed yet)"]</label>
+                    <input id="s-banner" type="text" name="loginBanner" value="@s.Branding.LoginBanner" maxlength="256" placeholder="@L["Authorized firewall administrators only. All changes are audited."]" disabled="@disabledAttr" />
                 </div>
             </div>
         </section>
 
         <section class="card hidden" data-tab-panel="auth">
             <div class="btn-group">
-                @if (Model.CanMutate) { <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">Manage OIDC profile defaults</a> }
+                @if (Model.CanMutate) { <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/profiles")">@L["Manage OIDC profile defaults"]</a> }
                 @if (localAdministrator)
                 {
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/oauth")">Configure OAuth connection</a>
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">Manage MFA policy</a>
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/email-delivery")">Configure email delivery</a>
-                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa/recovery")">Issue MFA recovery authorization</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/oauth")">@L["Configure OAuth connection"]</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa")">@L["Manage MFA policy"]</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/email-delivery")">@L["Configure email delivery"]</a>
+                    <a class="btn btn-secondary" href="@Url.Content("~/manage/identity/mfa/recovery")">@L["Issue MFA recovery authorization"]</a>
                 }
             </div>
             <div class="card-header">
-                <h2>Local authentication</h2>
-                <span class="badge @(s.LocalAuth.Enabled ? "badge-success" : "badge-neutral")">@(s.LocalAuth.Enabled ? "Enabled" : "Disabled")</span>
+                <h2>@L["Local authentication"]</h2>
+                <span class="badge @(s.LocalAuth.Enabled ? "badge-success" : "badge-neutral")">@(s.LocalAuth.Enabled ? L["Enabled"] : L["Disabled"])</span>
             </div>
             <div class="form-grid">
                 <div class="field">
-                    <span class="switch-field-label">Local administrator accounts</span>
-                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("localAuthEnabled", s.LocalAuth.Enabled, "Enable local administrator accounts", Disabled: !Model.CanMutate))
-                    <span class="hint">At least one authentication provider (Local, OIDC, or LDAP) must stay enabled.</span>
+                    <span class="switch-field-label">@L["Local administrator accounts"]</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("localAuthEnabled", s.LocalAuth.Enabled, L["Enable local administrator accounts"].Value, Disabled: !Model.CanMutate))
+                    <span class="hint">@L["At least one authentication provider (Local, OIDC, or LDAP) must stay enabled."]</span>
                 </div>
                 <div class="field">
-                    <label for="s-session-timeout">Session idle timeout (minutes)</label>
+                    <label for="s-session-timeout">@L["Session idle timeout (minutes)"]</label>
                     <input id="s-session-timeout" type="number" name="sessionIdleTimeoutMinutes" value="@s.LocalAuth.SessionIdleTimeoutMinutes" min="5" max="1440" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-lockout-threshold">Failed login lockout threshold</label>
+                    <label for="s-lockout-threshold">@L["Failed login lockout threshold"]</label>
                     <input id="s-lockout-threshold" type="number" name="lockoutMaxFailedAttempts" value="@s.LocalAuth.LockoutMaxFailedAttempts" min="3" max="20" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-lockout-duration">Lockout duration (minutes)</label>
+                    <label for="s-lockout-duration">@L["Lockout duration (minutes)"]</label>
                     <input id="s-lockout-duration" type="number" name="lockoutDurationMinutes" value="@s.LocalAuth.LockoutDurationMinutes" min="1" max="1440" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-min-password">Minimum password length</label>
+                    <label for="s-min-password">@L["Minimum password length"]</label>
                     <input id="s-min-password" type="number" name="minimumPasswordLength" value="@s.LocalAuth.MinimumPasswordLength" min="8" max="128" disabled="@disabledAttr" />
                 </div>
             </div>
@@ -157,46 +158,46 @@
             <hr class="my-3" />
 
             <div class="card-header">
-                <h2>OpenID Connect / OAuth 2.0</h2>
-                <span class="badge @(s.Oidc.Enabled ? "badge-success" : "badge-neutral")">@(s.Oidc.Enabled ? "Enabled" : "Disabled")</span>
+                <h2>@L["OpenID Connect / OAuth 2.0"]</h2>
+                <span class="badge @(s.Oidc.Enabled ? "badge-success" : "badge-neutral")">@(s.Oidc.Enabled ? L["Enabled"] : L["Disabled"])</span>
             </div>
-            <p><a href="@Url.Content("~/manage/identity/connection")">Configure active OIDC connection</a></p>
-            <p class="muted">These general settings are saved intent. Configure the active connection and its encrypted secret on the dedicated provider screen.</p>
+            <p><a href="@Url.Content("~/manage/identity/connection")">@L["Configure active OIDC connection"]</a></p>
+            <p class="muted">@L["These general settings are saved intent. Configure the active connection and its encrypted secret on the dedicated provider screen."]</p>
             <div class="form-grid">
                 <div class="field">
-                    <span class="switch-field-label">OIDC / OAuth 2.0 sign-in</span>
-                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("oidcEnabled", s.Oidc.Enabled, "Enable OIDC / OAuth 2.0 SSO", Disabled: !Model.CanMutate))
+                    <span class="switch-field-label">@L["OIDC / OAuth 2.0 sign-in"]</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("oidcEnabled", s.Oidc.Enabled, L["Enable OIDC / OAuth 2.0 SSO"].Value, Disabled: !Model.CanMutate))
                 </div>
                 <div class="field">
-                    <label for="s-oidc-maxage">Max authentication age (seconds)</label>
+                    <label for="s-oidc-maxage">@L["Max authentication age (seconds)"]</label>
                     <input id="s-oidc-maxage" type="number" name="oidcMaxAuthAgeSeconds" value="@s.Oidc.MaxAuthAgeSeconds" min="60" max="86400" disabled="@disabledAttr" />
                 </div>
                 <div class="field span-2">
-                    <label for="s-oidc-authority">Issuer / Authority URL (HTTPS required)</label>
+                    <label for="s-oidc-authority">@L["Issuer / Authority URL (HTTPS required)"]</label>
                     <input id="s-oidc-authority" type="url" name="oidcAuthorityUrl" value="@s.Oidc.AuthorityUrl" placeholder="https://idp.example.test/realms/infra" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-oidc-clientid">Client ID</label>
+                    <label for="s-oidc-clientid">@L["Client ID"]</label>
                     <input id="s-oidc-clientid" type="text" name="oidcClientId" value="@s.Oidc.ClientId" placeholder="nergal-web" maxlength="128" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-oidc-scopes">Scopes</label>
+                    <label for="s-oidc-scopes">@L["Scopes"]</label>
                     <input id="s-oidc-scopes" type="text" name="oidcScopes" value="@s.Oidc.Scopes" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field span-2">
-                    <label for="s-oidc-redirect">Redirect URI (optional)</label>
+                    <label for="s-oidc-redirect">@L["Redirect URI (optional)"]</label>
                     <input id="s-oidc-redirect" type="url" name="oidcRedirectUri" value="@s.Oidc.RedirectUri" placeholder="https://firewall.example.test/signin-oidc" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-oidc-groupsclaim">Groups claim name</label>
+                    <label for="s-oidc-groupsclaim">@L["Groups claim name"]</label>
                     <input id="s-oidc-groupsclaim" type="text" name="oidcGroupsClaim" value="@s.Oidc.GroupsClaim" maxlength="64" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-oidc-admingroups">Administrator group(s)</label>
+                    <label for="s-oidc-admingroups">@L["Administrator group(s)"]</label>
                     <input id="s-oidc-admingroups" type="text" name="oidcAdministratorGroups" value="@s.Oidc.AdministratorGroups" placeholder="nergal-admin" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field span-2">
-                    <label for="s-oidc-auditorgroups">Auditor group(s)</label>
+                    <label for="s-oidc-auditorgroups">@L["Auditor group(s)"]</label>
                     <input id="s-oidc-auditorgroups" type="text" name="oidcAuditorGroups" value="@s.Oidc.AuditorGroups" placeholder="nergal-auditor" maxlength="256" disabled="@disabledAttr" />
                 </div>
             </div>
@@ -204,46 +205,46 @@
             <hr class="my-3" />
 
             <div class="card-header">
-                <h2>LDAP / Active Directory</h2>
-                <span class="badge @(s.Ldap.Enabled ? "badge-success" : "badge-neutral")">@(s.Ldap.Enabled ? "Enabled" : "Disabled")</span>
+                <h2>@L["LDAP / Active Directory"]</h2>
+                <span class="badge @(s.Ldap.Enabled ? "badge-success" : "badge-neutral")">@(s.Ldap.Enabled ? L["Enabled"] : L["Disabled"])</span>
             </div>
-            @if (localAdministrator) { <p><a href="@Url.Content("~/manage/identity/ldap")">Configure active LDAP connection</a></p> }
-            <p class="muted">These general settings are saved intent. The active OpenLDAP connection and its encrypted search password are managed on the dedicated connection screen.</p>
+            @if (localAdministrator) { <p><a href="@Url.Content("~/manage/identity/ldap")">@L["Configure active LDAP connection"]</a></p> }
+            <p class="muted">@L["These general settings are saved intent. The active OpenLDAP connection and its encrypted search password are managed on the dedicated connection screen."]</p>
             <div class="form-grid">
                 <div class="field">
-                    <span class="switch-field-label">LDAP / AD sign-in</span>
-                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("ldapEnabled", s.Ldap.Enabled, "Enable LDAP / AD directory authentication", Disabled: !Model.CanMutate))
+                    <span class="switch-field-label">@L["LDAP / AD sign-in"]</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("ldapEnabled", s.Ldap.Enabled, L["Enable LDAP / AD directory authentication"].Value, Disabled: !Model.CanMutate))
                 </div>
                 <div class="field">
-                    <span class="switch-field-label">StartTLS requirement</span>
-                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("ldapUseStartTls", s.Ldap.UseStartTls, "Require StartTLS (for ldap://)", Disabled: !Model.CanMutate))
+                    <span class="switch-field-label">@L["StartTLS requirement"]</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("ldapUseStartTls", s.Ldap.UseStartTls, L["Require StartTLS (for ldap://)"].Value, Disabled: !Model.CanMutate))
                 </div>
                 <div class="field span-2">
-                    <label for="s-ldap-uri">Directory Server URI (<code>ldaps://</code> or <code>ldap://</code>)</label>
+                    <label for="s-ldap-uri">@L["Directory Server URI"] (<code>ldaps://</code> @L["or"] <code>ldap://</code>)</label>
                     <input id="s-ldap-uri" type="text" name="ldapServerUri" value="@s.Ldap.ServerUri" placeholder="ldaps://directory.example.test:636" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field span-2">
-                    <label for="s-ldap-basedn">Base DN</label>
+                    <label for="s-ldap-basedn">@L["Base DN"]</label>
                     <input id="s-ldap-basedn" type="text" name="ldapBaseDn" value="@s.Ldap.BaseDn" placeholder="dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-ldap-binddn">Service Bind DN (optional)</label>
+                    <label for="s-ldap-binddn">@L["Service Bind DN (optional)"]</label>
                     <input id="s-ldap-binddn" type="text" name="ldapBindDn" value="@s.Ldap.BindDn" placeholder="cn=nergal-svc,ou=services,dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-ldap-filter">User search filter</label>
+                    <label for="s-ldap-filter">@L["User search filter"]</label>
                     <input id="s-ldap-filter" type="text" name="ldapUserSearchFilter" value="@s.Ldap.UserSearchFilter" placeholder="(uid={0})" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-ldap-groupattr">Group membership attribute</label>
+                    <label for="s-ldap-groupattr">@L["Group membership attribute"]</label>
                     <input id="s-ldap-groupattr" type="text" name="ldapGroupMembershipAttribute" value="@s.Ldap.GroupMembershipAttribute" placeholder="memberOf" maxlength="64" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-ldap-admingrp">Administrator group DN</label>
+                    <label for="s-ldap-admingrp">@L["Administrator group DN"]</label>
                     <input id="s-ldap-admingrp" type="text" name="ldapAdministratorGroupDn" value="@s.Ldap.AdministratorGroupDn" placeholder="cn=firewall-admins,ou=groups,dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
                 </div>
                 <div class="field span-2">
-                    <label for="s-ldap-auditorgrp">Auditor group DN</label>
+                    <label for="s-ldap-auditorgrp">@L["Auditor group DN"]</label>
                     <input id="s-ldap-auditorgrp" type="text" name="ldapAuditorGroupDn" value="@s.Ldap.AuditorGroupDn" placeholder="cn=firewall-auditors,ou=groups,dc=example,dc=test" maxlength="256" disabled="@disabledAttr" />
                 </div>
             </div>
@@ -251,13 +252,13 @@
 
         <section class="card hidden" data-tab-panel="database">
             <div class="card-header">
-                <h2>Database &amp; storage backend</h2>
-                <span class="badge badge-primary">Active: SQLite WAL</span>
+                <h2>@L["Database & storage backend"]</h2>
+                <span class="badge badge-primary">@L["Active: SQLite WAL"]</span>
             </div>
-            <p class="muted">SQLite WAL with <code>0600</code> file protection is the default. Record server database preferences here. Set the controller's live connection string separately at deployment.</p>
+            <p class="muted">@L["SQLite WAL with"] <code>0600</code> @L["file protection is the default. Record server database preferences here. Set the controller's live connection string separately at deployment."]</p>
             <div class="form-grid">
                 <div class="field">
-                    <label for="s-db-provider">Database provider</label>
+                    <label for="s-db-provider">@L["Database provider"]</label>
                     <select id="s-db-provider" name="databaseProvider" disabled="@disabledAttr">
                         @foreach (var prov in dbProviders)
                         {
@@ -266,28 +267,28 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-db-tls">TLS / SSL mode</label>
+                    <label for="s-db-tls">@L["TLS / SSL mode"]</label>
                     <select id="s-db-tls" name="databaseTlsMode" disabled="@disabledAttr">
-                        @foreach (var mode in tlsModes)
+                        @foreach (var (mode, label) in tlsModes)
                         {
-                            <option value="@mode" selected="@(s.Database.TlsMode == mode)">@mode</option>
+                            <option value="@mode" selected="@(s.Database.TlsMode == mode)">@label</option>
                         }
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-db-host">Database server host</label>
+                    <label for="s-db-host">@L["Database server host"]</label>
                     <input id="s-db-host" type="text" name="databaseHost" value="@s.Database.Host" placeholder="db.internal.example.test" maxlength="253" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-db-port">Port</label>
-                    <input id="s-db-port" type="number" name="databasePort" value="@s.Database.Port" placeholder="5432 or 3306" min="1" max="65535" disabled="@disabledAttr" />
+                    <label for="s-db-port">@L["Port"]</label>
+                    <input id="s-db-port" type="number" name="databasePort" value="@s.Database.Port" placeholder="@L["{0} or {1}", 5432, 3306]" min="1" max="65535" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-db-name">Database name</label>
+                    <label for="s-db-name">@L["Database name"]</label>
                     <input id="s-db-name" type="text" name="databaseName" value="@s.Database.DatabaseName" placeholder="nergal" maxlength="128" disabled="@disabledAttr" />
                 </div>
                 <div class="field">
-                    <label for="s-db-user">Username</label>
+                    <label for="s-db-user">@L["Username"]</label>
                     <input id="s-db-user" type="text" name="databaseUsername" value="@s.Database.Username" placeholder="nergal_app" maxlength="128" disabled="@disabledAttr" />
                 </div>
             </div>
@@ -295,53 +296,53 @@
 
         <section class="card hidden" data-tab-panel="firewall">
             <div class="card-header">
-                <h2>Firewall &amp; apply defaults</h2>
-                <span class="badge badge-neutral">Native nftables · Linux</span>
+                <h2>@L["Firewall & apply defaults"]</h2>
+                <span class="badge badge-neutral">@L["Native nftables · Linux"]</span>
             </div>
-            <p class="hint">Native nftables on Linux is the sole firewall target. These defaults are saved preferences; they do not change active policy.</p>
+            <p class="hint">@L["Native nftables on Linux is the sole firewall target. These defaults are saved preferences; they do not change active policy."]</p>
             <div class="form-grid">
                 <div class="field">
-                    <label for="s-fw-timeout">Default confirmation watchdog timeout (seconds)</label>
+                    <label for="s-fw-timeout">@L["Default confirmation watchdog timeout (seconds)"]</label>
                     <input id="s-fw-timeout" type="number" name="defaultConfirmationTimeoutSeconds" value="@s.FirewallDefaults.DefaultConfirmationTimeoutSeconds" min="10" max="3600" disabled="@disabledAttr" />
-                    <span class="hint">Saved preference; the actual confirmation timeout is selected when starting an apply.</span>
+                    <span class="hint">@L["Saved preference; the actual confirmation timeout is selected when starting an apply."]</span>
                 </div>
                 <div class="field">
-                    <label for="s-fw-schema">Default filter schema version</label>
+                    <label for="s-fw-schema">@L["Default filter schema version"]</label>
                     <select id="s-fw-schema" name="defaultFilterSchemaVersion" disabled="@disabledAttr">
-                        <option value="2" selected="@(s.FirewallDefaults.DefaultFilterSchemaVersion == 2)">Schema 2 (Stateful + Forward/Output + Sets + Rate limits)</option>
-                        <option value="1" selected="@(s.FirewallDefaults.DefaultFilterSchemaVersion == 1)">Schema 1 (Minimal Input filter)</option>
+                        <option value="2" selected="@(s.FirewallDefaults.DefaultFilterSchemaVersion == 2)">@L["Schema 2 (Stateful + Forward/Output + Sets + Rate limits)"]</option>
+                        <option value="1" selected="@(s.FirewallDefaults.DefaultFilterSchemaVersion == 1)">@L["Schema 1 (Minimal Input filter)"]</option>
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-fw-in">Default input verdict</label>
+                    <label for="s-fw-in">@L["Default input verdict"]</label>
                     <select id="s-fw-in" name="defaultInputVerdict" disabled="@disabledAttr">
-                        @foreach (var v in verdicts)
+                        @foreach (var (v, label) in verdicts)
                         {
-                            <option value="@v" selected="@(s.FirewallDefaults.DefaultInputVerdict == v)">@v</option>
+                            <option value="@v" selected="@(s.FirewallDefaults.DefaultInputVerdict == v)">@Label(v, label)</option>
                         }
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-fw-fwd">Default forward verdict</label>
+                    <label for="s-fw-fwd">@L["Default forward verdict"]</label>
                     <select id="s-fw-fwd" name="defaultForwardVerdict" disabled="@disabledAttr">
-                        @foreach (var v in verdicts)
+                        @foreach (var (v, label) in verdicts)
                         {
-                            <option value="@v" selected="@(s.FirewallDefaults.DefaultForwardVerdict == v)">@v</option>
+                            <option value="@v" selected="@(s.FirewallDefaults.DefaultForwardVerdict == v)">@Label(v, label)</option>
                         }
                     </select>
                 </div>
                 <div class="field">
-                    <label for="s-fw-out">Default output verdict</label>
+                    <label for="s-fw-out">@L["Default output verdict"]</label>
                     <select id="s-fw-out" name="defaultOutputVerdict" disabled="@disabledAttr">
-                        @foreach (var v in verdicts)
+                        @foreach (var (v, label) in verdicts)
                         {
-                            <option value="@v" selected="@(s.FirewallDefaults.DefaultOutputVerdict == v)">@v</option>
+                            <option value="@v" selected="@(s.FirewallDefaults.DefaultOutputVerdict == v)">@Label(v, label)</option>
                         }
                     </select>
                 </div>
                 <div class="field">
-                    <span class="switch-field-label">Change summary requirement</span>
-                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("requireChangeSummary", s.FirewallDefaults.RequireChangeSummary, "Require change summaries on saved policy revisions", Disabled: !Model.CanMutate))
+                    <span class="switch-field-label">@L["Change summary requirement"]</span>
+                    @await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("requireChangeSummary", s.FirewallDefaults.RequireChangeSummary, L["Require change summaries on saved policy revisions"].Value, Disabled: !Model.CanMutate))
                 </div>
             </div>
         </section>
@@ -350,8 +351,8 @@
         {
             <div class="card">
                 <div class="btn-group">
-                    <button type="submit">Save system settings</button>
-                    <span class="muted">Changes are validated and recorded as an immutable <code>settings.update</code> audit event.</span>
+                    <button type="submit">@L["Save system settings"]</button>
+                    <span class="muted">@L["Changes are validated and recorded as an immutable"] <code>settings.update</code> @L["audit event."]</span>
                 </div>
             </div>
         }

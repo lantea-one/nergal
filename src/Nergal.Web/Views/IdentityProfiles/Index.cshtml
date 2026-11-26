@@ -1,29 +1,30 @@
 @using Nergal.Core.Identity
 @model Nergal.Web.IdentityProfileMappingsModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "OIDC profile defaults";
     ViewData["ActiveNav"] = "settings";
 }
 <main id="main-content" tabindex="-1" class="container">
-    <h1>OIDC profile defaults</h1>
-    <p>Map signed ID-token fields to optional profile defaults. Local edits stay separate and take precedence.</p>
-    <p><a href="@Url.Content("~/profile")">Back to my profile</a> · <a href="@Url.Content("~/manage/identity/connection")">Provider connection</a></p>
-    <div class="alert alert-info" id="mapping-hint">These settings do not activate sign-in, change roles or link accounts. The exact issuer must match the active OIDC connection. A changed or disabled mapping immediately retires its old defaults; users sign in again to refresh. Profile email is not a verified delivery address.</div>
+    <h1>@L["OIDC profile defaults"]</h1>
+    <p>@L["Map signed ID-token fields to optional profile defaults. Local edits stay separate and take precedence."]</p>
+    <p><a href="@Url.Content("~/profile")">@L["Back to my profile"]</a> · <a href="@Url.Content("~/manage/identity/connection")">@L["Provider connection"]</a></p>
+    <div class="alert alert-info" id="mapping-hint">@L["These settings do not activate sign-in, change roles or link accounts. The exact issuer must match the active OIDC connection. A changed or disabled mapping immediately retires its old defaults; users sign in again to refresh. Profile email is not a verified delivery address."]</div>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
-    @if (Model.Mappings.Count == 0) { <p>No profile mappings saved. Create one for your configured OIDC issuer.</p> }
+    @if (Model.Mappings.Count == 0) { <p>@L["No profile mappings saved. Create one for your configured OIDC issuer."]</p> }
     @foreach (var entry in Model.Mappings.Select((value, index) => (value, index)))
     {
-        <details class="card disclosure"><summary>@entry.value.Issuer · version @entry.value.Version · @(entry.value.Enabled ? "Enabled" : "Disabled")</summary>
+        <details class="card disclosure"><summary>@entry.value.Issuer · @L["Version {0}", entry.value.Version] · @(entry.value.Enabled ? L["Enabled"] : L["Disabled"])</summary>
             @await Html.PartialAsync("_MappingForm", entry.value)
-            @if (entry.value.UpdatedUtc is DateTimeOffset updated) { <p class="hint">Updated <time data-local-time datetime="@updated.UtcDateTime.ToString("O")" title="Stored UTC: @updated.UtcDateTime.ToString("O")">@updated.UtcDateTime.ToString("u") UTC</time>.</p> }
+            @if (entry.value.UpdatedUtc is DateTimeOffset updated) { <p class="hint">@L["Updated"] <time data-local-time datetime="@updated.UtcDateTime.ToString("O")" title="@L["Stored UTC: {0}", updated.UtcDateTime.ToString("O")]">@updated.UtcDateTime.ToString("u") @L["UTC"]</time>.</p> }
         </details>
     }
     @if (Model.Mappings.Count < 16)
     {
-        <details class="card disclosure"><summary>Add an issuer profile mapping</summary>
+        <details class="card disclosure"><summary>@L["Add an issuer profile mapping"]</summary>
             @await Html.PartialAsync("_MappingForm", new OidcProfileMapping("", 0, true, "name", "given_name", "family_name", "email", null))
         </details>
     }
-    <p class="hint">Up to 16 exact-issuer mappings. This screen supports signed OIDC metadata. LDAP and generic OAuth profile adapters are not implemented yet.</p>
+    <p class="hint">@L["Up to 16 exact-issuer mappings. This screen supports signed OIDC metadata. LDAP and generic OAuth profile adapters are not implemented yet."]</p>
 </main>

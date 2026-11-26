@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -11,7 +12,7 @@ namespace Nergal.Web.Controllers;
 [SupportedOSPlatform("linux"), Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
 [RequestSizeLimit(32768), RequestFormLimits(ValueCountLimit = 14, ValueLengthLimit = 16384, KeyLengthLimit = 128)]
 public sealed class IdentityConnectionController(LocalAdministratorAccounts accounts, IConfiguration configuration,
-    IDataProtectionProvider keys) : IdentityUiController(accounts, configuration)
+    IDataProtectionProvider keys, IStringLocalizer<UiStrings> L) : IdentityUiController(accounts, configuration)
 {
     /// <summary>Shows saved credential-free connection status. No provider network request is made.</summary>
     [HttpGet]
@@ -32,7 +33,7 @@ public sealed class IdentityConnectionController(LocalAdministratorAccounts acco
             fields["callbackUri"].ToString(), fields["groupClaim"].ToString(), Groups(fields["administratorGroups"].ToString()),
             Groups(fields["auditorGroups"].ToString()), assurance.Value, fields["mfaAssuranceClaim"].ToString(), fields["mfaAssuranceValue"].ToString());
         var result = await Accounts.SaveOidcConnectionAsync(User, version, settings, fields["clientSecret"].ToString(), keys);
-        return result.Succeeded ? LocalRedirect("~/manage/identity/connection") : await PageAsync(Explain(result));
+        return result.Succeeded ? LocalRedirect("~/manage/identity/connection") : await PageAsync(Explain(result, L));
     }
 
     private async Task<IActionResult> PageAsync(string? error = null)

@@ -147,4 +147,103 @@
     <data name="Sign in with identity provider" xml:space="preserve">
         <value>ID 공급자로 로그인</value>
     </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>로그인 확인</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>Nergal Guardian 로고</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>인증 앱에 표시된 현재 6자리 코드를 입력하세요.</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>코드를 확인할 수 없습니다. 인증 앱에 표시된 현재 코드로 다시 시도하세요.</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>인증 앱 코드</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>확인 후 로그인</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>로그인으로 돌아가기</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>인증 앱 복구</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>복구 승인 코드와 인증 앱을 준비하세요. 평소 로그인할 때 사용하는 계정을 선택하세요.</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>디렉터리 계정</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>로컬 계정</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>복구 승인 코드</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>새 인증 앱 설정</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>복구를 시작할 수 없습니다</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>복구 승인 코드와 로그인 정보를 확인하세요. 승인 코드가 만료되었거나 이미 설정을 시작했다면 새 승인 코드를 요청하세요.</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>인증 앱 복구로 돌아가기</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>새 인증 앱 확인</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>인증 앱에 Nergal 계정을 추가하고 시간 기반 일회용 비밀번호 방식을 선택한 다음, 이 설정용 비밀 키를 입력하세요.</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>코드를 확인할 수 없습니다. 새 인증 앱에 표시된 현재 코드로 다시 시도하세요. 복구 유효 기간이 지났거나 시도 횟수 한도에 도달했다면 새 복구 승인 코드를 요청하세요.</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>새 인증 앱 코드</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>확인이 끝나면 비밀번호와 새 인증 앱에 다음으로 표시되는 코드를 사용해 다시 로그인하세요.</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>인증 앱 확인</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>허용</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>폐기</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>거부</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>모두</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>활성화</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>비활성화</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>확인이 필요한 적용 시작</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>진행 중인 적용 확인</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>즉시 롤백</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>Nergal 인증 코드</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>Nergal 인증 코드는 {0}입니다. 본인이 시작한 요청에만 사용하세요.</value>
+    </data>
 </root>

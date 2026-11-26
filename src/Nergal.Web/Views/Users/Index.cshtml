@@ -1,36 +1,37 @@
 @using Nergal.Core.Identity
 @model Nergal.Web.UsersPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Local users";
     ViewData["ActiveNav"] = "users";
 }
 <main id="main-content" tabindex="-1" class="container">
-    <div class="page-header"><div><h1>Local users</h1><p class="muted">Manage application access. These accounts are separate from Linux users and firewall agents.</p></div></div>
+    <div class="page-header"><div><h1>@L["Local users"]</h1><p class="muted">@L["Manage application access. These accounts are separate from Linux users and firewall agents."]</p></div></div>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
-    <p id="access-hint" class="hint">Keep at least one enabled local Administrator. Saving access changes or revoking sessions signs that account out of every browser. Disabled accounts retain their identity and history.</p>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Local user access"><table class="user-access-table">
-        <thead><tr><th scope="col">Sign-in name</th><th scope="col">Role</th><th scope="col">Access</th><th scope="col">Created (local time)</th><th scope="col">Actions</th></tr></thead>
+    <p id="access-hint" class="hint">@L["Keep at least one enabled local Administrator. Saving access changes or revoking sessions signs that account out of every browser. Disabled accounts retain their identity and history."]</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="@L["Local user access"]"><table class="user-access-table">
+        <thead><tr><th scope="col">@L["Sign-in name"]</th><th scope="col">@L["Role"]</th><th scope="col">@L["Access"]</th><th scope="col">@L["Created (local time)"]</th><th scope="col">@L["Actions"]</th></tr></thead>
         <tbody>
         @foreach (var account in Model.Users)
         {
             var formId = "account-" + account.Id.ToString("N");
             <tr>
                 <th scope="row">@account.UserName</th>
-                <td><select name="role" form="@formId" aria-label="Role for @account.UserName" aria-describedby="access-hint">
-                    <option value="@NergalRoles.Administrator" selected="@(account.Role == NergalRoles.Administrator)">Administrator</option>
-                    <option value="@NergalRoles.Auditor" selected="@(account.Role == NergalRoles.Auditor)">Auditor</option>
+                <td><select name="role" form="@formId" aria-label="@L["Role for {0}", account.UserName]" aria-describedby="access-hint">
+                    <option value="@NergalRoles.Administrator" selected="@(account.Role == NergalRoles.Administrator)">@L["Administrator"]</option>
+                    <option value="@NergalRoles.Auditor" selected="@(account.Role == NergalRoles.Auditor)">@L["Auditor"]</option>
                 </select></td>
-                <td>@await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", account.Enabled, "Access enabled", "Access for " + account.UserName, "access-hint", formId))</td>
-                <td><time data-local-time datetime="@account.CreatedUtc.UtcDateTime.ToString("O")" title="Stored UTC: @account.CreatedUtc.UtcDateTime.ToString("O")">@account.CreatedUtc.UtcDateTime.ToString("u") UTC</time></td>
+                <td>@await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", account.Enabled, L["Access enabled"].Value, L["Access for {0}", account.UserName].Value, "access-hint", formId))</td>
+                <td><time data-local-time datetime="@account.CreatedUtc.UtcDateTime.ToString("O")" title="@L["Stored UTC: {0}", account.CreatedUtc.UtcDateTime.ToString("O")]">@account.CreatedUtc.UtcDateTime.ToString("u") @L["UTC"]</time></td>
                 <td><div class="btn-group">
                     <form id="@formId" method="post" action="@Url.Content("~/manage/users/update")">
                         @Html.AntiForgeryToken()<input type="hidden" name="id" value="@account.Id" /><input type="hidden" name="version" value="@account.Version" />
-                        <button type="submit" class="btn btn-sm">Save access</button>
+                        <button type="submit" class="btn btn-sm">@L["Save access"]</button>
                     </form>
                     <form method="post" action="@Url.Content("~/manage/users/revoke")">
                         @Html.AntiForgeryToken()<input type="hidden" name="id" value="@account.Id" /><input type="hidden" name="version" value="@account.Version" />
-                        <button type="submit" class="btn btn-secondary btn-sm" aria-label="Revoke sessions for @account.UserName">Revoke sessions</button>
+                        <button type="submit" class="btn btn-secondary btn-sm" aria-label="@L["Revoke sessions for {0}", account.UserName]">@L["Revoke sessions"]</button>
                     </form>
                 </div></td>
             </tr>
@@ -38,22 +39,22 @@
         </tbody>
     </table></div>
 
-    <details class="card disclosure mt-2"><summary>Add a local user</summary>
-        <p class="hint" id="new-user-hint">Administrators can change configuration and manage users. Auditors inspect configuration and manage their own profile. Share the initial credential through your installation's protected process.</p>
+    <details class="card disclosure mt-2"><summary>@L["Add a local user"]</summary>
+        <p class="hint" id="new-user-hint">@L["Administrators can change configuration and manage users. Auditors inspect configuration and manage their own profile. Share the initial credential through your installation's protected process."]</p>
         <form class="form-stack" method="post" action="@Url.Content("~/manage/users/create")">
             @Html.AntiForgeryToken()
-            <div class="field"><label for="new-user-name">Sign-in name</label><input id="new-user-name" name="userName" type="text" required maxlength="64" autocomplete="off" pattern="[A-Za-z0-9_.-]+" aria-describedby="user-name-hint" /><p class="hint" id="user-name-hint">1–64 letters (A–Z), digits, dots, underscores or hyphens. Names are case-insensitive and cannot replace an existing account.</p></div>
-            <div class="field"><label for="new-user-role">Role</label><select id="new-user-role" name="role" aria-describedby="new-user-hint"><option value="@NergalRoles.Auditor">Auditor</option><option value="@NergalRoles.Administrator">Administrator</option></select></div>
-            <div class="field"><label for="new-user-password">Initial password</label><input id="new-user-password" name="password" type="password" required minlength="15" maxlength="256" autocomplete="new-password" aria-describedby="new-password-hint" /><p class="hint" id="new-password-hint">15–128 characters. Passwords are never shown again or recorded in audit entries. The user can change their own password after signing in.</p></div>
-            <button type="submit" class="btn">Create local user</button>
+            <div class="field"><label for="new-user-name">@L["Sign-in name"]</label><input id="new-user-name" name="userName" type="text" required maxlength="64" autocomplete="off" pattern="[A-Za-z0-9_.-]+" aria-describedby="user-name-hint" /><p class="hint" id="user-name-hint">@L["1–64 letters (A–Z), digits, dots, underscores or hyphens. Names are case-insensitive and cannot replace an existing account."]</p></div>
+            <div class="field"><label for="new-user-role">@L["Role"]</label><select id="new-user-role" name="role" aria-describedby="new-user-hint"><option value="@NergalRoles.Auditor">@L["Auditor"]</option><option value="@NergalRoles.Administrator">@L["Administrator"]</option></select></div>
+            <div class="field"><label for="new-user-password">@L["Initial password"]</label><input id="new-user-password" name="password" type="password" required minlength="15" maxlength="256" autocomplete="new-password" aria-describedby="new-password-hint" /><p class="hint" id="new-password-hint">@L["15–128 characters. Passwords are never shown again or recorded in audit entries. The user can change their own password after signing in."]</p></div>
+            <button type="submit" class="btn">@L["Create local user"]</button>
         </form>
     </details>
 
-    <section class="card mt-2" aria-labelledby="identity-history"><h2 id="identity-history">User and profile activity</h2>
-        <p class="hint">Latest 100 user and profile events. Configuration changes appear separately in Activity &amp; audit.</p>
-        <div class="table-wrap" tabindex="0" role="region" aria-label="Identity activity"><table class="table"><thead><tr><th scope="col">Time (local)</th><th scope="col">Actor</th><th scope="col">Role</th><th scope="col">Action</th><th scope="col">Target</th></tr></thead><tbody>
+    <section class="card mt-2" aria-labelledby="identity-history"><h2 id="identity-history">@L["User and profile activity"]</h2>
+        <p class="hint">@L["Latest 100 user and profile events. Configuration changes appear separately in Activity & audit."]</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="@L["Identity activity"]"><table class="table"><thead><tr><th scope="col">@L["Time (local)"]</th><th scope="col">@L["Actor"]</th><th scope="col">@L["Role"]</th><th scope="col">@L["Action"]</th><th scope="col">@L["Target"]</th></tr></thead><tbody>
         @foreach (var entry in Model.Audit)
-        { <tr><td><time data-local-time datetime="@entry.TimestampUtc.UtcDateTime.ToString("O")" title="Stored UTC: @entry.TimestampUtc.UtcDateTime.ToString("O")">@entry.TimestampUtc.UtcDateTime.ToString("u") UTC</time></td><td><details><summary>@Nergal.Web.IdentityUiLabels.Account(entry.ActorId, Model.Users)</summary><code>@entry.ActorId</code></details></td><td>@Nergal.Web.IdentityUiLabels.Role(entry.ActorRole)</td><td title="@entry.Action">@Nergal.Web.IdentityUiLabels.Action(entry.Action)</td><td><details><summary>@Nergal.Web.IdentityUiLabels.Account(entry.Target, Model.Users)</summary><code>@entry.Target</code></details></td></tr> }
+        { <tr><td><time data-local-time datetime="@entry.TimestampUtc.UtcDateTime.ToString("O")" title="@L["Stored UTC: {0}", entry.TimestampUtc.UtcDateTime.ToString("O")]">@entry.TimestampUtc.UtcDateTime.ToString("u") @L["UTC"]</time></td><td><details><summary>@Nergal.Web.IdentityUiLabels.Account(entry.ActorId, Model.Users, L)</summary><code>@entry.ActorId</code></details></td><td>@Nergal.Web.IdentityUiLabels.Role(entry.ActorRole, L)</td><td title="@entry.Action">@Nergal.Web.IdentityUiLabels.Action(entry.Action, L)</td><td><details><summary>@Nergal.Web.IdentityUiLabels.Account(entry.Target, Model.Users, L)</summary><code>@entry.Target</code></details></td></tr> }
         </tbody></table></div>
     </section>
 </main>

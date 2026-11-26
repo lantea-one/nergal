@@ -1485,4 +1485,592 @@
     <data name="{0} s remaining" xml:space="preserve">
         <value>Quedan {0} s</value>
     </data>
+    <data name="Before requiring MFA, enroll an authenticator for at least one enabled local Administrator." xml:space="preserve">
+        <value>Antes de exigir MFA, registra un autenticador para al menos un administrador local habilitado.</value>
+    </data>
+    <data name="Enroll an authenticator for at least one enabled local Administrator before requiring MFA." xml:space="preserve">
+        <value>Registra un autenticador para al menos un administrador local habilitado antes de exigir MFA.</value>
+    </data>
+    <data name="Keep a local Administrator who can sign in without email delivery before verifying this address." xml:space="preserve">
+        <value>Antes de verificar esta dirección, asegúrate de que un administrador local pueda iniciar sesión sin depender del correo electrónico.</value>
+    </data>
+    <data name="Keep at least one enabled local Administrator. Create or promote another Administrator first." xml:space="preserve">
+        <value>Mantén al menos un administrador local habilitado. Primero crea otra cuenta de administrador o asciende una cuenta existente.</value>
+    </data>
+    <data name="Keep at least one enabled local Administrator. Saving access changes or revoking sessions signs that account out of every browser. Disabled accounts retain their identity and history." xml:space="preserve">
+        <value>Mantén al menos un administrador local habilitado. Al guardar cambios de acceso o revocar sesiones, se cierra la sesión de esa cuenta en todos los navegadores. Las cuentas deshabilitadas conservan su identidad y su historial.</value>
+    </data>
+    <data name="Sign in as a local Administrator to grant or restore local Administrator access." xml:space="preserve">
+        <value>Inicia sesión como administrador local para conceder o restablecer el acceso de administrador local.</value>
+    </data>
+    <data name="Sign in as a local Administrator to change provider trust or credentials." xml:space="preserve">
+        <value>Inicia sesión como administrador local para cambiar la configuración de confianza o las credenciales del proveedor.</value>
+    </data>
+    <data name="Saving replaces the active connection settings, invalidates existing provider sessions and cancels in-flight provider sign-ins. Local sessions remain available. No provider request is made until sign-in." xml:space="preserve">
+        <value>Al guardar, se reemplaza la configuración activa de la conexión, se invalidan las sesiones existentes del proveedor y se cancelan los inicios de sesión en curso con el proveedor. Las sesiones locales siguen disponibles. Solo se envían solicitudes al proveedor al iniciar sesión.</value>
+    </data>
+    <data name="Saving retires existing LDAP sessions and pending LDAP sign-ins. The directory is contacted only when someone attempts LDAP sign-in." xml:space="preserve">
+        <value>Al guardar, se invalidan las sesiones LDAP existentes y los inicios de sesión LDAP pendientes. Solo se contacta con el directorio cuando alguien intenta iniciar sesión mediante LDAP.</value>
+    </data>
+    <data name="Choose provider trust only if the provider enforces MFA for this connection. Roles with optional MFA can sign in under any mode." xml:space="preserve">
+        <value>Confía en el proveedor solo si exige MFA para esta conexión. Los roles con MFA opcional pueden iniciar sesión en cualquier modo.</value>
+    </data>
+    <data name="Deny provider sign-in" xml:space="preserve">
+        <value>Denegar el inicio de sesión con el proveedor</value>
+    </data>
+    <data name="Require a signed ID-token claim" xml:space="preserve">
+        <value>Exigir una notificación en el token de ID firmado</value>
+    </data>
+    <data name="A secret is stored. Leave blank to retain it for the same issuer and client ID." xml:space="preserve">
+        <value>Hay un secreto guardado. Deja el campo vacío para conservarlo si mantienes el mismo emisor e ID de cliente.</value>
+    </data>
+    <data name="Enter the confidential client's secret. It is encrypted at rest and never shown again." xml:space="preserve">
+        <value>Introduce el secreto del cliente confidencial. Se almacena cifrado y no se vuelve a mostrar.</value>
+    </data>
+    <data name="Changing issuer or client ID requires a new secret." xml:space="preserve">
+        <value>Si cambias el emisor o el ID de cliente, debes introducir un secreto nuevo.</value>
+    </data>
+    <data name="The password is encrypted and never displayed. Leave blank to keep a stored password. Changing the endpoint, IP address, search base or bind DN requires a replacement." xml:space="preserve">
+        <value>La contraseña se almacena cifrada y nunca se muestra. Deja el campo vacío para conservar la contraseña guardada. Si cambias el punto de conexión, la dirección IP, la base de búsqueda o el DN de enlace, debes introducir una contraseña nueva.</value>
+    </data>
+    <data name="Enter a search password when creating the connection or changing its endpoint, dial IP, user base or bind DN." xml:space="preserve">
+        <value>Introduce una contraseña de búsqueda al crear la conexión o al cambiar su punto de conexión, la IP de conexión, la base de usuarios o el DN de enlace.</value>
+    </data>
+    <data name="Enter the SMTP password for the new relay or username." xml:space="preserve">
+        <value>Introduce la contraseña SMTP para el nuevo servidor de retransmisión o nombre de usuario.</value>
+    </data>
+    <data name="Leave blank to retain the saved password for the same relay and username." xml:space="preserve">
+        <value>Deja el campo vacío para conservar la contraseña guardada si mantienes el mismo servidor de retransmisión y nombre de usuario.</value>
+    </data>
+    <data name="The relay settings changed. Review the current settings and submit again." xml:space="preserve">
+        <value>La configuración del servidor de retransmisión ha cambiado. Revisa la configuración actual y vuelve a enviarla.</value>
+    </data>
+    <data name="The policy changed. Review the current requirement and submit again." xml:space="preserve">
+        <value>La política ha cambiado. Revisa el requisito actual y vuelve a enviar el formulario.</value>
+    </data>
+    <data name="This record changed. Review its current values and submit again." xml:space="preserve">
+        <value>Este registro ha cambiado. Revisa los valores actuales y vuelve a enviar el formulario.</value>
+    </data>
+    <data name="Authenticator setup could not start. Review your current enrollment status." xml:space="preserve">
+        <value>No se pudo iniciar la configuración del autenticador. Revisa el estado actual de tu registro.</value>
+    </data>
+    <data name="Authenticator setup could not be confirmed. Check your device time and start setup again." xml:space="preserve">
+        <value>No se pudo confirmar la configuración del autenticador. Comprueba la hora de tu dispositivo y vuelve a iniciar la configuración.</value>
+    </data>
+    <data name="Email setup could not start. Check that delivery is available and try again later." xml:space="preserve">
+        <value>No se pudo iniciar la configuración del correo electrónico. Comprueba que el servicio de envío esté disponible e inténtalo de nuevo más tarde.</value>
+    </data>
+    <data name="Email setup could not be confirmed. Check the code or start setup again." xml:space="preserve">
+        <value>No se pudo confirmar la configuración del correo electrónico. Comprueba el código o vuelve a iniciar la configuración.</value>
+    </data>
+    <data name="Current password verification failed. Try again or wait for the account lockout to expire." xml:space="preserve">
+        <value>No se pudo verificar la contraseña actual. Inténtalo de nuevo o espera a que termine el bloqueo de la cuenta.</value>
+    </data>
+    <data name="Recovery could not be authorized. Check the account identifier and current policy, then try again." xml:space="preserve">
+        <value>No se pudo autorizar la recuperación. Comprueba el identificador de la cuenta y la política actual e inténtalo de nuevo.</value>
+    </data>
+    <data name="Verify the recipient’s identity before handing them an authorization. They have ten minutes to use it with their password and verify a new authenticator." xml:space="preserve">
+        <value>Verifica la identidad del destinatario antes de entregarle la autorización. Tiene diez minutos para usarla con su contraseña y verificar un autenticador nuevo.</value>
+    </data>
+    <data name="Issuing a new authorization cancels earlier recovery attempts for this account. Its current authenticator keeps working until the recipient confirms the replacement." xml:space="preserve">
+        <value>Emitir una autorización nueva cancela los intentos de recuperación anteriores de esta cuenta. El autenticador actual sigue funcionando hasta que el destinatario confirma el nuevo.</value>
+    </data>
+    <data name="Give this one-time authorization to the verified recipient through a private channel. It expires in ten minutes." xml:space="preserve">
+        <value>Entrega esta autorización de un solo uso al destinatario verificado por un canal privado. Caduca en diez minutos.</value>
+    </data>
+    <data name="Ask the recipient to open" xml:space="preserve">
+        <value>Pide al destinatario que abra</value>
+    </data>
+    <data name="authenticator recovery" xml:space="preserve">
+        <value>la recuperación del autenticador</value>
+    </data>
+    <data name="and use their current password. The setup key appears once after verification." xml:space="preserve">
+        <value>y use su contraseña actual. La clave de configuración se muestra una sola vez después de la verificación.</value>
+    </data>
+    <data name="For a directory account that has completed the password step at least once, enter" xml:space="preserve">
+        <value>Para una cuenta del directorio que haya superado el paso de la contraseña al menos una vez, introduce</value>
+    </data>
+    <data name="using its immutable entry UUID." xml:space="preserve">
+        <value>con el UUID inmutable de su entrada.</value>
+    </data>
+    <data name="Add a time-based account named Nergal in your authenticator app and enter this setup key. Keep the key private." xml:space="preserve">
+        <value>Añade una cuenta llamada Nergal con códigos basados en el tiempo en tu aplicación de autenticación e introduce esta clave de configuración. Mantén la clave en privado.</value>
+    </data>
+    <data name="Enter the six-digit code within five minutes. When setup completes, you’ll sign in again." xml:space="preserve">
+        <value>Introduce el código de seis dígitos en un plazo de cinco minutos. Cuando termine la configuración, volverás a iniciar sesión.</value>
+    </data>
+    <data name="When setup completes, you’ll sign in again with your password and an authenticator code." xml:space="preserve">
+        <value>Cuando termine la configuración, volverás a iniciar sesión con tu contraseña y un código del autenticador.</value>
+    </data>
+    <data name="Signing out revokes this LDAP session." xml:space="preserve">
+        <value>Al cerrar sesión se revoca esta sesión LDAP.</value>
+    </data>
+    <data name="Signing out revokes this federated ticket." xml:space="preserve">
+        <value>Al cerrar sesión se revoca este ticket federado.</value>
+    </data>
+    <data name="Signing out revokes all sessions for your local account." xml:space="preserve">
+        <value>Al cerrar sesión se revocan todas las sesiones de tu cuenta local.</value>
+    </data>
+    <data name="Revoke sessions for {0}" xml:space="preserve">
+        <value>Revocar las sesiones de {0}</value>
+    </data>
+    <data name="Role for {0}" xml:space="preserve">
+        <value>Rol de {0}</value>
+    </data>
+    <data name="Access for {0}" xml:space="preserve">
+        <value>Acceso de {0}</value>
+    </data>
+    <data name="Profile mapping for the new issuer" xml:space="preserve">
+        <value>Asignación de perfil para el nuevo emisor</value>
+    </data>
+    <data name="Profile mapping for {0}" xml:space="preserve">
+        <value>Asignación de perfil para {0}</value>
+    </data>
+    <data name="Enable OpenID Connect sign-in" xml:space="preserve">
+        <value>Habilitar el inicio de sesión con OpenID Connect</value>
+    </data>
+    <data name="Enable LDAP sign-in" xml:space="preserve">
+        <value>Habilitar el inicio de sesión con LDAP</value>
+    </data>
+    <data name="Offline operator" xml:space="preserve">
+        <value>Operador sin conexión</value>
+    </data>
+    <data name="Initial account created" xml:space="preserve">
+        <value>Cuenta inicial creada</value>
+    </data>
+    <data name="Account created" xml:space="preserve">
+        <value>Cuenta creada</value>
+    </data>
+    <data name="Access changed" xml:space="preserve">
+        <value>Acceso modificado</value>
+    </data>
+    <data name="Sessions revoked" xml:space="preserve">
+        <value>Sesiones revocadas</value>
+    </data>
+    <data name="Signed out" xml:space="preserve">
+        <value>Sesión cerrada</value>
+    </data>
+    <data name="Password changed" xml:space="preserve">
+        <value>Contraseña cambiada</value>
+    </data>
+    <data name="Password verification denied" xml:space="preserve">
+        <value>Verificación de contraseña denegada</value>
+    </data>
+    <data name="Profile updated" xml:space="preserve">
+        <value>Perfil actualizado</value>
+    </data>
+    <data name="OIDC connection settings replaced" xml:space="preserve">
+        <value>Configuración de la conexión OIDC sustituida</value>
+    </data>
+    <data name="OAuth connection settings replaced" xml:space="preserve">
+        <value>Configuración de la conexión OAuth sustituida</value>
+    </data>
+    <data name="OAuth sign-in completed" xml:space="preserve">
+        <value>Inicio de sesión con OAuth completado</value>
+    </data>
+    <data name="Profile mapping saved" xml:space="preserve">
+        <value>Asignación de perfil guardada</value>
+    </data>
+    <data name="Provider profile refreshed" xml:space="preserve">
+        <value>Perfil del proveedor actualizado</value>
+    </data>
+    <data name="LDAP connection settings replaced" xml:space="preserve">
+        <value>Configuración de la conexión LDAP sustituida</value>
+    </data>
+    <data name="Local sign-in completed" xml:space="preserve">
+        <value>Inicio de sesión local completado</value>
+    </data>
+    <data name="LDAP sign-in completed" xml:space="preserve">
+        <value>Inicio de sesión con LDAP completado</value>
+    </data>
+    <data name="LDAP session signed out" xml:space="preserve">
+        <value>Sesión LDAP cerrada</value>
+    </data>
+    <data name="MFA policy changed" xml:space="preserve">
+        <value>Política de MFA modificada</value>
+    </data>
+    <data name="Email delivery settings changed" xml:space="preserve">
+        <value>Configuración del envío de correo modificada</value>
+    </data>
+    <data name="Email verification started" xml:space="preserve">
+        <value>Verificación por correo iniciada</value>
+    </data>
+    <data name="Email verification denied" xml:space="preserve">
+        <value>Verificación por correo denegada</value>
+    </data>
+    <data name="Email factor verified" xml:space="preserve">
+        <value>Factor de correo verificado</value>
+    </data>
+    <data name="Authenticator setup started" xml:space="preserve">
+        <value>Configuración del autenticador iniciada</value>
+    </data>
+    <data name="Authenticator setup denied" xml:space="preserve">
+        <value>Configuración del autenticador denegada</value>
+    </data>
+    <data name="Authenticator verified" xml:space="preserve">
+        <value>Autenticador verificado</value>
+    </data>
+    <data name="Second-factor code required" xml:space="preserve">
+        <value>Se requiere el código del segundo factor</value>
+    </data>
+    <data name="MFA attempt denied" xml:space="preserve">
+        <value>Intento de MFA denegado</value>
+    </data>
+    <data name="MFA recovery authorized" xml:space="preserve">
+        <value>Recuperación de MFA autorizada</value>
+    </data>
+    <data name="MFA recovery enrollment started" xml:space="preserve">
+        <value>Registro de recuperación de MFA iniciado</value>
+    </data>
+    <data name="MFA recovery attempt denied" xml:space="preserve">
+        <value>Intento de recuperación de MFA denegado</value>
+    </data>
+    <data name="MFA recovery completed" xml:space="preserve">
+        <value>Recuperación de MFA completada</value>
+    </data>
+    <data name="The provider did not supply a display name." xml:space="preserve">
+        <value>El proveedor no proporcionó un nombre para mostrar.</value>
+    </data>
+    <data name="The provider supplied an invalid display name." xml:space="preserve">
+        <value>El proveedor proporcionó un nombre para mostrar no válido.</value>
+    </data>
+    <data name="The provider did not supply a given name." xml:space="preserve">
+        <value>El proveedor no proporcionó un nombre de pila.</value>
+    </data>
+    <data name="The provider supplied an invalid given name." xml:space="preserve">
+        <value>El proveedor proporcionó un nombre de pila no válido.</value>
+    </data>
+    <data name="The provider did not supply a family name." xml:space="preserve">
+        <value>El proveedor no proporcionó un apellido.</value>
+    </data>
+    <data name="The provider supplied an invalid family name." xml:space="preserve">
+        <value>El proveedor proporcionó un apellido no válido.</value>
+    </data>
+    <data name="The provider did not supply a profile email address." xml:space="preserve">
+        <value>El proveedor no proporcionó una dirección de correo para el perfil.</value>
+    </data>
+    <data name="The provider supplied an invalid profile email address." xml:space="preserve">
+        <value>El proveedor proporcionó una dirección de correo no válida para el perfil.</value>
+    </data>
+    <data name="A provider profile field is unavailable." xml:space="preserve">
+        <value>Un campo del perfil del proveedor no está disponible.</value>
+    </data>
+    <data name="External identity" xml:space="preserve">
+        <value>Identidad externa</value>
+    </data>
+    <data name="System settings saved and recorded in the append-only audit log." xml:space="preserve">
+        <value>La configuración del sistema se guardó y se registró en el registro de auditoría de solo anexado.</value>
+    </data>
+    <data name="One or more settings failed validation. Review the highlighted codes below." xml:space="preserve">
+        <value>Uno o más ajustes no son válidos. Revisa los códigos resaltados a continuación.</value>
+    </data>
+    <data name="System settings changed while you were editing. Review the current settings and reapply your changes." xml:space="preserve">
+        <value>La configuración del sistema cambió mientras la editabas. Revisa la configuración actual y vuelve a introducir tus cambios.</value>
+    </data>
+    <data name="Submit each field once. Check the list name, type, description and entries." xml:space="preserve">
+        <value>Envía cada campo una sola vez. Comprueba el nombre, el tipo, la descripción y las entradas de la lista.</value>
+    </data>
+    <data name="Use a name of 1–64 lowercase letters, digits or underscores, starting with a letter." xml:space="preserve">
+        <value>Usa un nombre de 1 a 64 letras minúsculas, dígitos o guiones bajos que empiece por una letra.</value>
+    </data>
+    <data name="Choose IPv4 addresses, IPv6 addresses or transport ports." xml:space="preserve">
+        <value>Elige direcciones IPv4, direcciones IPv6 o puertos de transporte.</value>
+    </data>
+    <data name="Use a plain-text description of at most 500 characters." xml:space="preserve">
+        <value>Usa una descripción en texto sin formato de como máximo 500 caracteres.</value>
+    </data>
+    <data name="Enter 1–64 entries, one per line." xml:space="preserve">
+        <value>Introduce de 1 a 64 entradas, una por línea.</value>
+    </data>
+    <data name="Remove duplicate entries. An address and its /32 or /128 prefix identify the same entry." xml:space="preserve">
+        <value>Elimina las entradas duplicadas. Una dirección y su prefijo /32 o /128 identifican la misma entrada.</value>
+    </data>
+    <data name="Enter individual numeric ports from 1 to 65535. Port ranges are not supported." xml:space="preserve">
+        <value>Introduce puertos numéricos individuales del 1 al 65535. No se admiten intervalos de puertos.</value>
+    </data>
+    <data name="Every address must match the selected IPv4 or IPv6 type." xml:space="preserve">
+        <value>Todas las direcciones deben corresponder al tipo IPv4 o IPv6 seleccionado.</value>
+    </data>
+    <data name="Use numeric addresses or CIDRs with zero host bits. Names, ranges, scoped and mapped addresses are not supported." xml:space="preserve">
+        <value>Usa direcciones numéricas o bloques CIDR con los bits de host a cero. No se admiten nombres, intervalos ni direcciones con ámbito o mapeadas.</value>
+    </data>
+    <data name="Another edit was saved first. Your input is retained; open the current version in another tab and compare before editing again." xml:space="preserve">
+        <value>Se guardó antes otra edición. Se conservan tus datos. Abre la versión actual en otra pestaña y compárala antes de volver a editar.</value>
+    </data>
+    <data name="That name already exists. Choose a different identifier or edit the existing list." xml:space="preserve">
+        <value>Ese nombre ya existe. Elige otro identificador o edita la lista existente.</value>
+    </data>
+    <data name="An existing list's name and type cannot change. Create a separate list instead." xml:space="preserve">
+        <value>El nombre y el tipo de una lista existente son inmutables. Crea una lista nueva.</value>
+    </data>
+    <data name="The selected list or expected version is invalid. Open the library and select the list again." xml:space="preserve">
+        <value>La lista seleccionada o la versión esperada no es válida. Abre la biblioteca y vuelve a seleccionar la lista.</value>
+    </data>
+    <data name="The library has reached its limit of 128 lists. No list or audit entry was added." xml:space="preserve">
+        <value>La biblioteca ha alcanzado el límite de 128 listas. No se añadió ninguna lista ni entrada de auditoría.</value>
+    </data>
+    <data name="This list has reached its limit of 64 immutable versions. No change was saved." xml:space="preserve">
+        <value>La lista ha alcanzado el límite de 64 versiones inmutables. No se guardó ningún cambio.</value>
+    </data>
+    <data name="Check the list name, type, description and entries. No change was saved." xml:space="preserve">
+        <value>Comprueba el nombre, el tipo, la descripción y las entradas de la lista. No se guardó ningún cambio.</value>
+    </data>
+    <data name="System settings sections" xml:space="preserve">
+        <value>Secciones de configuración del sistema</value>
+    </data>
+    <data name="Enable local administrator accounts" xml:space="preserve">
+        <value>Habilitar las cuentas de administrador locales</value>
+    </data>
+    <data name="Enable OIDC / OAuth 2.0 SSO" xml:space="preserve">
+        <value>Habilitar el inicio de sesión único con OIDC / OAuth 2.0</value>
+    </data>
+    <data name="Enable LDAP / AD directory authentication" xml:space="preserve">
+        <value>Habilitar la autenticación en el directorio LDAP / AD</value>
+    </data>
+    <data name="Require StartTLS (for ldap://)" xml:space="preserve">
+        <value>Exigir StartTLS (para ldap://)</value>
+    </data>
+    <data name="Require change summaries on saved policy revisions" xml:space="preserve">
+        <value>Exigir un resumen de cambios en las revisiones de políticas guardadas</value>
+    </data>
+    <data name="Structured policy bundle summary" xml:space="preserve">
+        <value>Resumen estructurado del conjunto de políticas</value>
+    </data>
+    <data name="Sign out of this session" xml:space="preserve">
+        <value>Cerrar esta sesión</value>
+    </data>
+    <data name="Sign out of all local sessions" xml:space="preserve">
+        <value>Cerrar todas las sesiones locales</value>
+    </data>
+    <data name="Disabled rules below retain intent but do not enforce traffic policy. Native observations contain active rules only." xml:space="preserve">
+        <value>Las reglas deshabilitadas que se muestran a continuación conservan su configuración, pero no se aplican al tráfico. Las observaciones nativas solo contienen reglas activas.</value>
+    </data>
+    <data name="Auxiliary/extended bridge scope requires complete bundle receipts. Confirmed apply and local rollback cover all owned tables; unexpected drift requires recovery." xml:space="preserve">
+        <value>El ámbito auxiliar o de puente ampliado requiere comprobantes del conjunto completo. La aplicación confirmada y la reversión local abarcan todas las tablas gestionadas. Las divergencias inesperadas requieren una recuperación.</value>
+    </data>
+    <data name="Policies can pin a list version for source, destination or destination-port matching. Saving a new list version does not change existing policy revisions or firewalls. Update the reference in a policy draft, review, save and use confirmed apply." xml:space="preserve">
+        <value>Las políticas pueden fijar una versión de la lista para comprobar el origen, el destino o el puerto de destino. Guardar una nueva versión no modifica las revisiones de políticas ni los cortafuegos existentes. Actualiza la referencia en un borrador de política, revísalo, guárdalo y aplícalo con confirmación.</value>
+    </data>
+    <data name="Compare exact stored entries in either direction. Added and removed CIDRs are entry changes, not a calculation of address coverage or allowed traffic. Existing policy pins stay unchanged. Viewing a comparison does not save or apply anything." xml:space="preserve">
+        <value>Compara las entradas guardadas en cualquiera de los dos sentidos. Los bloques CIDR añadidos o eliminados indican cambios en las entradas, sin calcular las direcciones cubiertas ni el tráfico permitido. Las referencias de política conservan su versión. Ver la comparación no guarda ni aplica cambios.</value>
+    </data>
+    <data name=". Accept here continues to later hooks; it does not override later filter drops. Changing the raw default to Drop can interrupt traffic before ordinary filter rules run." xml:space="preserve">
+        <value>. La aceptación aquí permite que el tráfico llegue a los puntos de enganche posteriores, donde aún se puede descartar. Cambiar la acción predeterminada de raw a Descartar puede interrumpir el tráfico antes de que se ejecuten las reglas de filtrado ordinarias.</value>
+    </data>
+    <data name=". Priority controls hook ordering; lower numbers run first. An Accept here still allows later base chains to drop traffic. This table participates in complete ownership checks, candidate review and timed rollback; it does not adopt foreign tables." xml:space="preserve">
+        <value>. La prioridad determina el orden de ejecución en el punto de enganche. Los números más bajos se ejecutan primero. Las cadenas base posteriores aún pueden descartar tráfico aceptado aquí. Esta tabla forma parte de las comprobaciones completas de propiedad, de la revisión de la configuración candidata y de la reversión por tiempo de espera. No adopta tablas ajenas.</value>
+    </data>
+    <data name="An independent inet filter rule. Empty optional matchers mean any; clearing them may broaden access. Except requires its matcher. Edits preserve enabled state, order and existing list pins. This changes only the draft." xml:space="preserve">
+        <value>Regla de filtrado inet independiente. Las condiciones opcionales vacías admiten cualquier valor. Borrarlas puede ampliar el acceso. La opción «Excepto» requiere su condición correspondiente. Las ediciones conservan el estado de activación, el orden y las versiones de listas fijadas. Solo se modifica el borrador.</value>
+    </data>
+    <data name="Attach replaces the selected matcher's literal restriction or prior reference. Remove clears that reference and its restriction, which can broaden the rule. Both actions change only this draft: inspect the summary and native diff before saving a revision and confirmed apply." xml:space="preserve">
+        <value>Adjuntar sustituye la restricción literal o la referencia anterior de la condición seleccionada. Quitar elimina esa referencia y su restricción, lo que puede ampliar el alcance de la regla. Ambas acciones modifican solo este borrador: consulte el resumen y las diferencias de la configuración nativa antes de guardar una revisión y usar la aplicación con confirmación.</value>
+    </data>
+    <data name="Changes only these conditions. Addresses, ports, pinned lists and enabled state are retained. Negation means “anything except” the specified matcher; it requires an existing matcher. Removing a MAC restriction can broaden access." xml:space="preserve">
+        <value>Solo se modifican estas condiciones. Se conservan las direcciones, los puertos, las versiones de listas fijadas y el estado de activación. La negación significa «cualquier valor excepto» el indicado y requiere una condición existente. Quitar una restricción de MAC puede ampliar el acceso.</value>
+    </data>
+    <data name="Choose only for Jump. Create the regular chain first. Missing targets and cycles are rejected, including in disabled rules." xml:space="preserve">
+        <value>Seleccione un destino solo para la acción Saltar. Cree primero la cadena regular. Se rechazan los destinos inexistentes y los ciclos, incluso en reglas desactivadas.</value>
+    </data>
+    <data name="Destination literals; pinned lists are managed separately" xml:space="preserve">
+        <value>Valores literales de destino. Las versiones de listas fijadas se gestionan por separado</value>
+    </data>
+    <data name="Disabled · omitted" xml:space="preserve">
+        <value>Desactivada · omitida</value>
+    </data>
+    <data name="Disabled · omitted from candidate" xml:space="preserve">
+        <value>Desactivada · omitida de la configuración candidata</value>
+    </data>
+    <data name="Each switch changes only this draft. Disabled rules retain their settings and position. Review intent/native diffs, save a revision and use confirmed apply. Disabling a drop, return exemption or clamp can broaden traffic or change connectivity." xml:space="preserve">
+        <value>Cada interruptor modifica solo este borrador. Las reglas desactivadas conservan su configuración y posición. Revise las diferencias de la configuración prevista y de la configuración nativa, guarde una revisión y use la aplicación con confirmación. Desactivar un descarte, una excepción mediante retorno o un ajuste de MSS puede permitir más tráfico o cambiar la conectividad.</value>
+    </data>
+    <data name="Enabled state" xml:space="preserve">
+        <value>Estado de activación</value>
+    </data>
+    <data name="Included in candidate" xml:space="preserve">
+        <value>Incluida en la configuración candidata</value>
+    </data>
+    <data name="Move down" xml:space="preserve">
+        <value>Mover hacia abajo</value>
+    </data>
+    <data name="Move up" xml:space="preserve">
+        <value>Mover hacia arriba</value>
+    </data>
+    <data name="Move {0} rule {1} down" xml:space="preserve">
+        <value>Mover la regla {1} de {0} hacia abajo</value>
+    </data>
+    <data name="Move {0} rule {1} up" xml:space="preserve">
+        <value>Mover la regla {1} de {0} hacia arriba</value>
+    </data>
+    <data name="Port literals; pinned lists are managed separately" xml:space="preserve">
+        <value>Valores literales de puerto. Las versiones de listas fijadas se gestionan por separado</value>
+    </data>
+    <data name="Raw prerouting runs before connection tracking. Rules run in order; put intentional exceptions before a reverse-path drop. This form changes only the draft, retaining an existing rule's enabled state." xml:space="preserve">
+        <value>El preenrutamiento raw tiene lugar antes del seguimiento de conexiones. Las reglas se ejecutan en orden. Coloque las excepciones previstas antes de un descarte por ruta inversa. Este formulario solo modifica el borrador y conserva el estado de activación de las reglas existentes.</value>
+    </data>
+    <data name="Recent apply &amp; controller audit activity" xml:space="preserve">
+        <value>Aplicaciones recientes y actividad de auditoría del controlador</value>
+    </data>
+    <data name="Remove rules and regular chains first. Removing an empty table also removes its default policy, which may broaden access." xml:space="preserve">
+        <value>Quite primero las reglas y las cadenas regulares. Al quitar una tabla vacía también se elimina su política predeterminada, lo que puede ampliar el acceso.</value>
+    </data>
+    <data name="Removing this empty table removes its chain defaults too, which may broaden access." xml:space="preserve">
+        <value>Al quitar esta tabla vacía también se eliminan las acciones predeterminadas de sus cadenas, lo que puede ampliar el acceso.</value>
+    </data>
+    <data name="Rules run in order. Return stops this NAT chain without translation; place exemptions before translation rules. Empty optional matchers mean any. Negation means “anything except” and requires that matcher. Changes update the draft for review, not the live firewall." xml:space="preserve">
+        <value>Las reglas se ejecutan en orden. La acción Retornar sale de esta cadena NAT sin traducir. Coloque las excepciones antes de las reglas de traducción. Las condiciones opcionales vacías admiten cualquier valor. La negación significa «cualquier valor excepto» y requiere la condición correspondiente. Los cambios actualizan el borrador para su revisión y no modifican el cortafuegos activo.</value>
+    </data>
+    <data name="Source literals; pinned lists are managed separately" xml:space="preserve">
+        <value>Valores literales de origen. Las versiones de listas fijadas se gestionan por separado</value>
+    </data>
+    <data name="This optional owned table filters forwarded Ethernet frames. Priority orders its bridge hook; lower numbers run first. Complete table observation, native ownership receipts and independent timed rollback remain required for apply. No host apply happens here." xml:space="preserve">
+        <value>Esta tabla administrada opcional filtra las tramas Ethernet reenviadas. La prioridad fija el orden en el punto de enganche del puente. Los valores más bajos se ejecutan primero. Para aplicar la configuración siguen siendo obligatorios la observación completa de la tabla, los comprobantes nativos de propiedad y la reversión independiente por tiempo de espera. Esta operación no aplica cambios en el equipo.</value>
+    </data>
+    <data name="Update draft state" xml:space="preserve">
+        <value>Actualizar el estado en el borrador</value>
+    </data>
+    <data name="Validation diagnostics ({0})" xml:space="preserve">
+        <value>Diagnósticos de validación ({0})</value>
+    </data>
+    <data name="appliedPendingConfirmation" xml:space="preserve">
+        <value>aplicada, pendiente de confirmación</value>
+    </data>
+    <data name="busy" xml:space="preserve">
+        <value>ocupado</value>
+    </data>
+    <data name="confirmed" xml:space="preserve">
+        <value>confirmada</value>
+    </data>
+    <data name="denied" xml:space="preserve">
+        <value>denegada</value>
+    </data>
+    <data name="invalidRequest" xml:space="preserve">
+        <value>solicitud no válida</value>
+    </data>
+    <data name="rejected" xml:space="preserve">
+        <value>rechazada</value>
+    </data>
+    <data name="rolledBack" xml:space="preserve">
+        <value>revertida</value>
+    </data>
+    <data name="unbound" xml:space="preserve">
+        <value>sin vincular</value>
+    </data>
+    <data name="unknown" xml:space="preserve">
+        <value>desconocido</value>
+    </data>
+    <data name="{0} enabled" xml:space="preserve">
+        <value>{0}: activación</value>
+    </data>
+    <data name="“Except” negates an existing matcher; it does not remove it. Translation, ports, position and enabled state are retained. An input interface or source must be configured before negating it. Review negated-source DNAT carefully: it affects callers outside the selected source." xml:space="preserve">
+        <value>«Excepto» invierte una condición existente sin quitarla. Se conservan la traducción, los puertos, la posición y el estado de activación. Configure primero la interfaz de entrada o el origen para poder negarlos. Revise con cuidado el DNAT con negación de origen, ya que afecta al tráfico procedente de fuera del origen seleccionado.</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>Aceptar</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>Descartar</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>Rechazar</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>Cualquiera</value>
+    </data>
+    <data name="Indent lines" xml:space="preserve">
+        <value>Aplicar sangría</value>
+    </data>
+    <data name="Indentation updated. Preview checks policy compatibility." xml:space="preserve">
+        <value>Se ha actualizado la sangría. La vista previa comprueba la compatibilidad de la política.</value>
+    </data>
+    <data name="Find" xml:space="preserve">
+        <value>Buscar</value>
+    </data>
+    <data name="Replace" xml:space="preserve">
+        <value>Reemplazar</value>
+    </data>
+    <data name="next" xml:space="preserve">
+        <value>siguiente</value>
+    </data>
+    <data name="previous" xml:space="preserve">
+        <value>anterior</value>
+    </data>
+    <data name="all" xml:space="preserve">
+        <value>todas</value>
+    </data>
+    <data name="match case" xml:space="preserve">
+        <value>distinguir mayúsculas y minúsculas</value>
+    </data>
+    <data name="regexp" xml:space="preserve">
+        <value>expresión regular</value>
+    </data>
+    <data name="by word" xml:space="preserve">
+        <value>palabras completas</value>
+    </data>
+    <data name="replace all" xml:space="preserve">
+        <value>reemplazar todas</value>
+    </data>
+    <data name="close" xml:space="preserve">
+        <value>cerrar</value>
+    </data>
+    <data name="current match" xml:space="preserve">
+        <value>coincidencia actual</value>
+    </data>
+    <data name="on line" xml:space="preserve">
+        <value>en la línea</value>
+    </data>
+    <data name="replaced match on line $" xml:space="preserve">
+        <value>se reemplazó la coincidencia en la línea $</value>
+    </data>
+    <data name="replaced $ matches" xml:space="preserve">
+        <value>coincidencias reemplazadas: $</value>
+    </data>
+    <data name="Go to line" xml:space="preserve">
+        <value>Ir a la línea</value>
+    </data>
+    <data name="go" xml:space="preserve">
+        <value>ir</value>
+    </data>
+    <data name="Folded lines" xml:space="preserve">
+        <value>Líneas plegadas</value>
+    </data>
+    <data name="Unfolded lines" xml:space="preserve">
+        <value>Líneas desplegadas</value>
+    </data>
+    <data name="to" xml:space="preserve">
+        <value>a</value>
+    </data>
+    <data name="folded code" xml:space="preserve">
+        <value>código plegado</value>
+    </data>
+    <data name="unfold" xml:space="preserve">
+        <value>desplegar</value>
+    </data>
+    <data name="Fold line" xml:space="preserve">
+        <value>Plegar línea</value>
+    </data>
+    <data name="Unfold line" xml:space="preserve">
+        <value>Desplegar línea</value>
+    </data>
+    <data name="Diagnostics" xml:space="preserve">
+        <value>Diagnósticos</value>
+    </data>
+    <data name="No diagnostics" xml:space="preserve">
+        <value>Sin diagnósticos</value>
+    </data>
+    <data name="Selection deleted" xml:space="preserve">
+        <value>Se eliminó la selección</value>
+    </data>
+    <data name="Control character" xml:space="preserve">
+        <value>Carácter de control</value>
+    </data>
+    <data name="Completions" xml:space="preserve">
+        <value>Sugerencias de autocompletado</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>Código de verificación de Nergal</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>Su código de verificación de Nergal es {0}. Úselo solo para la solicitud que inició.</value>
+    </data>
 </root>

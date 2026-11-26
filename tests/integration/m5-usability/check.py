@@ -342,6 +342,12 @@ def mobile_localization(browser, origin, temp, capture):
         return document.querySelector('.native-include-row:first-child select').ariaLabel;
     """) == "synthetic-include.nft, archivo 1"
     capture("native-sources-mobile-es")
+    set_viewport(browser)
+    browser.post("/url", url=origin + "/manage/policies?section=json")
+    browser.click('[data-tab-target="tab-json"]')
+    expect_text(browser, "Aplicar sangría", ".code-editor-toolbar button")
+    browser.click(".code-editor-toolbar button")
+    expect_text(browser, "Se ha actualizado la sangría.", '.code-editor-toolbar [role="status"]')
     browser.post("/url", url=origin + "/manage/hosts")
     browser.click(".language-menu > summary")
     browser.select("#ui-culture", "en-US")
@@ -507,7 +513,7 @@ def main():
                         ("administrator apply surface", apply_surface, (state, capture)),
                         ("identity and settings", identity_settings, (capture,)),
                         ("dark theme and browser-local time", desktop_dark, (capture,)),
-                        ("mobile Hosts and native sources in Spanish", mobile_localization, (origin, temp, capture)),
+                        ("Spanish Hosts, native sources, and JSON editor", mobile_localization, (origin, temp, capture)),
                         ("right-to-left navigation and English fallback", right_to_left_navigation, (origin, capture)),
                         ("mobile navigation and sign-out", mobile_and_sign_out, (origin, capture)),
                         ("auditor navigation and denial", read_only, (origin, state, capture)),

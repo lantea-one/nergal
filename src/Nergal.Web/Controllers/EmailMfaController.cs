@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -12,7 +13,7 @@ namespace Nergal.Web.Controllers;
 /// <summary>Allows a signed-in local or LDAP actor to verify an explicit email delivery address.</summary>
 [SupportedOSPlatform("linux"), Authorize(Policy = ControllerAuthorizationPolicies.Reader)]
 public sealed class EmailMfaController(LocalAdministratorAccounts accounts, IConfiguration configuration,
-    IDataProtectionProvider keys, IMfaEmailSender sender) : IdentityUiController(accounts, configuration)
+    IDataProtectionProvider keys, IMfaEmailSender sender, IStringLocalizer<UiStrings> L) : IdentityUiController(accounts, configuration)
 {
     private bool CanEnroll => User.Identity?.AuthenticationType == IdentityConstants.ApplicationScheme ||
         User.Identity?.AuthenticationType == FederatedLogin.LdapSession;
@@ -36,7 +37,7 @@ public sealed class EmailMfaController(LocalAdministratorAccounts accounts, ICon
 
         var enrollment = await Accounts.BeginEmailMfaEnrollmentAsync(User, form["address"].ToString(), keys, sender, HttpContext.RequestAborted);
         return enrollment is null
-            ? await PageAsync("Email setup could not start. Check that delivery is available and try again later.")
+            ? await PageAsync(L["Email setup could not start. Check that delivery is available and try again later."].Value)
             : View("Index", new EmailMfaEnrollmentPageModel(new(false, true), enrollment));
     }
 
@@ -56,8 +57,8 @@ public sealed class EmailMfaController(LocalAdministratorAccounts accounts, ICon
         return result.Succeeded
             ? LocalRedirect("~/login")
             : await PageAsync(result.ErrorCodes.Contains("account.lastAdministrator")
-                ? "Keep a local Administrator who can sign in without email delivery before verifying this address."
-                : "Email setup could not be confirmed. Check the code or start setup again.", new EmailMfaEnrollment(id));
+                ? L["Keep a local Administrator who can sign in without email delivery before verifying this address."].Value
+                : L["Email setup could not be confirmed. Check the code or start setup again."].Value, new EmailMfaEnrollment(id));
     }
 
     private async Task<IActionResult> PageAsync(string? error = null, EmailMfaEnrollment? enrollment = null)

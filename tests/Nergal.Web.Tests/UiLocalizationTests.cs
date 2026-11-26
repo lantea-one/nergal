@@ -48,7 +48,7 @@ public sealed class UiLocalizationTests
         await middleware.Invoke(context);
     }
 
-    /// <summary>Every selectable non-English language ships the sign-in and navigation resources.</summary>
+    /// <summary>Every selectable non-English language ships core sign-in, authenticator recovery, and navigation resources.</summary>
     [Fact]
     public void EverySelectableLocaleIncludesSharedConsoleMessages()
     {
@@ -58,7 +58,10 @@ public sealed class UiLocalizationTests
         var original = CultureInfo.CurrentUICulture;
         var commonKeys = new[] { "Language", "Display language", "Set language", "Sign in", "Username", "Password",
             "Sign in with LDAP", "Sign in with OAuth", "Sign in with identity provider", "Primary navigation",
-            "Import nftables.conf", "Review & apply", "Skip to content", "Stored UTC: {0}" };
+            "Import nftables.conf", "Review & apply", "Skip to content", "Stored UTC: {0}", "Verify sign-in", "Authenticator code",
+            "Recover authenticator", "Recovery authorization", "Confirm replacement authenticator", "New authenticator code",
+            "Accept", "Drop", "Reject", "Start confirmed apply", "Confirm active apply", "Immediate rollback",
+            "Nergal verification code", "Your Nergal verification code is {0}. Use it only for the request you initiated." };
         try
         {
             foreach (var (culture, nativeName) in UiLocalization.Languages.Where(entry => !entry.Culture.Equals(UiLocalization.DefaultCulture)))
@@ -73,6 +76,7 @@ public sealed class UiLocalizationTests
                 }
 
                 Assert.Contains("synthetic-user", strings["My profile for {0}", "synthetic-user"].Value, StringComparison.Ordinal);
+                Assert.Contains("123456", strings["Your Nergal verification code is {0}. Use it only for the request you initiated.", "123456"].Value, StringComparison.Ordinal);
                 Assert.True(strings["Missing test message"].ResourceNotFound);
             }
         }

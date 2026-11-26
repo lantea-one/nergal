@@ -147,4 +147,103 @@
     <data name="Sign in with identity provider" xml:space="preserve">
         <value>Zaloguj się przez dostawcę tożsamości</value>
     </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>Potwierdź logowanie</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>Logo Nergal Guardian</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>Wpisz aktualny sześciocyfrowy kod z aplikacji uwierzytelniającej.</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>Nie udało się zweryfikować kodu. Spróbuj ponownie, wpisując kod wyświetlany teraz w aplikacji uwierzytelniającej.</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>Kod z aplikacji uwierzytelniającej</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>Potwierdź i zaloguj się</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>Wróć do logowania</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>Odzyskiwanie dostępu za pomocą aplikacji uwierzytelniającej</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>Przygotuj autoryzację odzyskiwania dostępu i aplikację uwierzytelniającą. Wybierz konto, którego zwykle używasz do logowania.</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>Konto w usłudze katalogowej</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>Konto lokalne</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>Autoryzacja odzyskiwania dostępu</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>Skonfiguruj nową aplikację uwierzytelniającą</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>Nie udało się rozpocząć odzyskiwania dostępu</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>Sprawdź autoryzację odzyskiwania dostępu i dane logowania. Jeśli autoryzacja wygasła lub konfiguracja już się rozpoczęła, poproś o nową autoryzację.</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>Wróć do odzyskiwania dostępu</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>Potwierdź nową aplikację uwierzytelniającą</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>W aplikacji uwierzytelniającej dodaj konto Nergal z jednorazowymi kodami generowanymi na podstawie czasu (TOTP) i wpisz ten tajny klucz konfiguracji.</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>Weryfikacja nie powiodła się. Spróbuj ponownie z aktualnym kodem z nowej aplikacji uwierzytelniającej. Jeśli upłynął czas na odzyskanie dostępu lub limit prób został wyczerpany, poproś o nową autoryzację odzyskiwania dostępu.</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>Kod z nowej aplikacji uwierzytelniającej</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>Po potwierdzeniu zaloguj się ponownie, używając hasła i następnego kodu z nowej aplikacji uwierzytelniającej.</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>Potwierdź aplikację uwierzytelniającą</value>
+    </data>
+    <data name="Accept" xml:space="preserve">
+        <value>Zaakceptuj</value>
+    </data>
+    <data name="Drop" xml:space="preserve">
+        <value>Odrzuć bez odpowiedzi</value>
+    </data>
+    <data name="Reject" xml:space="preserve">
+        <value>Odrzuć z odpowiedzią</value>
+    </data>
+    <data name="Any" xml:space="preserve">
+        <value>Dowolne</value>
+    </data>
+    <data name="Enabled" xml:space="preserve">
+        <value>Włączone</value>
+    </data>
+    <data name="Disabled" xml:space="preserve">
+        <value>Wyłączone</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>Rozpocznij stosowanie z wymaganym potwierdzeniem</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>Potwierdź trwające stosowanie</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>Natychmiast przywróć poprzedni stan</value>
+    </data>
+    <data name="Nergal verification code" xml:space="preserve">
+        <value>Kod weryfikacyjny Nergal</value>
+    </data>
+    <data name="Your Nergal verification code is {0}. Use it only for the request you initiated." xml:space="preserve">
+        <value>Twój kod weryfikacyjny Nergal to {0}. Użyj go wyłącznie do żądania, które zostało przez Ciebie zainicjowane.</value>
+    </data>
 </root>
