@@ -43,6 +43,18 @@ def latest(releases):
     return max(candidates)[1]
 
 
+def select_release(releases, tag=None):
+    """Use the triggering stable release when a tag is supplied."""
+    if tag is None:
+        return latest(releases)
+    if version_key(tag) is None or not any(
+        release["tag_name"] == tag and not release["draft"] and not release["prerelease"]
+        for release in releases
+    ):
+        raise ValueError(f"{tag} is not a published stable Nergal CalVer release")
+    return tag
+
+
 def released_versions():
     """Read every release page so a recent backfill cannot roll back the recipe."""
     page = 1
@@ -107,9 +119,10 @@ def main():
         "directory", type=Path, nargs="?", default=Path(__file__).resolve().parent / "nergal-bin",
         help="nergal-bin AUR checkout containing the PKGBUILD to update",
     )
+    parser.add_argument("--tag", help="refresh a specific published stable release")
     arguments = parser.parse_args()
     try:
-        tag = latest(released_versions())
+        tag = select_release(released_versions(), arguments.tag)
         update(arguments.directory, tag)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Cannot refresh nergal-bin: {error}\n")

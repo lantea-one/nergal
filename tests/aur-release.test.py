@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check stable release selection and the AUR recipe's pinned checksum contract."""
 
-import runpy
 from pathlib import Path
+import runpy
 import unittest
 
 
@@ -26,6 +26,15 @@ class AurReleaseTests(unittest.TestCase):
         self.assertEqual(updater["latest"](releases), "v2026.11.21.10")
         with self.assertRaisesRegex(ValueError, "No stable"):
             updater["latest"](releases[3:])
+
+    def test_release_event_keeps_its_own_tag_when_a_newer_release_exists(self):
+        old = {"tag_name": "2026.11.21.1", "draft": False, "prerelease": False}
+        new = {**old, "tag_name": "v2026.12.1"}
+        self.assertEqual(updater["select_release"]([new, old]), new["tag_name"])
+        self.assertEqual(updater["select_release"]([new, old], old["tag_name"]), old["tag_name"])
+        for unavailable in ([new], [{**old, "draft": True}], [{**old, "prerelease": True}]):
+            with self.subTest(releases=unavailable), self.assertRaisesRegex(ValueError, "published stable"):
+                updater["select_release"](unavailable, old["tag_name"])
 
     def test_requires_one_checksum_for_the_exact_archive(self):
         name = "nergal_2026.11.21.10_linux-x64.tar.gz"
