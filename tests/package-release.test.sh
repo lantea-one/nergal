@@ -21,13 +21,13 @@ done
 mkdir -p "$out"
 case "$project" in
     */Nergal.Agent.csproj) touch "$out/nergal-agent.dll" ;;
-    */Nergal.Web.csproj) touch "$out/Nergal.Web.dll" ;;
+    */Nergal.Web.csproj) touch "$out/Nergal.Web.dll"; chmod 0666 "$out/Nergal.Web.dll" ;;
     */Nergal.Admin.csproj) touch "$out/nergal-admin.dll" ;;
     *) exit 3 ;;
 esac
 EOF
 chmod +x "$tmp/bin/dotnet"
-PATH="$tmp/bin:$PATH" "$repo/scripts/package-release.sh" --format deb --verify --output-dir "$tmp/out"
+(umask 000; PATH="$tmp/bin:$PATH" "$repo/scripts/package-release.sh" --format deb --verify --output-dir "$tmp/out")
 version=$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' "$repo/Directory.Build.props" | head -n 1)
 deb="$tmp/out/nergal_${version}_amd64.deb"
 test -f "$deb"
@@ -38,6 +38,9 @@ done
 contents=$(dpkg-deb --contents "$deb")
 grep -q '/usr/lib/systemd/system/nergal-agent.service' <<< "$contents"
 grep -q '/usr/bin/nergal-agent' <<< "$contents"
+dpkg-deb --extract "$deb" "$tmp/extracted"
+[[ $(stat -c '%a' "$tmp/extracted/opt/nergal/web") == 755 ]]
+[[ $(stat -c '%a' "$tmp/extracted/opt/nergal/web/Nergal.Web.dll") == 644 ]]
 web_unit=$(dpkg-deb --fsys-tarfile "$deb" | tar -xOf - ./usr/lib/systemd/system/nergal-web.service)
 grep -Fxq 'Environment=ASPNETCORE_WEBROOT=/opt/nergal/web/wwwroot' <<< "$web_unit"
 postinst=$(dpkg-deb --ctrl-tarfile "$deb" | tar -xOf - ./postinst)
