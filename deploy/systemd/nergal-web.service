@@ -10,6 +10,7 @@ User=nergal-web
 Group=nergal-web
 SupplementaryGroups=nergal-ctl
 WorkingDirectory=/var/lib/nergal/web
+Environment=ASPNETCORE_WEBROOT=/opt/nergal/web/wwwroot
 EnvironmentFile=/etc/nergal/web/env
 ExecStart=/usr/bin/dotnet /opt/nergal/web/Nergal.Web.dll
 Restart=on-failure

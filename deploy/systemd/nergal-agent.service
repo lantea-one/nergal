@@ -10,8 +10,8 @@ User=nergal-agent
 Group=nergal-agent
 SupplementaryGroups=nergal-ctl
 WorkingDirectory=/var/lib/nergal/agent
-# Replace SOCKET_GROUP_GID and WEB_UID (or switch subcommand to tls-serve) before enabling.
-ExecStart=/usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll control-serve /var/lib/nergal/agent /run/nergal/control.sock WEB_UID SOCKET_GROUP_GID
+# Use an ExecStart drop-in for deployments that listen on pinned mutual TLS.
+ExecStart=/usr/lib/nergal/nergal-local-agent
 Restart=on-failure
 RestartSec=3s
 TimeoutStopSec=15s

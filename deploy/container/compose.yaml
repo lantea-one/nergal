@@ -1,0 +1,40 @@
+x-runtime: &runtime
+  image: ${NERGAL_IMAGE:-nergal-controller:local}
+  user: "1654:1654"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: ["/tmp:rw,noexec,nosuid,nodev,mode=1777,size=64m"]
+
+services:
+  controller:
+    <<: *runtime
+    build:
+      context: ../..
+      dockerfile: deploy/container/Dockerfile
+    env_file:
+      - ${NERGAL_SETTINGS_FILE:-controller.env}
+    ports:
+      - "127.0.0.1:${NERGAL_HTTPS_PORT:-8443}:8443"
+    restart: unless-stopped
+    volumes:
+      - state:/var/lib/nergal/state
+      - keyring:/var/lib/nergal/keyring
+      - type: bind
+        source: ${NERGAL_CREDENTIALS_DIR:-./credentials}
+        target: /etc/nergal/credentials
+        read_only: true
+        bind:
+          create_host_path: false
+  admin:
+    <<: *runtime
+    profiles: [tools]
+    network_mode: none
+    entrypoint: ["/usr/local/bin/dotnet-private", "/opt/nergal/admin/nergal-admin.dll"]
+    command: ["--help"]
+    volumes:
+      - state:/var/lib/nergal/state
+
+volumes:
+  state:
+  keyring:

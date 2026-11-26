@@ -1,0 +1,13 @@
+[Unit]
+Description=Run disposable Nergal installed-system fixture
+After=local-fs.target
+Before=serial-getty@ttyS0.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/fixture-start
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

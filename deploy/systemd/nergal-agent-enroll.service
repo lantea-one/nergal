@@ -1,0 +1,32 @@
+[Unit]
+Description=Enroll the local nergal firewall agent
+Documentation=https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/deployment.md
+After=nftables.service
+Before=nergal-agent.service
+
+[Service]
+Type=oneshot
+User=nergal-agent
+Group=nergal-agent
+WorkingDirectory=/var/lib/nergal/agent
+ExecStart=/usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll enroll /var/lib/nergal/agent
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+ReadWritePaths=/var/lib/nergal/agent
+UMask=0077

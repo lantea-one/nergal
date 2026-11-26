@@ -1,0 +1,73 @@
+name: Build Linux release packages
+on:
+  push:
+    tags: ['v*']
+  # Exercise the release matrix on a packaging review before cutting a tag.
+  pull_request:
+    paths:
+      - '.forgejo/workflows/release-packages.yml'
+      - 'deploy/systemd/**'
+      - 'scripts/package-release.sh'
+  workflow_dispatch:
+jobs:
+  packages:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: asgard-ci
+    timeout-minutes: 25
+    container:
+      image: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - format: deb
+            image: debian:13@sha256:3cda3ca472ce45507a5109c6a3907093e24d9ae67d55954c9a07a45665dafba2
+          - format: rpm
+            image: fedora:45@sha256:a7d72ba2745b100a3351087472e5ee7b2450af7cf331e7673007e3817612839c
+          - format: arch
+            image: archlinux:base-devel@sha256:949ecb1661609ab7e8f6854ba03efd62792e7a796313738e94b040c095c20d91
+    steps:
+      - name: Install distribution package tools
+        env:
+          PACKAGE_FORMAT: ${{ matrix.format }}
+        run: |
+          case "$PACKAGE_FORMAT" in
+            deb)
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates curl git nodejs python3 libicu76 libssl3t64
+              ;;
+            rpm)
+              dnf -y install ca-certificates curl git nodejs python3 rpm-build findutils gzip tar libicu openssl-libs
+              ;;
+            arch)
+              pacman -Syu --needed --noconfirm ca-certificates curl git nodejs python icu openssl
+              useradd --system --create-home nergal-builder
+              ;;
+          esac
+      - uses: https://github.com/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Verify shared organization runner policy
+        run: python3 -B scripts/test-ci-runner-policy.py
+      - name: Prepare private .NET runtime directory
+        run: echo "XDG_RUNTIME_DIR=$(mktemp -d)" >> "$GITHUB_ENV"
+      - uses: https://github.com/actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          global-json-file: global.json
+      - name: Restore locked dependencies
+        run: dotnet restore Nergal.slnx --locked-mode
+      - name: Assemble and verify package
+        env:
+          PACKAGE_FORMAT: ${{ matrix.format }}
+          NERGAL_PACKAGE_USER: nergal-builder
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          bash scripts/package-release.sh --verify --format "$PACKAGE_FORMAT" --output-dir artifacts/release
+          if [ "$PACKAGE_FORMAT" = deb ]; then
+            bash tests/package-release.test.sh
+          fi
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
+        with:
+          name: nergal-linux-${{ matrix.format }}
+          path: artifacts/release/
+          if-no-files-found: error
