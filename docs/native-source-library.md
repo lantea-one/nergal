@@ -126,7 +126,7 @@ conversion equivalence. See [testing](testing.md).
 
 These authentic captures use an isolated controller with synthetic uploaded files.
 They show a complete plan in dark/light mode, the separately committed revision on
-a 375-pixel mobile viewport, and an unsupported counter producing a blocking gap.
+a 375-pixel mobile viewport, and an unsupported logging rule producing a blocking gap.
 No private source or topology appears.
 
 ![Ready source conversion in dark mode](../pages/assets/screenshots/native-conversion-dark.jpg)
