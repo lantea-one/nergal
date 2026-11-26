@@ -101,8 +101,12 @@ with a single shared counter. Regular filter calls retain their table-local
 chains and both explicit and implicit returns.
 
 Inline address sets remove redundant CIDRs and merge aligned siblings when
-the resulting network covers exactly the same addresses. A range that still
-requires adjacent, separate CIDRs remains a blocking diagnostic.
+the resulting network covers exactly the same addresses. When adjacent
+nonmergeable CIDRs appear as one interval in a kernel receipt, the observer
+reconstructs their exact prefix cover within the same entry limit.
+Nested literal sets introduced by native definitions are flattened into a
+single bounded selector. Native CIDRs are masked to their network address as
+nftables does. Managed policy inputs continue to require canonical CIDRs.
 
 Named counters, seeded counters, logging, other maps, concatenations, arbitrary/dynamic objects, unsupported
 control flow, unknown flags, other wildcard or escaped matchers, service names, unsupported

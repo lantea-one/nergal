@@ -151,7 +151,7 @@ public static class NftPolicyBundleCompiler
         if (components.Any(r => r.ObservationBudget > 0))
         {
             var budget = components.Sum(r => r.ObservationBudget > 0 ? r.ObservationBudget : NftStaticSetPlan.Estimate(r.Candidate!));
-            if (budget > 65536) { return new(null, [new("object.nativeObservationTooLarge", "objects")]); }
+            if (budget > NftObservationLimits.MaximumDocumentBytes) { return new(null, [new("object.nativeObservationTooLarge", "objects")]); }
             return new(text.ToString(), [], budget);
         }
         return new(text.ToString(), []);

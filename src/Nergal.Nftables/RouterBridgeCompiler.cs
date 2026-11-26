@@ -47,8 +47,8 @@ internal static class RouterBridgeCompiler
                 if (r.Destination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
                 if (r.Family is { } setFamily)
                 {
-                    NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, setFamily, path + ".sourcePrefixes", errors);
-                    NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, setFamily, path + ".destinationPrefixes", errors);
+                    NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, setFamily, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+                    NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, setFamily, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
                 }
                 if ((r.Source is not null && r.Source.Family != r.Family) || (r.Destination is not null && r.Destination.Family != r.Family))
                 { errors.Add(new("network.familyMismatch", path)); }

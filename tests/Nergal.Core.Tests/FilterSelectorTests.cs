@@ -25,7 +25,7 @@ public sealed class FilterSelectorTests
         Assert.Contains(FirewallFeature.FilterSelectorSets, decoded.GetRequiredFeatures());
         var result = NftFilterCompiler.Compile(decoded);
         Assert.Contains("oifname != { \"uplink\", \"wan*\" } meta l4proto { tcp, udp } th dport { 53, 443 } counter\n", result.Candidate);
-        var oversized = new FilterPolicy(2, FilterVerdict.Accept, Enumerable.Repeat(rule, 200));
+        var oversized = new FilterPolicy(2, FilterVerdict.Accept, Enumerable.Repeat(rule, 600));
         Assert.Contains(NftFilterCompiler.Compile(oversized).Diagnostics, issue => issue.Code == "selector.nativeObservationTooLarge");
     }
 

@@ -78,7 +78,7 @@ public sealed class RawNotrackTests
     public void RawOutputMustFitCompleteEchoBudget()
     {
         var rule = new RpFilterRule(FilterVerdict.Continue, Notrack: true);
-        var chain = new RpFilterPolicy(FilterVerdict.Accept, Enumerable.Repeat(rule, 300));
+        var chain = new RpFilterPolicy(FilterVerdict.Accept, Enumerable.Repeat(rule, 900));
         var compiled = NftFilterCompiler.Compile(Filter(output: chain));
         Assert.Null(compiled.Candidate);
         Assert.Equal(new("raw.nativeObservationTooLarge", "rawOutput"), Assert.Single(compiled.Diagnostics));

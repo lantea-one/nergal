@@ -139,7 +139,7 @@ public sealed class NftNatTableObservation
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            if (new UTF8Encoding(false, true).GetByteCount(json) > 65536)
+            if (new UTF8Encoding(false, true).GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes)
             {
                 return Deny("observation.tooLarge");
             }

@@ -183,7 +183,7 @@ internal sealed class NftStaticSetSnapshot
     };
     internal static JsonObject ReadRoot(string json)
     {
-        if (new UTF8Encoding(false, true).GetByteCount(json) > 65536) { throw Invalid(); }
+        if (new UTF8Encoding(false, true).GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { throw Invalid(); }
         using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
         if (HasDuplicateProperties(document.RootElement) || !Properties(document.RootElement, "nftables") || document.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { throw Invalid(); }
         return JsonNode.Parse(json)!.AsObject();

@@ -138,7 +138,7 @@ public static class NativeRuleExpressionParser
         private string Word(NativeSourceNode node) => node.Kind == NativeSourceNodeKind.Token && document.Tokens[node.StartTokenIndex].Kind == NativeSourceTokenKind.Bare ? Text(node) : "";
         private static NativeSourceSpan Cover(NativeSourceSpan start, NativeSourceSpan end) => start with { Length = end.Offset + end.Length - start.Offset };
     }
-    internal static NativeRuleLiteral? ReadLiteral(NativeSourceDocument document, NativeRuleField field, NativeSourceNode node)
+    internal static NativeRuleLiteral? ReadLiteral(NativeSourceDocument document, NativeRuleField field, NativeSourceNode node, bool normalizeNativeCidr = false)
     {
         if (node.Kind != NativeSourceNodeKind.Token) { return null; }
         var token = document.Tokens[node.StartTokenIndex]; var text = document.GetText(node.StartTokenIndex);
@@ -166,7 +166,11 @@ public static class NativeRuleExpressionParser
         if (family == IpFamily.IPv6 && parts[0].Contains('.') && !Dotted(parts[0][(parts[0].LastIndexOf(':') + 1)..])) { return null; }
         try
         {
-            var prefix = new NetworkPrefix(parts.Length == 1 ? text + (family == IpFamily.IPv4 ? "/32" : "/128") : text);
+            var cidr = parts.Length == 1 ? text + (family == IpFamily.IPv4 ? "/32" : "/128") : text;
+            // nft masks host bits in CIDR selectors. Only the importer opts into
+            // that native behavior; guided and typed policy inputs stay strict.
+            if (normalizeNativeCidr && IPNetwork.TryParse(cidr, out var network)) { cidr = network.ToString(); }
+            var prefix = new NetworkPrefix(cidr);
             return new NativeAddressLiteral(node.Span, prefix);
         }
         catch (ArgumentException) { return null; }

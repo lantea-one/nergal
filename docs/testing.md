@@ -503,8 +503,10 @@ its semantic retry assumptions do not establish safe adoption of recreated table
 
 Run `bash tools/integration/check-mapped-identities.sh` for the complete distinct-UID
 HTTPS/mTLS and all-four-table path. Real server imports and production packet
-outcomes remain unverified. Native observations retain their documented 64 KiB
-bound; this acceptance is not a large-policy capacity claim.
+outcomes remain unverified. Use `bash tests/integration/nftables/check-large-observation.sh`
+for a synthetic native echo and listing above 64 KiB. The fixture compares full
+receipts, recompiles the observed policy and detects a handle change near the
+end of the listing.
 
 ### Private migration review
 

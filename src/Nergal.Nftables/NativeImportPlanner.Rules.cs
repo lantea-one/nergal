@@ -32,10 +32,10 @@ public static partial class NativeImportPlanner
         internal Term[] List()
         {
             var first = Take();
-            if (first.Node.Kind == NativeSourceNodeKind.Braces) { return Planner.Comma(first.Children, first); }
+            if (first.Node.Kind == NativeSourceNodeKind.Braces) { return Planner.FlattenLiteralList(Planner.Comma(first.Children, first), first); }
             var values = new List<Term> { first };
             while (Eat(",")) { values.Add(Take()); }
-            Planner.Require(values.Count <= 64, first, "import.listLimit"); return values.ToArray();
+            return Planner.FlattenLiteralList(values, first);
         }
     }
 
@@ -137,7 +137,9 @@ public static partial class NativeImportPlanner
                     case "nfproto":
                         Require(qualified, first, "import.metaKeywordRequired");
                         Require(!c.Negation(), first, "import.negationUnsupported");
-                        var f = String(c.Take()); Require(f is "ipv4" or "ipv6", first, "import.familyUnsupported"); Family(f, first); break;
+                        var families = c.SelectorValues();
+                        Require(families.Length == 1, first, "import.familyUnsupported");
+                        var f = String(families[0]); Require(f is "ipv4" or "ipv6", first, "import.familyUnsupported"); Family(f, first); break;
                     case "l4proto":
                         Require(qualified, first, "import.metaKeywordRequired"); rule.ExplicitTransport = true;
                         Require(!c.Negation(), first, "import.negationUnsupported");

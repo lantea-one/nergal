@@ -120,7 +120,7 @@ public sealed class InlineSetsAndIcmpTests
                     IpFamily.IPv6,
                     FilterProtocol.Udp,
                     FilterVerdict.Accept,
-                    DestinationPrefixes: [new NetworkPrefix("2001:db8:1::/48"), new NetworkPrefix("2001:db8:2::/48")]),
+                    DestinationPrefixes: [new NetworkPrefix("2001:db8:2::/48"), new NetworkPrefix("2001:db8:3::/48")]),
             ]);
 
         var diagnostics = NftFilterCompiler.Compile(conflicts).Diagnostics;

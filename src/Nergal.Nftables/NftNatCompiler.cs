@@ -317,7 +317,7 @@ public static class NftNatCompiler
             policy.SnatRules.Any(r => r is { Enabled: true } && (r.InputInterfaceSelector is not null || r.OutputInterfaceSelector is not null));
         if (result.Candidate is null || result.ObservationBudget > 0 || !selectors) { return result; }
         var budget = NftStaticSetPlan.Estimate(result.Candidate);
-        return budget > 65536
+        return budget > NftObservationLimits.MaximumDocumentBytes
             ? new(null, [new("selector.nativeObservationTooLarge", "nat")])
             : new(result.Candidate, [], budget);
     }

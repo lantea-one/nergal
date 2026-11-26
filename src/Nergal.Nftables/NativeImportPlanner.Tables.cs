@@ -140,7 +140,7 @@ public static partial class NativeImportPlanner
                         foreach (var flag in Comma(terms[1..], first)) { Require(flags.Add(flag.Text) && flag.Text is "constant" or "interval" or "dynamic" or "timeout", flag, "import.setFlagsUnsupported"); }
                         break;
                     case "size": Require(size is null && terms.Length == 2, first); size = Integer(terms[1]); break;
-                    case "elements": Require(values is null && terms.Length == 3 && terms[1].Text == "=" && terms[2].Node.Kind == NativeSourceNodeKind.Braces, first); values = Expand(Comma(terms[2].Children, first), scope, 0); break;
+                    case "elements": Require(values is null && terms.Length == 3 && terms[1].Text == "=" && terms[2].Node.Kind == NativeSourceNodeKind.Braces, first); values = FlattenLiteralList(Comma(terms[2].Children, first), first); break;
                     default: throw new ImportFailure("import.setOptionUnsupported", first);
                 }
             }
@@ -171,7 +171,29 @@ public static partial class NativeImportPlanner
             { Require(i % 2 == 0 ? terms[i].Text != "," : terms[i].Text == ",", terms[i], "import.listUnsupported"); if (i % 2 == 0) { values.Add(terms[i]); } }
             Require(terms.Length > 0 && terms.Length % 2 == 1, origin, "import.listUnsupported"); return values.ToArray();
         }
+        internal static Term[] FlattenLiteralList(IEnumerable<Term> terms, Term origin)
+        {
+            var values = new List<Term>();
+            Append(terms, 0);
+            return values.ToArray();
+
+            void Append(IEnumerable<Term> items, int depth)
+            {
+                Require(depth <= 16, origin, "import.listLimit");
+                foreach (var item in items)
+                {
+                    if (item.Node.Kind == NativeSourceNodeKind.Braces) { Append(Comma(item.Children, item), depth + 1); }
+                    else
+                    {
+                        Require(values.Count < 64, origin, "import.listLimit");
+                        values.Add(item);
+                    }
+                }
+            }
+        }
+
         private static NativeRuleLiteral Literal(NativeRuleField field, Term term) =>
-            NativeRuleExpressionParser.ReadLiteral(term.Unit.Analysis.Lexical.Document!, field, term.Node) ?? throw new ImportFailure("import.literalUnsupported", term);
+            NativeRuleExpressionParser.ReadLiteral(term.Unit.Analysis.Lexical.Document!, field, term.Node, normalizeNativeCidr: true) ??
+                throw new ImportFailure("import.literalUnsupported", term);
     }
 }

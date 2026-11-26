@@ -373,7 +373,8 @@ public sealed class NftResourceReceiptTests
     [Fact]
     public void Observation_BoundsDepthSizeAndUtf8()
     {
-        Reject(new string(' ', 65537), "observation.tooLarge");
+        Reject(new string(' ', NftObservationLimits.MaximumDocumentBytes + 1), "observation.tooLarge");
+        Assert.True(NftTableObservation.Parse(Json + new string(' ', NftObservationLimits.MaximumInventoryBytes)).IsSuccess);
         Reject(new string('[', 40) + new string(']', 40), "observation.invalidJson");
         Reject("\ud800", "observation.invalidJson");
     }

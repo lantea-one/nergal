@@ -18,7 +18,7 @@ internal static class NftOriginalTuple
             else if (prefixes[0].Family != family) { errors.Add(new("network.familyMismatch", path + "[0]")); }
             return;
         }
-        NftFilterCompiler.ValidatePrefixSet(prefixes, family, path, errors);
+        NftFilterCompiler.ValidatePrefixSet(prefixes, family, path, errors, allowNonMergeableAdjacent: true);
     }
 
     internal static void AppendOriginalPrefixes(StringBuilder text, IpFamily family, string field, IReadOnlyList<NetworkPrefix>? prefixes)
@@ -55,7 +55,7 @@ internal static class NftOriginalTuple
             prefixes = NftTableObservation.ParseNetworkPrefixSet(right.GetProperty("set"), family);
             if (prefixes is null) { return null; }
             var errors = new List<PolicyDiagnostic>();
-            NftFilterCompiler.ValidatePrefixSet(prefixes, family, string.Empty, errors);
+            NftFilterCompiler.ValidatePrefixSet(prefixes, family, string.Empty, errors, allowNonMergeableAdjacent: true);
             if (errors.Count > 0) { return null; }
         }
         else

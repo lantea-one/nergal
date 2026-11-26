@@ -13,8 +13,8 @@ internal static class RouterNatValidation
             var path = $"dnatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
             if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
             if (r.OriginalDestination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
-            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors);
-            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors);
+            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
             if (r.OriginalPorts is { } ports)
             {
                 if (r.OriginalPort.HasValue) { errors.Add(new("set.conflictsWithScalar", path + ".originalPorts")); }
@@ -33,8 +33,8 @@ internal static class RouterNatValidation
             var path = $"snatRules[{i.ToString(CultureInfo.InvariantCulture)}]";
             if (r.Source is not null && r.SourcePrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".sourcePrefixes")); }
             if (r.Destination is not null && r.DestinationPrefixes is not null) { errors.Add(new("set.conflictsWithScalar", path + ".destinationPrefixes")); }
-            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors);
-            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors);
+            NftFilterCompiler.ValidatePrefixSet(r.SourcePrefixes, r.Family, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+            NftFilterCompiler.ValidatePrefixSet(r.DestinationPrefixes, r.Family, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
             if (!Enum.IsDefined(r.Action)) { errors.Add(new("nat.actionUnknown", path + ".action")); }
             if (r.Action != NatPostroutingAction.Snat && r.TranslatedAddress is not null)
             { errors.Add(new("nat.actionConflictsWithAddress", path + ".translatedAddress")); }

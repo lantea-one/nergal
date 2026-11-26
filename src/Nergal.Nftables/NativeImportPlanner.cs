@@ -195,6 +195,7 @@ public static partial class NativeImportPlanner
             if (values.Length == 1 && values[0].Node.Kind == NativeSourceNodeKind.Braces)
             { values = Comma(values[0].Children, origin); }
             else if (values.Length > 1) { values = Comma(values, origin); }
+            values = FlattenLiteralList(values, origin);
             Require(values.Length is >= 1 and <= 64 && values.All(t => t.Node.Kind == NativeSourceNodeKind.Token && t.Kind is NativeSourceTokenKind.Bare or NativeSourceTokenKind.DoubleQuoted or NativeSourceTokenKind.AtReference), origin, "import.definitionExpressionUnsupported");
         }
 

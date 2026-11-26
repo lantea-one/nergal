@@ -65,7 +65,7 @@ unsupported; generation checks do not provide kernel compare-and-swap.
 
 Lists contain 1–64 entries. Each table allows at most 64 active native definitions.
 A conservative creation-echo budget, including the complete bundle, must fit the
-existing 64 KiB observation bound before any mutation. A valid but too-large graph
+256 KiB complete observation bound before any mutation. A valid but too-large graph
 returns `object.nativeObservationTooLarge` with no candidate. Set reads share a
 ten-second complete-collection deadline. These limits can be reached before the
 individual list or rule-count limits; generated source size alone is insufficient.

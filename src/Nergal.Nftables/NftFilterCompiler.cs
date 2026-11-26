@@ -244,8 +244,8 @@ public static class NftFilterCompiler
                     errors.Add(new("set.conflictsWithScalar", path + ".destinationPorts"));
                 }
 
-                ValidatePrefixSet(rule.SourcePrefixes, rule.Family, path + ".sourcePrefixes", errors);
-                ValidatePrefixSet(rule.DestinationPrefixes, rule.Family, path + ".destinationPrefixes", errors);
+                ValidatePrefixSet(rule.SourcePrefixes, rule.Family, path + ".sourcePrefixes", errors, allowNonMergeableAdjacent: true);
+                ValidatePrefixSet(rule.DestinationPrefixes, rule.Family, path + ".destinationPrefixes", errors, allowNonMergeableAdjacent: true);
                 ValidatePortSet(rule.DestinationPorts, rule.Protocol, path + ".destinationPorts", errors);
                 if (!Enum.IsDefined(rule.Chain))
                 {
@@ -429,7 +429,7 @@ public static class NftFilterCompiler
 
         // Bound the complete handle-bearing echo, including the enclosing bundle.
         var budget = NftStaticSetPlan.Estimate(result.Candidate);
-        return budget > 65536
+        return budget > NftObservationLimits.MaximumDocumentBytes
             ? new(null, [hasNativeSelectors ? new("selector.nativeObservationTooLarge", "rules") :
                 policy.RegularChains.Count > 0 ? new("chain.nativeObservationTooLarge", "regularChains") :
                 new("raw.nativeObservationTooLarge", policy.RawOutput is null ? "rpFilter" : "rawOutput")])
@@ -614,7 +614,8 @@ public static class NftFilterCompiler
         IReadOnlyList<NetworkPrefix>? prefixes,
         IpFamily expectedFamily,
         string path,
-        List<PolicyDiagnostic> errors)
+        List<PolicyDiagnostic> errors,
+        bool allowNonMergeableAdjacent = false)
     {
         if (prefixes is null)
         {
@@ -668,7 +669,14 @@ public static class NftFilterCompiler
             {
                 var prev = intervals[i - 1];
                 var curr = intervals[i];
-                if (prev.End == UInt128.MaxValue || curr.Start <= prev.End + UInt128.One)
+                var overlap = curr.Start <= prev.End;
+                var adjacent = prev.End != UInt128.MaxValue && curr.Start == prev.End + UInt128.One;
+                // Neighboring binary siblings have a canonical single-prefix
+                // representation. Unequal or unaligned neighbors may require
+                // several CIDRs even though nft reports one interval.
+                var siblings = adjacent && prev.End - prev.Start == curr.End - curr.Start &&
+                    (prev.Start & (prev.End - prev.Start + UInt128.One)) == 0;
+                if (overlap || adjacent && (!allowNonMergeableAdjacent || siblings))
                 {
                     errors.Add(new("set.overlappingOrAdjacent", path + "[" + curr.Index.ToString(CultureInfo.InvariantCulture) + "]"));
                 }

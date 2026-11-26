@@ -202,7 +202,7 @@ public sealed partial class NftTableObservation
 
         try
         {
-            if (new UTF8Encoding(false, true).GetByteCount(listTablesJson) > 65536)
+            if (new UTF8Encoding(false, true).GetByteCount(listTablesJson) > NftObservationLimits.MaximumInventoryBytes)
             {
                 errorCode = "observation.tooLarge";
                 return false;
@@ -308,7 +308,7 @@ public sealed partial class NftTableObservation
         ArgumentNullException.ThrowIfNull(expectedIdentity);
         try
         {
-            if (Encoding.UTF8.GetByteCount(json) > 65536) { return Deny("observation.tooLarge"); }
+            if (Encoding.UTF8.GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { return Deny("observation.tooLarge"); }
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
             if (HasDuplicateProperties(doc.RootElement)) { return Deny("observation.duplicateProperty"); }
             if (!Properties(doc.RootElement, "nftables") || doc.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { return Deny("observation.shape"); }
@@ -358,7 +358,7 @@ public sealed partial class NftTableObservation
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            if (new UTF8Encoding(false, true).GetByteCount(json) > 65536)
+            if (new UTF8Encoding(false, true).GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes)
             {
                 return Deny("observation.tooLarge");
             }
@@ -1393,17 +1393,21 @@ public sealed partial class NftTableObservation
 
     internal static IReadOnlyList<NetworkPrefix>? ParseNetworkPrefixSet(JsonElement setArray, IpFamily family)
     {
-        if (setArray.ValueKind != JsonValueKind.Array || setArray.GetArrayLength() is < 2 or > 64)
+        if (setArray.ValueKind != JsonValueKind.Array || setArray.GetArrayLength() is < 1 or > 64)
         {
             return null;
         }
 
         var items = new List<NetworkPrefix>(setArray.GetArrayLength());
-        var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var entry in setArray.EnumerateArray())
         {
+            if (Properties(entry, "range"))
+            {
+                if (!NftInlineAddressRange.TryAppend(entry.GetProperty("range"), family, items)) { return null; }
+                continue;
+            }
             var parsed = ParseNetworkPrefix(entry, family);
-            if (parsed is null || !seen.Add(parsed.Value))
+            if (parsed is null || items.Count == 64)
             {
                 return null;
             }
@@ -1411,6 +1415,9 @@ public sealed partial class NftTableObservation
             items.Add(parsed);
         }
 
+        var errors = new List<PolicyDiagnostic>();
+        NftFilterCompiler.ValidatePrefixSet(items, family, string.Empty, errors, allowNonMergeableAdjacent: true);
+        if (errors.Count != 0) { return null; }
         items.Sort((a, b) => string.CompareOrdinal(a.Value, b.Value));
         return Array.AsReadOnly(items.ToArray());
     }
