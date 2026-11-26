@@ -36,10 +36,41 @@ if [[ ${1:-} == --reproducibility && $# -le 2 ]]; then
             bash scripts/package-release.sh --format "$format" --verify --output-dir "$tmp/$build.packages"
         )
     done
-    cmp "$tmp/first.packages/SHA256SUMS" "$tmp/second checkout.packages/SHA256SUMS"
     while read -r _ filename; do
-        cmp "$tmp/first.packages/$filename" "$tmp/second checkout.packages/$filename"
+        first="$tmp/first.packages/$filename"
+        second="$tmp/second checkout.packages/$filename"
+        if ! cmp -s "$first" "$second"; then
+            printf 'Package bytes differ: %s\n' "$filename" >&2
+            if [[ "$filename" == *.tar.gz ]]; then
+                python3 -B - "$first" "$second" <<'PY'
+import hashlib
+import sys
+import tarfile
+
+
+def members(path):
+    with tarfile.open(path, "r:gz") as archive:
+        return {
+            item.name: (item.mode, item.uid, item.gid, item.mtime, item.type,
+                        item.linkname, item.pax_headers,
+                        hashlib.file_digest(archive.extractfile(item), "sha256").hexdigest()
+                        if item.isfile() else None)
+            for item in archive
+        }
+
+
+first, second = (members(path) for path in sys.argv[1:])
+for name in sorted(first.keys() | second.keys()):
+    if first.get(name) != second.get(name):
+        print(f"Archive member differs: {name}", file=sys.stderr)
+        print(f"  first:  {first.get(name)}", file=sys.stderr)
+        print(f"  second: {second.get(name)}", file=sys.stderr)
+PY
+            fi
+            exit 1
+        fi
     done < "$tmp/first.packages/SHA256SUMS"
+    cmp "$tmp/first.packages/SHA256SUMS" "$tmp/second checkout.packages/SHA256SUMS"
     cat "$tmp/first.packages/SHA256SUMS"
     printf 'PASS: %s output is byte-identical across independent source paths\n' "$format"
     exit 0
