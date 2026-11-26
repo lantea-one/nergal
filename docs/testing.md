@@ -317,6 +317,14 @@ candidates independently passed `nft --check` in disposable namespaces after
 recompilation reproduced the plan digests. These checks establish conversion
 readiness and kernel validation. Private packet equivalence remains open.
 
+For release packaging, the package review workflow rebuilds Debian, Fedora RPM,
+and Arch artifacts from two source paths and compares the native files, portable
+archive and checksum manifests. The package regression fixture checks the
+normalization of the published static asset manifest. The controller Compose
+fixture requests identity and gzip representations over HTTPS and verifies that
+both serve the same bytes after decompression. See [deployment](deployment.md)
+for the commands and reproducibility conditions.
+
 ## Installed Linux acceptance
 
 The [installed-system fixtures](../tests/integration/installed-system/README.md)
