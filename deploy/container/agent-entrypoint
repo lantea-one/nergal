@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+umask 077
+
+# A non-root Docker USER alone can lose CAP_NET_ADMIN on exec. Starting with
+# NET_ADMIN, SETUID, SETGID and SETPCAP lets setpriv clear supplementary groups
+# and permanently drop the setup capabilities before any agent code runs.
+# The ambient bit carries across both the watchdog and /usr/sbin/nft execs.
+caps=-all,+net_admin
+if [ "$#" -eq 1 ]; then
+    case "$1" in --help|--version) caps=-all ;; esac
+fi
+exec /usr/bin/setpriv --reuid=1654 --regid=1654 --clear-groups \
+    --bounding-set="$caps" --inh-caps="$caps" --ambient-caps="$caps" \
+    --no-new-privs -- /usr/local/libexec/nergal-agent-supervisor \
+    /usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll "$@"

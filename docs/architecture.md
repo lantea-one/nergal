@@ -82,6 +82,11 @@ local paths; the session-only host falls back to its session page. See
    before mutating the kernel, binds candidate/rollback handles via `ParseReplacementEcho`,
    and restores packets automatically on timeout. It accepts no arbitrary shell scripts
    or browser-supplied native commands.
+   In the container deployment the agent joins the managed host's network
+   namespace. Its listener and watchdog run with the same reduced credentials as
+   the native service. A PID 1 supervisor keeps the container alive until the
+   watchdog exits during a graceful shutdown. See
+   [ADR 0066](decisions/0066-containerized-agent.md).
 5. `Nergal.LocalState` persists explicit enrollment assertions, exact artifacts and
    replayable transitions in a private SQLite journal. Transactions serialize
    confirmation/timeout and commit revisions with confirmation. It has no kernel
