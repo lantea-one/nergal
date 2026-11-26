@@ -1,13 +1,15 @@
 name: Build Linux release packages
 on:
   push:
-    tags: ['v*']
+    tags: ['[0-9]*', 'v[0-9]*']
   # Exercise the release matrix on a packaging review before cutting a tag.
   pull_request:
     paths:
       - '.forgejo/workflows/release-packages.yml'
       - 'deploy/systemd/**'
       - 'deploy/LinuxRelease.targets'
+      - 'deploy/container/release-version.py'
+      - 'Directory.Build.props'
       - 'scripts/package-release.sh'
       - 'scripts/collect-nuget-notices.py'
       - 'scripts/nuget-license-texts/**'
@@ -52,6 +54,13 @@ jobs:
           persist-credentials: false
       - name: Verify shared organization runner policy
         run: python3 -B scripts/test-ci-runner-policy.py
+      - name: Verify the package release version
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/* ]]; then
+            python3 -B deploy/container/release-version.py version "$GITHUB_REF"
+          else
+            python3 -B deploy/container/release-version.py version
+          fi
       - name: Prepare private .NET runtime directory
         run: echo "XDG_RUNTIME_DIR=$(mktemp -d)" >> "$GITHUB_ENV"
       - uses: https://github.com/actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6

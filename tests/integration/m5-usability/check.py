@@ -133,7 +133,11 @@ def create_policy(browser, state, capture):
     state_form = '#tab-filter form[action="/manage/policies/rules/state"]:has(input[name="ruleIndex"][value="1"])'
     for enabled in (False, True):
         browser.click(state_form + " .enablement-switch")
+        browser.evaluate("document.documentElement.dataset.fixturePendingSubmit = 'true';")
         browser.click(state_form + " button[type=submit]")
+        browser.wait_for(lambda: browser.evaluate(
+            "return document.readyState === 'complete' && !document.documentElement.dataset.fixturePendingSubmit;"
+        ), "Expected a new document after updating rule state")
         assert browser.evaluate("return document.querySelector(arguments[0]).elements.enabled.checked;", state_form) == enabled
         assert browser.value("#top-summary") == POLICY_NOTE, "Updating rule state lost the latest revision note"
         assert not browser.evaluate("return !!document.querySelector('#revision-note-probe');"), "The revision note rendered as markup"
@@ -178,7 +182,7 @@ def connect_host(browser, state, temp, capture):
 
 def import_policy(browser, state, capture):
     baseline = revisions(state)
-    for fixture, name in (("unsupported.conf", "Unsupported counter"), ("supported.conf", "Supported HTTPS")):
+    for fixture, name in (("unsupported.conf", "Unsupported logging"), ("supported.conf", "Supported HTTPS")):
         browser.click(link("/manage/sources"))
         browser.wait_for(lambda: browser.path() == "/manage/sources" and not browser.location().query,
                          "Expected the source library landing page")
@@ -192,6 +196,10 @@ def import_policy(browser, state, capture):
         browser.click('button[name="operation"][value="review"]')
         expect_text(browser, "Saved conversion review")
         assert revisions(state) == baseline, "Upload or conversion review created a revision"
+        browser.evaluate("""
+            const heading = document.querySelector('#conversion-result-heading');
+            window.scrollBy({ top: heading.getBoundingClientRect().top - 88, behavior: 'instant' });
+        """)
         if fixture == "unsupported.conf":
             expect_text(browser, "Blocking conversion gaps")
             expect_text(browser, "Line 4, column")

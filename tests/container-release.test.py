@@ -28,7 +28,8 @@ class ReleaseVersionTests(unittest.TestCase):
         version = release["project_version"]()
         for tag in (version, "v" + version):
             self.assertEqual(version, release["project_version"]("refs/tags/" + tag))
-        for ref in ("refs/tags/2030.1.1-preview", "refs/heads/" + version, "refs/tags/latest"):
+        for ref in ("refs/tags/2030.1.1-preview", "refs/tags/2030.1.1", "refs/heads/" + version,
+                    "refs/tags/latest", "refs/tags/vv" + version):
             with self.assertRaises(ValueError):
                 release["project_version"](ref)
 

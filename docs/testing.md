@@ -312,6 +312,10 @@ when native drift or a foreign collision makes a change unsafe.
 The initial M8 pass ran these fixtures on Linux 7.3.5 with nftables 1.1.7.
 Private conversion readiness is evaluated separately with read-only source
 planning. The private inputs and topology stay outside the public fixtures.
+All five private snapshots produced complete plans with no gaps. Their compiled
+candidates independently passed `nft --check` in disposable namespaces after
+recompilation reproduced the plan digests. These checks establish conversion
+readiness and kernel validation. Private packet equivalence remains open.
 
 ## Installed Linux acceptance
 

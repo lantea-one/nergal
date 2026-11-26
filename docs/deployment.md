@@ -47,8 +47,9 @@ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/nergal.conf
 
 ## Install a release package
 
-The **Build Linux release packages** workflow runs for version tags, packaging
-pull requests, and on demand.
+The **Build Linux release packages** workflow runs for CalVer tags, packaging
+pull requests, and on demand. Release tags must match `Directory.Build.props`
+and can use an optional `v` prefix, just as the container workflow allows.
 It builds AMD64 packages with native tools on the shared organization CI runner.
 Each run publishes the files and their SHA-256 manifest as CI artifacts.
 
