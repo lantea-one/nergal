@@ -285,6 +285,19 @@ TLS 1.3 pinned mTLS explicit rollback and confirmation, and multi-table
 (`inet nergal_filter` + `inet nergal_nat` + `bridge nergal_bridge`) watchdog
 rollback and confirmed persistence while preserving foreign tables.
 
+## Installed Linux acceptance
+
+The [installed-system fixtures](../tests/integration/installed-system/README.md)
+run against real Debian packages and systemd under QEMU. The multi-host fixture
+installs the controller and agent on independent guest disks connected by a
+private QEMU link. It exercises UI-managed OIDC, upgrades both packages within
+the current schemas, rotates both mTLS identities, and restores each role onto
+a fresh guest from its own offline backup. The agent's restored revision has
+real IPv4/IPv6 packet checks, independent watchdog rollback evidence and
+authenticated drift detection and recovery. The controller's restored settings,
+reviewed policy, credential state, host observations and audit are checked over
+HTTPS. Run this separately from the default shared CI job.
+
 ## Continuous integration
 
 The Forgejo workflow builds, checks formatting, runs unit tests with coverage
