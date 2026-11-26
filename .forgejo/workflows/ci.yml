@@ -48,7 +48,6 @@ jobs:
         run: python3 -B tests/integration/oidc/check.py
       - name: Verify Forgejo Pages documentation portal
         run: python3 -B scripts/verify-pages.py
-      - name: Assemble and verify Linux release packages
+      - name: Assemble and verify the Linux release archive
         run: |
-          bash tests/package-release.test.sh
-          bash scripts/package-release.sh --format deb --verify
+          bash scripts/package-release.sh --format tar --verify

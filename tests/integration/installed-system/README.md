@@ -35,6 +35,9 @@ and agent service capabilities, certificate-verified HTTPS login, the packaged
 stylesheet, and matched versus denied Unix control responses from different UIDs.
 An installed agent CLI operation denies IPv4 and IPv6 loopback ICMP packets. An
 independent watchdog restores both packet flows and the last confirmed revision.
+The fixture then puts the controller and enrolled agent in two guest namespaces
+joined by a private veth pair. It registers and queries the remote service over
+pinned mutual TLS and verifies that a wrong server fingerprint yields no revision.
 This exercises package bootstrap and basic installed native behavior. Routed
 forwarding, NAT, web-initiated policy apply, and reconciliation after guest
 reboot have separate acceptance boundaries.

@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 jobs:
   packages:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: asgard-ci
     timeout-minutes: 25
     container:
@@ -62,6 +63,9 @@ jobs:
         run: |
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
           bash scripts/package-release.sh --verify --format "$PACKAGE_FORMAT" --output-dir artifacts/release
+          if [ "$PACKAGE_FORMAT" = deb ]; then
+            bash tests/package-release.test.sh
+          fi
       - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
         with:
           name: nergal-linux-${{ matrix.format }}

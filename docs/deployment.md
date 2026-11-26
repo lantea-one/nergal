@@ -134,19 +134,31 @@ setup above, and reload systemd before starting services.
 
 ## Remote TLS 1.3 mutual-authentication agents (`tls-serve`)
 
-On remote managed hosts:
+1. Generate a dedicated ECDSA P-256 or RSA leaf certificate for each agent and
+   another for the controller. Set `CA:FALSE`, with EKU `serverAuth` on the
+   remote leaf and `clientAuth` on the controller leaf. Keep each private key
+   with its own service account in a service-owned directory with mode `0700`,
+   and set the key file to mode `0600`.
+2. Compute each certificate's lowercase SHA-256 DER thumbprint with
+   `openssl x509 -in cert.crt -outform DER | sha256sum`. Give the agent the
+   controller fingerprint and the controller the agent fingerprint.
+3. On the remote host, run `sudo systemctl start nergal-agent-enroll.service`
+   once. Use `sudo systemctl edit nergal-agent.service` to configure the listener.
 
-1. Generate dedicated leaf ECDSA P-256 or RSA server and controller client certificates with explicit EKUs (`serverAuth` on the agent server cert, `clientAuth` on the controller cert, `CA:FALSE`) and `0600` private keys.
-2. Compute each certificate's lowercase SHA-256 DER thumbprint (`openssl x509 -in cert.crt -outform DER | sha256sum`).
-3. Use `sudo systemctl edit nergal-agent.service` to configure the remote listener in a drop-in:
-
-   ```sh
+   ```ini
    [Service]
    ExecStart=
-   ExecStart=/usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll tls-serve /var/lib/nergal/agent 192.0.2.10:9443 /etc/nergal/agent/server.crt /etc/nergal/agent/server.key <CLIENT_SHA256>
+   ExecStart=/usr/bin/nergal-agent tls-serve /var/lib/nergal/agent 192.0.2.10:9443 /etc/nergal/agent/private/server.crt /etc/nergal/agent/private/server.key <CLIENT_SHA256>
    ```
 
-4. Register the remote host in `/manage` using its `<ip>:<port>` and pinned server SHA-256 thumbprint.
+   Replace the example endpoint with the agent's management address. Then run
+   `sudo systemctl enable --now nergal-agent.service` for the new listener.
+4. In the controller service environment, set
+   `ControllerState__TlsClientCertificatePath` and
+   `ControllerState__TlsClientKeyPath` to its client certificate and key paths.
+   Restart the controller and register the remote endpoint and pinned server
+   fingerprint in **Hosts**. Check the authenticated status and revision before
+   reviewing or applying a candidate.
 
 ## Containerized controller
 

@@ -15,6 +15,7 @@ from urllib.request import (
     HTTPCookieProcessor,
     HTTPRedirectHandler,
     HTTPSHandler,
+    Request,
 )
 
 
@@ -32,13 +33,14 @@ class LoginForm(HTMLParser):
             self.token = fields.get("value")
 
 
-def https(assets_only=False):
+def https(assets_only=False, remote_pin=None):
     context = ssl.create_default_context(cafile="/etc/nergal/web/tls.crt")
     browser = build_opener(HTTPSHandler(context=context), HTTPCookieProcessor(CookieJar()), NoRedirect())
 
-    def request(path, expected, data=None):
+    def request(path, expected, data=None, headers=None):
         try:
-            result = browser.open("https://127.0.0.1:8443" + path, data, timeout=4)
+            outgoing = Request("https://127.0.0.1:8443" + path, data, headers or {})
+            result = browser.open(outgoing, timeout=8)
         except HTTPError as error:
             result = error
         with result:
@@ -71,6 +73,22 @@ def https(assets_only=False):
         "__RequestVerificationToken": form.token,
     }).encode())
     request("/manage", 200)
+    if remote_pin is not None:
+        form = LoginForm()
+        form.feed(request("/session", 200))
+        assert form.token, "Missing authenticated antiforgery token"
+        headers = {"Content-Type": "application/json", "RequestVerificationToken": form.token}
+        for name, pin, outcome, revision in (
+            ("fixture-peer", remote_pin, "matched", "1"),
+            ("fixture-wrong-pin", "0" * 64, "unavailable", None),
+        ):
+            host = json.loads(request("/controller/hosts", 201, json.dumps({
+                "name": name, "transportKind": "tls", "endpoint": "192.0.2.10:9443",
+                "pinnedServerThumbprint": pin,
+            }).encode(), headers))
+            status = json.loads(request(f"/controller/apply/status?hostId={host['id']}", 200))
+            assert (status["outcome"], status["revision"]) == (outcome, revision), status
+        print("Installed controller matched the pinned mTLS agent; the wrong pin disclosed no revision")
 
 
 def agent(expected, server_uid):
@@ -99,6 +117,8 @@ if sys.argv[1:] == ["https"]:
     https()
 elif sys.argv[1:] == ["assets"]:
     https(assets_only=True)
+elif len(sys.argv) == 3 and sys.argv[1] == "remote":
+    https(remote_pin=sys.argv[2])
 else:
     outcome, uid = sys.argv[1:]
     agent(outcome, int(uid))

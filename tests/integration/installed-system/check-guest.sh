@@ -115,7 +115,6 @@ printf 'Starting packaged systemd services\n'
 timeout 20s systemctl enable nergal-agent.service nergal-web.service
 systemctl start --no-block nergal-agent.service nergal-web.service
 ip netns exec "$namespace" python3 -B "$media/check-protocol.py" https
-rm /run/nergal-fixture-password
 systemctl is-active --quiet nergal-agent.service
 systemctl is-active --quiet nergal-web.service
 agent_pid=$(systemctl show -p MainPID --value nergal-agent.service)
@@ -167,3 +166,47 @@ probe ::1
 runuser -u nergal-web -- python3 -B - matched "$agent_uid" < "$media/check-protocol.py"
 printf 'Packaged agent blocked IPv4 and IPv6 loopback packets and the independent watchdog restored them\n'
 ip netns exec "$namespace" python3 -B "$media/check-protocol.py" assets
+
+# Move only Web to a second namespace. The agent keeps its enrolled network
+# context and only the two guest namespaces are connected.
+systemctl stop nergal-web.service nergal-agent.service
+web_namespace=nergal-installed-web
+ip netns add "$web_namespace"
+ip -n "$namespace" link add fixture-peer type veth peer name fixture-web netns "$web_namespace"
+ip -n "$namespace" address add 192.0.2.10/30 dev fixture-peer
+ip -n "$web_namespace" address add 192.0.2.9/30 dev fixture-web
+ip -n "$namespace" link set fixture-peer up
+ip -n "$web_namespace" link set fixture-web up
+ip -n "$web_namespace" link set lo up
+
+make_peer_certificate() {
+    local prefix=$1 purpose=$2 owner=$3
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 1 \
+        -subj '/CN=nergal-fixture.invalid' -addext 'basicConstraints=critical,CA:FALSE' \
+        -addext 'keyUsage=critical,digitalSignature' -addext "extendedKeyUsage=$purpose" \
+        -keyout "$prefix.key" -out "$prefix.crt" 2>/dev/null
+    chown "$owner:$owner" "$prefix".{crt,key}
+    chmod 0600 "$prefix".{crt,key}
+    openssl x509 -in "$prefix.crt" -outform DER | sha256sum | cut -d ' ' -f 1
+}
+client_pin=$(make_peer_certificate "$config/private/client" clientAuth nergal-web)
+install -d -o nergal-agent -g nergal-agent -m 0700 /etc/nergal/agent/private
+server=/etc/nergal/agent/private/server
+server_pin=$(make_peer_certificate "$server" serverAuth nergal-agent)
+cat >> "$config/env" <<EOF_ENV
+ControllerState__TlsClientCertificatePath=$config/private/client.crt
+ControllerState__TlsClientKeyPath=$config/private/client.key
+EOF_ENV
+cat > /run/systemd/system/nergal-agent.service.d/fixture.conf <<EOF_UNIT
+[Service]
+NetworkNamespacePath=/run/netns/$namespace
+ExecStart=
+ExecStart=/usr/bin/nergal-agent tls-serve $agent_state 192.0.2.10:9443 $server.crt $server.key $client_pin
+EOF_UNIT
+printf '[Service]\nNetworkNamespacePath=/run/netns/%s\n' "$web_namespace" \
+    > /run/systemd/system/nergal-web.service.d/fixture.conf
+systemctl daemon-reload
+systemctl start nergal-agent.service
+systemctl start --no-block nergal-web.service
+ip netns exec "$web_namespace" python3 -B "$media/check-protocol.py" remote "$server_pin"
+rm /run/nergal-fixture-password
