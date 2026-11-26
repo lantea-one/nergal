@@ -80,7 +80,11 @@ bash scripts/package-release.sh --format deb --verify
 ```
 
 Run `bash tests/package-release.test.sh --reproducibility` to compare portable
-archives from two independent source checkouts at the same revision.
+archives from two independent source checkouts at the same revision. Pass
+`deb`, `rpm`, or `arch` after `--reproducibility` to compare both the
+portable archive and the selected native package on the same build environment.
+The Arch comparison uses a fixed package build path because makepkg records it
+in the package metadata.
 
 The packages install vendor units, CLI launchers and systemd account and
 directory definitions. They leave service activation, credentials and firewall
