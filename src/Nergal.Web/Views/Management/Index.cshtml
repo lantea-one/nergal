@@ -56,7 +56,29 @@
                 @await Html.PartialAsync("_DashboardHostObservations", Model)
                 <ul class="host-status-list">
                 @foreach (var health in Model.HostHealth.Take(5))
-                { <li><a href="@Url.Action("Apply", new { hostId = health.Host.Id })">@health.Host.Name</a><span class="badge badge-neutral">@L[health.StateLabel]</span></li> }
+                {
+                    <li>
+                        <div>
+                            <a href="@Url.Action("Apply", new { hostId = health.Host.Id })">@health.Host.Name</a>
+                            @if (health.CurrentObservation is { } current)
+                            {
+                                <div class="hint">@L["Observed"] @await Html.PartialAsync("_LocalTime", current.ObservedAtUtc)</div>
+                            }
+                            else if (health.PreviousObservation is { } previous)
+                            {
+                                <div class="hint">
+                                    @L["Previous observation ({0})", L[Nergal.Web.HostHealthSummary.ObservationLabel(previous.State)]]
+                                    @if (previous.ReportedRevision is { } revision)
+                                    {
+                                        <span> · @L["Reported revision {0}", revision]</span>
+                                    }
+                                    <span> · @await Html.PartialAsync("_LocalTime", previous.ObservedAtUtc)</span>
+                                </div>
+                            }
+                        </div>
+                        <div><span class="badge badge-neutral">@L[health.StateLabel]</span></div>
+                    </li>
+                }
                 </ul>
                 @if (Model.Hosts.Count > 5) { <p class="hint">@L["Showing 5 hosts. Open Hosts for all connections."]</p> }
             }

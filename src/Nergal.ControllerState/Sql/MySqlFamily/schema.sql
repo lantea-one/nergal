@@ -20,6 +20,14 @@ CREATE TABLE hosts (
     CONSTRAINT hosts_transport_kind CHECK (transport_kind IN ('unix', 'tls'))
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE __NERGAL_BINARY_COLLATION__;
 -- nergal:statement
+CREATE TABLE host_observations (
+    host_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    state INT NOT NULL CHECK (state BETWEEN 1 AND 5),
+    reported_revision VARCHAR(20),
+    observed_at_utc VARCHAR(40) NOT NULL,
+    CONSTRAINT host_observations_host_fk FOREIGN KEY (host_id) REFERENCES hosts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE __NERGAL_BINARY_COLLATION__;
+-- nergal:statement
 CREATE TABLE policy_revisions (
     revision BIGINT NOT NULL PRIMARY KEY,
     policy_json LONGTEXT NOT NULL,

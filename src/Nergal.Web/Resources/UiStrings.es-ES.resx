@@ -156,6 +156,15 @@
     <data name="Reported revision {0}" xml:space="preserve">
         <value>Revisión comunicada {0}</value>
     </data>
+    <data name="Observed" xml:space="preserve">
+        <value>Observado</value>
+    </data>
+    <data name="Previous observation ({0})" xml:space="preserve">
+        <value>Observación anterior ({0})</value>
+    </data>
+    <data name="Status superseded" xml:space="preserve">
+        <value>Estado reemplazado</value>
+    </data>
     <data name="Last recorded revision {0}" xml:space="preserve">
         <value>Última revisión registrada {0}</value>
     </data>

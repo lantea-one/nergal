@@ -1,12 +1,13 @@
 """Verify a populated Overview chart using a real agent in a disposable network namespace."""
 
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import hashlib
 import http.client
 import json
 import os
 from pathlib import Path
 import select
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -32,8 +33,8 @@ def fixture_certificate(directory, name, purpose):
 
 
 @contextmanager
-def agent_listener(state, certificate, key, client_pin):
-    with subprocess.Popen(["dotnet", AGENT, "tls-serve", state, "127.0.0.1:0", certificate, key, client_pin],
+def agent_listener(state, certificate, key, client_pin, endpoint="127.0.0.1:0"):
+    with subprocess.Popen(["dotnet", AGENT, "tls-serve", state, endpoint, certificate, key, client_pin],
                           text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
         try:
             ready, _, _ = select.select([process.stdout], [], [], 10)
@@ -72,6 +73,7 @@ def exercise(directory):
     subprocess.run(["dotnet", AGENT, "enroll", agent_state], check=True)
     subprocess.run(["dotnet", sessions.ADMIN_TOOL, "controller", "init", controller_state], check=True)
     server_cert, server_key, server_pin = fixture_certificate(directory, "agent", "serverAuth")
+    wrong_cert, wrong_key, _ = fixture_certificate(directory, "wrong-agent", "serverAuth")
     client_cert, client_key, client_pin = fixture_certificate(directory, "controller", "clientAuth")
 
     settings = {"ControllerState__Enabled": "true", "ControllerState__Directory": str(controller_state),
@@ -86,12 +88,42 @@ def exercise(directory):
             overview = browser.request("/manage", 200)
             assert "1 of 1 registered hosts classified by agent status" in overview
             assert "Baseline matches" in overview and '<meter min="0" max="1" value="1"' in overview
+            database = (controller_state / "controller.db").as_uri() + "?mode=ro"
+            captured = read_observation(database)
+            state, timestamp = captured
+            assert state == 1 and timestamp.endswith("+00:00")
+            instant = timestamp.removesuffix("+00:00") + "Z"
+            assert f'data-local-time datetime="{instant}"' in overview
+
+        # A listener without the registered server identity cannot refresh the saved observation.
+        with agent_listener(agent_state, wrong_cert, wrong_key, client_pin, endpoint):
+            assert_previous(browser.request("/manage", 200), instant)
+            assert read_observation(database) == captured
 
         # A lost connection must not be charted using the prior authenticated result.
         overview = browser.request("/manage", 200)
-        assert "Status unavailable" in overview and "No usable agent status" in overview
-        assert "<meter " not in overview
-    print("PASS: populated Overview from real pinned agent status, then explicit coverage gap")
+        assert_previous(overview, instant)
+
+    with sessions.host(directory, tls, settings) as host:
+        browser = Browser(host)
+        browser.login(destination="/manage")
+        assert_previous(browser.request("/manage", 200), instant)
+    assert read_observation(database) == captured
+    print("PASS: pinned agent status, wrong-peer denial, explicit coverage gap, and retained UTC observation after restart")
+
+
+def assert_previous(overview, instant):
+    assert "Status unavailable" in overview and "No usable agent status" in overview
+    assert "<meter " not in overview
+    assert "Previous observation (matched)" in overview
+    assert f'data-local-time datetime="{instant}"' in overview
+
+
+def read_observation(database):
+    with closing(sqlite3.connect(database, uri=True)) as connection:
+        rows = connection.execute("SELECT state, observed_at_utc FROM host_observations").fetchall()
+        assert len(rows) == 1
+        return rows[0]
 
 
 if __name__ == "__main__":

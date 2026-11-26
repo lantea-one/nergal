@@ -1,6 +1,6 @@
 # Controller SQLite backup and restore
 
-Controller schema 5 initializes a fresh database. Each System settings save
+Controller schema 6 initializes a fresh database. Each System settings save
 appends an immutable version and its audit event in one transaction. The first
 record contains the defaults. A submitted form must carry the exact token of the
 version it opened. A stale save returns HTTP 409 and displays the current saved
@@ -38,8 +38,9 @@ See the [SQLite backup documentation](https://www.sqlite.org/backup.html).
    check. Verify the saved settings, revisions, reusable objects, sources and
    controller audit as appropriate to the backup contents.
 4. Open System settings, make a test edit on the isolated restore, and verify
-   that it creates the next settings version and one audit event. Discard the
-   test restore when finished.
+   that it creates the next settings version and one audit event. Verify that
+   registered hosts' latest usable observations also survive the backup and
+   restore, including their UTC timestamps. Discard the test restore when finished.
 
 This procedure verifies the controller database. Account stores, wrapping keys
 and protected agent receipts have independent recovery requirements. Replacing

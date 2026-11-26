@@ -83,12 +83,12 @@ def controller_fresh_baseline(directory):
     directory.mkdir(mode=0o700)
     invoke(["controller", "init", str(directory)], 0)
     with sqlite3.connect(directory / "controller.db") as db:
-        assert db.execute("PRAGMA user_version").fetchone() == (5,)
-        db.execute("PRAGMA user_version=4")
+        assert db.execute("PRAGMA user_version").fetchone() == (6,)
+        db.execute("PRAGMA user_version=5")
     assert b"controller.exists" in invoke(["controller", "init", str(directory)], 1)
     invoke(["controller", "upgrade", str(directory)], 2)
     with sqlite3.connect(directory / "controller.db") as db:
-        assert db.execute("PRAGMA user_version").fetchone() == (4,)
+        assert db.execute("PRAGMA user_version").fetchone() == (5,)
         assert db.execute("SELECT count(*) FROM native_sources").fetchone() == (0,)
     print("PASS: fresh controller initialization and refusal to replace retired schema")
 

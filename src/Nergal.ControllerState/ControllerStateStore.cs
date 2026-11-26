@@ -15,7 +15,7 @@ namespace Nergal.ControllerState;
 public sealed partial class ControllerStateStore
 {
     private const int ApplicationId = 0x4e524743; // 'NRGC'
-    private const int SchemaVersion = 5;
+    private const int SchemaVersion = 6;
     private const string DatabaseFileName = "controller.db";
 
     private readonly ControllerStateOptions _options;
@@ -80,6 +80,7 @@ public sealed partial class ControllerStateStore
             {
                 ExecuteNonQuery(connection, tx, $"PRAGMA user_version={SchemaVersion};");
                 ExecuteNonQuery(connection, tx, SchemaSql);
+                ExecuteNonQuery(connection, tx, HostObservationSchemaSql);
                 InitializeSystemSettings(connection, tx);
                 ExecuteNonQuery(connection, tx, NativeSourcesSchemaSql);
                 ExecuteNonQuery(connection, tx, ObjectsSchemaSql);
@@ -622,6 +623,7 @@ public sealed partial class ControllerStateStore
         }
 
         ValidateAuditDefinitions(conn, tx);
+        RequireDefinition(conn, tx, "host_observations", HostObservationSchemaSql, "controller.corrupt");
         ValidateSystemSettingsSchema(conn, tx);
         ValidateNativeSourceSchema(conn, tx);
         ValidateObjectSchema(conn, tx);

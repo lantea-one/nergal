@@ -15,11 +15,27 @@ public sealed class HostHealthSummary
     /// <summary>Gets drift or operational status label (e.g., <c>matched</c>, <c>drift</c>, <c>pending</c>, <c>unavailable</c>).</summary>
     public required string StateLabel { get; init; }
 
-    /// <summary>Gets live reported baseline revision when reachable.</summary>
+    /// <summary>Gets the reported baseline revision when reachable, or the last-known revision otherwise.</summary>
     public ulong? ReportedRevision { get; init; }
+
+    /// <summary>Gets the authenticated observation from this request, when available.</summary>
+    public HostObservation? CurrentObservation { get; init; }
+
+    /// <summary>Gets a stored observation when this request did not produce a usable reply.</summary>
+    public HostObservation? PreviousObservation { get; init; }
 
     /// <summary>Gets optional non-sensitive error code when unreachable or errored.</summary>
     public string? ErrorCode { get; init; }
+
+    internal static string ObservationLabel(HostObservationState state) => state switch
+    {
+        HostObservationState.Matched => "matched",
+        HostObservationState.Drift => "drift",
+        HostObservationState.Missing => "missing",
+        HostObservationState.Pending => "pending",
+        HostObservationState.Online => "online",
+        _ => throw new ArgumentOutOfRangeException(nameof(state)),
+    };
 }
 
 /// <summary>View model for the controller overview and host fleet dashboard.</summary>

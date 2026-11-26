@@ -49,7 +49,7 @@ class Engine:
         wiring = self.server_environment()
         env = {**os.environ, **wiring}
         network = self.container + "-net"
-        args = [*DOCKER, "run", "--detach", "--rm", "--name", self.container, "--network", network,
+        args = [*DOCKER, "run", "--detach", "--name", self.container, "--network", network,
                 "--security-opt", "no-new-privileges", "--publish", f"127.0.0.1::{self.port}"]
         for key in wiring:
             args.extend(("--env", key))
@@ -62,6 +62,12 @@ class Engine:
             self.host_port = int(address.split(":")[1])
             deadline = time.monotonic() + 90
             while not self.ready():
+                container_state = run([*DOCKER, "inspect", "--format", "{{.State.Status}}", self.container],
+                                      stdout=subprocess.PIPE, text=True).stdout.strip()
+                if container_state != "running":
+                    logs = run([*DOCKER, "logs", "--tail", "24", self.container], stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, text=True).stdout
+                    raise RuntimeError(f"{self.provider} container exited during startup: {self.redact(logs)}")
                 require(time.monotonic() < deadline,
                         f"{self.provider} did not become ready: {self.readiness_error}")
                 time.sleep(0.5)
@@ -90,7 +96,7 @@ class Engine:
             return result.returncode == 0
         if denial is not None:
             diagnostics = stderr + self.redact((result.stdout or b"").decode(errors="replace"))
-            require(result.returncode != 0 and denial in diagnostics,
+            require(result.returncode != 0 and denial.casefold() in diagnostics.casefold(),
                     f"{self.provider} {phase}: expected {denial!r}, got {result.returncode}: {diagnostics}")
             return None
         if result.returncode != 0:
@@ -268,6 +274,19 @@ class SqlServer(Engine):
     def empty(self, database):
         return self.query(database, "SELECT count(*) FROM sys.tables;").strip() == b"0"
 
+    def restrict_restore_runtime(self):
+        tables = ("audit_log", "system_settings", "reusable_object_versions", "policy_revisions", "host_observations")
+        inserts = "\n".join(f"GRANT INSERT ON OBJECT::dbo.{table} TO {USER};" for table in tables)
+        self.query(RESTORED, f"""
+            ALTER ROLE db_owner DROP MEMBER {USER};
+            GRANT VIEW DEFINITION TO {USER};
+            GRANT SELECT TO {USER};
+            GRANT UPDATE ON OBJECT::dbo.hosts (last_known_revision) TO {USER};
+            GRANT UPDATE ON OBJECT::dbo.host_observations TO {USER};
+            GRANT DELETE ON OBJECT::dbo.hosts TO {USER};
+            {inserts}
+            """, admin=True)
+
     def backup_restore(self, archive):
         self.query("master", f"""
             BACKUP DATABASE {SOURCE} TO DISK = '{self.backup}' WITH COPY_ONLY, CHECKSUM;
@@ -303,7 +322,8 @@ def history(engine, database):
     return tuple(engine.query(database, f"SELECT * FROM {table} ORDER BY {key};")
                  for table, key in (("system_settings", "version"), ("audit_log", "sequence"),
                                     ("reusable_object_versions", "object_id, version"),
-                                    ("policy_revisions", "revision")))
+                                    ("policy_revisions", "revision"), ("hosts", "id"),
+                                    ("host_observations", "host_id")))
 
 
 def check_immutable(engine):
@@ -333,6 +353,8 @@ def check(engine, tools_only):
                 """)
         else:
             fixture(engine, "seed", manifest)
+            require(engine.query(SOURCE, "SELECT schema_version FROM controller_metadata WHERE id = 1;").strip() == b"6",
+                    "Expected fresh controller schema 6")
             source_snapshot = history(engine, SOURCE)
         require(engine.empty(RESTORED), "Source writes must leave the recipient empty")
         engine.backup_restore(archive)
@@ -346,7 +368,14 @@ def check(engine, tools_only):
             require(history(engine, RESTORED) == source_snapshot, "Restore must retain the exact history")
             require(history(engine, SOURCE) == source_snapshot, "Restore must leave the source unchanged")
             check_immutable(engine)
+            engine.query(RESTORED, "UPDATE host_observations SET state=0;", denial="constraint")
+            engine.query(RESTORED, """
+                INSERT INTO host_observations(host_id, state, observed_at_utc)
+                VALUES ('00000000-0000-0000-0000-000000000009', 1, '2026-11-25T13:00:00.0000000+00:00');
+                """, denial="constraint")
             require(history(engine, RESTORED) == source_snapshot, "Denied mutations must leave history intact")
+            if isinstance(engine, SqlServer):
+                engine.restrict_restore_runtime()
             fixture(engine, "verify", manifest)
         scope = "native tooling and recipient isolation" if tools_only else "controller state and native backup/restore"
         print(f"PASS {engine.provider}: {scope}", flush=True)

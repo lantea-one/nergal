@@ -36,6 +36,13 @@ CREATE TABLE public.hosts (
     created_at_utc TEXT COLLATE pg_catalog."C" NOT NULL
 );
 -- nergal:statement
+CREATE TABLE public.host_observations (
+    host_id TEXT COLLATE pg_catalog."C" NOT NULL PRIMARY KEY REFERENCES public.hosts(id) ON DELETE CASCADE,
+    state INTEGER NOT NULL CHECK (state BETWEEN 1 AND 5),
+    reported_revision TEXT,
+    observed_at_utc TEXT NOT NULL
+);
+-- nergal:statement
 CREATE TABLE public.policy_revisions (
     revision BIGINT PRIMARY KEY CHECK (revision >= 1),
     policy_json TEXT COLLATE pg_catalog."C" NOT NULL,

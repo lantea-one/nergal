@@ -32,7 +32,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M3 | Reusable-object coverage | Complete | Declared reference scopes, immutable history/impact visibility and native static IPv4/IPv6/port sets with complete receipts, packet and apply/rollback acceptance. Dynamic objects/maps remain outside this declared slice. |
 | M4 | Semantic native import/export | Complete for the declared v1 grammar | Account for every declaration/rule in the supported grammar, retain exact originals separately, persist mapping/gaps, handle includes explicitly, deterministic scoped revision export, independent round-trip/packet acceptance. |
 | M5 | Everyday administration UX | Complete for M5 acceptance | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
-| M6 | Database completion | In progress | Stabilize logical schema, persist remaining managed settings/profiles/observations/mappings/history, distinguish desired/applied/observed state, verify fresh initialization, constraints and backup/restore on SQLite, PostgreSQL, MariaDB, MySQL and SQL Server, and define the first supported migration baseline. |
+| M6 | Database completion | Complete for the fresh-schema baseline | Fresh controller schema 6, durable settings and latest authenticated host observations, distinct desired/observed/applied state, and verified constraints and backup/restore on SQLite, PostgreSQL, MariaDB, MySQL and SQL Server. |
 | M7 | Installation and operations | Open | Clean single/multi-host installation, guided enrollment around local trust bootstrap, optional OIDC, upgrades, key/certificate rotation, backup/restore, drift and interrupted-operation recovery. |
 | M8 | Product acceptance and release | Open | Independent host/router/bridge/dual-stack acceptance plus initial private conversion targets, authorization/security/recovery regressions, dependency/license review, accurate docs/Pages/screenshots, reproducible packages and release-blocker closure. |
 
@@ -51,11 +51,21 @@ counts masquerading as traffic. Profiles require audit, role separation, revocat
 and last-administrator protection for account-management operations. Basic operation
 must not require any particular identity provider or network layout.
 
-M6 validates each supported engine with fresh initialization, enforced constraints,
-transactional audit and native backup and recovery. Test release-forward migration from each
-supported released schema when one exists. Generated files remain derived
-artifacts. Independently protected agent receipts and rollback decisions retain
-their trust boundary.
+M6 inventory: the controller store owns managed hosts, immutable desired policy
+revisions, System settings, reusable objects, native source snapshots and
+conversion plans, and attributed audit. Local accounts and personal/provider
+profile mappings live in the separately owned identity store; federated provider
+defaults/connections and protected secrets follow that account-store trust scope.
+The agent's protected receipts and pending rollback decisions remain in its
+independent local journal. These stores have distinct owners and restore
+procedures; a controller observation cannot substitute for agent receipt state.
+
+Controller schema 6 is the M6 prerelease baseline. Native backup and restore
+preserve versioned settings, audit and authenticated host observations on all
+five engines. The restore fixture checks stale writes and verifies independent
+writes after recovery. The pinned mutual TLS fixture verifies that an unavailable
+host still displays its previous observation after a controller restart.
+Release-forward migration verification begins with the first released schema.
 
 M7/M8 are product-wide integration gates, not a rewrite of already verified slices.
 No production apply, deployment or account change follows from passing tests.
@@ -94,7 +104,8 @@ and independent rollback, including named sets. Unit/real-SQLite/HTTPS tests cov
 source positions, includes/cycles, denied input/roles, restart, concurrent replay and
 failed-commit rollback. Browser checks cover ordered includes, separate review/commit,
 exports, blocked gaps and light/dark/mobile screenshots. Current controller stores
-initialize offline at schema 5. See the source guide and testing evidence.
+initialize offline at the current fresh schema. See the source guide and testing
+evidence; this source/conversion persistence is part of the controller store.
 
 Counters/logging/maps, arbitrary dynamic objects/control flow, unsupported table
 families and unused static declarations remain explicit blocking gaps; M4 does not
@@ -149,8 +160,9 @@ keyboard use, both themes and narrow mobile layout.
 
 This project has not been released publicly. New schema work targets fresh
 installations; do not add legacy account upgrade paths or compatibility shims.
-SQLite controller schema 5 adds versioned System settings with stale-write
-protection and transactional audit. The controller [backup and restore
+SQLite controller schema 6 retains versioned System settings with stale-write
+protection and transactional audit, and adds the durable latest host observation
+contract described above. The controller [backup and restore
 procedure](controller-sqlite-backup.md) is verified against committed WAL
 data and a separate writable restore. PostgreSQL, MariaDB, MySQL, and SQL Server
 have passed fresh controller initialization and independent, writable native

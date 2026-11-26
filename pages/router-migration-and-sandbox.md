@@ -197,8 +197,9 @@ with protected agent receipts and independent rollback decisions preserved.
 
 The [native source library](native-source-library.md) now stores uploaded and
 explicitly imported staging snapshots in the controller database. Remaining mapping
-and authoring workflows still require further implementation. Typed lists now also
-persist immutable versions and audit history in controller schema 5. Migrations for additional
+and authoring workflows still require further implementation. Typed lists first
+gained immutable-version and audit persistence in controller schema 5; fresh
+controller stores now use schema 6. Migrations for additional
 supported SQL backends are deferred until the logical schema stabilizes; each
 engine will require versioned upgrade and failure/recovery tests. Saved backend
 settings are not evidence of an implemented adapter. Bootstrap trust and protected
