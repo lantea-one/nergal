@@ -47,8 +47,9 @@ sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/nergal.conf
 
 ## Install a release package
 
-The **Build Linux release packages** workflow runs for version tags, packaging
-pull requests, and on demand.
+The **Build Linux release packages** workflow runs for CalVer tags, packaging
+pull requests, and on demand. Release tags must match `Directory.Build.props`
+and can use an optional `v` prefix, just as the container workflow allows.
 It builds AMD64 packages with native tools on the shared organization CI runner.
 Each run publishes the files and their SHA-256 manifest as CI artifacts.
 
@@ -79,7 +80,11 @@ bash scripts/package-release.sh --format deb --verify
 ```
 
 Run `bash tests/package-release.test.sh --reproducibility` to compare portable
-archives from two independent source checkouts at the same revision.
+archives from two independent source checkouts at the same revision. Pass
+`deb`, `rpm`, or `arch` after `--reproducibility` to compare both the
+portable archive and the selected native package on the same build environment.
+The Arch comparison uses a fixed package build path because makepkg records it
+in the package metadata.
 
 The packages install vendor units, CLI launchers and systemd account and
 directory definitions. They leave service activation, credentials and firewall

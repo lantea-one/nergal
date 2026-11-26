@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="@Url.Content("~/css/overview-observations.css")" asp-append-version="true" />
 }
 <main class="container" id="main-content" tabindex="-1">
-    <div class="page-header"><div><p class="eyebrow">@Model.Settings.Branding.InstanceSubtitle</p><h1>@L["Overview"]</h1>
+    <div class="page-header"><div><p class="eyebrow">@Model.Settings.Branding.InstanceSubtitle</p><h1 lang="@Nergal.Web.UiLocalization.MessageLanguage(L["Overview"])" dir="auto">@L["Overview"]</h1>
         <p class="page-subtitle">@L["Firewall configuration, connected hosts and recent activity."]</p></div><span class="badge badge-neutral">@L["Native nftables"]</span></div>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     { <p class="alert alert-danger" role="alert">@Model.ErrorMessage</p> }
@@ -30,7 +30,7 @@
         <div><p class="eyebrow">@L[attention > 0 ? "Needs attention" : "Next action"]</p><h2 id="next-action-heading">@L[next.Heading]</h2><p>@L[next.Description]</p>
             <div class="btn-group"><a class="btn" href="@actionUrl">@L[next.Label]</a>
             @if (Model.CanMutate && Model.LatestRevision is null)
-            { <a class="btn btn-secondary" href="@Url.Action("Sources")">@L["Import nftables.conf"]</a> }
+            { <a class="btn btn-secondary" href="@Url.Action("Sources")" lang="@Nergal.Web.UiLocalization.MessageLanguage(L["Import nftables.conf"])" dir="auto">@L["Import nftables.conf"]</a> }
             </div>
         </div>
         <ol class="configuration-steps" aria-label="@L["Configuration workflow"]">

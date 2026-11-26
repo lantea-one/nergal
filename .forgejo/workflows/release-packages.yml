@@ -1,14 +1,18 @@
 name: Build Linux release packages
 on:
   push:
-    tags: ['v*']
+    tags: ['[0-9]*', 'v[0-9]*']
   # Exercise the release matrix on a packaging review before cutting a tag.
   pull_request:
     paths:
       - '.forgejo/workflows/release-packages.yml'
       - 'deploy/systemd/**'
       - 'deploy/LinuxRelease.targets'
+      - 'deploy/container/release-version.py'
+      - 'Directory.Build.props'
       - 'scripts/package-release.sh'
+      - 'scripts/normalize-static-asset-endpoints.py'
+      - 'tests/package-release.test.sh'
       - 'scripts/collect-nuget-notices.py'
       - 'scripts/nuget-license-texts/**'
   workflow_dispatch:
@@ -52,6 +56,13 @@ jobs:
           persist-credentials: false
       - name: Verify shared organization runner policy
         run: python3 -B scripts/test-ci-runner-policy.py
+      - name: Verify the package release version
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/* ]]; then
+            python3 -B deploy/container/release-version.py version "$GITHUB_REF"
+          else
+            python3 -B deploy/container/release-version.py version
+          fi
       - name: Prepare private .NET runtime directory
         run: echo "XDG_RUNTIME_DIR=$(mktemp -d)" >> "$GITHUB_ENV"
       - uses: https://github.com/actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
@@ -71,6 +82,13 @@ jobs:
             python3 -B tests/collect-nuget-notices.test.py
             bash tests/package-release.test.sh
           fi
+      - name: Rebuild independently and compare package bytes
+        if: github.event_name == 'pull_request'
+        env:
+          PACKAGE_FORMAT: ${{ matrix.format }}
+          NERGAL_PACKAGE_USER: nergal-builder
+          NERGAL_ARCH_BUILD_DIRECTORY: /tmp/nergal-arch-release
+        run: bash tests/package-release.test.sh --reproducibility "$PACKAGE_FORMAT"
       - uses: https://code.forgejo.org/forgejo/upload-artifact@cb8afe72b42edc798abfb8fcb556cf660d894245 # v5
         with:
           name: nergal-linux-${{ matrix.format }}

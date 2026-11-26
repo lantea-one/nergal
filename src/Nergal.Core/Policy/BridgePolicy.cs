@@ -38,6 +38,8 @@ public enum BridgeEtherType
 /// <param name="DestinationPrefixes">Optional bounded same-family destination set, exclusive with scalar/reference; requires Family.</param>
 /// <param name="SourceObject">Optional immutable same-family source-list snapshot, exclusive with literals; requires Family.</param>
 /// <param name="DestinationObject">Optional immutable same-family destination-list snapshot, exclusive with literals; requires Family.</param>
+/// <param name="CountPackets">Keep one anonymous packet/byte counter immediately before the action.</param>
+/// <param name="BindInputInterfaceIndex">Resolve the exact ingress name to its kernel index at installation.</param>
 public sealed record BridgeFilterRule(
     BridgeEtherType EtherType,
     FilterVerdict Verdict,
@@ -62,7 +64,9 @@ public sealed record BridgeFilterRule(
     IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
     IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null,
     PolicyObjectReference? SourceObject = null,
-    PolicyObjectReference? DestinationObject = null);
+    PolicyObjectReference? DestinationObject = null,
+    bool CountPackets = false,
+    bool BindInputInterfaceIndex = false);
 
 /// <summary>A named, non-base bridge chain. Only local declared jump targets are permitted.</summary>
 public sealed class BridgeSubChain
@@ -116,7 +120,7 @@ public sealed class BridgePolicy
     public bool HasExtendedRules => Priority != -200 || SubChains.Count > 0 || Rules.Any(r => r is not null &&
         (r.BridgeName is not null || r.SourceMac is not null || r.DestinationMac is not null || r.NegateSourceMac || r.NegateDestinationMac ||
          r.Family is not null || r.Source is not null || r.Destination is not null || r.SourcePrefixes is not null || r.DestinationPrefixes is not null || r.SourceObject is not null || r.DestinationObject is not null || r.Protocol != FilterProtocol.Any ||
-         r.DestinationPort is not null || r.DestinationPorts is not null || r.DestinationPortObject is not null || r.JumpTarget is not null || r.Return));
+         r.DestinationPort is not null || r.DestinationPorts is not null || r.DestinationPortObject is not null || r.JumpTarget is not null || r.Return || r.CountPackets || r.BindInputInterfaceIndex));
 
     /// <summary>Gets the forward base-chain priority (-300..300).</summary>
     public int Priority { get; }
@@ -134,10 +138,14 @@ public sealed class BridgePolicy
     /// <summary>Computes the semantic backend features required by this bridge policy.</summary>
     public IReadOnlySet<FirewallFeature> GetRequiredFeatures()
     {
-        return new HashSet<FirewallFeature>
+        var features = new HashSet<FirewallFeature>
         {
             FirewallFeature.BridgeFiltering,
             FirewallFeature.ForeignTablePreservation,
         };
+        var rules = Rules.Concat(SubChains.SelectMany(c => c.Rules));
+        if (rules.Any(r => r?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
+        if (rules.Any(r => r?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
+        return features;
     }
 }

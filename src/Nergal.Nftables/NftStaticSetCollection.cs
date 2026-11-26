@@ -58,7 +58,7 @@ public static class NftStaticSetCollection
         }
         if (!expected.SetEquals(seen)) { throw NftStaticSetSnapshot.Invalid(); }
         var json = root.ToJsonString();
-        if (Encoding.UTF8.GetByteCount(json) > 65536) { throw NftStaticSetSnapshot.Invalid(); }
+        if (Encoding.UTF8.GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { throw NftStaticSetSnapshot.Invalid(); }
         return json;
     }
     private static T Read<T>(Func<T> read)

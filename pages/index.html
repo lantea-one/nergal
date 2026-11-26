@@ -42,8 +42,8 @@
       loadNavbar: false,
       subMaxLevel: 3,
       auto2top: true,
-      // Screenshots are files, not Markdown routes. Keep links usable under the project prefix.
-      noCompileLinks: ['assets/screenshots/.*'],
+      // Keep direct file links usable under the project prefix.
+      noCompileLinks: ['assets/screenshots/.*', '^LICENSE$'],
       search: {
         maxAge: 86400000,
         paths: 'auto',

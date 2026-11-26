@@ -1,5 +1,6 @@
 """Exercise a disposable Compose controller over certificate-verified loopback HTTPS."""
 
+import gzip
 import json
 import os
 from pathlib import Path
@@ -10,7 +11,7 @@ import sys
 import tempfile
 import time
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -144,7 +145,13 @@ def check_controller(deployment, tls):
     check_isolation(deployment)
     browser.request(settings["SETTINGS"], 401)
     browser.request("/healthz", 400, headers={"Host": "unexpected.example.invalid"})
-    browser.request("/css/nergal.css", 200)
+    asset_url = f"https://127.0.0.1:{browser.ports['https']}/css/nergal.css"
+    with urlopen(Request(asset_url, headers={"Accept-Encoding": "identity"}), context=tls, timeout=3) as response:
+        assert response.headers.get("Content-Encoding") is None
+        original = response.read()
+    with urlopen(Request(asset_url, headers={"Accept-Encoding": "gzip"}), context=tls, timeout=3) as response:
+        assert response.headers["Content-Encoding"] == "gzip"
+        assert gzip.decompress(response.read()) == original
     try:
         urlopen(f"https://127.0.0.1:{browser.ports['https']}/healthz",
                 context=ssl.create_default_context(), timeout=3).close()
@@ -196,7 +203,7 @@ def main():
                     deployment.own_credentials(credentials, f"{os.getuid()}:{os.getgid()}")
                 finally:
                     deployment.docker("image", "rm", deployment.image)
-    print("PASS: verified loopback HTTPS, offline provisioning, private volumes, protected sessions and settings across restart and recreation, no controller capabilities")
+    print("PASS: verified loopback HTTPS, offline provisioning, private volumes, protected sessions and settings across restart and recreation, static asset encoding, and no controller capabilities")
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ def check_profile_mappings(admin, auditor, database):
     post(fields)
     assert admin.location == path
     page = admin.request(path, 200)
-    assert 'https://identity.example.test' in page and 'version 1' in page
+    assert 'https://identity.example.test' in page and 'Version 1' in page
     assert 'role="switch"' in page and 'literal top-level claim names' in page
     post(fields, 400)
     off = {k: v for k, v in fields.items() if k != 'enabled'}

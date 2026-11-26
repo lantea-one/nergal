@@ -85,7 +85,8 @@ public static class FilterPolicyValidation
 {
     /// <summary>Bitwise union of all defined schema-2 connection-tracking states.</summary>
     public const ConnectionStateFlags AllConnectionStates =
-        ConnectionStateFlags.New | ConnectionStateFlags.Established | ConnectionStateFlags.Related | ConnectionStateFlags.Invalid;
+        ConnectionStateFlags.New | ConnectionStateFlags.Established | ConnectionStateFlags.Related |
+        ConnectionStateFlags.Invalid | ConnectionStateFlags.Untracked;
 
     /// <summary>Validates a Linux interface name against `IFNAMSIZ - 1` and native token safety rules.</summary>
     /// <param name="interfaceName">A candidate interface name such as `eth0`, `veth-a`, or `br0`.</param>

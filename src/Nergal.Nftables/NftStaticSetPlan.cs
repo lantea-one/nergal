@@ -30,7 +30,7 @@ internal sealed class NftStaticSetPlan
     {
         if (active.Count == 0) { return new(candidate, []); }
         var budget = Estimate(candidate, active.Values.Sum(r => r.Content.Entries.Count));
-        return budget > 65536 ? new(null, [new("object.nativeObservationTooLarge", "objects")]) : new(candidate, [], budget);
+        return budget > NftObservationLimits.MaximumDocumentBytes ? new(null, [new("object.nativeObservationTooLarge", "objects")]) : new(candidate, [], budget);
     }
     internal void Append(StringBuilder text, string family, string table)
     {

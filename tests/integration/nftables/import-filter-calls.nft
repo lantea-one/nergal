@@ -1,0 +1,29 @@
+# Port 19101 returns explicitly from the inner chain, then drops in its caller.
+# Port 19102 falls off the inner chain, then returns from outer and reaches base accept.
+# Port 19103 accepts in the inner chain, bypassing the base policy.
+table inet source_filter {
+    chain inner {
+        udp dport 19101 return
+        udp dport 19103 accept
+    }
+    chain outer {
+        jump inner
+        udp dport 19101 drop
+        udp dport 19102 return
+    }
+    chain receive {
+        type filter hook input priority 0; policy drop;
+        meta l4proto udp counter jump outer
+        udp dport 19102 accept
+        udp dport 19104 accept
+    }
+}
+table inet source_early {
+    chain inner {
+        udp dport 19104 drop
+    }
+    chain early {
+        type filter hook input priority -5; policy accept;
+        jump inner
+    }
+}

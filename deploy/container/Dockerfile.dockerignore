@@ -3,6 +3,7 @@
 !Directory.Build.props
 !LICENSE
 !scripts/collect-nuget-notices.py
+!scripts/normalize-static-asset-endpoints.py
 !scripts/nuget-license-texts/*.txt
 !deploy/LinuxRelease.targets
 !src/

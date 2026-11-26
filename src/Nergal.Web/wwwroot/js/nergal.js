@@ -136,7 +136,7 @@
     let remaining = total;
     const fill = document.querySelector("[data-countdown-fill]");
     const tick = function () {
-      countdownEl.textContent = remaining + " s remaining";
+      countdownEl.textContent = countdownEl.dataset.countdownLabel.replace(/\{0\}/g, String(remaining));
       if (fill) {
         fill.style.width = Math.max(0, Math.min(100, (remaining / total) * 100)) + "%";
       }

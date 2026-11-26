@@ -1,34 +1,35 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @{
     var bridge = Model.Bundle?.Bridge;
 }
 <section class="card" aria-labelledby="bridge-settings-heading">
-    <h2 id="bridge-settings-heading">Bridge forwarding · <code>bridge nergal_bridge</code></h2>
-    <p class="hint">This optional owned table filters forwarded Ethernet frames. Priority orders its bridge hook; lower numbers run first. Complete table observation, native ownership receipts and independent timed rollback remain required for apply. No host apply happens here.</p>
+    <h2 id="bridge-settings-heading">@L["Bridge forwarding ·"] <code>bridge nergal_bridge</code></h2>
+    <p class="hint">@L["This optional owned table filters forwarded Ethernet frames. Priority orders its bridge hook; lower numbers run first. Complete table observation, native ownership receipts and independent timed rollback remain required for apply. No host apply happens here."]</p>
     <form class="router-form" method="post" action="@Url.Content("~/manage/policies/bridge/settings")">
         @Html.AntiForgeryToken()
         <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="set" />
-        <fieldset disabled="@(!Model.CanMutate)"><legend>Bridge table settings</legend><div class="form-grid">
-            <div class="field"><label for="bridge-priority">Bridge forward priority</label><input type="number" id="bridge-priority" name="priority" value="@(bridge?.Priority ?? -200)" min="-300" max="300" required aria-describedby="bridge-priority-hint" /><span id="bridge-priority-hint" class="hint">-300 to 300. Use -5 for an early auxiliary-style bridge filter; the initial default is -200.</span></div>
-            <div class="field"><label for="bridge-default">Bridge forward default</label><select id="bridge-default" name="verdict"><option value="drop" selected="@(bridge?.DefaultVerdict != FilterVerdict.Accept)">Drop</option><option value="accept" selected="@(bridge?.DefaultVerdict == FilterVerdict.Accept)">Accept</option></select><span class="hint">Decision for unmatched frames. A drop default can interrupt bridge traffic.</span></div>
-        </div>@if (Model.CanMutate) { <button type="submit" class="btn btn-secondary btn-sm">@(bridge is null ? "Create bridge table in draft" : "Update bridge table draft")</button> }</fieldset>
+        <fieldset disabled="@(!Model.CanMutate)"><legend>@L["Bridge table settings"]</legend><div class="form-grid">
+            <div class="field"><label for="bridge-priority">@L["Bridge forward priority"]</label><input type="number" id="bridge-priority" name="priority" value="@(bridge?.Priority ?? -200)" min="-300" max="300" required aria-describedby="bridge-priority-hint" /><span id="bridge-priority-hint" class="hint">@L["-300 to 300. Use -5 for an early auxiliary-style bridge filter; the initial default is -200."]</span></div>
+            <div class="field"><label for="bridge-default">@L["Bridge forward default"]</label><select id="bridge-default" name="verdict"><option value="drop" selected="@(bridge?.DefaultVerdict != FilterVerdict.Accept)">@L["Drop"]</option><option value="accept" selected="@(bridge?.DefaultVerdict == FilterVerdict.Accept)">@L["Accept"]</option></select><span class="hint">@L["Decision for unmatched frames. A drop default can interrupt bridge traffic."]</span></div>
+        </div>@if (Model.CanMutate) { <button type="submit" class="btn btn-secondary btn-sm">@(bridge is null ? L["Create bridge table in draft"] : L["Update bridge table draft"])</button> }</fieldset>
     </form>
-    @if (bridge is null) { <p class="muted">No bridge table configured.</p> }
+    @if (bridge is null) { <p class="muted">@L["No bridge table configured."]</p> }
     else if (Model.CanMutate)
     {
         <form class="mt-2" method="post" action="@Url.Content("~/manage/policies/bridge/chain")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="add" />
-            <div class="field"><label for="bridge-chain-name">New regular chain name</label><input type="text" id="bridge-chain-name" name="name" maxlength="32" required aria-describedby="bridge-chain-hint" /><span id="bridge-chain-hint" class="hint">1–32 ASCII letters/digits/underscores, starting with a letter; forward is reserved. Create a chain before adding jumps to it. Missing targets, cycles and excessive nesting are rejected.</span></div>
-            <button type="submit" class="btn btn-secondary btn-sm">Add regular chain to draft</button>
+            <div class="field"><label for="bridge-chain-name">@L["New regular chain name"]</label><input type="text" id="bridge-chain-name" name="name" maxlength="32" required aria-describedby="bridge-chain-hint" /><span id="bridge-chain-hint" class="hint">@L["1–32 ASCII letters/digits/underscores, starting with a letter; forward is reserved. Create a chain before adding jumps to it. Missing targets, cycles and excessive nesting are rejected."]</span></div>
+            <button type="submit" class="btn btn-secondary btn-sm">@L["Add regular chain to draft"]</button>
         </form>
         @if (bridge.Rules.Count == 0 && bridge.SubChains.Count == 0)
         {
             <form class="mt-2" method="post" action="@Url.Content("~/manage/policies/bridge/settings")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="remove" />
-                <p class="hint">Remove rules and regular chains first. Removing an empty table also removes its default policy, which may broaden access.</p><button type="submit" class="btn btn-secondary btn-sm">Remove empty bridge table from draft</button>
+                <p class="hint">@L["Remove rules and regular chains first. Removing an empty table also removes its default policy, which may broaden access."]</p><button type="submit" class="btn btn-secondary btn-sm">@L["Remove empty bridge table from draft"]</button>
             </form>
         }
     }

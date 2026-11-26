@@ -13,6 +13,7 @@ native configurations can be imported losslessly.
 | Negated interface and IP matchers | Explicit `negate*` booleans | Compiler/codec validation, native reconstruction; dangling negation is rejected |
 | Postrouting masquerade and return, ingress/protocol/port restrictions | `snatRules[].action` plus optional matchers | Real dual-stack translated source and unmodified return-exemption source |
 | Shared static IPv4/IPv6/port list references | Generated constant named sets, exact immutable versions in every declared reference scope | Complete contents/handles/lookups, IPv6 echo omissions, real packets and receipt-bound apply/rollback |
+| Regular calls in primary and auxiliary inet filters | Schema-2 local chain declarations, ordered jump and return | Dual-stack nested calls, explicit and implicit return, complete echo/list receipts |
 | Independent early inet filtering and extended bridge jump/return | `auxiliaryFilter` and extended `bridge`, including priority -5 | Real dual-stack bridge/early inet packets, complete receipts, confirmed apply and local rollback |
 
 All rows have typed compiler and complete native observation support. Auxiliary
@@ -55,10 +56,37 @@ Bypasses are explicit ordered policy, never automatic compiler exemptions. Evalu
 IPv6 control traffic and the actual routing design before using a reverse-path
 filter. The example is a contract illustration, not a deployable gateway policy.
 
+Raw rules can match a source or destination prefix, or a literal set in
+`sourcePrefixes` or `destinationPrefixes`, within one IPv4 or IPv6 family.
+Raw prerouting and bridge rules can bind an exact input interface name to its
+index at installation with `bindInputInterfaceIndex`. This match follows the
+interface across a rename. The default `iifname` match follows the name.
+Raw accept/drop and bridge accept/drop/jump/return support `countPackets`.
+An anonymous counter runs once after all predicates, immediately before the
+action. Observations validate its two unsigned totals and bind its presence
+and position in the receipt. Bridge IP payload predicates imply the matching
+EtherType. An explicit bridge `meta nfproto` guard blocks conversion.
+
 A filter rule may pair `sourceMac: "02:00:00:00:00:01"` and
 `source: "192.0.2.2/32"`; both restrictions are emitted. `negateSourceMac: true`
 requires a MAC matcher. `reject` is an inet rule action, not a base-chain policy.
 `rateLimit.keyKind` defaults to `sourceAddress`; unknown keys are rejected.
+
+Schema-2 filter policies may declare up to 32 unhooked chains in `regularChains`.
+Each name contains 1–32 ASCII letters, digits or underscores. A rule with
+`"chain": "regular"` names its containing chain in `regularChain`. A
+`"verdict": "jump"` calls the declaration in `jumpTarget` within the same
+filter table. A regular-chain `return` or fall-through resumes immediately
+after the caller's jump. A terminal accept/drop ends that hook's evaluation.
+The compiler validates disabled and unreachable edges, enforces a maximum of
+eight nested regular chains and checks hook-dependent matchers through callers.
+
+In imported inet filters, jump resolution uses the selected source table's own
+unhooked declarations. The compiler prefixes local names with `ngc_`. Creation
+echo and listing bind every declaration (including empty chains), chain/rule
+handle, ordered action and target. An unresolved call, cycle, base-chain return,
+`goto`, or unsupported selector blocks the entire candidate. The typed JSON editor
+retains these fields for review and edits.
 
 A postrouting rule chooses `action: "snat"`, `"masquerade"`, or `"return"`.
 Explicit SNAT requires a source and translated address. Masquerade/return require

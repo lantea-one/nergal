@@ -28,6 +28,19 @@ public sealed class AuxiliaryFormAuthoringTests
         { Assert.Equal(a.RootElement.GetProperty(name).GetRawText(), b.RootElement.GetProperty(name).GetRawText()); }
     }
 
+    /// <summary>Guided edits preserve terminal counting from an imported or advanced-JSON rule in either filter table.</summary>
+    [Fact]
+    public void FilterCounter_SurvivesPrimaryAndAuxiliaryEdits()
+    {
+        var filter = new FilterPolicy(2, FilterVerdict.Drop, [new(IpFamily.IPv4, FilterProtocol.Any, FilterVerdict.Drop, CountPackets: true)]);
+        var json = PolicyBundleJsonCodec.EncodeBundle(new(1, filter, auxiliaryFilter: new(-5, filter)));
+        Assert.True(PolicyAuthoringService.TryUpdateFilterRule(json, 0, Rule(), out var primary, out var errors), string.Join(",", errors));
+        Assert.True(PolicyAuthoringService.TrySetAuxiliaryRule(primary!, "edit", 0, Rule(), Conditions(), out var edited, out errors), string.Join(",", errors));
+        var bundle = PolicyBundleJsonCodec.DecodeBundle(edited!).Value!;
+        Assert.True(Assert.Single(bundle.Filter.Rules)!.CountPackets);
+        Assert.True(Assert.Single(bundle.AuxiliaryFilter!.Filter.Rules)!.CountPackets);
+    }
+
     /// <summary>Complete matchers compile in the auxiliary table while original primary/NAT/bridge settings remain byte-identical.</summary>
     [Fact]
     public void AuxiliaryRule_CompleteMatchersRetainOtherPolicySections()

@@ -86,7 +86,7 @@ internal sealed class NftStaticSetSnapshot
             foreach (var expr in expressions)
             {
                 if (expr?["match"] is not JsonObject match || match["right"] is not JsonValue right || !right.TryGetValue<string>(out var token) || !token.StartsWith('@')) { continue; }
-                if (!result.definitions.TryGetValue(token[1..], out var definition) || Required<string>(rule["chain"]) == "rpfilter") { throw Invalid(); }
+                if (!result.definitions.TryGetValue(token[1..], out var definition) || Required<string>(rule["chain"]) is "rpfilter" or "raw_output") { throw Invalid(); }
                 var payload = match["left"]?["payload"] as JsonObject;
                 if (payload is null) { throw Invalid(); }
                 RequireProperties(payload, "protocol", "field");
@@ -99,7 +99,7 @@ internal sealed class NftStaticSetSnapshot
                     ("ip6", "saddr") when kind == ReusableObjectKind.Ipv6 => "source",
                     ("ip", "daddr") when kind == ReusableObjectKind.Ipv4 => "destination",
                     ("ip6", "daddr") when kind == ReusableObjectKind.Ipv6 => "destination",
-                    ("tcp" or "udp", "dport") when kind == ReusableObjectKind.Port => "port",
+                    ("tcp" or "udp" or "th", "dport") when kind == ReusableObjectKind.Port => "port",
                     _ => throw Invalid()
                 };
                 var handle = Required<ulong>(rule["handle"]);
@@ -183,7 +183,7 @@ internal sealed class NftStaticSetSnapshot
     };
     internal static JsonObject ReadRoot(string json)
     {
-        if (new UTF8Encoding(false, true).GetByteCount(json) > 65536) { throw Invalid(); }
+        if (new UTF8Encoding(false, true).GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { throw Invalid(); }
         using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
         if (HasDuplicateProperties(document.RootElement) || !Properties(document.RootElement, "nftables") || document.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { throw Invalid(); }
         return JsonNode.Parse(json)!.AsObject();

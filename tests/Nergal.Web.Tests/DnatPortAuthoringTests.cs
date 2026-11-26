@@ -15,6 +15,19 @@ public sealed class DnatPortAuthoringTests
     private static DnatRule Rule(string json) => PolicyBundleJsonCodec.DecodeBundle(json).Value!.Nat!.DnatRules[0]!;
     private static VisualDnatRuleInput Input() => new("ipv4", "tcp", "198.51.100.10/32", "192.0.2.2", null, 8080, "wan0", "203.0.113.0/24", "Edited dormant DNAT");
 
+    /// <summary>Editing an imported output rule must retain its hook and deny adding an ingress interface.</summary>
+    [Fact]
+    public void Draft_RetainsImportedOutputHook()
+    {
+        var bundle = Bundle();
+        var original = bundle.Nat!.DnatRules[0]! with { Hook = DnatHook.Output, InputInterface = null };
+        var draft = PolicyBundleJsonCodec.EncodeBundle(new(1, bundle.Filter, new(1, [original], [])));
+
+        Assert.True(PolicyAuthoringService.TryUpdateDnatRule(draft, 0, Input() with { InputInterface = null }, out var edited, out _));
+        Assert.Equal(DnatHook.Output, Rule(edited!).Hook);
+        Assert.False(PolicyAuthoringService.TryUpdateDnatRule(draft, 0, Input(), out _, out _));
+    }
+
     /// <summary>Pinned fields survive ordinary edits; literal conflicts/protocol changes fail and explicit removal only clears the original port.</summary>
     [Fact]
     public void Draft_RetainsPinsAndAllTranslationIntent()

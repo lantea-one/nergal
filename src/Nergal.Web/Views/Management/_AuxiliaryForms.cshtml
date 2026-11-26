@@ -1,28 +1,29 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @if (Model.CanMutate && Model.Bundle is { } bundle)
 {
     var auxiliary = bundle.AuxiliaryFilter;
     <section class="card" aria-labelledby="auxiliary-heading">
-        <h2 id="auxiliary-heading">Auxiliary inet filtering</h2>
-        <p class="hint">Optional independent owned table <code>inet nergal_aux</code>. Priority controls hook ordering; lower numbers run first. An Accept here still allows later base chains to drop traffic. This table participates in complete ownership checks, candidate review and timed rollback; it does not adopt foreign tables.</p>
+        <h2 id="auxiliary-heading">@L["Auxiliary inet filtering"]</h2>
+        <p class="hint">@L["Optional independent owned table"] <code>inet nergal_aux</code>@L[". Priority controls hook ordering; lower numbers run first. An Accept here still allows later base chains to drop traffic. This table participates in complete ownership checks, candidate review and timed rollback; it does not adopt foreign tables."]</p>
         <form class="router-form" method="post" action="@Url.Content("~/manage/policies/auxiliary/defaults")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="set" />
             <div class="form-grid">
-                <div class="field"><label for="aux-priority">Auxiliary priority</label><input type="number" id="aux-priority" name="priority" value="@(auxiliary?.Priority ?? -5)" min="-300" max="300" required aria-describedby="aux-priority-hint" /><span id="aux-priority-hint" class="hint">-300 to 300; -5 runs before ordinary priority-0 filtering.</span></div>
-                <div class="field"><label for="aux-input-default">Input default</label><select id="aux-input-default" name="inputDefault"><option value="accept" selected="@(auxiliary?.Filter.InputDefaultVerdict != FilterVerdict.Drop)">Accept</option><option value="drop" selected="@(auxiliary?.Filter.InputDefaultVerdict == FilterVerdict.Drop)">Drop</option></select></div>
-                <div class="field"><label for="aux-forward-default">Forward default</label><select id="aux-forward-default" name="forwardDefault"><option value="accept" selected="@(auxiliary?.Filter.ForwardDefaultVerdict != FilterVerdict.Drop)">Accept</option><option value="drop" selected="@(auxiliary?.Filter.ForwardDefaultVerdict == FilterVerdict.Drop)">Drop</option></select></div>
-                <div class="field"><label for="aux-output-default">Output default</label><select id="aux-output-default" name="outputDefault"><option value="accept" selected="@(auxiliary?.Filter.OutputDefaultVerdict != FilterVerdict.Drop)">Accept</option><option value="drop" selected="@(auxiliary?.Filter.OutputDefaultVerdict == FilterVerdict.Drop)">Drop</option></select></div>
+                <div class="field"><label for="aux-priority">@L["Auxiliary priority"]</label><input type="number" id="aux-priority" name="priority" value="@(auxiliary?.Priority ?? -5)" min="-300" max="300" required aria-describedby="aux-priority-hint" /><span id="aux-priority-hint" class="hint">@L["-300 to 300; -5 runs before ordinary priority-0 filtering."]</span></div>
+                <div class="field"><label for="aux-input-default">@L["Input default"]</label><select id="aux-input-default" name="inputDefault"><option value="accept" selected="@(auxiliary?.Filter.InputDefaultVerdict != FilterVerdict.Drop)">@L["Accept"]</option><option value="drop" selected="@(auxiliary?.Filter.InputDefaultVerdict == FilterVerdict.Drop)">@L["Drop"]</option></select></div>
+                <div class="field"><label for="aux-forward-default">@L["Forward default"]</label><select id="aux-forward-default" name="forwardDefault"><option value="accept" selected="@(auxiliary?.Filter.ForwardDefaultVerdict != FilterVerdict.Drop)">@L["Accept"]</option><option value="drop" selected="@(auxiliary?.Filter.ForwardDefaultVerdict == FilterVerdict.Drop)">@L["Drop"]</option></select></div>
+                <div class="field"><label for="aux-output-default">@L["Output default"]</label><select id="aux-output-default" name="outputDefault"><option value="accept" selected="@(auxiliary?.Filter.OutputDefaultVerdict != FilterVerdict.Drop)">@L["Accept"]</option><option value="drop" selected="@(auxiliary?.Filter.OutputDefaultVerdict == FilterVerdict.Drop)">@L["Drop"]</option></select></div>
             </div>
-            <button type="submit" class="btn btn-secondary btn-sm">@(auxiliary is null ? "Create auxiliary table in draft" : "Update auxiliary defaults draft")</button>
+            <button type="submit" class="btn btn-secondary btn-sm">@(auxiliary is null ? L["Create auxiliary table in draft"] : L["Update auxiliary defaults draft"])</button>
         </form>
         @if (auxiliary is not null)
         {
             @for (var i = 0; i < auxiliary.Filter.Rules.Count; i++)
             {
                 var r = auxiliary.Filter.Rules[i]; if (r is null) { continue; }
-                <details class="router-form-details"><summary>Auxiliary rule @(i + 1) · @r.Chain · @r.Family · @r.Protocol · @r.Verdict · @(r.Enabled ? "Enabled" : "Disabled") · @(r.Description ?? "No description")</summary>
+                <details class="router-form-details"><summary>@L["Auxiliary rule {0}", i + 1] · @r.Chain · @r.Family · @r.Protocol · @r.Verdict · @(r.Enabled ? L["Enabled"] : L["Disabled"]) · @(r.Description ?? L["No description"].Value)</summary>
                     <div class="router-form-body">
                         @await Html.PartialAsync("_AuxiliaryRuleForm", new Nergal.Web.AuxiliaryRuleFormModel(Model, i))
                         <div class="btn-group mt-2">
@@ -31,20 +32,20 @@
                                 <form method="post" action="@Url.Content("~/manage/policies/auxiliary/rule")">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="@operation" /><input type="hidden" name="ruleIndex" value="@i" />
-                                    <button type="submit" class="btn btn-secondary btn-sm" disabled="@((operation == "up" && i == 0) || (operation == "down" && i == auxiliary.Filter.Rules.Count - 1))">@(operation == "remove" ? "Remove auxiliary rule from draft" : "Move auxiliary rule " + operation)</button>
+                                    <button type="submit" class="btn btn-secondary btn-sm" disabled="@((operation == "up" && i == 0) || (operation == "down" && i == auxiliary.Filter.Rules.Count - 1))">@(operation == "remove" ? L["Remove auxiliary rule from draft"] : operation == "up" ? L["Move auxiliary rule up"] : L["Move auxiliary rule down"])</button>
                                 </form>
                             }
                         </div>
                     </div>
                 </details>
             }
-            <details class="router-form-details"><summary>Add auxiliary filter rule</summary><div class="router-form-body">@await Html.PartialAsync("_AuxiliaryRuleForm", new Nergal.Web.AuxiliaryRuleFormModel(Model, null))</div></details>
+            <details class="router-form-details"><summary>@L["Add auxiliary filter rule"]</summary><div class="router-form-body">@await Html.PartialAsync("_AuxiliaryRuleForm", new Nergal.Web.AuxiliaryRuleFormModel(Model, null))</div></details>
             @if (auxiliary.Filter.Rules.Count == 0)
             {
                 <form class="mt-2" method="post" action="@Url.Content("~/manage/policies/auxiliary/defaults")">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="bundleJson" value="@Model.BundleJson" /><input type="hidden" name="summary" value="@Model.Summary" /><input type="hidden" name="compareToRevision" value="@Model.CompareToRevision" /><input type="hidden" name="operation" value="remove" />
-                    <p class="hint">Removing this empty table removes its chain defaults too, which may broaden access.</p><button type="submit" class="btn btn-secondary btn-sm">Remove empty auxiliary table from draft</button>
+                    <p class="hint">@L["Removing this empty table removes its chain defaults too, which may broaden access."]</p><button type="submit" class="btn btn-secondary btn-sm">@L["Remove empty auxiliary table from draft"]</button>
                 </form>
             }
         }

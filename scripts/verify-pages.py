@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGES = ROOT / "pages"
 
 REQUIRED_FILES = [
+    "LICENSE",
     "oidc-connection.md",
     "oauth-connection.md",
     "overview-host-observations.md",
@@ -139,6 +140,10 @@ def main() -> int:
         path = PAGES / rel
         if not path.is_file():
             errors.append(f"Missing required pages file: pages/{rel}")
+
+    pages_license = PAGES / "LICENSE"
+    if pages_license.is_file() and pages_license.read_bytes() != (ROOT / "LICENSE").read_bytes():
+        errors.append("pages/LICENSE must match the repository LICENSE")
 
     index_html = (PAGES / "index.html").read_text(encoding="utf-8") if (PAGES / "index.html").is_file() else ""
     if "assets/nergal-theme.css" not in index_html or "window.$docsify" not in index_html:

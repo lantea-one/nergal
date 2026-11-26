@@ -1,41 +1,43 @@
 @using Nergal.Identity
 @model Nergal.Web.Controllers.MfaPolicyPageModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "MFA policy";
     ViewData["ActiveNav"] = "settings";
 }
 <main id="main-content" tabindex="-1" class="container">
     <div class="page-header">
-        <div><h1>MFA policy</h1><p class="page-subtitle">Set the authenticator requirement for local and LDAP sign-ins.</p></div>
+        <div><h1>@L["MFA policy"]</h1><p class="page-subtitle">@L["Set the authenticator requirement for local and LDAP sign-ins."]</p></div>
         @if (ViewData["ShowManageNav"] is true)
         {
-            <a class="btn btn-secondary" href="@Url.Content("~/manage/settings#auth")">Back to settings</a>
+            <a class="btn btn-secondary" href="@Url.Content("~/manage/settings#auth")">@L["Back to settings"]</a>
         }
         else
         {
-            <a class="btn btn-secondary" href="@Url.Content("~/profile")">Back to my profile</a>
+            <a class="btn btn-secondary" href="@Url.Content("~/profile")">@L["Back to my profile"]</a>
         }
     </div>
     @if (Model.Error is string error) { <div class="alert alert-danger" role="alert">@error</div> }
     <section class="card">
-        <h2>Authenticator requirement</h2>
+        <h2>@L["Authenticator requirement"]</h2>
         <form class="form-stack" method="post" action="@Url.Content("~/manage/identity/mfa/save")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="version" value="@Model.Policy.Version" />
             <div class="field">
-                <label for="mfa-requirement">Require an authenticator for</label>
+                <label for="mfa-requirement">@L["Require an authenticator for"]</label>
                 <select id="mfa-requirement" name="requirement" aria-describedby="mfa-policy-hint mfa-recovery-hint">
-                    <option value="Optional" selected="@(Model.Policy.Requirement == MfaRequirement.Optional)">Enrolled users only</option>
-                    <option value="Administrators" selected="@(Model.Policy.Requirement == MfaRequirement.Administrators)">Administrators and enrolled users</option>
-                    <option value="All" selected="@(Model.Policy.Requirement == MfaRequirement.All)">All local and LDAP users</option>
+                    <option value="Optional" selected="@(Model.Policy.Requirement == MfaRequirement.Optional)">@L["Enrolled users only"]</option>
+                    <option value="Administrators" selected="@(Model.Policy.Requirement == MfaRequirement.Administrators)">@L["Administrators and enrolled users"]</option>
+                    <option value="All" selected="@(Model.Policy.Requirement == MfaRequirement.All)">@L["All local and LDAP users"]</option>
                 </select>
-                <span id="mfa-policy-hint" class="hint">Enrolled users always use a code. Users covered by the policy must enroll before they can sign in. A policy change may require signing in again.</span>
+                <span id="mfa-policy-hint" class="hint">@L["Enrolled users always use a code. Users covered by the policy must enroll before they can sign in. A policy change may require signing in again."]</span>
             </div>
-            <p id="mfa-recovery-hint" class="hint">Before requiring MFA, enroll an authenticator for at least one enabled local Administrator.</p>
+            <p id="mfa-recovery-hint" class="hint">@L["Before requiring MFA, enroll an authenticator for at least one enabled local Administrator."]</p>
             <div class="btn-group">
-                <button type="submit">Save MFA policy</button>
-                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa")">My authenticator</a>
+                <button type="submit">@L["Save MFA policy"]</button>
+                <a class="btn btn-secondary" href="@Url.Content("~/profile/mfa")">@L["My authenticator"]</a>
             </div>
         </form>
     </section>

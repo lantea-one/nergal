@@ -1,0 +1,24 @@
+table inet nergal_filter {
+    chain rpfilter {
+        type filter hook prerouting priority raw; policy accept;
+        iifname lo ip saddr { 192.0.2.2/31, 192.0.2.6/31 } counter drop;
+        iifname lo ip6 saddr { 2001:db8::2/127, 2001:db8::6/127 } counter drop;
+        ip6 daddr { 2001:db8::8/127, 2001:db8::c/127 } accept;
+        iif lo ip daddr 192.0.2.8 accept;
+        counter drop;
+    }
+}
+table bridge nergal_bridge {
+    chain forward {
+        type filter hook forward priority -200; policy drop;
+        jump screen;
+        counter drop;
+    }
+    chain screen {
+        iifname edge-in ip saddr { 192.0.2.2/31, 192.0.2.6/31 } counter drop;
+        iifname edge-in ip6 saddr { 2001:db8::2/127, 2001:db8::6/127 } counter drop;
+        ip6 daddr { 2001:db8::8/127, 2001:db8::c/127 } accept;
+        iif edge-in accept;
+        return;
+    }
+}

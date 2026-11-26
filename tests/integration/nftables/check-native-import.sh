@@ -19,6 +19,24 @@ for mode in router-packet-nat-disabled-return router-packet-nat-source-miss rout
     cat tests/integration/nftables/import-router-filter.nft "$fixture/original-$mode.nft" > "$fixture/combined.nft"
     "${runner[@]}" import-native "$fixture/combined.nft" nat "$bindings" > "$fixture/$mode.nft"
 done
+"${runner[@]}" import-native tests/integration/nftables/import-alternatives.nft bundle "$bindings;Auxiliary=inet/nergal_aux" > "$fixture/imported-alternatives.nft"
+for source in tests/integration/nftables/import-alternatives.nft "$fixture/imported-alternatives.nft"; do
+    unshare --user --map-root-user --net python3 -B tests/integration/nftables/import_alternatives_check.py \
+        "$source" "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+done
+unshare --user --map-root-user --net bash -euc '
+    [[ "$(readlink /proc/self/ns/net)" != "$2" && "$(readlink /proc/self/ns/user)" != "$3" ]]
+    ip link add fixture-in type veth peer name fixture-peer
+    nft --echo --handle --json -f "$1/imported-alternatives.nft" > "$1/imported-echo.json"
+    nft --terse --json list table inet nergal_filter > "$1/imported-filter-list.json"
+    nft --terse --json list table inet nergal_nat > "$1/imported-nat-list.json"
+    nft --terse --json list table inet nergal_aux > "$1/imported-aux-list.json"
+    ip link set fixture-in name fixture-renamed
+    nft --terse --json list table inet nergal_filter > "$1/renamed-filter-list.json"
+' -- "$fixture" "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
+"${runner[@]}" verify-import-native "$fixture/imported-alternatives.nft" "$fixture/imported-echo.json" "$fixture/imported-filter-list.json" "$fixture/imported-nat-list.json" "$fixture/imported-aux-list.json"
+"${runner[@]}" verify-import-native "$fixture/imported-alternatives.nft" "$fixture/imported-echo.json" "$fixture/renamed-filter-list.json" "$fixture/imported-nat-list.json" "$fixture/imported-aux-list.json" --renamed
+printf '%s\n' 'PASS: imported selector, counter, conntrack and output DNAT rules reconstruct from kernel receipts'
 "${runner[@]}" router-constructs > "$fixture/original-filter.nft"
 "${runner[@]}" import-native "$fixture/original-filter.nft" filter "$filter_binding" > "$fixture/roundtrip-filter.nft"
 for variant in independent imported; do
@@ -29,7 +47,7 @@ for variant in independent imported; do
         filter="$fixture/imported-filter.nft"
         nat="$fixture/imported-nat.nft"
     fi
-    unshare --user --map-root-user --net python3 -B tests/integration/nftables/router_constructs_check.py \
+    NERGAL_TEST_ROUTE_MSS=1 unshare --user --map-root-user --net python3 -B tests/integration/nftables/router_constructs_check.py \
         "$filter" "$nat" "$fixture/roundtrip-filter.nft" "$fixture/router-nat.nft" "$fixture" \
         "$(readlink /proc/self/ns/net)" "$(readlink /proc/self/ns/user)"
 done

@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased — router authoring and source conversion
+## Unreleased
+
+- Preserve supported native filter and bridge counters, wildcard interfaces,
+  chain calls, raw tracking exceptions, static NAT maps, and route-derived MSS
+  when converting source. Verify independent dual-stack packets and complete
+  receipts, and report unsupported statements before creating a candidate.
+- Localize registered console messages in 20 supported display languages.
+  Arabic and Hebrew use right-to-left layouts with left-to-right technical data.
+- Rebuild Debian, RPM and Arch release packages from independent source paths
+  in review CI. Normalize the static asset manifest in packages and controller
+  images, preserving content-encoding negotiation.
 
 - Add UI-managed live OIDC connections, purpose-protected write-only secrets,
   version-bound challenges/sessions and local-Administrator trust replacement.

@@ -1,5 +1,7 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Administrator session";
     ViewData["ActiveNav"] = "session";
     ViewData["ShowManageNav"] = Url.RouteUrl("manage-dashboard") is not null;
@@ -7,21 +9,21 @@
 <main id="main-content" tabindex="-1" class="container-narrow">
     <div class="card" style="padding: 1.75rem;">
         <div class="card-header">
-            <h1 style="margin: 0; font-size: 1.45rem;">Administrator session</h1>
-            <span class="badge badge-success">Authenticated</span>
+            <h1 style="margin: 0; font-size: 1.45rem;">@L["Administrator session"]</h1>
+            <span class="badge badge-success">@L["Authenticated"]</span>
         </div>
 
-        <p class="muted">Signed in as <strong>@User.Identity?.Name</strong>.</p>
-        <p><a href="@Url.Content("~/profile")">My profile</a></p>
+        <p class="muted">@L["Signed in as"] <strong>@User.Identity?.Name</strong>.</p>
+        <p><a href="@Url.Content("~/profile")">@L["My profile"]</a></p>
 
         <div class="btn-group mt-2" style="margin-bottom: 1.25rem;">
             @if (Url.RouteUrl("manage-dashboard") is string manageUrl)
             {
-                <a class="btn" href="@manageUrl">Manage fleet, policies &amp; audit</a>
+                <a class="btn" href="@manageUrl">@L["Manage fleet, policies & audit"]</a>
             }
             @if (Url.RouteUrl("local-agent-status") is string statusUrl)
             {
-                <a class="btn btn-secondary" href="@statusUrl">View agent status</a>
+                <a class="btn btn-secondary" href="@statusUrl">@L["View agent status"]</a>
             }
         </div>
 
@@ -29,7 +31,7 @@
 
         <form method="post" action="@Url.Content("~/logout")">
             @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-danger">@((User.Identity?.AuthenticationType is Nergal.Web.FederatedLogin.Session or Nergal.Web.FederatedLogin.LdapSession) ? "Sign out of this session" : "Sign out of all local sessions")</button>
+            <button type="submit" class="btn btn-danger">@((User.Identity?.AuthenticationType is Nergal.Web.FederatedLogin.Session or Nergal.Web.FederatedLogin.LdapSession) ? L["Sign out of this session"] : L["Sign out of all local sessions"])</button>
         </form>
     </div>
 </main>

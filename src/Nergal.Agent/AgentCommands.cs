@@ -192,7 +192,7 @@ internal static class AgentCommands
             Nergal.Linux.LinuxDirectoryDurability.Synchronize(directory);
 
             await NativeNft.Run(["--check", "--file", "-"], baseline);
-            var echo = await NativeNft.Run(["--echo", "--handle", "--json", "--file", "-"], baseline);
+            var echo = await NativeNft.ApplyWithReceiptEcho(baseline);
             var created = NftTableObservation.ParseEnrollmentEcho(echo).Observation;
             if (created is null || created.Identity != identity)
             {
@@ -506,7 +506,7 @@ internal static class AgentCommands
             var expectBridge = ArtifactHasBridge(enrollment.Artifact);
             var expectAuxiliary = NftPolicyBundleCompiler.ArtifactContainsAuxiliary(enrollment.Artifact);
             await NativeNft.Run(["--check", "--file", "-"], enrollment.Artifact);
-            var echo = await NativeNft.Run(["--echo", "--handle", "--json", "--file", "-"], enrollment.Artifact);
+            var echo = await NativeNft.ApplyWithReceiptEcho(enrollment.Artifact);
             var complete = await NativeNft.TryObserveCompleteAsync() ?? throw new IOException("Complete creation listing unavailable.");
             echo = CompleteCreationEvidence(echo, complete, enrollment.Artifact);
             var created = (expectNat || expectBridge || expectAuxiliary
@@ -605,7 +605,7 @@ internal static class AgentCommands
             ?? throw new IOException("Auxiliary table observation unavailable.");
         var batch = BuildDeletePrefix(beforeAux) + artifact;
         await NativeNft.Run(["--check", "--file", "-"], batch);
-        var echo = await NativeNft.Run(["--echo", "--handle", "--json", "--file", "-"], batch);
+        var echo = await NativeNft.ApplyWithReceiptEcho(batch);
         var expectNat = ArtifactHasNat(artifact);
         var expectBridge = ArtifactHasBridge(artifact);
         var expectAuxiliary = NftPolicyBundleCompiler.ArtifactContainsAuxiliary(artifact);

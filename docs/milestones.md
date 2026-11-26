@@ -33,7 +33,7 @@ The initial private deployment is an acceptance environment, not the product sco
 | M5 | Everyday administration UX | Complete for M5 acceptance | Clear first-use starting path and next action, task-based navigation and progressive disclosure, accessible light/dark/mobile UI, local Administrator/Auditor user management and profiles with last-administrator protection, audit and revocation; configurable OIDC/OAuth/LDAP profile defaults and local overrides, LDAP sign-in, email/TOTP MFA and per-provider bypass/assurance policy; meaningful charts with observation provenance and missing-data states, plus UI internationalization (i18n). |
 | M6 | Database completion | Complete for the fresh-schema baseline | Fresh controller schema 6, durable settings and latest authenticated host observations, distinct desired/observed/applied state, and verified constraints and backup/restore on SQLite, PostgreSQL, MariaDB, MySQL and SQL Server. |
 | M7 | Installation and operations | Complete for the current schemas | Native Linux packages and hardened controller container, independent QEMU controller and agent installs, optional OIDC, same-schema package upgrades, wrapping and mTLS certificate rotation, full installation restore, drift and interrupted-operation recovery. |
-| M8 | Product acceptance and release | In progress | Independent host/router/bridge/dual-stack packet checks have passed. Private conversion equivalence, dependency/license review, reproducible packages, final docs/Pages/screenshots and release-blocker closure remain acceptance gates. |
+| M8 | Product acceptance and release readiness | Complete for release readiness | Synthetic host, router, bridge and dual-stack packet acceptance passed. All five private snapshots produced complete conversion plans and their candidates passed isolated kernel dry runs. Debian, Fedora RPM and Arch packages were verified with reproducible builds. |
 
 ## Dependencies and support decisions
 
@@ -118,8 +118,7 @@ evidence; this source/conversion persistence is part of the controller store.
 
 Counters/logging/maps, arbitrary dynamic objects/control flow, unsupported table
 families and unused static declarations remain explicit blocking gaps; M4 does not
-claim arbitrary nft language support. Complete private-server migration acceptance
-remains M8. M6 follows the M5 console and identity acceptance.
+claim arbitrary nft language support. M8 records the accepted evidence for private-source conversion readiness. M6 follows the M5 console and identity acceptance.
 
 ### M5 usability acceptance
 

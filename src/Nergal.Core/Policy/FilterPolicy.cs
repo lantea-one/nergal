@@ -1,15 +1,17 @@
 namespace Nergal.Core.Policy;
 
-/// <summary>Address family of a rule; every rule explicitly selects one IP version.</summary>
+/// <summary>Address family of a rule.</summary>
 public enum IpFamily
 {
     /// <summary>IPv4 traffic.</summary>
     IPv4,
     /// <summary>IPv6 traffic.</summary>
     IPv6,
+    /// <summary>One inet filter rule matching both IP versions, with family-independent predicates.</summary>
+    DualStack,
 }
 
-/// <summary>Terminal filtering decisions supported by policy rules.</summary>
+/// <summary>Filtering decisions supported by policy rules.</summary>
 public enum FilterVerdict
 {
     /// <summary>Permit traffic, subject to other owners' base chains.</summary>
@@ -18,6 +20,16 @@ public enum FilterVerdict
     Drop,
     /// <summary>Actively reject traffic with ICMP/ICMPv6 administratively prohibited (<c>reject with icmpx type admin-prohibited</c>; schema 2 only).</summary>
     Reject,
+    /// <summary>Evaluate the following rule after a counted filter match or a raw NOTRACK statement (schema 2 only).</summary>
+    Continue,
+    /// <summary>Actively reject with ICMP/ICMPv6 port unreachable, the default inet reject (schema 2 only).</summary>
+    RejectPortUnreachable,
+    /// <summary>Set the TCP SYN MSS from the native route MTU and continue evaluating the forward chain.</summary>
+    ClampRouteMss,
+    /// <summary>Call the declared table-local regular chain and resume at the next rule on return.</summary>
+    Jump,
+    /// <summary>Resume the calling chain at its next rule. Valid only in a regular chain.</summary>
+    Return,
 }
 
 /// <summary>Protocols supported without semantic approximation.</summary>
@@ -33,6 +45,8 @@ public enum FilterProtocol
     Icmp,
     /// <summary>ICMPv6 for IPv6 only, without type restrictions.</summary>
     IcmpV6,
+    /// <summary>A single protocol set matching TCP and UDP, optionally guarding a generic transport destination port.</summary>
+    TcpOrUdp,
 }
 
 /// <summary>Filter base chains supported by policy schema versions 1 and 2.</summary>
@@ -44,6 +58,8 @@ public enum FilterChainKind
     Forward,
     /// <summary>Traffic originating from the local host (`hook output`).</summary>
     Output,
+    /// <summary>A declared, unhooked chain identified by FilterRule.RegularChain.</summary>
+    Regular,
 }
 
 /// <summary>Connection-tracking states matched against kernel conntrack state in schema version 2.</summary>
@@ -60,6 +76,8 @@ public enum ConnectionStateFlags
     Related = 4,
     /// <summary>Packet that cannot be associated with a known valid connection.</summary>
     Invalid = 8,
+    /// <summary>Packet explicitly excluded from connection tracking.</summary>
+    Untracked = 16,
 }
 
 /// <summary>Supported rate-limit window units for per-source dynamic sets.</summary>
@@ -69,6 +87,16 @@ public enum RateLimitTimeUnit
     Second,
     /// <summary>Packets permitted per minute.</summary>
     Minute,
+}
+
+/// <summary>One anonymous packet token bucket shared by every matching packet on this rule.</summary>
+/// <param name="PacketsPerWindow">Packet allowance per window (1–1000000).</param>
+/// <param name="WindowUnit">Native time unit for the refill rate.</param>
+/// <param name="Burst">Maximum accumulated tokens (1–10000 packets).</param>
+public sealed record PacketRateLimit(int PacketsPerWindow, RateLimitTimeUnit WindowUnit, int Burst)
+{
+    /// <summary>Whether the complete bucket is within the supported bounds.</summary>
+    public bool IsValid => PacketsPerWindow is >= 1 and <= 1_000_000 && Burst is >= 1 and <= 10_000 && Enum.IsDefined(WindowUnit);
 }
 
 /// <summary>Address key tracked by a dynamic nftables rate-limit meter.</summary>
@@ -95,8 +123,8 @@ public sealed record PerSourceRateLimit(
     RateLimitKeyKind KeyKind = RateLimitKeyKind.SourceAddress,
     bool RefreshEntryTimeout = false);
 
-/// <summary>An ordered rule evaluated in the raw prerouting <c>rpfilter</c> base chain (<c>hook prerouting priority raw</c>).</summary>
-/// <param name="Verdict">Terminal decision (<see cref="FilterVerdict.Accept"/> or <see cref="FilterVerdict.Drop"/>).</param>
+/// <summary>An ordered rule in an owned prerouting or output base chain at raw priority (-300).</summary>
+/// <param name="Verdict">Accept or drop, or Continue for a standalone NOTRACK statement.</param>
 /// <param name="Family">Optional explicit IP family when matching <paramref name="Source"/> or family-specific traffic.</param>
 /// <param name="Protocol">Optional L4 protocol (<see cref="FilterProtocol.Any"/>, <see cref="FilterProtocol.Tcp"/>, or <see cref="FilterProtocol.Udp"/>).</param>
 /// <param name="Source">Optional canonical source prefix restriction.</param>
@@ -108,6 +136,14 @@ public sealed record PerSourceRateLimit(
 /// <param name="MatchFibUnreachable">When true, emits <c>fib saddr . iif oif == 0</c> reverse-path lookup.</param>
 /// <param name="Description">Optional human-readable operator note (max 160 printable characters; metadata only).</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
+/// <param name="Notrack">Disable connection tracking for matching packets and continue to the next rule. Requires the Continue verdict.</param>
+/// <param name="OutputInterface">Optional exact egress interface name in the raw output hook.</param>
+/// <param name="NegateOutputInterface">Negates the egress interface matcher when present.</param>
+/// <param name="CountPackets">Keep one anonymous packet/byte counter immediately before the action.</param>
+/// <param name="BindInputInterfaceIndex">Resolve the exact ingress name to its kernel index at installation.</param>
+/// <param name="SourcePrefixes">Optional same-family literal source set, exclusive with Source.</param>
+/// <param name="Destination">Optional same-family destination prefix.</param>
+/// <param name="DestinationPrefixes">Optional same-family literal destination set, exclusive with Destination.</param>
 public sealed record RpFilterRule(
     FilterVerdict Verdict,
     IpFamily? Family = null,
@@ -120,26 +156,38 @@ public sealed record RpFilterRule(
     int? DestinationPort = null,
     bool MatchFibUnreachable = false,
     string? Description = null,
-    bool Enabled = true);
+    bool Enabled = true,
+    bool Notrack = false,
+    string? OutputInterface = null,
+    bool NegateOutputInterface = false,
+    bool CountPackets = false,
+    bool BindInputInterfaceIndex = false,
+    IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
+    NetworkPrefix? Destination = null,
+    IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null);
 
-/// <summary>Optional raw prerouting reverse-path filtering chain configuration for <c>inet nergal_filter</c>.</summary>
+/// <summary>Configuration for one optional raw base chain in an owned inet filter table.</summary>
 public sealed class RpFilterPolicy
 {
-    /// <summary>Snapshots ordered raw prerouting reverse-path filter rules.</summary>
-    /// <param name="defaultVerdict">Base chain default policy (typically <see cref="FilterVerdict.Accept"/>).</param>
-    /// <param name="rules">Ordered rules evaluated in <c>chain rpfilter</c>.</param>
+    /// <summary>Snapshots the ordered raw rules, including disabled intent.</summary>
+    /// <param name="defaultVerdict">Base chain default policy. Raw output and chains with NOTRACK require Accept.</param>
+    /// <param name="rules">Ordered rules evaluated on the selected hook.</param>
     /// <exception cref="ArgumentNullException">The rules collection is null.</exception>
     public RpFilterPolicy(FilterVerdict defaultVerdict, IEnumerable<RpFilterRule?> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
         DefaultVerdict = defaultVerdict;
-        Rules = Array.AsReadOnly(rules.ToArray());
+        Rules = Array.AsReadOnly(rules.Select(rule => rule is null ? null : rule with
+        {
+            SourcePrefixes = rule.SourcePrefixes is null ? null : Array.AsReadOnly(rule.SourcePrefixes.ToArray()),
+            DestinationPrefixes = rule.DestinationPrefixes is null ? null : Array.AsReadOnly(rule.DestinationPrefixes.ToArray())
+        }).ToArray());
     }
 
     /// <summary>Gets the base chain default policy.</summary>
     public FilterVerdict DefaultVerdict { get; }
 
-    /// <summary>Gets the ordered raw prerouting rules.</summary>
+    /// <summary>Gets the ordered raw rules.</summary>
     public IReadOnlyList<RpFilterRule?> Rules { get; }
 }
 
@@ -172,6 +220,16 @@ public sealed class RpFilterPolicy
 /// <param name="DestinationObject">Optional pinned address-list reference, exclusive with destination literals.</param>
 /// <param name="DestinationPortObject">Optional pinned port-list reference, exclusive with destination-port literals.</param>
 /// <param name="Enabled">Whether this validated rule contributes to native enforcement; false retains all intent and order.</param>
+/// <param name="CountPackets">Count packets and bytes after all matches and any meter, then evaluate the verdict (schema 2 only). A dual-stack rule has one shared counter.</param>
+/// <param name="OriginalSourcePrefixes">Optional original-direction source addresses for a DNAT connection.</param>
+/// <param name="OriginalDestinationPrefixes">Optional original-direction destination addresses for a DNAT connection.</param>
+/// <param name="BindInputInterfaceIndex">Resolve the input interface name to its index at install time, using native `iif` instead of `iifname`.</param>
+/// <param name="RegularChain">Declared chain containing this rule when Chain is Regular.</param>
+/// <param name="JumpTarget">Declared regular chain called by a Jump verdict in this table.</param>
+/// <param name="InputInterfaceSelector">Optional input name prefix or set, mutually exclusive with the scalar input name.</param>
+/// <param name="OutputInterfaceSelector">Optional output name prefix or set, mutually exclusive with the scalar output name.</param>
+/// <param name="Ipv6HopLimit">Exact IPv6 header hop limit, from zero through 255.</param>
+/// <param name="PacketLimit">Optional rule-local packet bucket evaluated after all matchers and before the counter and verdict.</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -200,8 +258,21 @@ public sealed record FilterRule(
     PolicyObjectReference? SourceObject = null,
     PolicyObjectReference? DestinationObject = null,
     PolicyObjectReference? DestinationPortObject = null,
-    bool Enabled = true)
+    bool Enabled = true,
+    bool CountPackets = false,
+    IReadOnlyList<NetworkPrefix>? OriginalSourcePrefixes = null,
+    IReadOnlyList<NetworkPrefix>? OriginalDestinationPrefixes = null,
+    bool BindInputInterfaceIndex = false,
+    string? RegularChain = null,
+    string? JumpTarget = null,
+    InterfaceNameSelector? InputInterfaceSelector = null,
+    InterfaceNameSelector? OutputInterfaceSelector = null,
+    byte? Ipv6HopLimit = null,
+    PacketRateLimit? PacketLimit = null)
 {
+    /// <summary>Whether one native rule must preserve an interface or protocol selector.</summary>
+    public bool UsesNativeSelectors => InputInterfaceSelector is not null || OutputInterfaceSelector is not null || Protocol == FilterProtocol.TcpOrUdp;
+
     /// <inheritdoc />
     public bool Equals(FilterRule? other)
     {
@@ -221,24 +292,29 @@ public sealed record FilterRule(
             Equals(Source, other.Source) &&
             Equals(Destination, other.Destination) &&
             DestinationPort == other.DestinationPort &&
-            Chain == other.Chain &&
+            Chain == other.Chain && RegularChain == other.RegularChain && JumpTarget == other.JumpTarget &&
             string.Equals(InputInterface, other.InputInterface, StringComparison.Ordinal) &&
             string.Equals(OutputInterface, other.OutputInterface, StringComparison.Ordinal) &&
             ConnectionStates == other.ConnectionStates &&
             string.Equals(IcmpType, other.IcmpType, StringComparison.Ordinal) &&
-            Equals(RateLimit, other.RateLimit) &&
+            Equals(RateLimit, other.RateLimit) && Ipv6HopLimit == other.Ipv6HopLimit && PacketLimit == other.PacketLimit &&
             MatchOriginalDestinationDnat == other.MatchOriginalDestinationDnat &&
+            SequenceEqual(OriginalSourcePrefixes, other.OriginalSourcePrefixes) &&
+            SequenceEqual(OriginalDestinationPrefixes, other.OriginalDestinationPrefixes) &&
             SequenceEqual(SourcePrefixes, other.SourcePrefixes) &&
             SequenceEqual(DestinationPrefixes, other.DestinationPrefixes) &&
             SequenceEqual(DestinationPorts, other.DestinationPorts) &&
             string.Equals(Description, other.Description, StringComparison.Ordinal) &&
             NegateInputInterface == other.NegateInputInterface &&
+            BindInputInterfaceIndex == other.BindInputInterfaceIndex &&
+            Equals(InputInterfaceSelector, other.InputInterfaceSelector) && Equals(OutputInterfaceSelector, other.OutputInterfaceSelector) &&
             NegateOutputInterface == other.NegateOutputInterface &&
             NegateSource == other.NegateSource &&
             NegateDestination == other.NegateDestination &&
             Equals(SourceMac, other.SourceMac) &&
             SequenceEqual(SourceMacs, other.SourceMacs) &&
             NegateSourceMac == other.NegateSourceMac &&
+            CountPackets == other.CountPackets &&
             Enabled == other.Enabled && Equals(SourceObject, other.SourceObject) && Equals(DestinationObject, other.DestinationObject) && Equals(DestinationPortObject, other.DestinationPortObject);
     }
 
@@ -253,23 +329,33 @@ public sealed record FilterRule(
         hash.Add(Destination);
         hash.Add(DestinationPort);
         hash.Add(Chain);
+        hash.Add(RegularChain);
+        hash.Add(JumpTarget);
         hash.Add(InputInterface, StringComparer.Ordinal);
         hash.Add(OutputInterface, StringComparer.Ordinal);
         hash.Add(ConnectionStates);
         hash.Add(IcmpType, StringComparer.Ordinal);
         hash.Add(RateLimit);
+        hash.Add(Ipv6HopLimit);
+        hash.Add(PacketLimit);
         hash.Add(MatchOriginalDestinationDnat);
+        AddSequenceHash(ref hash, OriginalSourcePrefixes);
+        AddSequenceHash(ref hash, OriginalDestinationPrefixes);
         AddSequenceHash(ref hash, SourcePrefixes);
         AddSequenceHash(ref hash, DestinationPrefixes);
         AddSequenceHash(ref hash, DestinationPorts);
         hash.Add(Description, StringComparer.Ordinal);
         hash.Add(NegateInputInterface);
+        hash.Add(BindInputInterfaceIndex);
+        hash.Add(InputInterfaceSelector);
+        hash.Add(OutputInterfaceSelector);
         hash.Add(NegateOutputInterface);
         hash.Add(NegateSource);
         hash.Add(NegateDestination);
         hash.Add(SourceMac);
         AddSequenceHash(ref hash, SourceMacs);
         hash.Add(NegateSourceMac);
+        hash.Add(CountPackets);
         hash.Add(Enabled); hash.Add(SourceObject); hash.Add(DestinationObject); hash.Add(DestinationPortObject);
         return hash.ToHashCode();
     }
@@ -334,6 +420,8 @@ public sealed class FilterPolicy
     /// <param name="outputDefaultVerdict">Decision for unmatched traffic on the output hook.</param>
     /// <param name="rules">Ordered rules; null entries are retained for diagnostics.</param>
     /// <param name="rpFilter">Optional raw prerouting reverse-path filter chain (schema 2 only).</param>
+    /// <param name="regularChains">Ordered names of local regular chains, including empty chains.</param>
+    /// <param name="rawOutput">Optional raw output chain (schema 2 only, accept default).</param>
     /// <param name="forwardTcpMssClampEnabled">Whether the retained MSS clamp contributes to native enforcement.</param>
     /// <param name="forwardTcpMssClamp">Optional forward-chain TCP SYN MSS clamp in bytes (536–1460; schema 2 only).</param>
     /// <exception cref="ArgumentNullException">The collection is null.</exception>
@@ -345,7 +433,9 @@ public sealed class FilterPolicy
         IEnumerable<FilterRule?> rules,
         RpFilterPolicy? rpFilter = null,
         int? forwardTcpMssClamp = null,
-        bool forwardTcpMssClampEnabled = true)
+        bool forwardTcpMssClampEnabled = true,
+        RpFilterPolicy? rawOutput = null,
+        IEnumerable<string>? regularChains = null)
     {
         ArgumentNullException.ThrowIfNull(rules);
         SchemaVersion = schemaVersion;
@@ -358,11 +448,18 @@ public sealed class FilterPolicy
             DestinationPrefixes = rule.DestinationPrefixes is null ? null : Array.AsReadOnly(rule.DestinationPrefixes.ToArray()),
             DestinationPorts = rule.DestinationPorts is null ? null : Array.AsReadOnly(rule.DestinationPorts.ToArray()),
             SourceMacs = rule.SourceMacs is null ? null : Array.AsReadOnly(rule.SourceMacs.ToArray()),
+            OriginalSourcePrefixes = rule.OriginalSourcePrefixes is null ? null : Array.AsReadOnly(rule.OriginalSourcePrefixes.ToArray()),
+            OriginalDestinationPrefixes = rule.OriginalDestinationPrefixes is null ? null : Array.AsReadOnly(rule.OriginalDestinationPrefixes.ToArray()),
         }).ToArray());
         RpFilter = rpFilter;
+        RawOutput = rawOutput;
+        RegularChains = Array.AsReadOnly(regularChains?.ToArray() ?? []);
         ForwardTcpMssClamp = forwardTcpMssClamp;
         ForwardTcpMssClampEnabled = forwardTcpMssClampEnabled;
     }
+
+    /// <summary>Gets the ordered, snapshotted regular-chain declarations.</summary>
+    public IReadOnlyList<string> RegularChains { get; }
 
     /// <summary>Gets the schema version, validated before compilation.</summary>
     public int SchemaVersion { get; }
@@ -385,6 +482,9 @@ public sealed class FilterPolicy
     /// <summary>Gets the optional raw prerouting reverse-path filter chain configuration.</summary>
     public RpFilterPolicy? RpFilter { get; }
 
+    /// <summary>Gets the optional raw-priority output chain configuration.</summary>
+    public RpFilterPolicy? RawOutput { get; }
+
     /// <summary>Gets the optional forward-chain TCP SYN MSS clamp in bytes (536–1460).</summary>
     public int? ForwardTcpMssClamp { get; }
 
@@ -406,8 +506,16 @@ public sealed class FilterPolicy
 
         if (Rules.Any(rule => rule?.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)) { features.Add(FirewallFeature.PerDestinationRateLimiting); }
         if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
-        if (RpFilter is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&
-            (r.SourceMac is not null || r.SourceMacs is not null || r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface || r.Verdict == FilterVerdict.Reject)))
+        if (Rules.Any(rule => rule?.Ipv6HopLimit is not null)) { features.Add(FirewallFeature.Ipv6HopLimit); }
+        if (Rules.Any(rule => rule?.PacketLimit is not null)) { features.Add(FirewallFeature.RulePacketRateLimiting); }
+        if (RegularChains.Count > 0) { features.Add(FirewallFeature.FilterChainCalls); }
+        var rawRules = (RpFilter?.Rules ?? []).Concat(RawOutput?.Rules ?? []);
+        if (Rules.Any(rule => rule?.CountPackets == true) || rawRules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
+        if (Rules.Any(rule => rule?.UsesNativeSelectors == true)) { features.Add(FirewallFeature.FilterSelectorSets); }
+        if (Rules.Any(rule => rule?.BindInputInterfaceIndex == true) || rawRules.Any(rule => rule?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
+        if (Rules.Any(rule => rule?.Verdict == FilterVerdict.ClampRouteMss)) { features.Add(FirewallFeature.RouteDerivedMss); }
+        if (RpFilter is not null || RawOutput is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&
+            (r.SourceMac is not null || r.SourceMacs is not null || r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface || r.Verdict is FilterVerdict.Reject or FilterVerdict.RejectPortUnreachable)))
         { features.Add(FirewallFeature.RouterFiltering); }
         if (Rules.Any(rule => rule?.MatchOriginalDestinationDnat == true))
         {

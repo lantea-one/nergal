@@ -83,7 +83,7 @@ public sealed partial class NftBridgeTableObservation
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            if (Encoding.UTF8.GetByteCount(json) > 65536) { return Deny("observation.tooLarge"); }
+            if (Encoding.UTF8.GetByteCount(json) > NftObservationLimits.MaximumDocumentBytes) { return Deny("observation.tooLarge"); }
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 16 });
             if (NftJsonHelpers.HasDuplicateProperties(doc.RootElement)) { return Deny("observation.duplicateProperty"); }
             if (!NftJsonHelpers.Properties(doc.RootElement, "nftables") || doc.RootElement.GetProperty("nftables").ValueKind != JsonValueKind.Array) { return Deny("observation.shape"); }

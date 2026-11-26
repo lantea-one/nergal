@@ -48,19 +48,83 @@ This is a bounded v1 grammar, not support for arbitrary nftables language.
 
 | Area | Supported contract |
 | --- | --- |
-| Tables and chains | Explicit unique role mapping for `inet` filter/NAT/auxiliary and `bridge` filter; supported base hooks, priorities/defaults, ordered rules and bridge regular subchains. Primary filter priority is 0, raw prerouting is -300, NAT prerouting/postrouting are -100/100. |
-| Matching and actions | Numeric IPv4/IPv6 prefixes/hosts and anonymous sets, exact interfaces, MAC+IP restrictions, supported equality/negation, numeric TCP/UDP ports, supported conntrack states/status, ICMP/ICMPv6, accept/drop/explicit ICMPx reject, bridge jump/return. Unsupported scope combinations fail full policy validation. |
-| Router constructs | Raw prerouting reverse-path FIB drop and UDP source ports; forward SYN MSS clamp; source/destination keyed bounded meters; dual-stack DNAT/SNAT, masquerade and ordered postrouting return exemptions; early auxiliary filtering and bridge L2/L3/L4 matching. |
+| Tables and chains | Explicit unique role mapping for `inet` filter/NAT/auxiliary and `bridge` filter, supported base hooks, priorities/defaults, ordered rules and bridge regular subchains. Primary filtering uses priority 0, raw prerouting uses -300, DNAT prerouting and output use -100, and NAT postrouting uses 100. |
+| Matching and actions | Numeric IPv4/IPv6 prefixes/hosts and anonymous sets, exact interface names, MAC+IP restrictions, supported equality/negation, numeric TCP/UDP ports, supported conntrack states including `untracked`, supported conntrack status, ICMP/ICMPv6, accept/drop/explicit ICMPx reject, and bridge jump/return. Unsupported scope combinations fail full policy validation. |
+| Router constructs | Raw prerouting reverse-path FIB drop and UDP source ports, forward SYN MSS clamp, source/destination keyed bounded meters, dual-stack DNAT/SNAT, masquerade and ordered postrouting return exemptions, early auxiliary filtering, and bridge L2/L3/L4 matching. |
 | Named sets | Nonempty static IPv4/IPv6/port sets in supported reference slots become immutable version-1 pinned library objects with shared native definitions. Unused declarations and unsupported flags/options remain blocking. |
 | Definitions/includes | Ordered lexical `define`/`redefine`/`undefine`, with values captured at definition time; exact uploaded include bindings, cycle/depth and expansion bounds. No host/service name resolution. |
 | Native commands | Supported create/add table definitions and add chain/set/rule statements can describe the complete candidate. They are parsed as data and never executed. |
 
-Counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
-control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
+An unconditional forward-chain `tcp flags syn tcp option maxseg size set rt mtu`
+becomes an ordered, nonterminal rule. The kernel derives its MSS from routing
+state for each matching packet, and the rule retains its position relative to
+accepts and drops. The fixed MSS setting remains separately configurable.
+
+Static NAT maps support destination-port to address lookups for DNAT and
+source-address to address lookups for SNAT. Conversion emits a typed translation
+for each eligible key and preserves fallthrough when the key is absent.
+Destination NAT jumps can call bounded acyclic regular chains whose eligible
+rules only translate, jump, or end with an unconditional return. Conversion
+intersects each reachable rule with the jump's matches and preserves its order.
+Counters, negation, and conditional returns in a projected call deny conversion.
+
+Raw prerouting and raw output use priority −300 and retain ordered standalone
+`notrack` statements with supported predicates. The planner requires an
+accept-default raw chain. It rejects a `notrack` statement on an ordinary
+filter hook, where it would run after connection tracking.
+
+Positive sets of exact interface names and supported ICMP types can expand into
+disjoint ordered rules. The explicit `meta l4proto { tcp, udp }` guard supports
+shared `th sport` and `th dport` selectors where the destination policy accepts
+the respective port. Rules that would split a counter, meter or jump are rejected.
+Filter rules support a plain inline `counter` at the end of a rule or
+immediately before a final verdict. A counter-only rule evaluates the next rule
+after counting. A family-neutral rule with family-independent predicates
+compiles as one inet rule, so both IPv4 and IPv6 contribute to the same counter.
+Family-scoped NAT rules can count packets immediately before their action.
+Filter and postrouting rules can match DNAT connection status and literal
+original source or destination addresses. The original-address selectors require DNAT status
+and remain distinct from ordinary selectors on the translated packet.
+Counters start at zero when the rule is installed. Output DNAT retains its own
+hook and order and requires an original destination restriction. Bare inet
+`reject` maps to ICMPx port unreachable, and explicit ICMPx admin prohibited
+retains its distinct response.
+Named `iif` selectors resolve to an interface index when nftables installs the
+rule. The managed receipt distinguishes this binding from `iifname`, which
+matches the current name. A rename can change the name reported by the kernel
+and therefore invalidate the receipt, even when the bound index is unchanged.
+
+In inet filter and NAT rules, interface-name matches support validated exact
+names and nonempty prefixes with a terminal `*`. A supported interface-name
+set and a guarded TCP/UDP destination-port set can remain on one filter rule
+with a single shared counter. Regular filter calls retain their table-local
+chains and both explicit and implicit returns.
+
+Inet filter and auxiliary rules support exact IPv6 hop-limit matches and
+unkeyed packet-rate limits per second or minute. The rate limit follows the
+rule's other matches and precedes its counter and verdict. A family-neutral
+rule keeps one token bucket shared across both IP families and all sources.
+
+Raw inet and bridge rules can retain an inline counter immediately before a
+supported verdict. Raw inet rules also retain literal source and destination
+address sets. Raw prerouting and bridge rules distinguish an exact `iif`
+index binding from an `iifname` match in both the compiled rule and its receipt.
+
+Inline address sets remove redundant CIDRs and merge aligned siblings when
+the resulting network covers exactly the same addresses. When adjacent
+nonmergeable CIDRs appear as one interval in a kernel receipt, the observer
+reconstructs their exact prefix cover within the same entry limit.
+Nested literal sets introduced by native definitions are flattened into a
+single bounded selector. Native CIDRs are masked to their network address as
+nftables does. Managed policy inputs continue to require canonical CIDRs.
+
+Named counters, seeded counters, logging, other maps, concatenations, arbitrary/dynamic objects, unsupported
+control flow, unknown flags, other wildcard or escaped matchers, service names, unsupported
 repeated restrictions and trailing input are explicit gaps. The narrowly supported
 dynamic set form is a private implementation of one bounded meter, with exact
 flags/size, key, per-entry timeout, rate and burst. Whole-second and whole-minute
-timeouts map to bounded seconds in managed policy. Shared arbitrary dynamic sets
+timeouts map to bounded seconds in managed policy. An omitted packet burst uses
+the native default of five packets. Shared arbitrary dynamic sets
 are unsupported. Full private migration acceptance remains M8.
 
 Native inline `meter` and explicit `update @set` refresh an entry's expiry on
@@ -126,7 +190,7 @@ conversion equivalence. See [testing](testing.md).
 
 These authentic captures use an isolated controller with synthetic uploaded files.
 They show a complete plan in dark/light mode, the separately committed revision on
-a 375-pixel mobile viewport, and an unsupported counter producing a blocking gap.
+a 375-pixel mobile viewport, and an unsupported logging rule producing a blocking gap.
 No private source or topology appears.
 
 ![Ready source conversion in dark mode](../pages/assets/screenshots/native-conversion-dark.jpg)

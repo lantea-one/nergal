@@ -54,7 +54,7 @@ public static class NftNatCompiler
                 continue;
             }
 
-            if (!Enum.IsDefined(rule.Family))
+            if (rule.Family is not (IpFamily.IPv4 or IpFamily.IPv6))
             {
                 errors.Add(new("family.unknown", path + ".family"));
             }
@@ -66,6 +66,15 @@ public static class NftNatCompiler
             else if (rule.Protocol is not (FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp))
             {
                 errors.Add(new("nat.protocolUnsupported", path + ".protocol"));
+            }
+
+            if (!Enum.IsDefined(rule.Hook))
+            {
+                errors.Add(new("nat.hookUnsupported", path + ".hook"));
+            }
+            if (rule.Hook == DnatHook.Output && (rule.InputInterface is not null || rule.InputInterfaceSelector is not null))
+            {
+                errors.Add(new("interface.chainMismatch", path + ".inputInterface"));
             }
 
             if (rule.OriginalDestination is null && rule.DestinationPrefixes is null)
@@ -134,12 +143,14 @@ public static class NftNatCompiler
                 continue;
             }
 
-            if (!Enum.IsDefined(rule.Family))
+            if (rule.Family is not (IpFamily.IPv4 or IpFamily.IPv6))
             {
                 errors.Add(new("family.unknown", path + ".family"));
             }
 
-            if (rule.Source is null && rule.SourcePrefixes is null && rule.Action == NatPostroutingAction.Snat)
+            NftOriginalTuple.ValidateOriginalPrefixes(rule.OriginalSourcePrefixes, rule.Family, rule.MatchOriginalDestinationDnat, path + ".originalSourcePrefixes", errors);
+            NftOriginalTuple.ValidateOriginalPrefixes(rule.OriginalDestinationPrefixes, rule.Family, rule.MatchOriginalDestinationDnat, path + ".originalDestinationPrefixes", errors);
+            if (rule.Source is null && rule.SourcePrefixes is null && !rule.MatchOriginalDestinationDnat && rule.Action == NatPostroutingAction.Snat)
             {
                 errors.Add(new("nat.sourceRequired", path + ".source"));
             }
@@ -188,19 +199,24 @@ public static class NftNatCompiler
 
         text.Append('\n');
         text.Append("add chain inet " + TableName + " prerouting { type nat hook prerouting priority dstnat; policy accept; }\n");
+        if (normalizedDnat.Any(entry => entry.Rule is { Enabled: true, Hook: DnatHook.Output }))
+        {
+            text.Append("add chain inet " + TableName + " output { type nat hook output priority dstnat; policy accept; }\n");
+        }
         text.Append("add chain inet " + TableName + " postrouting { type nat hook postrouting priority srcnat; policy accept; }\n");
 
         sets.Append(text, "inet", TableName);
-        foreach (var (rule, addr) in normalizedDnat.Select((r, i) => (Rule: NftStaticSetPlan.Attach(r.Rule, intent.DnatRules[i]!), r.NormalizedAddr)).Where(r => r.Rule.Enabled))
+        // Group like the kernel listing while retaining first-match order within each hook.
+        var activeDnat = normalizedDnat.Select((r, i) => (Rule: NftStaticSetPlan.Attach(r.Rule, intent.DnatRules[i]!), r.NormalizedAddr))
+            .Where(r => r.Rule.Enabled).OrderBy(r => r.Rule.Hook);
+        foreach (var (rule, addr) in activeDnat)
         {
             var familyToken = rule.Family == IpFamily.IPv4 ? "ip" : "ip6";
-            text.Append("add rule inet " + TableName + " prerouting meta nfproto ")
+            var chainName = rule.Hook == DnatHook.Output ? "output" : "prerouting";
+            text.Append("add rule inet " + TableName + " ").Append(chainName).Append(" meta nfproto ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
 
-            if (rule.InputInterface is not null)
-            {
-                text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append("\"").Append(rule.InputInterface).Append("\" ");
-            }
+            NftInterfaceNames.Append(text, "iifname", rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface);
 
             if (rule.SourceObject is { NativeSet: true } sourceSet)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
@@ -228,6 +244,7 @@ public static class NftNatCompiler
                 else if (rule.OriginalPorts is { } ports) { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order())).Append(" } "); }
             }
 
+            if (rule.CountPackets) { text.Append("counter "); }
             text.Append("dnat ").Append(familyToken).Append(" to ");
             if (rule.TranslatedPort.HasValue)
             {
@@ -254,12 +271,8 @@ public static class NftNatCompiler
             text.Append("add rule inet " + TableName + " postrouting meta nfproto ")
                 .Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
 
-            if (rule.InputInterface is not null)
-            { text.Append("iifname ").Append(rule.NegateInputInterface ? "!= " : "").Append('"').Append(rule.InputInterface).Append("\" "); }
-            if (rule.OutputInterface is not null)
-            {
-                text.Append("oifname ").Append(rule.NegateOutputInterface ? "!= " : "").Append("\"").Append(rule.OutputInterface).Append("\" ");
-            }
+            NftInterfaceNames.Append(text, "iifname", rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface);
+            NftInterfaceNames.Append(text, "oifname", rule.OutputInterface, rule.OutputInterfaceSelector, rule.NegateOutputInterface);
 
             if (rule.SourceObject is { NativeSet: true } sourceSet)
             { text.Append(familyToken).Append(" saddr ").Append(rule.NegateSource ? "!= " : "").Append('@').Append(NftStaticSetPlan.Name(sourceSet)).Append(' '); }
@@ -287,11 +300,25 @@ public static class NftNatCompiler
                 else if (rule.DestinationPorts is { } ports)
                 { text.Append(proto).Append(" dport { ").Append(string.Join(", ", ports.Order().Select(p => p.ToString(CultureInfo.InvariantCulture)))).Append(" } "); }
             }
+            if (rule.MatchOriginalDestinationDnat)
+            {
+                text.Append("ct status dnat ");
+                NftOriginalTuple.AppendOriginalPrefixes(text, rule.Family, "saddr", rule.OriginalSourcePrefixes);
+                NftOriginalTuple.AppendOriginalPrefixes(text, rule.Family, "daddr", rule.OriginalDestinationPrefixes);
+            }
+            if (rule.CountPackets) { text.Append("counter "); }
             if (rule.Action == NatPostroutingAction.Snat) { text.Append("snat ").Append(familyToken).Append(" to ").Append(addr); }
             else { text.Append(rule.Action == NatPostroutingAction.Masquerade ? "masquerade" : "return"); }
             text.Append('\n');
         }
 
-        return sets.Finish(text.ToString());
+        var result = sets.Finish(text.ToString());
+        var selectors = policy.DnatRules.Any(r => r is { Enabled: true, InputInterfaceSelector: not null }) ||
+            policy.SnatRules.Any(r => r is { Enabled: true } && (r.InputInterfaceSelector is not null || r.OutputInterfaceSelector is not null));
+        if (result.Candidate is null || result.ObservationBudget > 0 || !selectors) { return result; }
+        var budget = NftStaticSetPlan.Estimate(result.Candidate);
+        return budget > NftObservationLimits.MaximumDocumentBytes
+            ? new(null, [new("selector.nativeObservationTooLarge", "nat")])
+            : new(result.Candidate, [], budget);
     }
 }

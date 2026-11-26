@@ -10,10 +10,10 @@
         <a class="nav-link @(active == "hosts" ? "active" : "")" aria-current="@(active == "hosts" ? "page" : null)" href="@Url.Content("~/manage/hosts")">@await Html.PartialAsync("_NavigationIcon", "hosts")<span>@L["Hosts"]</span></a>
     </div>
     <div class="nav-section"><p class="nav-section-label">@L["Firewall"]</p>
-        @foreach (var item in new[] { ("filter", "Rules"), ("nat", "NAT"), ("bridge", "Bridge"), ("preview", "Review & export") })
+        @foreach (var item in new[] { ("filter", L["Rules"]), ("nat", L["NAT"]), ("bridge", L["Bridge"]), ("preview", L["Review & export"]) })
         {
             var current = active == "policies" && section == item.Item1;
-            <a class="nav-link @(current ? "active" : "")" aria-current="@(current ? "page" : null)" data-policy-section="@("tab-" + item.Item1)" href="@(Url.Action("Policies", "Management", new { section = item.Item1 }) + "#tab-" + item.Item1)">@await Html.PartialAsync("_NavigationIcon", item.Item1 == "filter" ? "rules" : item.Item1 == "preview" ? "review" : item.Item1)<span>@L[item.Item2]</span></a>
+            <a class="nav-link @(current ? "active" : "")" aria-current="@(current ? "page" : null)" data-policy-section="@("tab-" + item.Item1)" href="@(Url.Action("Policies", "Management", new { section = item.Item1 }) + "#tab-" + item.Item1)">@await Html.PartialAsync("_NavigationIcon", item.Item1 == "filter" ? "rules" : item.Item1 == "preview" ? "review" : item.Item1)<span>@item.Item2</span></a>
         }
         <a class="nav-link @(active == "objects" ? "active" : "")" aria-current="@(active == "objects" ? "page" : null)" href="@Url.Content("~/manage/objects")">@await Html.PartialAsync("_NavigationIcon", "lists")<span>@L["Aliases & IP lists"]</span></a>
     </div>

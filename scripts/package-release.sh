@@ -93,8 +93,7 @@ python3 -B scripts/collect-nuget-notices.py --output "$licenses" \
 install -D -m 0644 LICENSE "$licenses/LICENSE"
 web_endpoints="$ROOT/opt/nergal/web/Nergal.Web.staticwebassets.endpoints.json"
 if [[ -f "$web_endpoints" ]]; then
-    modified=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" '+%a, %d %b %Y %T GMT')
-    sed -i "s/\"Name\":\"Last-Modified\",\"Value\":\"[^\"]*\"/\"Name\":\"Last-Modified\",\"Value\":\"$modified\"/g" "$web_endpoints"
+    python3 -B scripts/normalize-static-asset-endpoints.py "$web_endpoints" "$SOURCE_DATE_EPOCH"
 fi
 chmod -R go-w "$ROOT"
 find "$ROOT" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +

@@ -1,17 +1,18 @@
 @model Nergal.Core.Identity.OidcProfileMapping
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     var prefix = "mapping-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Model.Issuer)))[..12];
 }
 <form method="post" action="@Url.Content("~/manage/identity/profiles/save")" class="form-stack mt-2">
     @Html.AntiForgeryToken()<input type="hidden" name="version" value="@Model.Version" />
-    <div class="field"><label for="@(prefix)-issuer">Exact OIDC issuer</label><input id="@(prefix)-issuer" type="url" name="issuer" value="@Model.Issuer" readonly="@(Model.Version > 0)" required maxlength="512" placeholder="https://identity.example.test" aria-describedby="mapping-hint" /></div>
-    <div class="field"><span class="switch-field-label">Use provider profile defaults</span>@await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", Model.Enabled, "Use provider profile defaults", "Profile mapping for " + (Model.Issuer.Length == 0 ? "the new issuer" : Model.Issuer), "mapping-hint"))</div>
-    <p class="hint" id="@(prefix)-claims-hint">Enter literal top-level claim names. Leave a field blank to stop importing it. No paths, templates or expressions; standard identity, role and MFA claim names are reserved. Your provider must include selected metadata in its signed ID token.</p>
+    <div class="field"><label for="@(prefix)-issuer">@L["Exact OIDC issuer"]</label><input id="@(prefix)-issuer" type="url" name="issuer" value="@Model.Issuer" readonly="@(Model.Version > 0)" required maxlength="512" placeholder="https://identity.example.test" aria-describedby="mapping-hint" /></div>
+    <div class="field"><span class="switch-field-label">@L["Use provider profile defaults"]</span>@await Html.PartialAsync("_EnablementSwitch", new Nergal.Web.EnablementSwitchModel("enabled", Model.Enabled, L["Use provider profile defaults"].Value, Model.Issuer.Length == 0 ? L["Profile mapping for the new issuer"].Value : L["Profile mapping for {0}", Model.Issuer].Value, "mapping-hint"))</div>
+    <p class="hint" id="@(prefix)-claims-hint">@L["Enter literal top-level claim names. Leave a field blank to stop importing it. No paths, templates or expressions; standard identity, role and MFA claim names are reserved. Your provider must include selected metadata in its signed ID token."]</p>
     <div class="form-grid">
-        <div class="field"><label for="@(prefix)-display">Display-name claim</label><input id="@(prefix)-display" name="displayNameClaim" type="text" value="@Model.DisplayNameClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
-        <div class="field"><label for="@(prefix)-given">Given-name claim</label><input id="@(prefix)-given" name="givenNameClaim" type="text" value="@Model.GivenNameClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
-        <div class="field"><label for="@(prefix)-family">Family-name claim</label><input id="@(prefix)-family" name="familyNameClaim" type="text" value="@Model.FamilyNameClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
-        <div class="field"><label for="@(prefix)-email">Profile-email claim</label><input id="@(prefix)-email" name="emailClaim" type="text" value="@Model.EmailClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
+        <div class="field"><label for="@(prefix)-display">@L["Display-name claim"]</label><input id="@(prefix)-display" name="displayNameClaim" type="text" value="@Model.DisplayNameClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
+        <div class="field"><label for="@(prefix)-given">@L["Given-name claim"]</label><input id="@(prefix)-given" name="givenNameClaim" type="text" value="@Model.GivenNameClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
+        <div class="field"><label for="@(prefix)-family">@L["Family-name claim"]</label><input id="@(prefix)-family" name="familyNameClaim" type="text" value="@Model.FamilyNameClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
+        <div class="field"><label for="@(prefix)-email">@L["Profile-email claim"]</label><input id="@(prefix)-email" name="emailClaim" type="text" value="@Model.EmailClaim" maxlength="128" aria-describedby="@(prefix)-claims-hint" /></div>
     </div>
-    <div><button type="submit" class="btn">Save profile mapping</button></div>
+    <div><button type="submit" class="btn">@L["Save profile mapping"]</button></div>
 </form>

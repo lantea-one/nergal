@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -13,7 +14,7 @@ namespace Nergal.Web.Controllers;
 [SupportedOSPlatform("linux"), Authorize(Policy = ControllerAuthorizationPolicies.Administrator)]
 [RequestFormLimits(ValueCountLimit = 9, ValueLengthLimit = 6144, KeyLengthLimit = 128)]
 public sealed class EmailDeliveryController(LocalAdministratorAccounts accounts, IConfiguration configuration,
-    IDataProtectionProvider keys) : IdentityUiController(accounts, configuration)
+    IDataProtectionProvider keys, IStringLocalizer<UiStrings> L) : IdentityUiController(accounts, configuration)
 {
     private bool IsLocalAdministrator => User.Identity?.AuthenticationType == IdentityConstants.ApplicationScheme &&
         User.IsInRole(NergalRoles.Administrator);
@@ -43,10 +44,10 @@ public sealed class EmailDeliveryController(LocalAdministratorAccounts accounts,
         if (result.Succeeded) { return LocalRedirect("~/manage/identity/email-delivery"); }
         return await PageAsync(result.ErrorCodes.FirstOrDefault() switch
         {
-            "mfa.deliveryPasswordRequired" => "Enter the SMTP password for the new relay or username.",
-            "mfa.deliveryInvalid" => "Enter a valid server, port and sender address. Leave the username blank for a relay that does not require credentials.",
-            "mfa.stale" => "The relay settings changed. Review the current settings and submit again.",
-            _ => Explain(result)
+            "mfa.deliveryPasswordRequired" => L["Enter the SMTP password for the new relay or username."].Value,
+            "mfa.deliveryInvalid" => L["Enter a valid server, port and sender address. Leave the username blank for a relay that does not require credentials."].Value,
+            "mfa.stale" => L["The relay settings changed. Review the current settings and submit again."].Value,
+            _ => Explain(result, L)
         });
     }
 

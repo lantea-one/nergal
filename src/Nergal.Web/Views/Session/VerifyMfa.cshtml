@@ -1,29 +1,31 @@
 @model bool?
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Verify sign-in";
 }
 <main id="main-content" tabindex="-1" class="container-narrow">
     <div class="sign-in-brand">
-        <span class="guardian-mark" role="img" aria-label="Nergal Guardian logo"></span>
+        <span class="guardian-mark" role="img" aria-label="@L["Nergal Guardian logo"]"></span>
         <span class="sign-in-wordmark">Nergal</span>
     </div>
     <section class="card">
-        <h1>Verify sign-in</h1>
-        <p id="mfa-code-hint" class="hint">Enter the current six-digit code from your authenticator app.</p>
+        <h1>@L["Verify sign-in"]</h1>
+        <p id="mfa-code-hint" class="hint">@L["Enter the current six-digit code from your authenticator app."]</p>
         @if (Model == true)
         {
-            <div class="alert alert-danger" role="alert">The code could not be verified. Try the current code from your authenticator app.</div>
+            <div class="alert alert-danger" role="alert">@L["The code could not be verified. Try the current code from your authenticator app."]</div>
         }
         <form class="form-stack" method="post" action="@Url.Content("~/login/mfa")">
             @Html.AntiForgeryToken()
             <div class="field">
-                <label for="mfa-code">Authenticator code</label>
-                <input id="mfa-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" aria-describedby="mfa-code-hint" required autofocus />
+                <label for="mfa-code">@L["Authenticator code"]</label>
+                <input id="mfa-code" name="code" type="text" dir="ltr" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" aria-describedby="mfa-code-hint" required autofocus />
             </div>
             <div class="btn-group">
-                <button type="submit">Verify and sign in</button>
-                <a class="btn btn-secondary" href="@Url.Content("~/login")">Back to sign-in</a>
+                <button type="submit">@L["Verify and sign in"]</button>
+                <a class="btn btn-secondary" href="@Url.Content("~/login")">@L["Back to sign-in"]</a>
             </div>
         </form>
     </section>

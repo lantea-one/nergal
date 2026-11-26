@@ -373,7 +373,8 @@ public sealed class NftResourceReceiptTests
     [Fact]
     public void Observation_BoundsDepthSizeAndUtf8()
     {
-        Reject(new string(' ', 65537), "observation.tooLarge");
+        Reject(new string(' ', NftObservationLimits.MaximumDocumentBytes + 1), "observation.tooLarge");
+        Assert.True(NftTableObservation.Parse(Json + new string(' ', NftObservationLimits.MaximumInventoryBytes)).IsSuccess);
         Reject(new string('[', 40) + new string(']', 40), "observation.invalidJson");
         Reject("\ud800", "observation.invalidJson");
     }
@@ -463,6 +464,57 @@ public sealed class NftResourceReceiptTests
         Assert.NotEqual(observation.StateDigest, NftTableObservation.Parse(ruleMutated.ToJsonString()).Observation!.StateDigest);
     }
 
+    /// <summary>Both native observation paths bind untracked, even when it is the only bit changed at the same handle.</summary>
+    [Theory]
+    [InlineData("\"untracked\"", ConnectionStateFlags.Untracked)]
+    [InlineData("""["invalid","established","related","new","untracked"]""", FilterPolicyValidation.AllConnectionStates)]
+    public void Schema2_UntrackedBindsListingAndEcho(string right, ConnectionStateFlags expected)
+    {
+        var listing = Schema2Listing();
+        var match = listing["nftables"]![6]!["rule"]!["expr"]![3]!["match"]!;
+        match["right"] = JsonNode.Parse(right);
+        var observed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(observed.IsSuccess, observed.ErrorCode);
+        Assert.Equal(expected, observed.Observation!.Policy.Rules[1]!.ConnectionStates);
+
+        var echo = Schema2ReplacementEcho();
+        echo["nftables"]![5]!["add"]!["rule"]!["expr"]![3]!["match"]!["right"] = JsonNode.Parse(right);
+        var echoed = NftTableObservation.ParseReplacementEcho(echo.ToJsonString());
+        Assert.True(echoed.IsSuccess, echoed.ErrorCode);
+        Assert.Equal(observed.Observation.StateDigest, echoed.Observation!.StateDigest);
+
+        if (match["right"] is JsonArray states) { states.RemoveAt(states.Count - 1); }
+        else { listing["nftables"]![6]!["rule"]!["expr"]!.AsArray().RemoveAt(3); }
+        var changed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(changed.IsSuccess, changed.ErrorCode);
+        Assert.NotEqual(observed.Observation.StateDigest, changed.Observation!.StateDigest);
+    }
+
+    /// <summary>The protocol set must guard th dport; changing a prefix into an exact name changes the receipt.</summary>
+    [Fact]
+    public void Schema2_BindsSelectorsAndRejectsMissingTransportGuard()
+    {
+        var listing = Schema2Listing();
+        var rule = listing["nftables"]![6]!["rule"]!;
+        rule["expr"] = JsonNode.Parse("""
+            [{"match":{"op":"!=","left":{"meta":{"key":"oifname"}},"right":{"set":["up*","edge0"]}}},
+             {"match":{"op":"==","left":{"meta":{"key":"l4proto"}},"right":{"set":["tcp","udp"]}}},
+             {"match":{"op":"==","left":{"payload":{"protocol":"th","field":"dport"}},"right":{"set":[53,443]}}},
+             {"counter":{"packets":4,"bytes":200}},{"accept":null}]
+            """);
+        var observed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(observed.IsSuccess, observed.ErrorCode);
+        var expr = rule["expr"]!.AsArray();
+        expr[0]!["match"]!["right"]!["set"]![0] = "up";
+        var changed = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(changed.IsSuccess, changed.ErrorCode);
+        Assert.NotEqual(observed.Observation!.StateDigest, changed.Observation!.StateDigest);
+        expr[1]!["match"]!["right"]!["set"]![1] = "icmp";
+        Reject(listing.ToJsonString(), "observation.rule");
+        expr.RemoveAt(1);
+        Reject(listing.ToJsonString(), "observation.rule");
+    }
+
     /// <summary>Schema-2 observations fail closed on incomplete chains, out-of-order rules, bad conntrack order, or wrong interface directions.</summary>
     [Fact]
     public void Schema2_RejectsIncompleteChainsAndUnsupportedMatchers()
@@ -485,6 +537,18 @@ public sealed class NftResourceReceiptTests
         array.RemoveAt(6);
         array.Add(fwdRule);
         Reject(outOfChainOrder.ToJsonString(), "observation.scope");
+    }
+
+    /// <summary>Untracked cannot mask a duplicate, noncanonical order, or unrecognized native state.</summary>
+    [Theory]
+    [InlineData("""["untracked","untracked"]""")]
+    [InlineData("""["untracked","new"]""")]
+    [InlineData("""["untracked","notrack"]""")]
+    public void Schema2_RejectsMalformedUntrackedStateLists(string right)
+    {
+        var listing = Schema2Listing();
+        listing["nftables"]![6]!["rule"]!["expr"]![3]!["match"]!["right"] = JsonNode.Parse(right);
+        Reject(listing.ToJsonString(), "observation.rule");
     }
 
     /// <summary>Schema-2 per-source rate-limit observations tolerate runtime set elements while binding handles, rates, and families.</summary>
@@ -594,6 +658,64 @@ public sealed class NftResourceReceiptTests
         Assert.All(after.Observation.Policy.Rules, r => Assert.True(r!.RateLimit!.RefreshEntryTimeout));
         Assert.Contains("update @", NftFilterCompiler.Compile(after.Observation.Policy, after.Observation.Identity).Candidate!);
         Assert.False(NftTableObservation.Parse(original.ToJsonString().Replace("\"update\"", "\"delete\"", StringComparison.Ordinal)).IsSuccess);
+    }
+
+    /// <summary>Metered counts bind the instruction and its owning rule while traffic can advance both unsigned totals.</summary>
+    [Fact]
+    public void FilterCounter_BindsPresenceAfterMeterAcrossEchoAndListing()
+    {
+        var echo = Schema2RateLimitReplacementEcho();
+        echo["nftables"]![6]!["add"]!["rule"]!["expr"]!.AsArray().Insert(2, JsonNode.Parse("""{"counter":{"packets":0,"bytes":0}}"""));
+        var created = NftTableObservation.ParseReplacementEcho(echo.ToJsonString());
+        Assert.True(created.IsSuccess, created.ErrorCode);
+        Assert.True(created.Observation!.Policy.Rules[0]!.CountPackets);
+        Assert.Contains("burst 2 packets } counter accept\n", NftFilterCompiler.Compile(created.Observation.Policy).Candidate);
+
+        var listing = Schema2RateLimitListing(true);
+        var expr = listing["nftables"]![7]!["rule"]!["expr"]!.AsArray();
+        var runtimeCounter = JsonNode.Parse("""{"counter":{"bytes":18446744073709551615,"packets":12345}}""")!;
+        expr.Insert(2, runtimeCounter);
+        var live = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(live.IsSuccess, live.ErrorCode);
+        Assert.Equal(created.Observation.StateDigest, live.Observation!.StateDigest);
+
+        expr.RemoveAt(2);
+        var absent = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(absent.IsSuccess, absent.ErrorCode);
+        Assert.NotEqual(created.Observation.StateDigest, absent.Observation!.StateDigest);
+        listing["nftables"]![8]!["rule"]!["expr"]!.AsArray().Insert(2, runtimeCounter);
+        var moved = NftTableObservation.Parse(listing.ToJsonString());
+        Assert.True(moved.IsSuccess, moved.ErrorCode);
+        Assert.NotEqual(created.Observation.StateDigest, moved.Observation!.StateDigest);
+    }
+
+    /// <summary>Named, malformed, repeated and misplaced counters invalidate complete native evidence.</summary>
+    [Theory]
+    [InlineData(2, "\"named\"")]
+    [InlineData(2, "null")]
+    [InlineData(2, "{}")]
+    [InlineData(2, """{"packets":0}""")]
+    [InlineData(2, """{"packets":"0","bytes":0}""")]
+    [InlineData(2, """{"packets":0,"bytes":-1}""")]
+    [InlineData(2, """{"packets":0.5,"bytes":1}""")]
+    [InlineData(2, """{"packets":0,"bytes":18446744073709551616}""")]
+    [InlineData(2, """{"packets":0,"bytes":0,"name":"named"}""")]
+    [InlineData(0, """{"packets":0,"bytes":0}""")]
+    [InlineData(1, """{"packets":0,"bytes":0}""")]
+    [InlineData(3, """{"packets":0,"bytes":0}""")]
+    [InlineData(2, """{"packets":0,"bytes":0}""", true)]
+    public void FilterCounter_RejectsInvalidEvidence(int position, string value, bool repeat = false)
+    {
+        var listing = Schema2RateLimitListing(false);
+        var echo = Schema2RateLimitReplacementEcho();
+        foreach (var expr in new[] { listing["nftables"]![7]!["rule"]!["expr"]!.AsArray(), echo["nftables"]![6]!["add"]!["rule"]!["expr"]!.AsArray() })
+        {
+            var statement = new JsonObject { ["counter"] = JsonNode.Parse(value) };
+            expr.Insert(position, statement);
+            if (repeat) { expr.Insert(position, statement.DeepClone()); }
+        }
+        Reject(listing.ToJsonString(), "observation.rule");
+        Assert.False(NftTableObservation.ParseReplacementEcho(echo.ToJsonString()).IsSuccess);
     }
 
     private static JsonNode Schema2RateLimitListing(bool includeRuntimeElems)

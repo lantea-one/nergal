@@ -9,6 +9,7 @@ public static partial class PolicyBundleJsonCodec
     {
         rule = initial;
         if (!TryReadAddressObjectsAndSets(el, out var sourcePrefixes, out var destinationPrefixes, out var sourceObject, out var destinationObject) ||
+            !TryReadBool(el, "countPackets", out var countPackets) || !TryReadBool(el, "bindInputInterfaceIndex", out var bindIndex) ||
             !TryReadOptionalString(el, "bridgeName", out var bridge) || !TryReadOptionalString(el, "sourceMac", out var sm) ||
             !TryReadOptionalString(el, "destinationMac", out var dm) || !TryReadBool(el, "negateSourceMac", out var ns) ||
             !TryReadBool(el, "negateDestinationMac", out var nd) || !TryReadOptionalString(el, "source", out var source) ||
@@ -25,6 +26,8 @@ public static partial class PolicyBundleJsonCodec
         {
             rule = initial with
             {
+                CountPackets = countPackets,
+                BindInputInterfaceIndex = bindIndex,
                 BridgeName = bridge,
                 SourceMac = sm is null ? null : new(sm),
                 DestinationMac = dm is null ? null : new(dm),
@@ -71,6 +74,8 @@ public static partial class PolicyBundleJsonCodec
 
     private static void WriteBridgeRouterRule(Utf8JsonWriter w, BridgeFilterRule r)
     {
+        if (r.CountPackets) { w.WriteBoolean("countPackets", true); }
+        if (r.BindInputInterfaceIndex) { w.WriteBoolean("bindInputInterfaceIndex", true); }
         if (r.BridgeName is not null) { w.WriteString("bridgeName", r.BridgeName); }
         if (r.SourceMac is not null) { w.WriteString("sourceMac", r.SourceMac.Value); }
         if (r.DestinationMac is not null) { w.WriteString("destinationMac", r.DestinationMac.Value); }

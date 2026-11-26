@@ -1,28 +1,30 @@
 @model Nergal.Web.Controllers.RecoveryConfirmModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["LocalizedContent"] = true;
     ViewData["Title"] = "Confirm replacement authenticator";
 }
 <main id="main-content" tabindex="-1" class="container-narrow">
-    <h1>Confirm replacement authenticator</h1>
+    <h1>@L["Confirm replacement authenticator"]</h1>
     <section class="card">
         @if (Model.ManualKey is string key)
         {
-            <p>Add a time-based account for Nergal in your authenticator app and enter this private setup key.</p>
-            <p><code>@key</code></p>
+            <p>@L["Add a time-based account for Nergal in your authenticator app and enter this private setup key."]</p>
+            <p><code dir="ltr">@key</code></p>
         }
         @if (Model.Failed)
         {
-            <p class="alert alert-danger" role="alert">Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization.</p>
+            <p class="alert alert-danger" role="alert">@L["Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization."]</p>
         }
         <form method="post" class="form-stack" action="@Url.Content("~/login/recovery/confirm")">
             @Html.AntiForgeryToken()
             <div class="field">
-                <label for="code">New authenticator code</label>
-                <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" required />
+                <label for="code">@L["New authenticator code"]</label>
+                <input id="code" name="code" type="text" dir="ltr" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" required />
             </div>
-            <p class="hint">After confirmation, sign in again with your password and the next code from your new authenticator.</p>
-            <button type="submit">Confirm authenticator</button>
+            <p class="hint">@L["After confirmation, sign in again with your password and the next code from your new authenticator."]</p>
+            <button type="submit">@L["Confirm authenticator"]</button>
         </form>
     </section>
 </main>

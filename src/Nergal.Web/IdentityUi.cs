@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Localization;
 using Nergal.Core.Identity;
 using Nergal.Identity;
 
@@ -68,91 +69,91 @@ public abstract class IdentityUiController(LocalAdministratorAccounts accounts, 
         long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out version) && version >= 0 && version < long.MaxValue;
 
     /// <summary>Maps stable service codes to actionable hints without reflecting credential or database data.</summary>
-    protected static string Explain(LocalProvisionResult result) => result.ErrorCodes.FirstOrDefault() switch
+    protected static string Explain(LocalProvisionResult result, IStringLocalizer<UiStrings>? L = null) => result.ErrorCodes.FirstOrDefault() switch
     {
-        "account.lastAdministrator" => "Keep at least one enabled local Administrator. Create or promote another Administrator first.",
-        "account.localAdministratorRequired" => "Sign in as a local Administrator to grant or restore local Administrator access.",
-        "account.stale" or "profile.stale" => "This record changed. Review its current values and submit again.",
-        "account.nameExists" => "That sign-in name already exists. Choose another name.",
-        "password.bounds" => "Use a password of 15–128 characters.",
-        "account.credentialsDenied" => "Current password verification failed. Try again or wait for the account lockout to expire.",
-        "profile.metadata" => "Use at most 80 characters for each name and a valid profile email address, without control characters.",
-        "provider.invalid" => "Enter a valid HTTPS issuer and callback, client ID, literal groups claim and distinct role groups. Secrets must be 1–4096 characters without controls.",
-        "provider.stale" => "These connection settings changed. Reload the page before saving again.",
-        "provider.secretRequired" => "Enter a client secret when creating a connection or changing its issuer or client ID.",
-        "provider.localAdministratorRequired" => "Sign in as a local Administrator to change provider trust.",
-        "profile.mappingInvalid" => "Use an exact HTTPS issuer and literal claim names. Identity, role and MFA claims cannot be mapped as metadata.",
-        "profile.mappingStale" => "This mapping changed. Review its current version and submit again.",
-        "profile.mappingCapacity" => "This installation supports up to 16 issuer profile mappings.",
-        "account.capacity" => "This installation has reached the supported limit of 256 local accounts.",
-        _ => "The change was rejected. Review the fields and try again.",
+        "account.lastAdministrator" => L?["Keep at least one enabled local Administrator. Create or promote another Administrator first."].Value ?? "Keep at least one enabled local Administrator. Create or promote another Administrator first.",
+        "account.localAdministratorRequired" => L?["Sign in as a local Administrator to grant or restore local Administrator access."].Value ?? "Sign in as a local Administrator to grant or restore local Administrator access.",
+        "account.stale" or "profile.stale" => L?["This record changed. Review its current values and submit again."].Value ?? "This record changed. Review its current values and submit again.",
+        "account.nameExists" => L?["That sign-in name already exists. Choose another name."].Value ?? "That sign-in name already exists. Choose another name.",
+        "password.bounds" => L?["Use a password of 15–128 characters."].Value ?? "Use a password of 15–128 characters.",
+        "account.credentialsDenied" => L?["Current password verification failed. Try again or wait for the account lockout to expire."].Value ?? "Current password verification failed. Try again or wait for the account lockout to expire.",
+        "profile.metadata" => L?["Use at most 80 characters for each name and a valid profile email address, without control characters."].Value ?? "Use at most 80 characters for each name and a valid profile email address, without control characters.",
+        "provider.invalid" => L?["Enter a valid HTTPS issuer and callback, client ID, literal groups claim and distinct role groups. Secrets must be 1–4096 characters without controls."].Value ?? "Enter a valid HTTPS issuer and callback, client ID, literal groups claim and distinct role groups. Secrets must be 1–4096 characters without controls.",
+        "provider.stale" => L?["These connection settings changed. Reload the page before saving again."].Value ?? "These connection settings changed. Reload the page before saving again.",
+        "provider.secretRequired" => L?["Enter a client secret when creating a connection or changing its issuer or client ID."].Value ?? "Enter a client secret when creating a connection or changing its issuer or client ID.",
+        "provider.localAdministratorRequired" => L?["Sign in as a local Administrator to change provider trust."].Value ?? "Sign in as a local Administrator to change provider trust.",
+        "profile.mappingInvalid" => L?["Use an exact HTTPS issuer and literal claim names. Identity, role and MFA claims cannot be mapped as metadata."].Value ?? "Use an exact HTTPS issuer and literal claim names. Identity, role and MFA claims cannot be mapped as metadata.",
+        "profile.mappingStale" => L?["This mapping changed. Review its current version and submit again."].Value ?? "This mapping changed. Review its current version and submit again.",
+        "profile.mappingCapacity" => L?["This installation supports up to 16 issuer profile mappings."].Value ?? "This installation supports up to 16 issuer profile mappings.",
+        "account.capacity" => L?["This installation has reached the supported limit of 256 local accounts."].Value ?? "This installation has reached the supported limit of 256 local accounts.",
+        _ => L?["The change was rejected. Review the fields and try again."].Value ?? "The change was rejected. Review the fields and try again.",
     };
 }
 
 internal static class IdentityUiLabels
 {
-    internal static string Role(string role) => role switch
+    internal static string Role(string role, IStringLocalizer<UiStrings> L) => role switch
     {
-        NergalRoles.Administrator => "Administrator",
-        NergalRoles.Auditor => "Auditor",
-        "operator" => "Offline operator",
+        NergalRoles.Administrator => L["Administrator"].Value,
+        NergalRoles.Auditor => L["Auditor"].Value,
+        "operator" => L["Offline operator"].Value,
         _ => role,
     };
-    internal static string Action(string action) => action switch
+    internal static string Action(string action, IStringLocalizer<UiStrings> L) => action switch
     {
-        "account.bootstrap" => "Initial account created",
-        "account.created" => "Account created",
-        "account.accessChanged" => "Access changed",
-        "account.sessionsRevoked" => "Sessions revoked",
-        "account.signedOut" => "Signed out",
-        "account.passwordChanged" => "Password changed",
-        "account.passwordDenied" => "Password verification denied",
-        "profile.updated" => "Profile updated",
-        "provider.connectionSaved" => "OIDC connection settings replaced",
-        "provider.oauthConnectionSaved" => "OAuth connection settings replaced",
-        "oauth.signedIn" => "OAuth sign-in completed",
-        "profile.mappingSaved" => "Profile mapping saved",
-        "profile.providerRefreshed" => "Provider profile refreshed",
-        "provider.ldapConnectionSaved" => "LDAP connection settings replaced",
-        "local.signedIn" => "Local sign-in completed",
-        "ldap.signedIn" => "LDAP sign-in completed",
-        "ldap.signedOut" => "LDAP session signed out",
-        "mfa.policyChanged" => "MFA policy changed",
-        "mfa.emailDeliverySaved" => "Email delivery settings changed",
-        "mfa.emailEnrollmentStarted" => "Email verification started",
-        "mfa.emailEnrollmentDenied" => "Email verification denied",
-        "mfa.emailEnrolled" => "Email factor verified",
-        "mfa.enrollmentStarted" => "Authenticator setup started",
-        "mfa.enrollmentDenied" => "Authenticator setup denied",
-        "mfa.totpEnrolled" => "Authenticator verified",
-        "mfa.challenged" => "Second-factor code required",
-        "mfa.denied" => "MFA attempt denied",
-        "mfa.recoveryIssued" => "MFA recovery authorized",
-        "mfa.recoveryStarted" => "MFA recovery enrollment started",
-        "mfa.recoveryDenied" => "MFA recovery attempt denied",
-        "mfa.recovered" => "MFA recovery completed",
+        "account.bootstrap" => L["Initial account created"].Value,
+        "account.created" => L["Account created"].Value,
+        "account.accessChanged" => L["Access changed"].Value,
+        "account.sessionsRevoked" => L["Sessions revoked"].Value,
+        "account.signedOut" => L["Signed out"].Value,
+        "account.passwordChanged" => L["Password changed"].Value,
+        "account.passwordDenied" => L["Password verification denied"].Value,
+        "profile.updated" => L["Profile updated"].Value,
+        "provider.connectionSaved" => L["OIDC connection settings replaced"].Value,
+        "provider.oauthConnectionSaved" => L["OAuth connection settings replaced"].Value,
+        "oauth.signedIn" => L["OAuth sign-in completed"].Value,
+        "profile.mappingSaved" => L["Profile mapping saved"].Value,
+        "profile.providerRefreshed" => L["Provider profile refreshed"].Value,
+        "provider.ldapConnectionSaved" => L["LDAP connection settings replaced"].Value,
+        "local.signedIn" => L["Local sign-in completed"].Value,
+        "ldap.signedIn" => L["LDAP sign-in completed"].Value,
+        "ldap.signedOut" => L["LDAP session signed out"].Value,
+        "mfa.policyChanged" => L["MFA policy changed"].Value,
+        "mfa.emailDeliverySaved" => L["Email delivery settings changed"].Value,
+        "mfa.emailEnrollmentStarted" => L["Email verification started"].Value,
+        "mfa.emailEnrollmentDenied" => L["Email verification denied"].Value,
+        "mfa.emailEnrolled" => L["Email factor verified"].Value,
+        "mfa.enrollmentStarted" => L["Authenticator setup started"].Value,
+        "mfa.enrollmentDenied" => L["Authenticator setup denied"].Value,
+        "mfa.totpEnrolled" => L["Authenticator verified"].Value,
+        "mfa.challenged" => L["Second-factor code required"].Value,
+        "mfa.denied" => L["MFA attempt denied"].Value,
+        "mfa.recoveryIssued" => L["MFA recovery authorized"].Value,
+        "mfa.recoveryStarted" => L["MFA recovery enrollment started"].Value,
+        "mfa.recoveryDenied" => L["MFA recovery attempt denied"].Value,
+        "mfa.recovered" => L["MFA recovery completed"].Value,
         _ => action,
     };
-    internal static string ProfileDiagnostic(string code) => code switch
+    internal static string ProfileDiagnostic(string code, IStringLocalizer<UiStrings>? L = null) => code switch
     {
-        "displayName.missing" => "The provider did not supply a display name.",
-        "displayName.invalid" => "The provider supplied an invalid display name.",
-        "givenName.missing" => "The provider did not supply a given name.",
-        "givenName.invalid" => "The provider supplied an invalid given name.",
-        "familyName.missing" => "The provider did not supply a family name.",
-        "familyName.invalid" => "The provider supplied an invalid family name.",
-        "email.missing" => "The provider did not supply a profile email address.",
-        "email.invalid" => "The provider supplied an invalid profile email address.",
-        _ => "A provider profile field is unavailable.",
+        "displayName.missing" => L?["The provider did not supply a display name."].Value ?? "The provider did not supply a display name.",
+        "displayName.invalid" => L?["The provider supplied an invalid display name."].Value ?? "The provider supplied an invalid display name.",
+        "givenName.missing" => L?["The provider did not supply a given name."].Value ?? "The provider did not supply a given name.",
+        "givenName.invalid" => L?["The provider supplied an invalid given name."].Value ?? "The provider supplied an invalid given name.",
+        "familyName.missing" => L?["The provider did not supply a family name."].Value ?? "The provider did not supply a family name.",
+        "familyName.invalid" => L?["The provider supplied an invalid family name."].Value ?? "The provider supplied an invalid family name.",
+        "email.missing" => L?["The provider did not supply a profile email address."].Value ?? "The provider did not supply a profile email address.",
+        "email.invalid" => L?["The provider supplied an invalid profile email address."].Value ?? "The provider supplied an invalid profile email address.",
+        _ => L?["A provider profile field is unavailable."].Value ?? "A provider profile field is unavailable.",
     };
-    internal static string Account(string identity, IReadOnlyList<LocalUserSnapshot> users)
+    internal static string Account(string identity, IReadOnlyList<LocalUserSnapshot> users, IStringLocalizer<UiStrings> L)
     {
         if (identity.StartsWith("https://", StringComparison.Ordinal)) { return identity; }
-        if (identity == "oidc") { return "OIDC connection"; }
-        if (identity == "operator:offline") { return "Offline operator"; }
+        if (identity == "oidc") { return L["OIDC connection"].Value; }
+        if (identity == "operator:offline") { return L["Offline operator"].Value; }
         var value = identity.StartsWith("local:", StringComparison.Ordinal) ? identity[6..] : identity;
         return Guid.TryParseExact(value, "D", out var id)
-            ? users.FirstOrDefault(user => user.Id == id)?.UserName ?? "Local account"
-            : "External identity";
+            ? users.FirstOrDefault(user => user.Id == id)?.UserName ?? L["Local account"].Value
+            : L["External identity"].Value;
     }
 }

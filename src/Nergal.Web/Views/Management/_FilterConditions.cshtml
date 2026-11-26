@@ -1,4 +1,5 @@
 @model Nergal.Web.FilterConditionsFormModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @using Nergal.Core.Policy
 @{
     var r = Model.Editor.Bundle!.Filter.Rules[Model.Index]!;
@@ -6,7 +7,7 @@
     var macs = r.SourceMac?.Value ?? (r.SourceMacs is null ? "" : string.Join(", ", r.SourceMacs.Select(m => m.Value)));
 }
 <details class="router-form-details">
-    <summary>Filter rule @(Model.Index + 1) · @r.Chain · @r.Family · @r.Protocol · MAC &amp; negation</summary>
+    <summary>@L["Filter rule {0} · {1} · {2} · {3} · MAC & negation", Model.Index + 1, r.Chain, r.Family, r.Protocol]</summary>
     <div class="router-form-body">
         <form class="router-form" method="post" action="@Url.Content("~/manage/policies/rules/conditions")" aria-describedby="@(prefix)-hint">
             @Html.AntiForgeryToken()
@@ -14,18 +15,18 @@
             <input type="hidden" name="summary" value="@Model.Editor.Summary" />
             <input type="hidden" name="compareToRevision" value="@Model.Editor.CompareToRevision" />
             <input type="hidden" name="ruleIndex" value="@Model.Index" />
-            <p id="@(prefix)-hint" class="hint">Changes only these conditions. Addresses, ports, pinned lists and enabled state are retained. Negation means “anything except” the specified matcher; it requires an existing matcher. Removing a MAC restriction can broaden access.</p>
+            <p id="@(prefix)-hint" class="hint">@L["Changes only these conditions. Addresses, ports, pinned lists and enabled state are retained. Negation means “anything except” the specified matcher; it requires an existing matcher. Removing a MAC restriction can broaden access."]</p>
             <div class="form-grid">
-                <div class="field span-2"><label for="@(prefix)-macs">Source MAC address(es)</label><input type="text" id="@(prefix)-macs" name="sourceMacs" value="@macs" aria-describedby="@(prefix)-mac-hint" /><span id="@(prefix)-mac-hint" class="hint">Optional: one address or a comma-separated list, for example 02:00:00:00:00:01. MAC matching applies to the directly visible Ethernet sender.</span></div>
-                <label class="checkbox-row"><input type="checkbox" name="negateSourceMac" value="true" checked="@r.NegateSourceMac" /> Except these source MACs</label>
-                <label class="checkbox-row"><input type="checkbox" name="negateSource" value="true" checked="@r.NegateSource" /> Except source IP/network(s)</label>
-                <label class="checkbox-row"><input type="checkbox" name="negateDestination" value="true" checked="@r.NegateDestination" /> Except destination IP/network(s)</label>
-                <label class="checkbox-row"><input type="checkbox" name="negateInputInterface" value="true" checked="@r.NegateInputInterface" /> Except input interface</label>
-                <label class="checkbox-row"><input type="checkbox" name="negateOutputInterface" value="true" checked="@r.NegateOutputInterface" /> Except output interface</label>
-                <div class="field"><label for="@(prefix)-key">Rate-limit bucket</label><select id="@(prefix)-key" name="rateLimitKey" aria-describedby="@(prefix)-meter-hint"><option value="sourceAddress" selected="@(r.RateLimit?.KeyKind != RateLimitKeyKind.DestinationAddress)">Per source address</option><option value="destinationAddress" selected="@(r.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)">Per destination address</option></select><span id="@(prefix)-meter-hint" class="hint">Configure packets, burst and timeout in Edit first. Destination buckets share a limit among callers reaching the same destination.</span></div>
-                <div class="field"><label for="@(prefix)-refresh">Meter entry expiry</label><select id="@(prefix)-refresh" name="refreshEntryTimeout"><option value="false" selected="@(r.RateLimit?.RefreshEntryTimeout != true)">From entry creation (add)</option><option value="true" selected="@(r.RateLimit?.RefreshEntryTimeout == true)">Refresh on matching packets (meter/update)</option></select><span class="hint">Preserve the imported operation. Refreshing keeps an active bucket alive; creation-based expiry can reset it while traffic continues.</span></div>
+                <div class="field span-2"><label for="@(prefix)-macs">@L["Source MAC address(es)"]</label><input type="text" id="@(prefix)-macs" name="sourceMacs" value="@macs" aria-describedby="@(prefix)-mac-hint" /><span id="@(prefix)-mac-hint" class="hint">@L["Optional: one address or a comma-separated list, for example 02:00:00:00:00:01. MAC matching applies to the directly visible Ethernet sender."]</span></div>
+                <label class="checkbox-row"><input type="checkbox" name="negateSourceMac" value="true" checked="@r.NegateSourceMac" /> @L["Except these source MACs"]</label>
+                <label class="checkbox-row"><input type="checkbox" name="negateSource" value="true" checked="@r.NegateSource" /> @L["Except source IP/network(s)"]</label>
+                <label class="checkbox-row"><input type="checkbox" name="negateDestination" value="true" checked="@r.NegateDestination" /> @L["Except destination IP/network(s)"]</label>
+                <label class="checkbox-row"><input type="checkbox" name="negateInputInterface" value="true" checked="@r.NegateInputInterface" /> @L["Except input interface"]</label>
+                <label class="checkbox-row"><input type="checkbox" name="negateOutputInterface" value="true" checked="@r.NegateOutputInterface" /> @L["Except output interface"]</label>
+                <div class="field"><label for="@(prefix)-key">@L["Rate-limit bucket"]</label><select id="@(prefix)-key" name="rateLimitKey" aria-describedby="@(prefix)-meter-hint"><option value="sourceAddress" selected="@(r.RateLimit?.KeyKind != RateLimitKeyKind.DestinationAddress)">@L["Per source address"]</option><option value="destinationAddress" selected="@(r.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)">@L["Per destination address"]</option></select><span id="@(prefix)-meter-hint" class="hint">@L["Configure packets, burst and timeout in Edit first. Destination buckets share a limit among callers reaching the same destination."]</span></div>
+                <div class="field"><label for="@(prefix)-refresh">@L["Meter entry expiry"]</label><select id="@(prefix)-refresh" name="refreshEntryTimeout"><option value="false" selected="@(r.RateLimit?.RefreshEntryTimeout != true)">@L["From entry creation (add)"]</option><option value="true" selected="@(r.RateLimit?.RefreshEntryTimeout == true)">@L["Refresh on matching packets (meter/update)"]</option></select><span class="hint">@L["Preserve the imported operation. Refreshing keeps an active bucket alive; creation-based expiry can reset it while traffic continues."]</span></div>
             </div>
-            <button type="submit" class="btn btn-sm">Update draft conditions</button>
+            <button type="submit" class="btn btn-sm">@L["Update draft conditions"]</button>
         </form>
     </div>
 </details>
