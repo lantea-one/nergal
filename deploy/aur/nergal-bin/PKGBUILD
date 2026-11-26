@@ -1,8 +1,8 @@
 # Maintainer: Nergal maintainers <noreply@lantea.one>
 pkgname=nergal-bin
-pkgver=2026.11.21.1
+pkgver=2026.11.26
 pkgrel=1
-_tag=2026.11.21.1
+_tag=2026.11.26
 pkgdesc='Self-hosted native nftables firewall controller and host agent (binary release)'
 arch=('x86_64')
 url='https://git.lantea.one/lantea-one/nergal'
@@ -16,7 +16,7 @@ _archive="nergal_${pkgver}_linux-x64.tar.gz"
 source=("$url/releases/download/$_tag/$_archive"
         "LICENSE-$pkgver::$url/raw/tag/$_tag/LICENSE")
 noextract=("$_archive")
-sha256sums=('e47389cad66ef28b7981fa1fd48367652f599a05e6f1e4a25d0875920c11761c'
+sha256sums=('f710cbce700d5772dbc22077249edbaef4b39bf4dce3372c821c50eb7b005ca7'
             'f1c058baea1fd07af810900a59dff4a6bfd65ee4843ad8316081b440c76edefa')
 
 package() {

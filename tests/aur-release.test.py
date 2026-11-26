@@ -2,6 +2,7 @@
 """Check stable release selection and the AUR recipe's pinned checksum contract."""
 
 from pathlib import Path
+import re
 import runpy
 import unittest
 
@@ -47,7 +48,9 @@ class AurReleaseTests(unittest.TestCase):
                 updater["archive_digest"](invalid, name)
 
     def test_recipe_pins_tag_and_digests_and_resets_pkgrel_on_upgrade(self):
-        old = (aur / "nergal-bin" / "PKGBUILD").read_text().replace("pkgrel=1", "pkgrel=3")
+        template = (aur / "nergal-bin" / "PKGBUILD").read_text()
+        old = updater["render"](template, "2026.11.21.1", "c" * 64, "d" * 64)
+        old = re.sub(r"^pkgrel=\d+$", "pkgrel=3", old, flags=re.MULTILINE)
         self.assertIn("pkgrel=3", updater["render"](old, "2026.11.21.1", "a" * 64, "b" * 64))
         new = updater["render"](old, "v2026.11.21.10", "a" * 64, "b" * 64)
         for entry in ("pkgver=2026.11.21.10", "pkgrel=1", "_tag=v2026.11.21.10", "a" * 64, "b" * 64):

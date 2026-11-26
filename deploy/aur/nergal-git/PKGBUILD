@@ -1,6 +1,6 @@
 # Maintainer: Nergal maintainers <noreply@lantea.one>
 pkgname=nergal-git
-pkgver=2026.11.21.1.r238.g42e8e1e
+pkgver=2026.11.26.r287.g7a10f39
 pkgrel=1
 pkgdesc='Self-hosted native nftables firewall controller and host agent (development version)'
 arch=('x86_64')
