@@ -812,6 +812,23 @@ saves and inline disable/re-enable, including omission/restoration of unused nat
 objects. Existing literal-projection tests remain for older revisions. See
 [the native static-set guide](native-static-lists.md) and ADR 0048 for support limits.
 
+## IPv6 hop limit and rule-local packet limits
+
+Run `bash tests/integration/nftables/check-hop-rate.sh` after the Release build.
+Separate disposable namespaces exercise the handwritten source and its imported
+candidate. IPv6 UDP probes distinguish hop limits 254 and 255. A hop-limit miss
+leaves a combined rule's token available. IPv4 and IPv6 traffic exhaust the same
+two-packet burst, a new source address still misses, and a separate rule admits
+another packet after its one-second refill. Complete creation echo and post-traffic
+listings must agree and reconstruct the candidate.
+
+In schema-2 inet filter rules, `ipv6HopLimit` is an IPv6-only unsigned byte.
+`packetLimit` has `packetsPerWindow` (1–1000000), `windowUnit` (second or minute)
+and `burst` (1–10000 packets). Import retains nft's five-packet default for an
+omitted burst. The limit follows every match and precedes any inline counter or
+verdict. Inversion, byte rates, multiple buckets, and alternatives requiring a
+shared bucket to be split block the whole import.
+
 ## Inet filter regular-chain calls
 
 Run `bash tests/integration/nftables/check-filter-calls.sh` after a Release

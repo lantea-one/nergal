@@ -89,6 +89,16 @@ public enum RateLimitTimeUnit
     Minute,
 }
 
+/// <summary>One anonymous packet token bucket shared by every matching packet on this rule.</summary>
+/// <param name="PacketsPerWindow">Packet allowance per window (1–1000000).</param>
+/// <param name="WindowUnit">Native time unit for the refill rate.</param>
+/// <param name="Burst">Maximum accumulated tokens (1–10000 packets).</param>
+public sealed record PacketRateLimit(int PacketsPerWindow, RateLimitTimeUnit WindowUnit, int Burst)
+{
+    /// <summary>Whether the complete bucket is within the supported bounds.</summary>
+    public bool IsValid => PacketsPerWindow is >= 1 and <= 1_000_000 && Burst is >= 1 and <= 10_000 && Enum.IsDefined(WindowUnit);
+}
+
 /// <summary>Address key tracked by a dynamic nftables rate-limit meter.</summary>
 public enum RateLimitKeyKind
 {
@@ -204,6 +214,8 @@ public sealed class RpFilterPolicy
 /// <param name="JumpTarget">Declared regular chain called by a Jump verdict in this table.</param>
 /// <param name="InputInterfaceSelector">Optional input name prefix or set, mutually exclusive with the scalar input name.</param>
 /// <param name="OutputInterfaceSelector">Optional output name prefix or set, mutually exclusive with the scalar output name.</param>
+/// <param name="Ipv6HopLimit">Exact IPv6 header hop limit, from zero through 255.</param>
+/// <param name="PacketLimit">Optional rule-local packet bucket evaluated after all matchers and before the counter and verdict.</param>
 public sealed record FilterRule(
     IpFamily Family,
     FilterProtocol Protocol,
@@ -240,7 +252,9 @@ public sealed record FilterRule(
     string? RegularChain = null,
     string? JumpTarget = null,
     InterfaceNameSelector? InputInterfaceSelector = null,
-    InterfaceNameSelector? OutputInterfaceSelector = null)
+    InterfaceNameSelector? OutputInterfaceSelector = null,
+    byte? Ipv6HopLimit = null,
+    PacketRateLimit? PacketLimit = null)
 {
     /// <summary>Whether one native rule must preserve an interface or protocol selector.</summary>
     public bool UsesNativeSelectors => InputInterfaceSelector is not null || OutputInterfaceSelector is not null || Protocol == FilterProtocol.TcpOrUdp;
@@ -269,7 +283,7 @@ public sealed record FilterRule(
             string.Equals(OutputInterface, other.OutputInterface, StringComparison.Ordinal) &&
             ConnectionStates == other.ConnectionStates &&
             string.Equals(IcmpType, other.IcmpType, StringComparison.Ordinal) &&
-            Equals(RateLimit, other.RateLimit) &&
+            Equals(RateLimit, other.RateLimit) && Ipv6HopLimit == other.Ipv6HopLimit && PacketLimit == other.PacketLimit &&
             MatchOriginalDestinationDnat == other.MatchOriginalDestinationDnat &&
             SequenceEqual(OriginalSourcePrefixes, other.OriginalSourcePrefixes) &&
             SequenceEqual(OriginalDestinationPrefixes, other.OriginalDestinationPrefixes) &&
@@ -308,6 +322,8 @@ public sealed record FilterRule(
         hash.Add(ConnectionStates);
         hash.Add(IcmpType, StringComparer.Ordinal);
         hash.Add(RateLimit);
+        hash.Add(Ipv6HopLimit);
+        hash.Add(PacketLimit);
         hash.Add(MatchOriginalDestinationDnat);
         AddSequenceHash(ref hash, OriginalSourcePrefixes);
         AddSequenceHash(ref hash, OriginalDestinationPrefixes);
@@ -476,6 +492,8 @@ public sealed class FilterPolicy
 
         if (Rules.Any(rule => rule?.RateLimit?.KeyKind == RateLimitKeyKind.DestinationAddress)) { features.Add(FirewallFeature.PerDestinationRateLimiting); }
         if (Rules.Any(rule => rule?.RateLimit?.RefreshEntryTimeout == true)) { features.Add(FirewallFeature.MeterEntryTimeoutRefresh); }
+        if (Rules.Any(rule => rule?.Ipv6HopLimit is not null)) { features.Add(FirewallFeature.Ipv6HopLimit); }
+        if (Rules.Any(rule => rule?.PacketLimit is not null)) { features.Add(FirewallFeature.RulePacketRateLimiting); }
         if (RegularChains.Count > 0) { features.Add(FirewallFeature.FilterChainCalls); }
         if (Rules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
         if (Rules.Any(rule => rule?.UsesNativeSelectors == true)) { features.Add(FirewallFeature.FilterSelectorSets); }

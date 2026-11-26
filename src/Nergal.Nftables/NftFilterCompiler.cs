@@ -103,7 +103,7 @@ public static class NftFilterCompiler
                 errors.Add(new("family.unknown", path + ".family"));
             }
             if (rule.Family == IpFamily.DualStack &&
-                (policy.SchemaVersion != 2 || (!rule.CountPackets && !rule.UsesNativeSelectors && rule.InputInterface is null &&
+                (policy.SchemaVersion != 2 || (!rule.CountPackets && rule.PacketLimit is null && !rule.UsesNativeSelectors && rule.InputInterface is null &&
                  rule.OutputInterface is null && rule.Verdict is not (FilterVerdict.Jump or FilterVerdict.Return)) ||
                  rule.Protocol is not (FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp or FilterProtocol.TcpOrUdp) ||
                  rule.Source is not null || rule.Destination is not null ||
@@ -114,6 +114,11 @@ public static class NftFilterCompiler
             {
                 errors.Add(new("counter.dualStackScope", path + ".family"));
             }
+
+            if (rule.Ipv6HopLimit.HasValue && (policy.SchemaVersion != 2 || rule.Family != IpFamily.IPv6))
+            { errors.Add(new("hopLimit.requiresSchema2Ipv6", path + ".ipv6HopLimit")); }
+            if (rule.PacketLimit is { } bucket && (policy.SchemaVersion != 2 || !bucket.IsValid || rule.RateLimit is not null))
+            { errors.Add(new("packetLimit.invalid", path + ".packetLimit")); }
 
             if (!Enum.IsDefined(rule.Protocol))
             {
@@ -420,8 +425,9 @@ public static class NftFilterCompiler
 
         var result = sets.Finish(text.ToString());
         var hasNativeSelectors = policy.Rules.Any(r => r is { Enabled: true, UsesNativeSelectors: true });
+        var hasPacketMatchers = policy.Rules.Any(r => r is { Enabled: true } && (r.Ipv6HopLimit.HasValue || r.PacketLimit is not null));
         if (result.Candidate is null || result.ObservationBudget > 0 ||
-            (!hasNativeSelectors && policy.RegularChains.Count == 0 && policy.RawOutput is null &&
+            (!hasPacketMatchers && !hasNativeSelectors && policy.RegularChains.Count == 0 && policy.RawOutput is null &&
              policy.RpFilter?.Rules.Any(r => r is { Enabled: true, Notrack: true }) != true))
         {
             return result;
@@ -430,7 +436,8 @@ public static class NftFilterCompiler
         // Bound the complete handle-bearing echo, including the enclosing bundle.
         var budget = NftStaticSetPlan.Estimate(result.Candidate);
         return budget > NftObservationLimits.MaximumDocumentBytes
-            ? new(null, [hasNativeSelectors ? new("selector.nativeObservationTooLarge", "rules") :
+            ? new(null, [hasPacketMatchers ? new("packetMatcher.nativeObservationTooLarge", "rules") :
+                hasNativeSelectors ? new("selector.nativeObservationTooLarge", "rules") :
                 policy.RegularChains.Count > 0 ? new("chain.nativeObservationTooLarge", "regularChains") :
                 new("raw.nativeObservationTooLarge", policy.RawOutput is null ? "rpFilter" : "rawOutput")])
             : new(result.Candidate, [], budget);
@@ -450,6 +457,9 @@ public static class NftFilterCompiler
         {
             text.Append("meta nfproto ").Append(rule.Family == IpFamily.IPv4 ? "ipv4" : "ipv6").Append(' ');
         }
+
+        if (rule.Ipv6HopLimit is { } hop)
+        { text.Append("ip6 hoplimit ").Append(hop.ToString(CultureInfo.InvariantCulture)).Append(' '); }
 
         NftInterfaceNames.Append(text, rule.BindInputInterfaceIndex ? "iif" : "iifname",
             rule.InputInterface, rule.InputInterfaceSelector, rule.NegateInputInterface);
@@ -529,6 +539,13 @@ public static class NftFilterCompiler
                     .Append(string.Join(", ", rule.DestinationPorts.Order().Select(p => p.ToString(CultureInfo.InvariantCulture))))
                     .Append(" } ");
             }
+        }
+
+        if (rule.PacketLimit is { } bucket)
+        {
+            text.Append("limit rate ").Append(bucket.PacketsPerWindow.ToString(CultureInfo.InvariantCulture)).Append('/')
+                .Append(bucket.WindowUnit == RateLimitTimeUnit.Second ? "second" : "minute")
+                .Append(" burst ").Append(bucket.Burst.ToString(CultureInfo.InvariantCulture)).Append(" packets ");
         }
 
         if (rule.RateLimit is { } rateLimit && rateLimitSetName is not null)

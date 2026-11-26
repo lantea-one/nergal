@@ -103,7 +103,7 @@ public static partial class NativeImportPlanner
                                 Require(rule.Action is "accept" or "drop" or "reject" or "rejectPortUnreachable" or "continue" or "jump" || (rule.Action == "return" && isRegular), origin, "import.filterActionUnsupported");
                                 if (rule.Action == "jump")
                                 { Require(rule.Jump is not null && regular.ContainsKey(rule.Jump), origin, "import.jumpTargetUnresolved"); }
-                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "inputInterfaceSelector", "bindInputInterfaceIndex", "outputInterface", "outputInterfaceSelector", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "countPackets");
+                                Allowed(rule, origin, "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "inputInterface", "inputInterfaceSelector", "bindInputInterfaceIndex", "outputInterface", "outputInterfaceSelector", "negateInputInterface", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "connectionStates", "icmpType", "ipv6HopLimit", "packetLimit", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "countPackets");
                                 foreach (var family in Families(rule, singleInetRule: true))
                                 {
                                     var data = (JsonObject)rule.Data.DeepClone(); data["family"] = family; data["protocol"] = rule.Protocol; data["verdict"] = rule.Action; data["chain"] = isRegular ? "regular" : chain.Hook;
@@ -247,7 +247,7 @@ public static partial class NativeImportPlanner
 
         private static IEnumerable<string> Families(RuleData rule, bool singleInetRule = false) =>
             rule.Family is not null ? [rule.Family] :
-            singleInetRule && (rule.Data.ContainsKey("countPackets") || rule.Action is "jump" or "return" || rule.Protocol == "tcpOrUdp" ||
+            singleInetRule && (rule.Data.ContainsKey("packetLimit") || rule.Data.ContainsKey("countPackets") || rule.Action is "jump" or "return" || rule.Protocol == "tcpOrUdp" ||
                 rule.Data.ContainsKey("inputInterfaceSelector") || rule.Data.ContainsKey("outputInterfaceSelector")) ? ["dualStack"] : ["ipv4", "ipv6"];
         private static void Rename(JsonObject data, string oldName, string newName)
         { if (data.Remove(oldName, out var value)) { data[newName] = value; } }

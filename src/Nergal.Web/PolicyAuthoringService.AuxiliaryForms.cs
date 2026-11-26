@@ -58,6 +58,8 @@ internal static partial class PolicyAuthoringService
                 {
                     Enabled = previous.Enabled,
                     CountPackets = previous.CountPackets,
+                    Ipv6HopLimit = previous.Ipv6HopLimit,
+                    PacketLimit = previous.PacketLimit,
                     OriginalSourcePrefixes = previous.OriginalSourcePrefixes,
                     OriginalDestinationPrefixes = previous.OriginalDestinationPrefixes,
                     BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,

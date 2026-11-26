@@ -12,7 +12,7 @@ public sealed partial class NftTableObservation
         var index = 0;
         var rule = ParseSchema2Rule(expressions, FilterChainKind.Forward, [], ref index, allowCounter: false);
         // NAT projects these matches onto its own rule type. Require every field it can carry.
-        return rule is { Protocol: not FilterProtocol.TcpOrUdp, BindInputInterfaceIndex: false, Family: not IpFamily.DualStack } ? rule : null;
+        return rule is { Ipv6HopLimit: null, PacketLimit: null, Protocol: not FilterProtocol.TcpOrUdp, BindInputInterfaceIndex: false, Family: not IpFamily.DualStack } ? rule : null;
     }
 
     private static bool HasRouterMatchers(FilterRule r) => r.Verdict is FilterVerdict.Reject or FilterVerdict.RejectPortUnreachable ||

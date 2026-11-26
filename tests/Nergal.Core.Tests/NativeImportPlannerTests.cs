@@ -76,6 +76,19 @@ public sealed class NativeImportPlannerTests
     [InlineData("log accept", "import.expressionUnsupported")]
     [InlineData("ip saddr $missing accept", "import.definitionUnresolved")]
     [InlineData("ip saddr 192.0.2.1 ip saddr 198.51.100.1 accept", "import.repeatedMatcherUnsupported")]
+    [InlineData("ip6 hoplimit 256 accept", "import.hopLimitUnsupported")]
+    [InlineData("ip6 hoplimit 0xff accept", "import.hopLimitUnsupported")]
+    [InlineData("ip6 hoplimit != 255 accept", "import.negationUnsupported")]
+    [InlineData("ip6 hoplimit 1 ip6 hoplimit 2 accept", "import.repeatedMatcherUnsupported")]
+    [InlineData("meta nfproto ipv4 ip6 hoplimit 255 accept", "import.familyConflict")]
+    [InlineData("limit rate over 5/minute drop", "import.packetRateUnsupported")]
+    [InlineData("limit rate 0/second accept", "import.packetRateUnsupported")]
+    [InlineData("limit rate 1/hour accept", "import.packetRateUnsupported")]
+    [InlineData("limit rate 4/second burst 10001 packets accept", "import.packetBurstUnsupported")]
+    [InlineData("limit rate 4/second burst 1 bytes accept", "import.expressionUnsupported")]
+    [InlineData("limit rate 4/second udp dport 53 accept", "import.packetLimitPlacementUnsupported")]
+    [InlineData("counter limit rate 4/second accept", "import.counterPlacementUnsupported")]
+    [InlineData("icmpv6 type { echo-request, echo-reply } limit rate 4/second accept", "import.alternativeStatefulUnsupported")]
     [InlineData("ip6 nexthdr tcp accept", "import.addressExpressionUnsupported")]
     [InlineData("iif 2 accept", "import.interfaceIndexUnsupported")]
     [InlineData("udp dport 443 reject with icmpx type host-unreachable", "import.rejectTypeUnsupported")]
@@ -88,6 +101,18 @@ public sealed class NativeImportPlannerTests
         Assert.Null(plan.PolicyJson); Assert.Null(plan.CandidateDigest); Assert.Empty(plan.Objects);
         Assert.Contains(plan.Gaps, g => g.Code == code);
         Assert.All(plan.Gaps, g => Assert.DoesNotContain("192.0.2", g.ToString()));
+    }
+
+    /// <summary>Preserve an implicit five-packet burst and one bucket across both families.</summary>
+    [Fact]
+    public void UnkeyedLimitRetainsOneInetRule()
+    {
+        var source = Source("table inet sample { chain input { type filter hook input priority 0; limit rate 1/minute accept; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+        Assert.True(plan.CanCreateRevision, Codes(plan));
+        var rule = Assert.Single(PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!.Filter.Rules)!;
+        Assert.Equal(IpFamily.DualStack, rule.Family);
+        Assert.Equal(new PacketRateLimit(1, RateLimitTimeUnit.Minute, 5), rule.PacketLimit);
     }
 
     /// <summary>Only explicit managed-resource restriction can account for global flush; it never enters generated text.</summary>

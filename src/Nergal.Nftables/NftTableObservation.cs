@@ -108,6 +108,14 @@ public sealed partial class NftTableObservation
                     .Append(NftInterfaceNames.Projection(rule.OutputInterface, rule.OutputInterfaceSelector)).Append(' ')
                     .Append(PrefixOrSetProjection(rule.Source, rule.SourcePrefixes)).Append(' ')
                     .Append(PrefixOrSetProjection(rule.Destination, rule.DestinationPrefixes)).Append(' ');
+                if (rule.Ipv6HopLimit is { } hop)
+                { projection.Append("hoplimit ").Append(hop.ToString(CultureInfo.InvariantCulture)).Append(' '); }
+                if (rule.PacketLimit is { } bucket)
+                {
+                    projection.Append("packet-limit ").Append(bucket.PacketsPerWindow.ToString(CultureInfo.InvariantCulture)).Append('/')
+                        .Append(bucket.WindowUnit == RateLimitTimeUnit.Second ? "second" : "minute").Append(' ')
+                        .Append(bucket.Burst.ToString(CultureInfo.InvariantCulture)).Append(' ');
+                }
                 if (rule.BindInputInterfaceIndex) { projection.Append("iif-index "); }
                 if (hasDnatStatus)
                 {
@@ -1011,7 +1019,7 @@ public sealed partial class NftTableObservation
         ref int nextSetIndex,
         bool allowCounter, bool allowCalls = false)
     {
-        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 15)
+        if (expressions.ValueKind != JsonValueKind.Array || expressions.GetArrayLength() is < 1 or > 17)
         {
             return null;
         }
@@ -1074,12 +1082,21 @@ public sealed partial class NftTableObservation
         IReadOnlyList<int>? destinationPorts = null;
         string? icmpType = null;
         PerSourceRateLimit? rateLimit = null;
+        PacketRateLimit? packetLimit = null;
+        byte? hopLimit = null;
         var hasNfproto = false;
         var hasL4Proto = false;
         var stage = -1;
 
         for (var index = 0; index < matchEnd; index++)
         {
+            if (index == matchEnd - 1 && Properties(expressions[index], "limit"))
+            {
+                packetLimit = ParsePacketLimit(expressions[index].GetProperty("limit"));
+                if (packetLimit is null) { return null; }
+                continue;
+            }
+
             if (index == matchEnd - 1 && Properties(expressions[index], "set"))
             {
                 if (stage >= 9 || nextSetIndex >= sets.Count)
@@ -1242,6 +1259,15 @@ public sealed partial class NftTableObservation
 
                 var payloadProtocol = protocolElement.GetString();
                 var field = fieldElement.GetString();
+                if (payloadProtocol == "ip6" && field == "hoplimit")
+                {
+                    if (op != "==" || stage > 0 || hopLimit.HasValue || family == IpFamily.IPv4 ||
+                        right.ValueKind != JsonValueKind.Number || !right.TryGetByte(out var value)) { return null; }
+                    family = IpFamily.IPv6;
+                    hopLimit = value;
+                    stage = 0;
+                    continue;
+                }
                 if (payloadProtocol == "ether" && field == "saddr")
                 {
                     if (stage >= 3 || sourceMac is not null || sourceMacs is not null || chain == FilterChainKind.Output) { return null; }
@@ -1344,7 +1370,7 @@ public sealed partial class NftTableObservation
             return null;
         }
 
-        if (family is null && !countPackets && jump is null && !returns && inputInterface is null &&
+        if (family is null && packetLimit is null && !countPackets && jump is null && !returns && inputInterface is null &&
             outputInterface is null && inputSelector is null && outputSelector is null && protocol != FilterProtocol.TcpOrUdp)
         {
             return null;
@@ -1354,7 +1380,7 @@ public sealed partial class NftTableObservation
         var expectNfproto = resolvedFamily != IpFamily.DualStack &&
             source is null && destination is null &&
             sourcePrefixes is null && destinationPrefixes is null &&
-            icmpType is null && rateLimit is null &&
+            icmpType is null && rateLimit is null && hopLimit is null &&
             protocol is FilterProtocol.Any or FilterProtocol.Tcp or FilterProtocol.Udp or FilterProtocol.TcpOrUdp;
         var expectL4Proto = protocol == FilterProtocol.TcpOrUdp || protocol != FilterProtocol.Any && !destinationPort.HasValue && destinationPorts is null && icmpType is null;
         // nft may keep an explicit nfproto predicate when the original-address
@@ -1378,7 +1404,7 @@ public sealed partial class NftTableObservation
             NegateDestination: negateDestination, SourceMac: sourceMac, SourceMacs: sourceMacs, NegateSourceMac: negateMac,
             CountPackets: countPackets, OriginalSourcePrefixes: originalSources, OriginalDestinationPrefixes: originalDestinations,
             BindInputInterfaceIndex: bindInputInterfaceIndex, JumpTarget: jump,
-            InputInterfaceSelector: inputSelector, OutputInterfaceSelector: outputSelector);
+            InputInterfaceSelector: inputSelector, OutputInterfaceSelector: outputSelector, Ipv6HopLimit: hopLimit, PacketLimit: packetLimit);
     }
 
     // Native values are live unsigned totals. Validate their shape, then bind only the counter's position and presence.
@@ -1525,7 +1551,14 @@ public sealed partial class NftTableObservation
             return null;
         }
 
-        var limit = stmt[0].GetProperty("limit");
+        var bucket = ParsePacketLimit(stmt[0].GetProperty("limit"));
+        return bucket is null ? null : new(bucket.PacketsPerWindow, bucket.WindowUnit, bucket.Burst, timeout,
+            payload.GetProperty("field").GetString() == "daddr" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress,
+            setExpr.GetProperty("op").GetString() == "update");
+    }
+
+    private static PacketRateLimit? ParsePacketLimit(JsonElement limit)
+    {
         if (!Properties(limit, "rate", "burst", "per") ||
             limit.GetProperty("rate").ValueKind != JsonValueKind.Number ||
             !limit.GetProperty("rate").TryGetInt32(out var rate) ||
@@ -1549,7 +1582,7 @@ public sealed partial class NftTableObservation
             return null;
         }
 
-        return new(rate, unit.Value, burst, timeout, payload.GetProperty("field").GetString() == "daddr" ? RateLimitKeyKind.DestinationAddress : RateLimitKeyKind.SourceAddress, setExpr.GetProperty("op").GetString() == "update");
+        return new(rate, unit.Value, burst);
     }
 
     private static ConnectionStateFlags ParseConnectionStates(JsonElement right)

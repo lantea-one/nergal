@@ -1,0 +1,15 @@
+table inet source_filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+        udp dport 19300 ip6 hoplimit == 255 accept
+        udp dport 19301 limit rate 1/minute burst 2 packets counter accept
+        ip6 hoplimit 42 udp dport 19303 limit rate 1/minute burst 1 packets accept
+        udp dport 19302 limit rate 1/second burst 1 packets accept
+    }
+}
+table inet source_early {
+    chain input {
+        type filter hook input priority -5; policy accept;
+        ip6 hoplimit 64 udp dport 19300 drop
+    }
+}

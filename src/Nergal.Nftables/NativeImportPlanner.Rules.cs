@@ -47,7 +47,7 @@ public static partial class NativeImportPlanner
             if (rule.Alternatives.Count == 0) { return [rule]; }
             // Equality alternatives are disjoint on an unchanged packet. Never split a
             // meter, counter or jump, which could change state or packet fields.
-            Require(rule.Action != "jump" && !rule.Data.ContainsKey("rateLimit") && !rule.Data.ContainsKey("countPackets"), origin, "import.alternativeStatefulUnsupported");
+            Require(rule.Action != "jump" && !rule.Data.ContainsKey("rateLimit") && !rule.Data.ContainsKey("packetLimit") && !rule.Data.ContainsKey("countPackets"), origin, "import.alternativeStatefulUnsupported");
 
             var variants = new List<JsonObject> { rule.Data };
             foreach (var (property, options) in rule.Alternatives)
@@ -191,6 +191,17 @@ public static partial class NativeImportPlanner
                     case "ip":
                     case "ip6":
                         var addressKey = c.Take();
+                        if (word == "ip6" && addressKey.Text == "hoplimit")
+                        {
+                            Require(table.Role is NativeImportTableRole.Filter or NativeImportTableRole.Auxiliary, first, "import.matcherScopeUnsupported");
+                            Family("ipv6", first);
+                            Require(!c.Negation(), addressKey, "import.negationUnsupported");
+                            var hop = c.Take();
+                            Require(byte.TryParse(hop.Text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) &&
+                                value.ToString(CultureInfo.InvariantCulture) == hop.Text, hop, "import.hopLimitUnsupported");
+                            Set("ipv6HopLimit", JsonValue.Create(value), first);
+                            break;
+                        }
                         if (word == "ip" && addressKey.Text == "protocol")
                         {
                             Require(!c.Negation(), addressKey, "import.negationUnsupported");
@@ -255,6 +266,12 @@ public static partial class NativeImportPlanner
                         break;
                     case "fib":
                         c.Expect("saddr"); c.Expect("."); c.Expect("iif"); c.Expect("oif"); c.Expect("=="); c.Expect("0"); Set("matchFibUnreachable", JsonValue.Create(true), first); break;
+                    case "limit":
+                        Require(table.Role is NativeImportTableRole.Filter or NativeImportTableRole.Auxiliary, first, "import.matcherScopeUnsupported");
+                        Set("packetLimit", ReadPacketLimit(c), first);
+                        Require(!c.End && c.Peek.Text is "counter" or "accept" or "drop" or "reject" or "jump" or "return",
+                            first, "import.packetLimitPlacementUnsupported");
+                        break;
                     case "meter":
                     case "add":
                     case "update":
@@ -337,6 +354,26 @@ public static partial class NativeImportPlanner
             rule.Data["translatedAddress"] = normalized.Value[..normalized.Value.IndexOf('/')];
             if (port is not null)
             { Require(int.TryParse(port, out var number) && number is >= 1 and <= 65535 && number.ToString(System.Globalization.CultureInfo.InvariantCulture) == port, target, "import.translationPortUnsupported"); rule.Data["translatedPort"] = number; }
+        }
+
+        private static JsonObject ReadPacketLimit(Cursor c)
+        {
+            c.Expect("rate");
+            var rate = c.Take();
+            var parts = rate.Text.Split('/');
+            var packets = 0;
+            Require(parts.Length == 2 && parts[1] is "second" or "minute" &&
+                int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out packets) &&
+                packets is >= 1 and <= 1_000_000 && packets.ToString(CultureInfo.InvariantCulture) == parts[0], rate, "import.packetRateUnsupported");
+            var burst = 5; // Native default burst in packets.
+            if (c.Eat("burst"))
+            {
+                var size = c.Take();
+                Require(int.TryParse(size.Text, NumberStyles.None, CultureInfo.InvariantCulture, out burst) &&
+                    burst is >= 1 and <= 10_000 && burst.ToString(CultureInfo.InvariantCulture) == size.Text, size, "import.packetBurstUnsupported");
+                c.Expect("packets");
+            }
+            return new() { ["packetsPerWindow"] = packets, ["windowUnit"] = parts[1], ["burst"] = burst };
         }
 
         private void ReadMeter(Table table, Cursor c, RuleData rule, Term origin, bool named, bool refresh)

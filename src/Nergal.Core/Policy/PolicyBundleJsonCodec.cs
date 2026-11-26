@@ -161,7 +161,7 @@ public static partial class PolicyBundleJsonCodec
             if (item.ValueKind != JsonValueKind.Object ||
                 !HasOnlyProperties(item, "family", "protocol", "verdict", "source", "destination", "destinationPort",
                     "sourcePrefixes", "destinationPrefixes", "destinationPorts",
-                    "chain", "regularChain", "jumpTarget", "inputInterface", "outputInterface", "inputInterfaceSelector", "outputInterfaceSelector", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "negateInputInterface", "bindInputInterfaceIndex", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject", "enabled", "countPackets") || !TryReadEnabled(item, out var enabled) ||
+                    "chain", "regularChain", "jumpTarget", "ipv6HopLimit", "packetLimit", "inputInterface", "outputInterface", "inputInterfaceSelector", "outputInterfaceSelector", "connectionStates", "icmpType", "rateLimit", "matchOriginalDestinationDnat", "originalSourcePrefixes", "originalDestinationPrefixes", "description", "negateInputInterface", "bindInputInterfaceIndex", "negateOutputInterface", "negateSource", "negateDestination", "sourceMac", "sourceMacs", "negateSourceMac", "sourceObject", "destinationObject", "destinationPortObject", "enabled", "countPackets") || !TryReadEnabled(item, out var enabled) ||
                 !TryReadOptionalString(item, "regularChain", out var regularChain) ||
                 !TryReadOptionalString(item, "jumpTarget", out var jumpTarget) ||
                 !TryReadBool(item, "bindInputInterfaceIndex", out var bindInputInterfaceIndex) ||
@@ -274,6 +274,25 @@ public static partial class PolicyBundleJsonCodec
                 }
             }
 
+            byte? hopLimit = null;
+            if (item.TryGetProperty("ipv6HopLimit", out var hop))
+            {
+                if (version != 2 || family != IpFamily.IPv6 || hop.ValueKind != JsonValueKind.Number || !hop.TryGetByte(out var value))
+                { return new(null, [new("filter.ipv6HopLimit", $"filter.rules[{index}].ipv6HopLimit")]); }
+                hopLimit = value;
+            }
+            PacketRateLimit? packetLimit = null;
+            if (item.TryGetProperty("packetLimit", out var bucket))
+            {
+                if (version != 2 || rateLimit is not null || !HasOnlyProperties(bucket, "packetsPerWindow", "windowUnit", "burst") ||
+                    !TryReadOptionalInt(bucket, "packetsPerWindow", out var packets) || packets is null ||
+                    !TryReadOptionalInt(bucket, "burst", out var burstSize) || burstSize is null ||
+                    !TryReadOptionalString(bucket, "windowUnit", out var unit) || unit is not ("second" or "minute"))
+                { return new(null, [new("filter.packetLimit", $"filter.rules[{index}].packetLimit")]); }
+                packetLimit = new(packets.Value, unit == "second" ? RateLimitTimeUnit.Second : RateLimitTimeUnit.Minute, burstSize.Value);
+                if (!packetLimit.IsValid) { return new(null, [new("filter.packetLimit", $"filter.rules[{index}].packetLimit")]); }
+            }
+
             var matchDnat = false;
             if (item.TryGetProperty("matchOriginalDestinationDnat", out var dnatEl))
             {
@@ -328,7 +347,7 @@ public static partial class PolicyBundleJsonCodec
             { return new(null, [new("filter.originalAddresses", $"filter.rules[{index}]")]); }
             rules.Add(new FilterRule(family, protocol, verdict, src, dst, dport, chain.Value, iif, oif, states, icmpType, rateLimit, matchDnat, srcPrefixes, dstPrefixes, dports, description,
                 router.NegateInputInterface, router.NegateOutputInterface, router.NegateSource, router.NegateDestination,
-                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject, enabled, countPackets, originalSources, originalDestinations, bindInputInterfaceIndex, regularChain, jumpTarget, inputSelector, outputSelector));
+                router.SourceMac, router.SourceMacs, router.NegateSourceMac, sourceObject, destinationObject, portObject, enabled, countPackets, originalSources, originalDestinations, bindInputInterfaceIndex, regularChain, jumpTarget, inputSelector, outputSelector, hopLimit, packetLimit));
             index++;
         }
 
@@ -724,6 +743,16 @@ public static partial class PolicyBundleJsonCodec
             }
 
             if (r.IcmpType is not null) { writer.WriteString("icmpType", r.IcmpType); }
+            if (r.Ipv6HopLimit is { } hop) { writer.WriteNumber("ipv6HopLimit", hop); }
+            if (r.PacketLimit is { } bucket)
+            {
+                if (!bucket.IsValid) { throw new ArgumentOutOfRangeException(nameof(policy)); }
+                writer.WriteStartObject("packetLimit");
+                writer.WriteNumber("packetsPerWindow", bucket.PacketsPerWindow);
+                writer.WriteString("windowUnit", bucket.WindowUnit == RateLimitTimeUnit.Second ? "second" : "minute");
+                writer.WriteNumber("burst", bucket.Burst);
+                writer.WriteEndObject();
+            }
             if (r.RateLimit is { } rl)
             {
                 writer.WriteStartObject("rateLimit");

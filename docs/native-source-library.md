@@ -100,6 +100,11 @@ set and a guarded TCP/UDP destination-port set can remain on one filter rule
 with a single shared counter. Regular filter calls retain their table-local
 chains and both explicit and implicit returns.
 
+Inet filter and auxiliary rules support exact IPv6 hop-limit matches and
+unkeyed packet-rate limits per second or minute. The rate limit follows the
+rule's other matches and precedes its counter and verdict. A family-neutral
+rule keeps one token bucket shared across both IP families and all sources.
+
 Inline address sets remove redundant CIDRs and merge aligned siblings when
 the resulting network covers exactly the same addresses. When adjacent
 nonmergeable CIDRs appear as one interval in a kernel receipt, the observer

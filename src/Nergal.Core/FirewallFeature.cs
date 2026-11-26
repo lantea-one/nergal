@@ -44,4 +44,8 @@ public enum FirewallFeature
     FilterChainCalls,
     /// <summary>Keep native interface-name patterns and protocol sets on one inet rule.</summary>
     FilterSelectorSets,
+    /// <summary>Compare the IPv6 header hop limit for exact equality.</summary>
+    Ipv6HopLimit,
+    /// <summary>Maintain one unkeyed packet token bucket per rule.</summary>
+    RulePacketRateLimiting,
 }
