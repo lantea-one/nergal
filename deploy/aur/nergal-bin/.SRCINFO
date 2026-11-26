@@ -1,0 +1,22 @@
+pkgbase = nergal-bin
+	pkgdesc = Self-hosted native nftables firewall controller and host agent (binary release)
+	pkgver = 2026.11.21.1
+	pkgrel = 1
+	url = https://git.lantea.one/lantea-one/nergal
+	arch = x86_64
+	license = MIT
+	depends = dotnet-runtime-10.0
+	depends = aspnet-runtime-10.0
+	depends = nftables
+	depends = systemd
+	provides = nergal=2026.11.21.1
+	conflicts = nergal
+	noextract = nergal_2026.11.21.1_linux-x64.tar.gz
+	options = !strip
+	options = !debug
+	source = https://git.lantea.one/lantea-one/nergal/releases/download/2026.11.21.1/nergal_2026.11.21.1_linux-x64.tar.gz
+	source = LICENSE-2026.11.21.1::https://git.lantea.one/lantea-one/nergal/raw/tag/2026.11.21.1/LICENSE
+	sha256sums = e47389cad66ef28b7981fa1fd48367652f599a05e6f1e4a25d0875920c11761c
+	sha256sums = f1c058baea1fd07af810900a59dff4a6bfd65ee4843ad8316081b440c76edefa
+
+pkgname = nergal-bin

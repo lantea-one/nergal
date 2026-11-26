@@ -80,6 +80,9 @@ enrollment to the operator.
 The [Debian QEMU fixture](../tests/integration/installed-system/README.md)
 checks the installed services and agent rollback in an isolated guest.
 
+The [Arch User Repository recipes](../deploy/aur/README.md) cover both the
+Forgejo release binary and a build from the current Git branch.
+
 ## Offline package upgrades
 
 Stage the newer package and its verified SHA-256 manifest on each controller
