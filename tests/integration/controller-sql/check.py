@@ -33,6 +33,7 @@ def run(args, **options):
 
 class Engine:
     server_args = ()
+    version_query = "SELECT VERSION();"
 
     def __init__(self):
         self.container = "nergal-controller-sql-" + uuid.uuid4().hex
@@ -41,6 +42,10 @@ class Engine:
 
     @contextmanager
     def started(self):
+        image = self.image or subprocess.run(
+            [*DOCKER, "build", "--quiet", HERE / "mariadb"],
+            check=True, stdout=subprocess.PIPE, text=True, timeout=300,
+        ).stdout.strip()
         wiring = self.server_environment()
         env = {**os.environ, **wiring}
         network = self.container + "-net"
@@ -50,7 +55,7 @@ class Engine:
             args.extend(("--env", key))
         run([*DOCKER, "network", "create", "--driver", "bridge", network], stdout=subprocess.DEVNULL)
         try:
-            run([*args, self.image, *self.server_args], env=env, stdout=subprocess.DEVNULL)
+            run([*args, image, *self.server_args], env=env, stdout=subprocess.DEVNULL)
             address = run([*DOCKER, "port", self.container, f"{self.port}/tcp"],
                           stdout=subprocess.PIPE).stdout.decode().strip()
             require(re.fullmatch(r"127\.0\.0\.1:[0-9]+", address), "Expected a single loopback binding")
@@ -60,8 +65,11 @@ class Engine:
                 require(time.monotonic() < deadline,
                         f"{self.provider} did not become ready: {self.readiness_error}")
                 time.sleep(0.5)
-            print(f"{self.provider}: started {self.image} on {address}", flush=True)
             self.provision()
+            version = self.query(SOURCE, self.version_query).decode().strip()
+            require(re.match(rf"^{re.escape(self.expected_version)}(?:[\s-]|$)", version),
+                    f"{self.provider}: expected version {self.expected_version}, received {version}")
+            print(f"{self.provider}: started {version} on {address} ({image})", flush=True)
             yield
         finally:
             subprocess.run([*DOCKER, "rm", "--force", "--volumes", self.container],
@@ -103,7 +111,9 @@ class Engine:
 
 class PostgreSql(Engine):
     provider = "PostgreSql"
-    image = "postgres:17.9-bookworm@sha256:47f917f7409eacd22fc5dfb1dee634e1b55cf0c01d1a7eb701be2227a03e0641"
+    expected_version = "19.0"
+    version_query = "SHOW server_version;"
+    image = "postgres:19.0-bookworm@sha256:f8b826440669ad283328d2ac8326682539eddd91867904ad5abf4ec19269d241"
     port = 5432
 
     def immutability_error(self, table, message):
@@ -150,7 +160,8 @@ class PostgreSql(Engine):
 
 class MariaDb(Engine):
     provider = "MariaDb"
-    image = "mariadb:11.4.10-noble@sha256:3b4dfcc32247eb07adbebec0793afae2a8eafa6860ec523ee56af4d3dec42f7f"
+    expected_version = "13.1.2"
+    image = None
     port = 3306
     env_prefix = "MARIADB"
     shell = "mariadb"
@@ -204,7 +215,9 @@ class MariaDb(Engine):
 
 class MySql(MariaDb):
     provider = "MySql"
-    image = "mysql:8.4.9@sha256:c36050afdca850f23cef85703f84c7531a5ae155a11b5ee1c60acb09937c4084"
+    expected_version = "26.10.0.1"
+    version_query = "SELECT VERSION_WITH_UPDATE();"
+    image = "mysql:26.10.0.1@sha256:9092489f49fb59c4ba6c1425c6a59f71f864f24bf4339a5a26b718adc7a8b343"
     env_prefix = "MYSQL"
     shell = "mysql"
     dump = "mysqldump"
@@ -216,7 +229,9 @@ class MySql(MariaDb):
 
 class SqlServer(Engine):
     provider = "SqlServer"
-    image = "mcr.microsoft.com/mssql/server:2022-CU22-ubuntu-22.04@sha256:db9a8fe3098b7e8bbde41106bdc7caee942e97124e5fdb71b872ca208de3092d"
+    expected_version = "17.0.5065.9"
+    version_query = "SELECT CONVERT(varchar(32), SERVERPROPERTY('ProductVersion'));"
+    image = "mcr.microsoft.com/mssql/server:2025-CU11-ubuntu-24.04@sha256:05644dad1266ca3d445d1e8f6d2ebb9a6a03df9a39376e0f7b48917356dca9d9"
     port = 1433
     backup = "/var/opt/mssql/data/fixture.bak"
 

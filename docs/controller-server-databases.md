@@ -4,8 +4,8 @@ Choose the controller database when deploying a new controller. SQLite remains
 the default. PostgreSQL, MariaDB, MySQL and Microsoft SQL Server each use a
 fresh controller schema 5 in a dedicated database. MariaDB and MySQL share a
 client library and have separate schemas and restore checks.
-The full controller restore fixture covers PostgreSQL 17.9, MariaDB 11.4.10,
-MySQL 8.4.9 and SQL Server 2022 CU22.
+The controller restore fixture targets PostgreSQL 19.0, MariaDB 13.1.2,
+MySQL 26.10.0.1 and SQL Server 2025 CU11 (17.0.5065.9).
 
 The controller database contains managed hosts, desired policy revisions,
 native sources and conversion plans, reusable objects, System settings and

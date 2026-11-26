@@ -1,7 +1,8 @@
 # Controller SQL backup and restore fixture
 
 Run on Linux with Python 3, the repository-pinned .NET SDK and a local Docker
-Engine on `/var/run/docker.sock`. The SQL Server image requires x86-64 and at
+Engine with BuildKit on `/var/run/docker.sock`. The MariaDB and SQL Server
+fixtures use x86-64 binaries. SQL Server requires at
 least 2 GiB of memory available to the engine. Running that case accepts the
 SQL Server container license terms for the disposable Developer edition instance.
 
@@ -15,8 +16,12 @@ The runner accepts repeated `--engine` arguments with `postgresql`, `mariadb`,
 `mysql` and `sqlserver`. Use `--tools-only` to check the images, native backups,
 restores and recipient isolation without building the .NET fixture.
 
-Each case starts a digest-pinned container on a new Docker bridge with an
-engine-assigned loopback port. Source and restore are different databases.
+Each case starts a container on a new Docker bridge with an engine-assigned
+loopback port and checks the engine's reported version. The default matrix
+targets the latest generally available releases at the time of pinning.
+PostgreSQL, MySQL, and SQL Server use digest-pinned vendor images. The MariaDB
+fixture builds on a digest-pinned image and uses the checksum-pinned 13.1.2 GA
+binary from the MariaDB archive. Source and restore are different databases.
 The fixture provisions its own database-scoped user and generates new synthetic
 passwords for every run. The temporary directory, container, anonymous volumes
 and bridge are removed on exit. SQL Server writes its backup within the
