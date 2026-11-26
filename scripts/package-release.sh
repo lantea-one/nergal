@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Build the Linux release payload and requested package formats.
 set -euo pipefail
+# Package directory permissions must be independent of the build runner's umask.
+umask 022
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 VERIFY=0
@@ -59,6 +61,7 @@ if [[ -f "$web_endpoints" ]]; then
     modified=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" '+%a, %d %b %Y %T GMT')
     sed -i "s/\"Name\":\"Last-Modified\",\"Value\":\"[^\"]*\"/\"Name\":\"Last-Modified\",\"Value\":\"$modified\"/g" "$web_endpoints"
 fi
+chmod -R go-w "$ROOT"
 find "$ROOT" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
 
 tar --sort=name --mtime="@${SOURCE_DATE_EPOCH:-0}" --owner=0 --group=0 --numeric-owner \
