@@ -133,7 +133,11 @@ def create_policy(browser, state, capture):
     state_form = '#tab-filter form[action="/manage/policies/rules/state"]:has(input[name="ruleIndex"][value="1"])'
     for enabled in (False, True):
         browser.click(state_form + " .enablement-switch")
+        browser.evaluate("document.documentElement.dataset.fixturePendingSubmit = 'true';")
         browser.click(state_form + " button[type=submit]")
+        browser.wait_for(lambda: browser.evaluate(
+            "return document.readyState === 'complete' && !document.documentElement.dataset.fixturePendingSubmit;"
+        ), "Expected a new document after updating rule state")
         assert browser.evaluate("return document.querySelector(arguments[0]).elements.enabled.checked;", state_form) == enabled
         assert browser.value("#top-summary") == POLICY_NOTE, "Updating rule state lost the latest revision note"
         assert not browser.evaluate("return !!document.querySelector('#revision-note-probe');"), "The revision note rendered as markup"
@@ -178,7 +182,7 @@ def connect_host(browser, state, temp, capture):
 
 def import_policy(browser, state, capture):
     baseline = revisions(state)
-    for fixture, name in (("unsupported.conf", "Unsupported counter"), ("supported.conf", "Supported HTTPS")):
+    for fixture, name in (("unsupported.conf", "Unsupported logging"), ("supported.conf", "Supported HTTPS")):
         browser.click(link("/manage/sources"))
         browser.wait_for(lambda: browser.path() == "/manage/sources" and not browser.location().query,
                          "Expected the source library landing page")
@@ -301,7 +305,7 @@ def set_viewport(browser, *, mobile=False):
     browser.cdp("Emulation.setDeviceMetricsOverride", width=width, height=height, deviceScaleFactor=1, mobile=mobile)
 
 
-def mobile_localization(browser, origin, capture):
+def mobile_localization(browser, origin, temp, capture):
     set_viewport(browser, mobile=True)
     browser.post("/url", url=origin + "/manage/hosts")
     assert browser.evaluate("return window.innerWidth;") == 375
@@ -321,7 +325,23 @@ def mobile_localization(browser, origin, capture):
 
     browser.post("/url", url=origin + "/manage/sources")
     assert browser.evaluate("return document.documentElement.lang;") == "es-ES"
-    expect_text(browser, "Native source library", '.appliance-content[lang="en-US"] h1')
+    expect_text(browser, "Biblioteca de fuentes nativas", ".appliance-content h1")
+    assert not browser.evaluate("return document.querySelector('.appliance-content').hasAttribute('lang');")
+    fixture = temp / "locale-include.conf"
+    fixture.write_text('include "synthetic-include.nft"\n', encoding="utf-8")
+    browser.fill("#source-name", "Synthetic include")
+    browser.upload("#source-file", fixture)
+    browser.click(submit("/manage/sources/import"))
+    expect_text(browser, "Synthetic include", "#selected-source-heading")
+    browser.click("[data-include-add]")
+    assert browser.evaluate("""
+        return [...document.querySelectorAll('.native-include-rows select')].map(select => select.ariaLabel);
+    """) == ["synthetic-include.nft, archivo 1", "synthetic-include.nft, archivo 2"]
+    browser.click('.native-include-row:last-child [data-include-move="up"]')
+    assert browser.evaluate("""
+        return document.querySelector('.native-include-row:first-child select').ariaLabel;
+    """) == "synthetic-include.nft, archivo 1"
+    capture("native-sources-mobile-es")
     browser.post("/url", url=origin + "/manage/hosts")
     browser.click(".language-menu > summary")
     browser.select("#ui-culture", "en-US")
@@ -332,6 +352,36 @@ def mobile_localization(browser, origin, capture):
     expect_text(browser, "Hosts", "h1")
     expect_text(browser, "Register agent host")
     expect_text(browser, "Host name", 'label[for="host-name"]')
+    set_viewport(browser)
+
+
+def right_to_left_navigation(browser, origin, capture):
+    browser.post("/url", url=origin + "/manage/hosts")
+    browser.click(".language-menu > summary")
+    browser.select("#ui-culture", "ar")
+    browser.click(submit("/language"))
+    browser.wait_for(lambda: browser.evaluate("return document.documentElement.lang;") == "ar", "Expected Arabic")
+    expect_text(browser, "Register agent host", '.appliance-content[lang="en-US"][dir="ltr"]')
+    assert browser.evaluate("""
+        const sidebar = document.querySelector('#management-navigation');
+        const content = document.querySelector('.appliance-content');
+        return document.documentElement.dir === 'rtl' && getComputedStyle(sidebar).direction === 'rtl'
+            && sidebar.getBoundingClientRect().left >= content.getBoundingClientRect().right;
+    """), "Arabic navigation did not move to the right of the English fallback content"
+    capture("hosts-desktop-ar")
+
+    set_viewport(browser, mobile=True)
+    toggle = "[data-sidebar-toggle]"
+    browser.click(toggle)
+    assert browser.visible(NAV)
+    assert browser.evaluate("return document.documentElement.scrollWidth <= document.documentElement.clientWidth;")
+    capture("navigation-mobile-ar")
+    browser.key(ESCAPE)
+    assert not browser.visible(NAV) and browser.visible(toggle + '[aria-expanded="false"]')
+    browser.click(".language-menu > summary")
+    browser.select("#ui-culture", "en-US")
+    browser.click(submit("/language"))
+    browser.wait_for(lambda: browser.evaluate("return document.documentElement.lang;") == "en-US", "Expected English")
     set_viewport(browser)
 
 
@@ -457,7 +507,8 @@ def main():
                         ("administrator apply surface", apply_surface, (state, capture)),
                         ("identity and settings", identity_settings, (capture,)),
                         ("dark theme and browser-local time", desktop_dark, (capture,)),
-                        ("mobile Hosts localization and source fallback", mobile_localization, (origin, capture)),
+                        ("mobile Hosts and native sources in Spanish", mobile_localization, (origin, temp, capture)),
+                        ("right-to-left navigation and English fallback", right_to_left_navigation, (origin, capture)),
                         ("mobile navigation and sign-out", mobile_and_sign_out, (origin, capture)),
                         ("auditor navigation and denial", read_only, (origin, state, capture)),
                     ):

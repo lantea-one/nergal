@@ -750,4 +750,739 @@
     <data name="A matching agent baseline does not mean the latest controller policy is applied. Review the selected revision and each host before starting a confirmed change." xml:space="preserve">
         <value>El agente compara el estado con su referencia protegida. Revise la última política del controlador, la revisión seleccionada y cada equipo antes de iniciar un cambio confirmado.</value>
     </data>
+    <data name="Native sources" xml:space="preserve">
+        <value>Fuentes nativas</value>
+    </data>
+    <data name="Native source library" xml:space="preserve">
+        <value>Biblioteca de fuentes nativas</value>
+    </data>
+    <data name="Import configuration snapshots into database history, review migration work, and download original files." xml:space="preserve">
+        <value>Importe copias de configuración al historial de la base de datos, revise las tareas de migración y descargue los archivos originales.</value>
+    </data>
+    <data name="Policy builder" xml:space="preserve">
+        <value>Editor de políticas</value>
+    </data>
+    <data name="Import stores a private source snapshot. It does not convert a policy or apply firewall rules." xml:space="preserve">
+        <value>La importación guarda una copia privada de la fuente. No convierte ninguna política ni aplica reglas de cortafuegos.</value>
+    </data>
+    <data name="Display name" xml:space="preserve">
+        <value>Nombre visible</value>
+    </data>
+    <data name="Use a descriptive label, such as “Gateway baseline”. Names may repeat; each import has its own identity and history." xml:space="preserve">
+        <value>Use un nombre descriptivo, como «Configuración de referencia de la puerta de enlace». Los nombres pueden repetirse. Cada importación tiene su propio identificador e historial.</value>
+    </data>
+    <data name="Configuration file" xml:space="preserve">
+        <value>Archivo de configuración</value>
+    </data>
+    <data name="Choose UTF-8 text, up to 512 KiB. Original bytes and line endings are retained. Includes are not opened and the file is not executed." xml:space="preserve">
+        <value>Seleccione un archivo de texto UTF-8 de hasta 512 KiB. Se conservan los bytes y los finales de línea originales. No se abren los archivos referenciados por include ni se ejecuta la configuración.</value>
+    </data>
+    <data name="Import source snapshot" xml:space="preserve">
+        <value>Importar copia de la fuente</value>
+    </data>
+    <data name="Database snapshots" xml:space="preserve">
+        <value>Copias en la base de datos</value>
+    </data>
+    <data name="No imported snapshots yet. Upload a configuration or import an operator-staged source below." xml:space="preserve">
+        <value>Todavía no hay copias importadas. Cargue una configuración o importe una fuente preparada por el operador en la sección inferior.</value>
+    </data>
+    <data name="Immutable imported sources — no firewall changes" xml:space="preserve">
+        <value>Fuentes importadas inmutables, sin cambios en el cortafuegos</value>
+    </data>
+    <data name="Name" xml:space="preserve">
+        <value>Nombre</value>
+    </data>
+    <data name="Imported (local time)" xml:space="preserve">
+        <value>Fecha de importación (hora local)</value>
+    </data>
+    <data name="Size" xml:space="preserve">
+        <value>Tamaño</value>
+    </data>
+    <data name="Download original" xml:space="preserve">
+        <value>Descargar original</value>
+    </data>
+    <data name="Stored · not applied" xml:space="preserve">
+        <value>Guardada · sin aplicar</value>
+    </data>
+    <data name="Source inventory and exact original" xml:space="preserve">
+        <value>Inventario de la fuente y archivo original exacto</value>
+    </data>
+    <data name="These optional file snapshots are staging inputs. Import explicitly to retain a database record; later file changes cannot alter an imported snapshot." xml:space="preserve">
+        <value>Estas copias de archivos son fuentes preparadas opcionales. Impórtelas para conservar un registro en la base de datos. Los cambios posteriores en los archivos no alterarán las copias importadas.</value>
+    </data>
+    <data name="Capacity: {0} / 128 immutable snapshots, up to 32 MiB total source bytes. Importing the same file again creates another snapshot." xml:space="preserve">
+        <value>Capacidad: {0} de 128 copias inmutables, con un máximo de 32 MiB en total. Si vuelve a importar el mismo archivo, se creará otra copia.</value>
+    </data>
+    <data name="{0} bytes" xml:space="preserve">
+        <value>{0} bytes</value>
+    </data>
+    <data name="Review {0}" xml:space="preserve">
+        <value>Revisar {0}</value>
+    </data>
+    <data name="Download original {0}" xml:space="preserve">
+        <value>Descargar el original de {0}</value>
+    </data>
+    <data name="Operator-staged sources ({0})" xml:space="preserve">
+        <value>Fuentes preparadas por el operador ({0})</value>
+    </data>
+    <data name="Import staged {0}" xml:space="preserve">
+        <value>Importar la fuente preparada {0}</value>
+    </data>
+    <data name="Snapshot" xml:space="preserve">
+        <value>Copia</value>
+    </data>
+    <data name="This review uses immutable database content." xml:space="preserve">
+        <value>La revisión utiliza contenido inmutable de la base de datos.</value>
+    </data>
+    <data name="Convert to a managed policy" xml:space="preserve">
+        <value>Convertir en una política gestionada</value>
+    </data>
+    <data name="Map every source table and resolve uploaded includes, then review a saved conversion plan. Unsupported content blocks the whole candidate. Nothing here applies firewall rules." xml:space="preserve">
+        <value>Asigne un destino a cada tabla de la fuente y resuelva las directivas include con los archivos cargados. Después, revise el plan de conversión guardado. El contenido incompatible bloquea toda la configuración candidata. Este proceso no aplica reglas de cortafuegos.</value>
+    </data>
+    <data name="1. Choose each table's destination role" xml:space="preserve">
+        <value>1. Elija la función de destino de cada tabla</value>
+    </data>
+    <data name="Source names do not grant ownership. Primary filtering uses priority 0; auxiliary filtering preserves an independent priority; NAT supports prerouting/postrouting; bridge supports forward and regular subchains. Unmapped or incompatible tables block conversion." xml:space="preserve">
+        <value>Los nombres de las tablas de origen no otorgan control sobre ellas. El filtrado principal usa la prioridad 0 y el auxiliar conserva su propia prioridad. NAT admite prerouting y postrouting. El filtrado bridge admite forward y subcadenas normales. Las tablas sin asignar o incompatibles bloquean la conversión.</value>
+    </data>
+    <data name="No table headers found in the selected files. Resolve includes and refresh choices first." xml:space="preserve">
+        <value>No se encontraron cabeceras de tabla en los archivos seleccionados. Resuelva las directivas include y actualice las opciones.</value>
+    </data>
+    <data name="Choose a role" xml:space="preserve">
+        <value>Elija una función</value>
+    </data>
+    <data name="2. Bind includes to uploaded snapshots" xml:space="preserve">
+        <value>2. Vincule las directivas include a las copias cargadas</value>
+    </data>
+    <data name="Include paths are labels only; the server never opens them. Select uploaded snapshots in expansion order, top to bottom. Use the move buttons to reorder files, then refresh to discover nested includes or table headers." xml:space="preserve">
+        <value>Las rutas de las directivas include sirven como etiquetas. El servidor nunca las abre. Seleccione las copias cargadas en orden de expansión, de arriba abajo. Use los botones para reordenar los archivos y actualice las opciones para detectar directivas include anidadas o cabeceras de tabla.</value>
+    </data>
+    <data name="No additional file" xml:space="preserve">
+        <value>Ningún archivo adicional</value>
+    </data>
+    <data name="Move file up" xml:space="preserve">
+        <value>Subir archivo</value>
+    </data>
+    <data name="Move file down" xml:space="preserve">
+        <value>Bajar archivo</value>
+    </data>
+    <data name="Add another file" xml:space="preserve">
+        <value>Añadir otro archivo</value>
+    </data>
+    <data name="Source-wide operations and ownership scope" xml:space="preserve">
+        <value>Operaciones globales de la fuente y alcance de control</value>
+    </data>
+    <data name="The original remains intact. A global flush is never executed; foreign tables are preserved. This decision is recorded in the plan. Unsupported commands and rules cannot be approved away." xml:space="preserve">
+        <value>El original se conserva intacto. Nunca se ejecuta un vaciado global y las tablas ajenas se conservan. Esta decisión queda registrada en el plan. La aprobación no permite omitir comandos ni reglas incompatibles.</value>
+    </data>
+    <data name="Refresh include and table choices" xml:space="preserve">
+        <value>Actualizar opciones de inclusión y de tablas</value>
+    </data>
+    <data name="Save conversion plan for review" xml:space="preserve">
+        <value>Guardar el plan de conversión para revisarlo</value>
+    </data>
+    <data name="Saved conversion review" xml:space="preserve">
+        <value>Revisión del plan de conversión guardado</value>
+    </data>
+    <data name="Open revision review" xml:space="preserve">
+        <value>Abrir la revisión de la política</value>
+    </data>
+    <data name="Ready to create a saved revision. Every source statement is accounted for in the supported grammar. Review the mappings and candidate below; confirmed apply remains a separate workflow." xml:space="preserve">
+        <value>Ya puede crear una revisión guardada. La gramática admitida representa todas las instrucciones de la fuente. Revise las asignaciones y la configuración candidata que se muestran a continuación. La aplicación confirmada se realiza por separado.</value>
+    </data>
+    <data name="Creates one immutable revision and its pinned reusable lists atomically. Future list edits cannot change this revision." xml:space="preserve">
+        <value>Crea una revisión inmutable y las versiones asociadas de las listas reutilizables en una sola operación atómica. Los cambios posteriores en las listas no modificarán esta revisión.</value>
+    </data>
+    <data name="Create reviewed policy revision" xml:space="preserve">
+        <value>Crear la revisión de política a partir del plan revisado</value>
+    </data>
+    <data name="Blocking conversion gaps" xml:space="preserve">
+        <value>Problemas que bloquean la conversión</value>
+    </data>
+    <data name="Position" xml:space="preserve">
+        <value>Posición</value>
+    </data>
+    <data name="Reason" xml:space="preserve">
+        <value>Motivo</value>
+    </data>
+    <data name="Source position" xml:space="preserve">
+        <value>Posición en la fuente</value>
+    </data>
+    <data name="Disposition" xml:space="preserve">
+        <value>Tratamiento</value>
+    </data>
+    <data name="Destination" xml:space="preserve">
+        <value>Destino</value>
+    </data>
+    <data name="Complete generated candidate" xml:space="preserve">
+        <value>Configuración candidata generada completa</value>
+    </data>
+    <data name="Download mapping and gap report" xml:space="preserve">
+        <value>Descargar el informe de asignaciones y problemas</value>
+    </data>
+    <data name="{0} file {1}" xml:space="preserve">
+        <value>{0}, archivo {1}</value>
+    </data>
+    <data name="Conversion blocked: {0} gaps. No partial policy or reusable list was created. Resolve the source or choices and review a new plan." xml:space="preserve">
+        <value>Conversión bloqueada. Problemas detectados: {0}. No se creó ninguna política parcial ni lista reutilizable. Corrija la fuente o las opciones y revise un nuevo plan.</value>
+    </data>
+    <data name="Line {0}, column {1}" xml:space="preserve">
+        <value>Línea {0}, columna {1}</value>
+    </data>
+    <data name="Showing the first 100 gaps. Download the report for all {0} gaps." xml:space="preserve">
+        <value>Se muestran los primeros 100 problemas. Descargue el informe para consultar los {0} problemas.</value>
+    </data>
+    <data name="Source-to-policy mappings ({0})" xml:space="preserve">
+        <value>Asignaciones de la fuente a la política ({0})</value>
+    </data>
+    <data name="Showing the first 200 mappings. Download the report for all {0} mappings." xml:space="preserve">
+        <value>Se muestran las primeras 200 asignaciones. Descargue el informe para consultar las {0} asignaciones.</value>
+    </data>
+    <data name="Conversion plan history ({0})" xml:space="preserve">
+        <value>Historial de planes de conversión ({0})</value>
+    </data>
+    <data name="Source" xml:space="preserve">
+        <value>Fuente</value>
+    </data>
+    <data name="Primary inet filter" xml:space="preserve">
+        <value>Filtro inet principal</value>
+    </data>
+    <data name="Inet NAT" xml:space="preserve">
+        <value>NAT de inet</value>
+    </data>
+    <data name="Auxiliary inet filter" xml:space="preserve">
+        <value>Filtro inet auxiliar</value>
+    </data>
+    <data name="Bridge filter" xml:space="preserve">
+        <value>Filtro bridge</value>
+    </data>
+    <data name="in {0}" xml:space="preserve">
+        <value>en {0}</value>
+    </data>
+    <data name="This wildcard intentionally expands to no files." xml:space="preserve">
+        <value>Este patrón con comodines no corresponde a ningún archivo de forma intencionada.</value>
+    </data>
+    <data name="Restrict source cleanup to the selected managed resources." xml:space="preserve">
+        <value>Limitar la limpieza de la fuente a los recursos gestionados seleccionados.</value>
+    </data>
+    <data name="Created" xml:space="preserve">
+        <value>Creación:</value>
+    </data>
+    <data name="This plan uses immutable database originals." xml:space="preserve">
+        <value>Este plan utiliza originales inmutables de la base de datos.</value>
+    </data>
+    <data name="Revision {0} was created from this plan." xml:space="preserve">
+        <value>Se creó la revisión {0} a partir de este plan.</value>
+    </data>
+    <data name="No firewall apply was requested." xml:space="preserve">
+        <value>No se solicitó aplicar cambios al cortafuegos.</value>
+    </data>
+    <data name="This statement must be represented completely; it cannot be skipped." xml:space="preserve">
+        <value>Esta instrucción debe representarse por completo y no puede omitirse.</value>
+    </data>
+    <data name="Revision created" xml:space="preserve">
+        <value>Revisión creada</value>
+    </data>
+    <data name="Ready for revision" xml:space="preserve">
+        <value>Listo para crear una revisión</value>
+    </data>
+    <data name="Blocked: {0} gaps" xml:space="preserve">
+        <value>Bloqueado. Problemas detectados: {0}</value>
+    </data>
+    <data name="Conversion blocked — explicit mapping required." xml:space="preserve">
+        <value>Conversión bloqueada: se requiere una asignación explícita.</value>
+    </data>
+    <data name="Source structure and diagnostic details" xml:space="preserve">
+        <value>Estructura de la fuente y detalles de diagnóstico</value>
+    </data>
+    <data name="Source structure is incomplete. No partial tree or topic inventory is used." xml:space="preserve">
+        <value>La estructura de la fuente está incompleta. No se utiliza un árbol parcial ni un inventario parcial de temas.</value>
+    </data>
+    <data name="Additional rule diagnostics are available in the review download." xml:space="preserve">
+        <value>El informe descargable de revisión incluye más diagnósticos de reglas.</value>
+    </data>
+    <data name="These checks retain source structure for mapping; they do not validate native rule semantics or resolve includes. Conversion remains blocked." xml:space="preserve">
+        <value>Estas comprobaciones conservan la estructura de la fuente para facilitar la asignación. No validan la semántica de las reglas nativas ni resuelven las directivas include. La conversión sigue bloqueada.</value>
+    </data>
+    <data name="Migration review signals — non-exhaustive, not semantic validation" xml:space="preserve">
+        <value>Indicadores de revisión de la migración (lista parcial, sin validación semántica)</value>
+    </data>
+    <data name="Review area" xml:space="preserve">
+        <value>Área de revisión</value>
+    </data>
+    <data name="Work to preserve behavior" xml:space="preserve">
+        <value>Tareas para conservar el comportamiento</value>
+    </data>
+    <data name="Source lines" xml:space="preserve">
+        <value>Líneas de la fuente</value>
+    </data>
+    <data name="No catalogued keywords were found. This does not establish compatibility or completeness." xml:space="preserve">
+        <value>No se encontraron palabras clave del catálogo. Esto no confirma que la fuente sea compatible ni que esté completa.</value>
+    </data>
+    <data name="Review topics are unavailable until the source error is resolved." xml:space="preserve">
+        <value>Los temas de revisión estarán disponibles cuando se corrija el error en la fuente.</value>
+    </data>
+    <data name="Download migration review" xml:space="preserve">
+        <value>Descargar el informe de revisión de la migración</value>
+    </data>
+    <data name="Exact source snapshot" xml:space="preserve">
+        <value>Copia exacta de la fuente</value>
+    </data>
+    <data name="Source SHA-256" xml:space="preserve">
+        <value>SHA-256 de la fuente</value>
+    </data>
+    <data name="Review topics help locate work; they do not validate or convert the configuration. Keywords may be identifiers, so inspect each occurrence in context. No policy has been created or applied." xml:space="preserve">
+        <value>Los temas de revisión ayudan a localizar las tareas pendientes. No validan ni convierten la configuración. Las palabras clave pueden ser identificadores, así que revise cada aparición en su contexto. No se ha creado ni aplicado ninguna política.</value>
+    </data>
+    <data name="Inventory incomplete:" xml:space="preserve">
+        <value>Inventario incompleto:</value>
+    </data>
+    <data name="Check line {0}, column {1}." xml:space="preserve">
+        <value>Revise la línea {0}, columna {1}.</value>
+    </data>
+    <data name="Review the exact source below." xml:space="preserve">
+        <value>Revise la fuente exacta que se muestra a continuación.</value>
+    </data>
+    <data name="Source structure is complete: {0} delimiter groups, maximum nesting {1}." xml:space="preserve">
+        <value>La estructura de la fuente está completa: {0} grupos de delimitadores y profundidad máxima de anidación de {1}.</value>
+    </data>
+    <data name="{0} of {1} rule statements parsed by the current expression grammar. Parsed rules still require scope, ownership and complete semantic mapping." xml:space="preserve">
+        <value>La gramática de expresiones actual pudo analizar {0} de {1} instrucciones de reglas. Aún hay que asignar el alcance, la titularidad y la semántica completa de las reglas analizadas.</value>
+    </data>
+    <data name="line {0}, column {1}. The entire rule remains unmapped." xml:space="preserve">
+        <value>línea {0}, columna {1}. Toda la regla queda sin asignar.</value>
+    </data>
+    <data name="Every table still needs explicit ownership, hook and rule-order mapping. Counters, definitions, named objects and control flow must be accounted for before an equivalent policy can be reviewed." xml:space="preserve">
+        <value>Cada tabla requiere una asignación explícita de titularidad, hook y orden de reglas. Antes de revisar una política equivalente, es necesario tener en cuenta los contadores, las definiciones, los objetos con nombre y el flujo de control.</value>
+    </data>
+    <data name="declarative table headers" xml:space="preserve">
+        <value>cabeceras de declaración de tablas</value>
+    </data>
+    <data name="declarative chain headers" xml:space="preserve">
+        <value>cabeceras de declaración de cadenas</value>
+    </data>
+    <data name="review topics" xml:space="preserve">
+        <value>temas de revisión</value>
+    </data>
+    <data name="Contract gap signal" xml:space="preserve">
+        <value>Indicador de función no admitida</value>
+    </data>
+    <data name="Source resolution" xml:space="preserve">
+        <value>Resolución de la fuente</value>
+    </data>
+    <data name="Explicit typed mapping" xml:space="preserve">
+        <value>Asignación explícita a tipos compatibles</value>
+    </data>
+    <data name=" (+{0} more in report)" xml:space="preserve">
+        <value> (+{0} más en el informe)</value>
+    </data>
+    <data name="Check the display name and configuration file." xml:space="preserve">
+        <value>Revise el nombre visible y el archivo de configuración.</value>
+    </data>
+    <data name="Submit one display name and one configuration file." xml:space="preserve">
+        <value>Envíe un solo nombre visible y un solo archivo de configuración.</value>
+    </data>
+    <data name="Choose a UTF-8 configuration file between 1 byte and 512 KiB." xml:space="preserve">
+        <value>Seleccione un archivo de configuración UTF-8 de entre 1 byte y 512 KiB.</value>
+    </data>
+    <data name="The configuration exceeds 512 KiB." xml:space="preserve">
+        <value>La configuración supera los 512 KiB.</value>
+    </data>
+    <data name="The file must contain valid UTF-8 text." xml:space="preserve">
+        <value>El archivo debe contener texto UTF-8 válido.</value>
+    </data>
+    <data name="Use a display name of 1–120 characters without paths or control characters, and a nonempty UTF-8 file." xml:space="preserve">
+        <value>Use un nombre visible de 1 a 120 caracteres, sin rutas ni caracteres de control, y un archivo UTF-8 que no esté vacío.</value>
+    </data>
+    <data name="The staged source has an invalid name, encoding or size." xml:space="preserve">
+        <value>El nombre, la codificación o el tamaño de la fuente preparada no son válidos.</value>
+    </data>
+    <data name="Source storage is full (128 snapshots or 32 MiB). No source or audit record was added." xml:space="preserve">
+        <value>El almacenamiento de fuentes está lleno (128 copias o 32 MiB). No se añadió ninguna fuente ni ningún registro de auditoría.</value>
+    </data>
+    <data name="Check the source, table roles and ordered include selections." xml:space="preserve">
+        <value>Revise la fuente, las funciones de las tablas y el orden de los archivos seleccionados para las directivas include.</value>
+    </data>
+    <data name="The conversion choices exceed the supported bounds or contain an invalid value." xml:space="preserve">
+        <value>Las opciones de conversión superan los límites admitidos o contienen un valor inválido.</value>
+    </data>
+    <data name="A selected source is unavailable or conversion-plan storage is full. No plan was saved." xml:space="preserve">
+        <value>Una fuente seleccionada no está disponible o el almacenamiento de planes de conversión está lleno. No se guardó ningún plan.</value>
+    </data>
+    <data name="This plan is blocked, already committed, or no longer matches current conversion logic. Review a new plan; no duplicate revision was created." xml:space="preserve">
+        <value>El plan está bloqueado, ya se usó para crear una revisión o ha dejado de coincidir con la lógica de conversión actual. Revise un nuevo plan. No se creó ninguna revisión duplicada.</value>
+    </data>
+    <data name="Resolve named definitions against this exact source snapshot." xml:space="preserve">
+        <value>Resuelva las definiciones con nombre a partir de esta copia exacta de la fuente.</value>
+    </data>
+    <data name="Resolve external includes explicitly; this review never opens another file." xml:space="preserve">
+        <value>Resuelva de forma explícita las directivas include externas. Esta revisión nunca abre otros archivos.</value>
+    </data>
+    <data name="Replace whole-ruleset operations with explicit managed-resource ownership." xml:space="preserve">
+        <value>Sustituya las operaciones sobre todo el conjunto de reglas por operaciones con control explícito sobre los recursos gestionados.</value>
+    </data>
+    <data name="Preserve named/inline map lookup semantics; map translation is not modeled." xml:space="preserve">
+        <value>Conserve la semántica de búsqueda de los mapas con nombre o en línea. La conversión de mapas no está contemplada.</value>
+    </data>
+    <data name="Preserve verdict-map control flow; verdict maps are not modeled." xml:space="preserve">
+        <value>Conserve el flujo de control de los mapas de veredictos. Estos mapas no están contemplados.</value>
+    </data>
+    <data name="Preserve connection-tracking bypass and raw-hook ordering; notrack is not modeled." xml:space="preserve">
+        <value>Conserve la exclusión del seguimiento de conexiones y el orden del hook raw. La instrucción notrack no está contemplada.</value>
+    </data>
+    <data name="Preserve counter identity and reset/observation semantics; counter statements are not modeled." xml:space="preserve">
+        <value>Conserve la identidad de los contadores y la semántica de reinicio y observación. Las instrucciones counter no están contempladas.</value>
+    </data>
+    <data name="Preserve logging behavior; native log statements are not modeled." xml:space="preserve">
+        <value>Conserve el comportamiento del registro de eventos. Las instrucciones nativas log no están contempladas.</value>
+    </data>
+    <data name="Preserve flow-offload behavior; flowtables are not modeled." xml:space="preserve">
+        <value>Conserve el comportamiento de la aceleración de flujos. Las tablas flowtable no están contempladas.</value>
+    </data>
+    <data name="Preserve userspace queue behavior; queue statements are not modeled." xml:space="preserve">
+        <value>Conserve el comportamiento de las colas en espacio de usuario. Las instrucciones queue no están contempladas.</value>
+    </data>
+    <data name="Preserve redirect translation; redirect statements are not modeled." xml:space="preserve">
+        <value>Conserve la traducción de redirecciones. Las instrucciones redirect no están contempladas.</value>
+    </data>
+    <data name="Preserve transparent-proxy behavior; tproxy is not modeled." xml:space="preserve">
+        <value>Conserve el comportamiento del proxy transparente. La instrucción tproxy no está contemplada.</value>
+    </data>
+    <data name="Map reverse-path FIB checks and their ordered bypasses." xml:space="preserve">
+        <value>Asigne las comprobaciones de ruta inversa en la FIB y las excepciones en su orden original.</value>
+    </data>
+    <data name="Map TCP MSS clamping, flags and hook placement." xml:space="preserve">
+        <value>Asigne el ajuste de MSS de TCP, los indicadores y la ubicación del hook.</value>
+    </data>
+    <data name="Preserve source MAC restrictions together with IP restrictions." xml:space="preserve">
+        <value>Conserve las restricciones de MAC de origen junto con las restricciones de IP.</value>
+    </data>
+    <data name="Preserve destination MAC restrictions and negation." xml:space="preserve">
+        <value>Conserve las restricciones de MAC de destino y la negación.</value>
+    </data>
+    <data name="Map meter keys, rates, bursts and address-family scope." xml:space="preserve">
+        <value>Asigne las claves, tasas, ráfagas y familias de direcciones de los medidores.</value>
+    </data>
+    <data name="Preserve postrouting translation order and exemptions." xml:space="preserve">
+        <value>Conserve el orden de traducción y las excepciones de postrouting.</value>
+    </data>
+    <data name="Preserve return behavior in its original chain and caller context." xml:space="preserve">
+        <value>Conserve el comportamiento de return en la cadena original y en el contexto desde el que se invoca.</value>
+    </data>
+    <data name="Map every jump target and preserve rule ordering." xml:space="preserve">
+        <value>Asigne el destino de cada jump y conserve el orden de las reglas.</value>
+    </data>
+    <data name="Preserve bridge-master interface matching." xml:space="preserve">
+        <value>Conserve la coincidencia con la interfaz principal del puente.</value>
+    </data>
+    <data name="Map unclassified source statements explicitly; none may be discarded." xml:space="preserve">
+        <value>Asigne de forma explícita las instrucciones de la fuente que no se han clasificado. No se puede descartar ninguna.</value>
+    </data>
+    <data name="Resolve every unparsed rule expression; no partial rule may be converted." xml:space="preserve">
+        <value>Resuelva todas las expresiones de reglas que no se pudieron analizar. No pueden convertirse reglas parciales.</value>
+    </data>
+    <data name="Verify sign-in" xml:space="preserve">
+        <value>Verificar el inicio de sesión</value>
+    </data>
+    <data name="Nergal Guardian logo" xml:space="preserve">
+        <value>Logotipo de Nergal Guardian</value>
+    </data>
+    <data name="Enter the current six-digit code from your authenticator app." xml:space="preserve">
+        <value>Introduzca el código de seis dígitos que muestra su aplicación de autenticación.</value>
+    </data>
+    <data name="The code could not be verified. Try the current code from your authenticator app." xml:space="preserve">
+        <value>No se ha podido verificar el código. Vuelva a intentarlo con el código que muestra ahora su aplicación de autenticación.</value>
+    </data>
+    <data name="Authenticator code" xml:space="preserve">
+        <value>Código del autenticador</value>
+    </data>
+    <data name="Verify and sign in" xml:space="preserve">
+        <value>Verificar e iniciar sesión</value>
+    </data>
+    <data name="Back to sign-in" xml:space="preserve">
+        <value>Volver al inicio de sesión</value>
+    </data>
+    <data name="Recover authenticator" xml:space="preserve">
+        <value>Recuperar el autenticador</value>
+    </data>
+    <data name="Have your recovery authorization and authenticator app ready. Choose the account you normally use to sign in." xml:space="preserve">
+        <value>Tenga a mano su autorización de recuperación y su aplicación de autenticación. Elija la cuenta que utiliza habitualmente para iniciar sesión.</value>
+    </data>
+    <data name="Directory account" xml:space="preserve">
+        <value>Cuenta del directorio</value>
+    </data>
+    <data name="Local account" xml:space="preserve">
+        <value>Cuenta local</value>
+    </data>
+    <data name="Recovery authorization" xml:space="preserve">
+        <value>Autorización de recuperación</value>
+    </data>
+    <data name="Set up new authenticator" xml:space="preserve">
+        <value>Configurar un nuevo autenticador</value>
+    </data>
+    <data name="Recovery could not start" xml:space="preserve">
+        <value>No se ha podido iniciar la recuperación</value>
+    </data>
+    <data name="Check your authorization and credentials. If the authorization has expired or setup already started, ask for a new authorization." xml:space="preserve">
+        <value>Revise su autorización y sus credenciales. Si la autorización ha caducado o ya ha iniciado la configuración, solicite una nueva.</value>
+    </data>
+    <data name="Return to authenticator recovery" xml:space="preserve">
+        <value>Volver a la recuperación del autenticador</value>
+    </data>
+    <data name="Confirm replacement authenticator" xml:space="preserve">
+        <value>Confirmar el nuevo autenticador</value>
+    </data>
+    <data name="Add a time-based account for Nergal in your authenticator app and enter this private setup key." xml:space="preserve">
+        <value>Añada una cuenta de Nergal que use códigos basados en el tiempo en su aplicación de autenticación e introduzca esta clave de configuración privada.</value>
+    </data>
+    <data name="Verification failed. Try the current code from your new authenticator. If recovery expired or your attempts ran out, request a new authorization." xml:space="preserve">
+        <value>No se ha podido verificar el código. Vuelva a intentarlo con el código que muestra ahora su nuevo autenticador. Si la recuperación ha caducado o ha agotado los intentos, solicite una nueva autorización.</value>
+    </data>
+    <data name="New authenticator code" xml:space="preserve">
+        <value>Código del nuevo autenticador</value>
+    </data>
+    <data name="After confirmation, sign in again with your password and the next code from your new authenticator." xml:space="preserve">
+        <value>Tras confirmar el autenticador, vuelva a iniciar sesión con su contraseña y el siguiente código de su nuevo autenticador.</value>
+    </data>
+    <data name="Confirm authenticator" xml:space="preserve">
+        <value>Confirmar el autenticador</value>
+    </data>
+    <data name="Firewall / Configuration" xml:space="preserve">
+        <value>Cortafuegos / Configuración</value>
+    </data>
+    <data name="Manage rules, NAT and bridge filtering. Edits remain drafts until you review and save a revision." xml:space="preserve">
+        <value>Gestione las reglas, NAT y el filtrado de puente. Los cambios siguen siendo borradores hasta que revise y guarde una revisión.</value>
+    </data>
+    <data name="Router constructs and apply readiness" xml:space="preserve">
+        <value>Funciones de enrutamiento y requisitos de aplicación</value>
+    </data>
+    <data name="Use the guided forms for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation, destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return. The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits." xml:space="preserve">
+        <value>Use los formularios guiados para las reglas rpfilter de la tabla raw, los puertos de origen UDP, el ajuste de MSS en el reenvío, las coincidencias y negaciones de MAC, los medidores por destino, las interfaces o los prefijos negados y las acciones masquerade y return en postrouting. La comparación nativa muestra la propuesta compilada completa. Las ediciones guiadas conservan los criterios avanzados existentes.</value>
+    </data>
+    <data name="Independent priority tables and extended bridge jump/return chains support confirmed apply with complete bundle receipts. Every owned table is validated and replaced together. Missing confirmation triggers local rollback; unexpected native drift requires manual recovery." xml:space="preserve">
+        <value>Las tablas con prioridad independiente y las cadenas de puente extendidas con jump y return admiten la aplicación confirmada con comprobantes del paquete completo. Todas las tablas gestionadas se validan y sustituyen en conjunto. Si falta la confirmación, se revierten los cambios localmente. Una discrepancia imprevista en el estado nativo requiere recuperación manual.</value>
+    </data>
+    <data name="Raw rpfilter:" xml:space="preserve">
+        <value>rpfilter en raw:</value>
+    </data>
+    <data name="{0} ordered rules." xml:space="preserve">
+        <value>{0} reglas ordenadas.</value>
+    </data>
+    <data name="Forward TCP SYN MSS:" xml:space="preserve">
+        <value>MSS de TCP SYN en el reenvío:</value>
+    </data>
+    <data name="{0} bytes." xml:space="preserve">
+        <value>{0} bytes.</value>
+    </data>
+    <data name="This draft includes auxiliary tables or extended bridge chains. Use an updated agent with complete bundle receipts; confirmation and local rollback cover the entire bundle." xml:space="preserve">
+        <value>Este borrador incluye tablas auxiliares o cadenas de puente extendidas. Use un agente actualizado que admita comprobantes del paquete completo. La confirmación y la reversión local abarcan todo el paquete.</value>
+    </data>
+    <data name="Rule switches update the draft only. Disabled rules keep their settings and order and are omitted from the native candidate. Review the intent/native diffs, save a revision, then use confirmed apply. Disabling a rule can broaden or restrict traffic." xml:space="preserve">
+        <value>Los interruptores de las reglas solo modifican el borrador. Las reglas desactivadas conservan su configuración y orden y se omiten de la propuesta nativa. Revise las diferencias de la política y de la configuración nativa, guarde una revisión y use la aplicación confirmada. Desactivar una regla puede ampliar o restringir el tráfico permitido.</value>
+    </data>
+    <data name="Revision summary / change note" xml:space="preserve">
+        <value>Resumen de la revisión / nota del cambio</value>
+    </data>
+    <data name="e.g. Allow HTTPS + ICMPv4 diagnostics on WAN" xml:space="preserve">
+        <value>P. ej., permitir HTTPS y diagnósticos ICMPv4 en la WAN</value>
+    </data>
+    <data name="Compare diff against" xml:space="preserve">
+        <value>Comparar los cambios con</value>
+    </data>
+    <data name="(empty baseline)" xml:space="preserve">
+        <value>(referencia vacía)</value>
+    </data>
+    <data name="Rev {0} ({1})" xml:space="preserve">
+        <value>Rev. {0} ({1})</value>
+    </data>
+    <data name="Preview diff" xml:space="preserve">
+        <value>Previsualizar diferencias</value>
+    </data>
+    <data name="Save policy revision" xml:space="preserve">
+        <value>Guardar revisión de política</value>
+    </data>
+    <data name="Policy bundle sections" xml:space="preserve">
+        <value>Secciones del paquete de políticas</value>
+    </data>
+    <data name="Rules ({0})" xml:space="preserve">
+        <value>Reglas ({0})</value>
+    </data>
+    <data name="NAT ({0})" xml:space="preserve">
+        <value>NAT ({0})</value>
+    </data>
+    <data name="Bridge ({0})" xml:space="preserve">
+        <value>Puente ({0})</value>
+    </data>
+    <data name="Advanced JSON &amp; Revisions" xml:space="preserve">
+        <value>JSON avanzado y revisiones</value>
+    </data>
+    <data name="Export a saved revision" xml:space="preserve">
+        <value>Exportar una revisión guardada</value>
+    </data>
+    <data name="Select a saved database revision. Unsaved draft changes are excluded. The native file contains active policy only; the intent file also retains disabled rules, descriptions and pinned lists. These downloads describe desired configuration, not current host state." xml:space="preserve">
+        <value>Seleccione una revisión guardada en la base de datos. Se excluyen los cambios sin guardar del borrador. El archivo nativo solo contiene la política activa. El archivo de intención también conserva las reglas desactivadas, las descripciones y las listas con versión fijada. Estas descargas describen la configuración prevista, no el estado actual del equipo.</value>
+    </data>
+    <data name="Saved revision" xml:space="preserve">
+        <value>Revisión guardada</value>
+    </data>
+    <data name="Revision {0} · {1}" xml:space="preserve">
+        <value>Revisión {0} · {1}</value>
+    </data>
+    <data name="Download nftables.conf" xml:space="preserve">
+        <value>Descargar nftables.conf</value>
+    </data>
+    <data name="Download policy intent" xml:space="preserve">
+        <value>Descargar la intención de la política</value>
+    </data>
+    <data name="The native file creates reserved Nergal tables and fails if they already exist. Managed updates use confirmed apply. Keep the intent file to preserve authored settings; it is not a backup of library history, accounts or agent ownership." xml:space="preserve">
+        <value>El archivo nativo crea las tablas reservadas de Nergal y falla si ya existen. Para las actualizaciones gestionadas, use la aplicación confirmada. Conserve el archivo de intención para guardar la configuración creada. El archivo no es una copia de seguridad del historial de la biblioteca, las cuentas ni la titularidad de los recursos del agente.</value>
+    </data>
+    <data name="Compiled nftables candidate" xml:space="preserve">
+        <value>Propuesta nftables compilada</value>
+    </data>
+    <data name="Intent diff — enabled state and retained settings" xml:space="preserve">
+        <value>Diferencias de intención — estado de activación y configuración conservada</value>
+    </data>
+    <data name="Unified diff preview" xml:space="preserve">
+        <value>Vista previa de diferencias unificadas</value>
+    </data>
+    <data name="This includes dormant rules and pinned references, which cannot be reconstructed from kernel observations. A state change is still a draft until saved and applied." xml:space="preserve">
+        <value>La comparación incluye las reglas inactivas y las referencias con versión fijada, que no se pueden reconstruir a partir de lo observado en el kernel. Los cambios de estado siguen en el borrador hasta que se guarden y se apliquen.</value>
+    </data>
+    <data name="Advanced JSON bundle editor" xml:space="preserve">
+        <value>Editor avanzado del paquete JSON</value>
+    </data>
+    <data name="Canonical FirewallPolicyBundle" xml:space="preserve">
+        <value>FirewallPolicyBundle canónico</value>
+    </data>
+    <data name="Compare against revision" xml:space="preserve">
+        <value>Comparar con la revisión</value>
+    </data>
+    <data name="Revision {0} ({1})" xml:space="preserve">
+        <value>Revisión {0} ({1})</value>
+    </data>
+    <data name="Bundle JSON" xml:space="preserve">
+        <value>JSON del paquete</value>
+    </data>
+    <data name="JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics." xml:space="preserve">
+        <value>El editor JSON resalta la sintaxis, permite plegar bloques y marca los errores. Para buscar, use Ctrl+F (Cmd+F en Mac). Use Tab para pasar al siguiente control. La vista previa valida la semántica de la política.</value>
+    </data>
+    <data name="Policy bundle JSON" xml:space="preserve">
+        <value>JSON del paquete de políticas</value>
+    </data>
+    <data name="Preview compatibility &amp; nftables diff" xml:space="preserve">
+        <value>Previsualizar la compatibilidad y las diferencias de nftables</value>
+    </data>
+    <data name="No policy revisions persisted yet." xml:space="preserve">
+        <value>Todavía no hay revisiones de política guardadas.</value>
+    </data>
+    <data name="Load Rev {0}" xml:space="preserve">
+        <value>Cargar rev. {0}</value>
+    </data>
+    <data name="Confirmed apply" xml:space="preserve">
+        <value>Aplicación confirmada</value>
+    </data>
+    <data name="Two-phase confirmed apply" xml:space="preserve">
+        <value>Aplicación confirmada en dos fases</value>
+    </data>
+    <data name="Dispatch compiled multi-table bundles with an autonomous local watchdog rollback window." xml:space="preserve">
+        <value>Envíe paquetes compilados de varias tablas con un plazo en el que el supervisor local puede revertir los cambios de forma autónoma.</value>
+    </data>
+    <data name="Edit Policy Bundles" xml:space="preserve">
+        <value>Editar paquetes de políticas</value>
+    </data>
+    <data name="Target host" xml:space="preserve">
+        <value>Equipo de destino</value>
+    </data>
+    <data name="No managed hosts registered yet. Register a host from the" xml:space="preserve">
+        <value>Todavía no hay equipos gestionados registrados. Registre un equipo desde</value>
+    </data>
+    <data name="fleet dashboard" xml:space="preserve">
+        <value>el panel de equipos</value>
+    </data>
+    <data name="1. Target host selection" xml:space="preserve">
+        <value>1. Selección del equipo de destino</value>
+    </data>
+    <data name="Enrolled host" xml:space="preserve">
+        <value>Equipo inscrito</value>
+    </data>
+    <data name="{0} ({1} — rev {2})" xml:space="preserve">
+        <value>{0} ({1} — rev. {2})</value>
+    </data>
+    <data name="Refresh live status" xml:space="preserve">
+        <value>Actualizar el estado en tiempo real</value>
+    </data>
+    <data name="2. Live agent status —" xml:space="preserve">
+        <value>2. Estado del agente en tiempo real —</value>
+    </data>
+    <data name="at" xml:space="preserve">
+        <value>en</value>
+    </data>
+    <data name="Controller revision" xml:space="preserve">
+        <value>Revisión del controlador</value>
+    </data>
+    <data name="Agent baseline revision" xml:space="preserve">
+        <value>Revisión de referencia del agente</value>
+    </data>
+    <data name="Active phase" xml:space="preserve">
+        <value>Fase activa</value>
+    </data>
+    <data name="Watchdog countdown" xml:space="preserve">
+        <value>Cuenta atrás del supervisor</value>
+    </data>
+    <data name="Operation ID" xml:space="preserve">
+        <value>ID de la operación</value>
+    </data>
+    <data name="Watchdog ID" xml:space="preserve">
+        <value>ID del supervisor</value>
+    </data>
+    <data name="3. Pending confirmation window" xml:space="preserve">
+        <value>3. Plazo para confirmar los cambios</value>
+    </data>
+    <data name="Watchdog armed" xml:space="preserve">
+        <value>Supervisor local activado</value>
+    </data>
+    <data name="The candidate ruleset is active on" xml:space="preserve">
+        <value>El conjunto de reglas propuesto está activo en</value>
+    </data>
+    <data name="Confirm now to make it permanent, or roll back immediately. If connectivity is lost, the local watchdog will automatically restore the previous baseline." xml:space="preserve">
+        <value>Confirme ahora para mantener los cambios de forma permanente o reviértalos de inmediato. Si se pierde la conexión, el supervisor local restaurará automáticamente la configuración de referencia anterior.</value>
+    </data>
+    <data name="Confirm active apply" xml:space="preserve">
+        <value>Confirmar la aplicación en curso</value>
+    </data>
+    <data name="Immediate rollback" xml:space="preserve">
+        <value>Revertir de inmediato</value>
+    </data>
+    <data name="3. Start confirmed apply" xml:space="preserve">
+        <value>3. Iniciar aplicación confirmada</value>
+    </data>
+    <data name="Two-phase safe apply" xml:space="preserve">
+        <value>Aplicación segura en dos fases</value>
+    </data>
+    <data name="Policy revision" xml:space="preserve">
+        <value>Revisión de política</value>
+    </data>
+    <data name="Confirmation timeout (1–3600s)" xml:space="preserve">
+        <value>Plazo de confirmación (1–3600 s)</value>
+    </data>
+    <data name="Start confirmed apply" xml:space="preserve">
+        <value>Iniciar aplicación confirmada</value>
+    </data>
+    <data name="No saved policy revisions exist yet. Create and save a policy revision in the" xml:space="preserve">
+        <value>Todavía no hay revisiones de política guardadas. Cree y guarde una revisión de política en</value>
+    </data>
+    <data name="policy editor" xml:space="preserve">
+        <value>el editor de políticas</value>
+    </data>
+    <data name="before dispatching an apply." xml:space="preserve">
+        <value>antes de enviar una aplicación.</value>
+    </data>
+    <data name="before applying." xml:space="preserve">
+        <value>antes de aplicar.</value>
+    </data>
+    <data name="{0} s remaining" xml:space="preserve">
+        <value>Quedan {0} s</value>
+    </data>
 </root>

@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>跳至主要內容</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>選單</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>我的個人資料（{0}）</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>管理員</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>稽核員</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>佈景主題</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>淺色模式</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>深色模式</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>切換至淺色主題</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>切換至深色主題</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>語言</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>顯示語言</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>設定語言</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>主要導覽</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>儀表板</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>總覽</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>主機</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>防火牆</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>規則</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>網路橋接</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>檢閱與匯出</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>別名與 IP 位址清單</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>組態</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>匯入 nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>檢閱與套用</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>系統</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>活動與稽核</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>設定</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>本機使用者</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>我的個人資料與工作階段</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>時區：</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC（無法取得本地時間）</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>儲存的 UTC 時間：{0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>登入</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>使用者名稱</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>密碼</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>登入失敗。請檢查登入憑證後再試一次。</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>登入後即可管理已登錄的防火牆主機、原則修訂版本，以及需要確認的套用作業。</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>目錄服務登入</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>目錄服務使用者名稱</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>目錄服務密碼</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>使用 LDAP 登入</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>使用復原授權</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>使用 OAuth 登入</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>使用身分識別提供者登入</value>
+    </data>
+</root>

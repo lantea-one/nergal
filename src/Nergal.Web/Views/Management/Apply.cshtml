@@ -1,18 +1,20 @@
 @model Nergal.Web.ConfirmedApplyViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Confirmed apply";
     ViewData["ActiveNav"] = "apply";
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
+    string TextLanguage(string key) => Nergal.Web.UiLocalization.MessageLanguage(L[key]);
 }
 <main id="main-content" tabindex="-1" class="container">
-    <div class="page-header">
+    <div class="page-header" lang="@TextLanguage("Two-phase confirmed apply")">
         <div>
-            <h1>Two-phase confirmed apply</h1>
-            <p class="page-subtitle">Dispatch compiled multi-table bundles with an autonomous local watchdog rollback window.</p>
+            <h1>@L["Two-phase confirmed apply"]</h1>
+            <p class="page-subtitle">@L["Dispatch compiled multi-table bundles with an autonomous local watchdog rollback window."]</p>
         </div>
-        <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">Edit Policy Bundles</a>
+        <a class="btn btn-secondary" href="@Url.Content("~/manage/policies")">@L["Edit Policy Bundles"]</a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.StatusMessage))
@@ -27,29 +29,29 @@
 
     @if (Model.Hosts.Count == 0)
     {
-        <section class="card">
-            <h2>Target host</h2>
-            <p class="muted">No managed hosts registered yet. Register a host from the <a href="@Url.Content("~/manage")">fleet dashboard</a> before dispatching an apply.</p>
+        <section class="card" lang="@TextLanguage("Target host")">
+            <h2>@L["Target host"]</h2>
+            <p class="muted">@L["No managed hosts registered yet. Register a host from the"] <a href="@Url.Content("~/manage")">@L["fleet dashboard"]</a> @L["before dispatching an apply."]</p>
         </section>
     }
     else
     {
-        <section class="card">
+        <section class="card" lang="@TextLanguage("1. Target host selection")">
             <div class="card-header">
-                <h2>1. Target host selection</h2>
+                <h2>@L["1. Target host selection"]</h2>
             </div>
             <form method="get" action="@Url.Content("~/manage/apply")" class="form-grid">
                 <div class="field span-2">
-                    <label for="apply-host-select">Enrolled host</label>
+                    <label for="apply-host-select">@L["Enrolled host"]</label>
                     <select id="apply-host-select" name="hostId">
                         @foreach (var host in Model.Hosts)
                         {
-                            <option value="@host.Id.ToString("D")" selected="@(Model.SelectedHost?.Id == host.Id)">@host.Name (@host.TransportKind — rev @host.LastKnownRevision)</option>
+                            <option value="@host.Id.ToString("D")" selected="@(Model.SelectedHost?.Id == host.Id)">@L["{0} ({1} — rev {2})", host.Name, host.TransportKind, host.LastKnownRevision]</option>
                         }
                     </select>
                 </div>
                 <div class="field">
-                    <button type="submit" class="btn btn-secondary">Refresh live status</button>
+                    <button type="submit" class="btn btn-secondary">@L["Refresh live status"]</button>
                 </div>
             </form>
         </section>
@@ -63,12 +65,12 @@
                     ? "badge-warning"
                     : "badge-danger";
 
-            <section class="card">
+            <section class="card" lang="@TextLanguage("2. Live agent status —")">
                 <div class="card-header">
                     <div>
-                        <h2>2. Live agent status — <code>@selectedHost.Name</code></h2>
+                        <h2>@L["2. Live agent status —"] <code>@selectedHost.Name</code></h2>
                         <p class="muted mb-0" style="font-size: 0.86rem;">
-                            Transport <code>@selectedHost.TransportKind</code> at <code>@selectedHost.Endpoint</code> · Controller revision <code>@selectedHost.LastKnownRevision</code>
+                            @L["Transport"] <code>@selectedHost.TransportKind</code> @L["at"] <code>@selectedHost.Endpoint</code> · @L["Controller revision"] <code>@selectedHost.LastKnownRevision</code>
                         </p>
                     </div>
                     <span class="badge @outcomeBadge">@outcomeStr</span>
@@ -78,55 +80,55 @@
                 {
                     <dl class="meta-grid">
                         <div class="meta-item">
-                            <dt>Outcome</dt>
+                            <dt>@L["Outcome"]</dt>
                             <dd><code>@outcomeStr</code></dd>
                         </div>
                         @if (reply.Revision is { } agentRev)
                         {
                             <div class="meta-item">
-                                <dt>Agent baseline revision</dt>
+                                <dt>@L["Agent baseline revision"]</dt>
                                 <dd><code>@agentRev</code></dd>
                             </div>
                         }
                         @if (reply.ActivePhase is { } phase)
                         {
                             <div class="meta-item">
-                                <dt>Active phase</dt>
+                                <dt>@L["Active phase"]</dt>
                                 <dd><code>@Nergal.Web.ControllerStateHost.FormatPhase(phase)</code></dd>
                             </div>
                         }
                         @if (reply.RemainingSeconds is { } rem)
                         {
                             <div class="meta-item">
-                                <dt>Watchdog countdown</dt>
-                                <dd><code data-countdown-seconds="@rem">@rem s remaining</code></dd>
+                                <dt>@L["Watchdog countdown"]</dt>
+                                <dd><code data-countdown-seconds="@rem" data-countdown-label="@L["{0} s remaining"]">@L["{0} s remaining", rem]</code></dd>
                             </div>
                         }
                         @if (reply.OperationId is { } opId)
                         {
                             <div class="meta-item">
-                                <dt>Operation ID</dt>
+                                <dt>@L["Operation ID"]</dt>
                                 <dd><code>@opId.ToString("D")</code></dd>
                             </div>
                         }
                         @if (reply.WatchdogId is { } wdId)
                         {
                             <div class="meta-item">
-                                <dt>Watchdog ID</dt>
+                                <dt>@L["Watchdog ID"]</dt>
                                 <dd><code>@wdId.ToString("D")</code></dd>
                             </div>
                         }
                         @if (!string.IsNullOrEmpty(reply.CandidateDigest))
                         {
                             <div class="meta-item">
-                                <dt>Candidate SHA-256</dt>
+                                <dt>@L["Candidate SHA-256"]</dt>
                                 <dd><code>@reply.CandidateDigest</code></dd>
                             </div>
                         }
                         @if (!string.IsNullOrEmpty(reply.ErrorCode))
                         {
                             <div class="meta-item">
-                                <dt>Detail</dt>
+                                <dt>@L["Detail"]</dt>
                                 <dd><code>@reply.ErrorCode</code></dd>
                             </div>
                         }
@@ -140,13 +142,13 @@
                      Model.LiveReply?.WatchdogId is { } pendingWd &&
                      Model.LiveReply.ActivePhase == Nergal.Core.Deployment.ApplyPhase.AwaitingConfirmation)
                 {
-                    <section class="card" style="border-color: var(--warning);">
+                    <section class="card" style="border-color: var(--warning);" lang="@TextLanguage("3. Pending confirmation window")">
                         <div class="card-header">
-                            <h2>3. Pending confirmation window</h2>
-                            <span class="badge badge-warning">Watchdog armed</span>
+                            <h2>@L["3. Pending confirmation window"]</h2>
+                            <span class="badge badge-warning">@L["Watchdog armed"]</span>
                         </div>
                         <p class="muted">
-                            The candidate ruleset is active on <code>@selectedHost.Name</code>. Confirm now to make it permanent, or roll back immediately. If connectivity is lost, the local watchdog will automatically restore the previous baseline.
+                            @L["The candidate ruleset is active on"] <code>@selectedHost.Name</code>. @L["Confirm now to make it permanent, or roll back immediately. If connectivity is lost, the local watchdog will automatically restore the previous baseline."]
                         </p>
                         <div class="countdown-bar" aria-hidden="true">
                             <div class="countdown-fill" data-countdown-fill style="width: 100%;"></div>
@@ -161,7 +163,7 @@
                                 {
                                     <input type="hidden" name="targetRevision" value="@selRev" />
                                 }
-                                <button type="submit" class="btn btn-success">Confirm active apply</button>
+                                <button type="submit" class="btn btn-success">@L["Confirm active apply"]</button>
                             </form>
                             <form class="inline-form" method="post" action="@Url.Content("~/manage/apply/rollback")">
                                 @Html.AntiForgeryToken()
@@ -172,49 +174,49 @@
                                 {
                                     <input type="hidden" name="targetRevision" value="@rbRev" />
                                 }
-                                <button type="submit" class="btn btn-danger">Immediate rollback</button>
+                                <button type="submit" class="btn btn-danger">@L["Immediate rollback"]</button>
                             </form>
                         </div>
                     </section>
                 }
                 else if (Model.Revisions.Count > 0)
                 {
-                    <section class="card">
+                    <section class="card" lang="@TextLanguage("3. Start confirmed apply")">
                         <div class="card-header">
-                            <h2>3. Start confirmed apply</h2>
-                            <span class="badge badge-primary">Two-phase safe apply</span>
+                            <h2>@L["3. Start confirmed apply"]</h2>
+                            <span class="badge badge-primary">@L["Two-phase safe apply"]</span>
                         </div>
                         <form method="post" action="@Url.Content("~/manage/apply/start")">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="hostId" value="@selectedHost.Id.ToString("D")" />
                             <div class="form-grid">
                                 <div class="field span-2">
-                                    <label for="apply-revision">Policy revision</label>
+                                    <label for="apply-revision">@L["Policy revision"]</label>
                                     <select id="apply-revision" name="revision">
                                         @foreach (var rev in Model.Revisions)
                                         {
                                             <option value="@rev.Revision" selected="@(Model.SelectedRevision == rev.Revision)">
-                                                Revision @rev.Revision (@rev.CandidateDigest[..8])@(string.IsNullOrWhiteSpace(rev.Summary) ? "" : " — " + rev.Summary)
+                                                @L["Revision {0} ({1})", rev.Revision, rev.CandidateDigest[..8]]@(string.IsNullOrWhiteSpace(rev.Summary) ? "" : " — " + rev.Summary)
                                             </option>
                                         }
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label for="apply-timeout">Confirmation timeout (1–3600s)</label>
+                                    <label for="apply-timeout">@L["Confirmation timeout (1–3600s)"]</label>
                                     <input id="apply-timeout" type="number" name="confirmationTimeoutSeconds" min="1" max="3600" value="30" required />
                                 </div>
                             </div>
                             <div class="mt-2">
-                                <button type="submit">Start confirmed apply</button>
+                                <button type="submit">@L["Start confirmed apply"]</button>
                             </div>
                         </form>
                     </section>
                 }
                 else
                 {
-                    <section class="card">
-                        <h2>3. Start confirmed apply</h2>
-                        <p class="muted mb-0">No saved policy revisions exist yet. Create and save a policy revision in the <a href="@Url.Content("~/manage/policies")">policy editor</a> before applying.</p>
+                    <section class="card" lang="@TextLanguage("3. Start confirmed apply")">
+                        <h2>@L["3. Start confirmed apply"]</h2>
+                        <p class="muted mb-0">@L["No saved policy revisions exist yet. Create and save a policy revision in the"] <a href="@Url.Content("~/manage/policies")">@L["policy editor"]</a> @L["before applying."]</p>
                     </section>
                 }
             }

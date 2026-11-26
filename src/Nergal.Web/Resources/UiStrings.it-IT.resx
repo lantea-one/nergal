@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>Vai al contenuto</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>Menu</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>Il mio profilo per {0}</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>Amministratore</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>Revisore</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>Tema</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>Modalità chiara</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>Modalità scura</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>Passa al tema chiaro</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>Passa al tema scuro</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>Lingua</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>Lingua di visualizzazione</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>Salva la lingua</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>Navigazione principale</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Pannello di controllo</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Panoramica</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>Host</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>Firewall</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>Regole</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>Bridge</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>Verifica ed esporta</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>Alias ed elenchi di indirizzi IP</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>Configurazione</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>Importa nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>Verifica e applica</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>Sistema</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>Attività e audit</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Impostazioni</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>Utenti locali</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>Il mio profilo e la mia sessione</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>Fuso orario:</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (ora locale non disponibile)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>Ora registrata in UTC: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>Accedi</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Nome utente</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Password</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>Accesso non riuscito. Verifica le credenziali e riprova.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>Accedi per gestire gli host firewall registrati e le revisioni delle politiche, nonché per applicare le politiche con conferma.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>Accesso tramite directory</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>Nome utente nella directory</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>Password della directory</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>Accedi con LDAP</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>Usa un’autorizzazione di recupero</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>Accedi con OAuth</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>Accedi tramite il provider di identità</value>
+    </data>
+</root>

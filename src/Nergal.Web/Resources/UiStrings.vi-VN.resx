@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>Chuyển đến nội dung chính</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>Menu</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>Hồ sơ của tôi ({0})</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>Quản trị viên</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>Kiểm toán viên</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>Giao diện</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>Chế độ sáng</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>Chế độ tối</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>Chuyển sang giao diện sáng</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>Chuyển sang giao diện tối</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>Ngôn ngữ</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>Ngôn ngữ hiển thị</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>Đặt ngôn ngữ</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>Điều hướng chính</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Bảng điều khiển</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Tổng quan</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>Máy chủ</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>Tường lửa</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>Quy tắc</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>Cầu nối mạng</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>Xem xét và xuất</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>Bí danh và danh sách địa chỉ IP</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>Cấu hình</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>Nhập nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>Xem xét và áp dụng</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>Hệ thống</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>Hoạt động và kiểm toán</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Cài đặt</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>Người dùng cục bộ</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>Hồ sơ và phiên đăng nhập của tôi</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>Múi giờ:</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (không có giờ địa phương)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>Thời điểm lưu theo UTC: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>Đăng nhập</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Tên người dùng</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Mật khẩu</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>Đăng nhập thất bại. Hãy kiểm tra thông tin đăng nhập rồi thử lại.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>Đăng nhập để quản lý các máy chủ tường lửa đã đăng ký, các bản sửa đổi chính sách và các thao tác áp dụng có xác nhận.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>Đăng nhập qua dịch vụ thư mục</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>Tên người dùng trong thư mục</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>Mật khẩu tài khoản thư mục</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>Đăng nhập qua LDAP</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>Dùng quyền khôi phục</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>Đăng nhập qua OAuth</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>Đăng nhập qua nhà cung cấp danh tính</value>
+    </data>
+</root>

@@ -22,7 +22,13 @@ public sealed class UiLocalizationTests
     [InlineData("en-US", "en-US")]
     [InlineData("es-ES", "es-ES")]
     [InlineData("es", "en-US")]
-    [InlineData("fr-FR", "en-US")]
+    [InlineData("fr-FR", "fr-FR")]
+    [InlineData("ar", "ar")]
+    [InlineData("he-IL", "he-IL")]
+    [InlineData("zh-TW", "zh-TW")]
+    [InlineData("FR-fr", "en-US")]
+    [InlineData("fr", "en-US")]
+    [InlineData("sv-SE", "en-US")]
     public async Task OnlyAnExplicitSupportedCookieSelectsTheUiLanguage(string? cookie, string expectedLanguage)
     {
         var originalCulture = CultureInfo.CurrentCulture;
@@ -40,6 +46,49 @@ public sealed class UiLocalizationTests
         }, Options.Create(UiLocalization.CreateRequestOptions()), NullLoggerFactory.Instance);
 
         await middleware.Invoke(context);
+    }
+
+    /// <summary>Every selectable non-English language ships the sign-in and navigation resources.</summary>
+    [Fact]
+    public void EverySelectableLocaleIncludesSharedConsoleMessages()
+    {
+        using var services = new ServiceCollection().AddLogging()
+            .AddLocalization(options => options.ResourcesPath = "Resources").BuildServiceProvider();
+        var strings = services.GetRequiredService<IStringLocalizer<UiStrings>>();
+        var original = CultureInfo.CurrentUICulture;
+        var commonKeys = new[] { "Language", "Display language", "Set language", "Sign in", "Username", "Password",
+            "Sign in with LDAP", "Sign in with OAuth", "Sign in with identity provider", "Primary navigation",
+            "Import nftables.conf", "Review & apply", "Skip to content", "Stored UTC: {0}" };
+        try
+        {
+            foreach (var (culture, nativeName) in UiLocalization.Languages.Where(entry => !entry.Culture.Equals(UiLocalization.DefaultCulture)))
+            {
+                CultureInfo.CurrentUICulture = culture;
+                Assert.False(string.IsNullOrWhiteSpace(nativeName));
+                foreach (var key in commonKeys)
+                {
+                    var translation = strings[key];
+                    Assert.False(translation.ResourceNotFound, $"{culture.Name} is missing '{key}'");
+                    Assert.False(string.IsNullOrWhiteSpace(translation.Value));
+                }
+
+                Assert.Contains("synthetic-user", strings["My profile for {0}", "synthetic-user"].Value, StringComparison.Ordinal);
+                Assert.True(strings["Missing test message"].ResourceNotFound);
+            }
+        }
+        finally { CultureInfo.CurrentUICulture = original; }
+    }
+
+    /// <summary>English fallback and the selected shell language have separate coverage.</summary>
+    [Theory]
+    [InlineData("en-US", false, false, true)]
+    [InlineData("es-ES", true, false, true)]
+    [InlineData("es-ES", false, false, false)]
+    [InlineData("ar", true, false, false)]
+    [InlineData("ja-JP", false, true, true)]
+    public void LocalizedBodyRequiresCoverageForTheSelectedLocale(string locale, bool extended, bool shared, bool expected)
+    {
+        Assert.Equal(expected, UiLocalization.HasLocalizedBody(CultureInfo.GetCultureInfo(locale), extended, shared));
     }
 
     /// <summary>Spanish validation and status text are available, with an English fallback for missing messages.</summary>
@@ -95,7 +144,7 @@ public sealed class UiLocalizationTests
     [Fact]
     public async Task UnsupportedAndAmbiguousLanguageRequestsDoNotWriteCookies()
     {
-        foreach (var input in new StringValues[] { "es", "fr-FR", new[] { "en-US", "es-ES" } })
+        foreach (var input in new StringValues[] { "es", "fr", "sv-SE", new[] { "en-US", "es-ES" } })
         {
             var controller = CreateController(input, "/console/manage/hosts");
             Assert.IsType<BadRequestResult>(await controller.Select());

@@ -2,7 +2,9 @@
 for (const group of document.querySelectorAll('.native-include-order')) {
     const rows = group.querySelector('.native-include-rows');
     const relabel = () => [...rows.children].forEach((row, i) => {
-        row.querySelector('select').setAttribute('aria-label', `${group.dataset.includeLabel} file ${i + 1}`);
+        const label = group.dataset.includeLabel.replace(/\{[01]\}/g,
+            field => field === '{0}' ? group.dataset.includePath : String(i + 1));
+        row.querySelector('select').setAttribute('aria-label', label);
     });
     group.addEventListener('click', event => {
         const move = event.target.closest('[data-include-move]');

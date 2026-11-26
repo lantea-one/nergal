@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>Naar de inhoud</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>Menu</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>Mijn profiel voor {0}</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>Beheerder</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>Auditor</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>Thema</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>Lichte modus</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>Donkere modus</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>Overschakelen naar het lichte thema</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>Overschakelen naar het donkere thema</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>Taal</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>Weergavetaal</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>Taal opslaan</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>Hoofdnavigatie</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Dashboard</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Overzicht</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>Hosts</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>Firewall</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>Regels</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>Netwerkbrug</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>Beoordelen en exporteren</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>Aliassen en IP-lijsten</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>Configuratie</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>nftables.conf importeren</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>Beoordelen en toepassen</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>Systeem</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>Activiteit en audit</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Instellingen</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>Lokale gebruikers</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>Mijn profiel en sessie</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>Tijdzone:</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (lokale tijd niet beschikbaar)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>Opgeslagen UTC-tijd: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>Aanmelden</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Gebruikersnaam</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Wachtwoord</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>Aanmelden is mislukt. Controleer uw inloggegevens en probeer het opnieuw.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>Meld u aan om geregistreerde firewallhosts en beleidsrevisies te beheren en beleid met bevestiging toe te passen.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>Aanmelden via de directory</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>Gebruikersnaam in de directory</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>Wachtwoord voor de directory</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>Aanmelden met LDAP</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>Een herstelmachtiging gebruiken</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>Aanmelden met OAuth</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>Aanmelden via de identiteitsprovider</value>
+    </data>
+</root>

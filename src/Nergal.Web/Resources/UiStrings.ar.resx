@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>انتقل إلى المحتوى</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>القائمة</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>ملفي الشخصي لـ {0}</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>مسؤول</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>مدقّق</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>المظهر</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>الوضع الفاتح</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>الوضع الداكن</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>التبديل إلى المظهر الفاتح</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>التبديل إلى المظهر الداكن</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>اللغة</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>لغة العرض</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>ضبط اللغة</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>التنقّل الرئيسي</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>لوحة المعلومات</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>نظرة عامة</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>المضيفون</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>جدار الحماية</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>القواعد</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>جسر الشبكة</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>المراجعة والتصدير</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>الأسماء المستعارة وقوائم IP</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>التهيئة</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>استيراد nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>المراجعة والتطبيق</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>النظام</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>النشاط والتدقيق</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>الإعدادات</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>المستخدمون المحليون</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>ملفي الشخصي وجلستي</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>المنطقة الزمنية:</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (الوقت المحلي غير متاح)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>الوقت المخزّن بتوقيت UTC: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>تسجيل الدخول</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>اسم المستخدم</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>كلمة المرور</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>تعذّر تسجيل الدخول. تحقّق من بيانات الاعتماد وحاول مرة أخرى.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>سجّل الدخول لإدارة مضيفي جدار الحماية المسجّلين ومراجعات السياسات وعمليات التطبيق المؤكّدة.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>تسجيل الدخول بحساب الدليل</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>اسم مستخدم الدليل</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>كلمة مرور الدليل</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>تسجيل الدخول باستخدام LDAP</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>استخدام تصريح استرداد</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>تسجيل الدخول باستخدام OAuth</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>تسجيل الدخول عبر موفّر الهوية</value>
+    </data>
+</root>

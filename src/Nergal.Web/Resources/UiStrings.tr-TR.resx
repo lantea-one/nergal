@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>İçeriğe geç</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>Menü</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>Profilim ({0})</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>Yönetici</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>Denetçi</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>Tema</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>Açık mod</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>Koyu mod</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>Açık temaya geç</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>Koyu temaya geç</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>Dil</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>Arayüz dili</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>Dili ayarla</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>Ana gezinme</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Kontrol paneli</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Genel bakış</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>Ana makineler</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>Güvenlik duvarı</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>Kurallar</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>Ağ köprüsü</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>İncele ve dışa aktar</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>Takma adlar ve IP listeleri</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>Yapılandırma</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>nftables.conf dosyasını içe aktar</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>İncele ve uygula</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>Sistem</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>Etkinlik ve denetim</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Ayarlar</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>Yerel kullanıcılar</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>Profilim ve oturumum</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>Saat dilimi</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (yerel saat kullanılamıyor)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>UTC olarak kaydedilen saat: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>Oturum aç</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Kullanıcı adı</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Parola</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>Oturum açılamadı. Kimlik bilgilerinizi kontrol edip yeniden deneyin.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>Kayıtlı güvenlik duvarı ana makinelerini, ilke sürümlerini ve onay gerektiren uygulama işlemlerini yönetmek için oturum açın.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>Dizin hizmetiyle oturum açma</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>Dizin kullanıcı adı</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>Dizin parolası</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>LDAP ile oturum aç</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>Kurtarma yetkilendirmesini kullan</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>OAuth ile oturum aç</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>Kimlik sağlayıcısıyla oturum aç</value>
+    </data>
+</root>

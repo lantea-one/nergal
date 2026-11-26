@@ -1,4 +1,5 @@
 @model Nergal.Web.PolicyEditorViewModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Nergal.Web.UiStrings> L
 @addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper, Microsoft.AspNetCore.Mvc.TagHelpers
 @using Nergal.Core.Policy
@@ -8,6 +9,7 @@
     ViewData["ActiveNav"] = "policies";
     ViewData["ActorRole"] = Model.ActorRole;
     ViewData["ShowManageNav"] = true;
+    string TextLanguage(string key) => Nergal.Web.UiLocalization.MessageLanguage(L[key]);
     ViewData["PolicySection"] = Model.InitialSection ?? "filter";
     var bundle = Model.Bundle;
     var filterCount = bundle?.Filter.Rules.Count ?? 0;
@@ -16,10 +18,10 @@
 }
 <main id="main-content" tabindex="-1" class="container" data-tab-scope="policies" data-initial-tab="@(bundle is null ? "tab-json" : Model.InitialSection is { } selectedSection ? "tab-" + selectedSection : "")">
     <div class="page-header">
-        <div>
-            <p class="eyebrow">Firewall / Configuration</p><h1>Firewall</h1>
+        <div lang="@TextLanguage("Manage rules, NAT and bridge filtering. Edits remain drafts until you review and save a revision.")">
+            <p class="eyebrow">@L["Firewall / Configuration"]</p><h1 lang="@TextLanguage("Firewall")">@L["Firewall"]</h1>
             <p class="page-subtitle">
-                Manage rules, NAT and bridge filtering. Edits remain drafts until you review and save a revision.
+                @L["Manage rules, NAT and bridge filtering. Edits remain drafts until you review and save a revision."]
             </p>
         </div>
         <div class="btn-group">
@@ -49,51 +51,48 @@
         </div>
     }
 
-    <details class="disclosure mb-0 mt-2">
-        <summary>Router constructs and apply readiness</summary>
-        <p>Use the guided forms for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation,
-            destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return.
-            The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits.</p>
-        <p>Independent priority tables and extended bridge jump/return chains support confirmed apply with complete bundle receipts.
-            Every owned table is validated and replaced together. Missing confirmation triggers local rollback; unexpected native drift requires manual recovery.</p>
+    <details class="disclosure mb-0 mt-2" lang="@TextLanguage("Router constructs and apply readiness")">
+        <summary>@L["Router constructs and apply readiness"]</summary>
+        <p>@L["Use the guided forms for raw rpfilter rules, UDP source ports, forward MSS clamping, MAC matches and negation, destination-keyed meters, negated interfaces/prefixes, and postrouting masquerade/return. The native diff shows the complete compiled candidate. Existing advanced matchers survive structured edits."]</p>
+        <p>@L["Independent priority tables and extended bridge jump/return chains support confirmed apply with complete bundle receipts. Every owned table is validated and replaced together. Missing confirmation triggers local rollback; unexpected native drift requires manual recovery."]</p>
         @if (bundle?.Filter.RpFilter is { } rp)
-        { <p><strong>Raw rpfilter:</strong> @rp.Rules.Count ordered rules.</p> }
+        { <p><strong>@L["Raw rpfilter:"]</strong> @L["{0} ordered rules.", rp.Rules.Count]</p> }
         @if (bundle?.Filter.ForwardTcpMssClamp is { } mss)
-        { <p><strong>Forward TCP SYN MSS:</strong> @mss bytes.</p> }
+        { <p><strong>@L["Forward TCP SYN MSS:"]</strong> @L["{0} bytes.", mss]</p> }
         @if (bundle?.RequiresExtendedApplySupport == true)
-        { <p class="alert alert-info">This draft includes auxiliary tables or extended bridge chains. Use an updated agent with complete bundle receipts; confirmation and local rollback cover the entire bundle.</p> }
+        { <p class="alert alert-info">@L["This draft includes auxiliary tables or extended bridge chains. Use an updated agent with complete bundle receipts; confirmation and local rollback cover the entire bundle."]</p> }
     </details>
 
-    <p class="alert alert-info">Rule switches update the draft only. Disabled rules keep their settings and order and are omitted from the native candidate. Review the intent/native diffs, save a revision, then use confirmed apply. Disabling a rule can broaden or restrict traffic.</p>
+    <p class="alert alert-info" lang="@TextLanguage("Rule switches update the draft only. Disabled rules keep their settings and order and are omitted from the native candidate. Review the intent/native diffs, save a revision, then use confirmed apply. Disabling a rule can broaden or restrict traffic.")">@L["Rule switches update the draft only. Disabled rules keep their settings and order and are omitted from the native candidate. Review the intent/native diffs, save a revision, then use confirmed apply. Disabling a rule can broaden or restrict traffic."]</p>
 
     <!-- Top Save / Preview Bar -->
-    <section class="card">
+    <section class="card" lang="@TextLanguage("Revision summary / change note")">
         <form method="post" action="@Url.Content("~/manage/policies/preview")">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bundleJson" value="@Model.BundleJson" />
             <div class="form-grid">
                 <div class="field span-2">
-                    <label for="top-summary">Revision summary / change note</label>
-                    <input id="top-summary" type="text" name="summary" value="@Model.Summary" placeholder="e.g. Allow HTTPS + ICMPv4 diagnostics on WAN" maxlength="@Nergal.Web.PolicyEditorViewModel.MaximumSummaryLength" />
+                    <label for="top-summary">@L["Revision summary / change note"]</label>
+                    <input id="top-summary" type="text" name="summary" value="@Model.Summary" placeholder="@L["e.g. Allow HTTPS + ICMPv4 diagnostics on WAN"]" maxlength="@Nergal.Web.PolicyEditorViewModel.MaximumSummaryLength" />
                 </div>
                 <div class="field">
-                    <label for="top-compare">Compare diff against</label>
+                    <label for="top-compare">@L["Compare diff against"]</label>
                     <select id="top-compare" name="compareToRevision">
-                        <option value="">(empty baseline)</option>
+                        <option value="">@L["(empty baseline)"]</option>
                         @foreach (var rev in Model.Revisions)
                         {
                             <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">
-                                Rev @rev.Revision (@rev.CandidateDigest[..8])
+                                @L["Rev {0} ({1})", rev.Revision, rev.CandidateDigest[..8]]
                             </option>
                         }
                     </select>
                 </div>
                 <div class="field">
                     <div class="btn-group">
-                        <button type="submit" class="btn btn-secondary">Preview diff</button>
+                        <button type="submit" class="btn btn-secondary">@L["Preview diff"]</button>
                         @if (Model.CanMutate)
                         {
-                            <button type="submit" class="btn btn-success" formaction="@Url.Content("~/manage/policies/save")">Save policy revision</button>
+                            <button type="submit" class="btn btn-success" formaction="@Url.Content("~/manage/policies/save")">@L["Save policy revision"]</button>
                         }
                     </div>
                 </div>
@@ -102,12 +101,12 @@
     </section>
 
     <!-- Section Tabs -->
-    <div class="tabs" role="tablist" aria-label="Policy bundle sections">
-        <button type="button" class="tab-btn active" role="tab" data-tab-target="tab-filter">Rules (@filterCount)</button>
-        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-nat">NAT (@natCount)</button>
-        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-bridge">Bridge (@bridgeCount)</button>
-        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-preview">Review &amp; export</button>
-        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-json">Advanced JSON &amp; Revisions</button>
+    <div class="tabs" role="tablist" lang="@TextLanguage("Policy bundle sections")" aria-label="@L["Policy bundle sections"]">
+        <button type="button" class="tab-btn active" role="tab" data-tab-target="tab-filter">@L["Rules ({0})", filterCount]</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-nat">@L["NAT ({0})", natCount]</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-bridge">@L["Bridge ({0})", bridgeCount]</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-preview" lang="@TextLanguage("Review & export")" dir="auto">@L["Review & export"]</button>
+        <button type="button" class="tab-btn" role="tab" data-tab-target="tab-json">@L["Advanced JSON & Revisions"]</button>
     </div>
 
     <!-- TAB 1: FILTER -->
@@ -800,29 +799,27 @@
     <div class="tab-panel" id="tab-preview" tabindex="-1" data-tab-panel="tab-preview">
         @if (Model.CanMutate && Model.Revisions.Count > 0)
         {
-            <section class="card" aria-labelledby="export-heading">
-                <h2 id="export-heading">Export a saved revision</h2>
-                <p id="export-help" class="hint">Select a saved database revision. Unsaved draft changes are excluded. The native file contains active policy only;
-                    the intent file also retains disabled rules, descriptions and pinned lists. These downloads describe desired configuration, not current host state.</p>
+            <section class="card" aria-labelledby="export-heading" lang="@TextLanguage("Export a saved revision")">
+                <h2 id="export-heading">@L["Export a saved revision"]</h2>
+                <p id="export-help" class="hint">@L["Select a saved database revision. Unsaved draft changes are excluded. The native file contains active policy only; the intent file also retains disabled rules, descriptions and pinned lists. These downloads describe desired configuration, not current host state."]</p>
                 <form method="get" action="@Url.Content("~/manage/policies/export/native")" class="form-grid">
                     <div class="field">
-                        <label for="export-revision">Saved revision</label>
+                        <label for="export-revision">@L["Saved revision"]</label>
                         <select id="export-revision" name="revision" aria-describedby="export-help">
                             @foreach (var saved in Model.Revisions)
                             {
-                                <option value="@saved.Revision" selected="@(Model.SelectedRevision == saved.Revision)">Revision @saved.Revision · @(saved.Summary ?? saved.CandidateDigest[..12])</option>
+                                <option value="@saved.Revision" selected="@(Model.SelectedRevision == saved.Revision)">@L["Revision {0} · {1}", saved.Revision, saved.Summary ?? saved.CandidateDigest[..12]]</option>
                             }
                         </select>
                     </div>
                     <div class="field">
                         <div class="btn-group">
-                            <button type="submit" class="btn btn-secondary">Download nftables.conf</button>
-                            <button type="submit" class="btn btn-secondary" formaction="@Url.Content("~/manage/policies/export/intent")">Download policy intent</button>
+                            <button type="submit" class="btn btn-secondary">@L["Download nftables.conf"]</button>
+                            <button type="submit" class="btn btn-secondary" formaction="@Url.Content("~/manage/policies/export/intent")">@L["Download policy intent"]</button>
                         </div>
                     </div>
                 </form>
-                <p class="hint">The native file creates reserved Nergal tables and fails if they already exist. Managed updates use confirmed apply.
-                    Keep the intent file to preserve authored settings; it is not a backup of library history, accounts or agent ownership.</p>
+                <p class="hint">@L["The native file creates reserved Nergal tables and fails if they already exist. Managed updates use confirmed apply. Keep the intent file to preserve authored settings; it is not a backup of library history, accounts or agent ownership."]</p>
             </section>
         }
         @if (bundle is not null)
@@ -832,9 +829,9 @@
 
         @if (!string.IsNullOrEmpty(Model.CandidateText))
         {
-            <section class="card">
+            <section class="card" lang="@TextLanguage("Compiled nftables candidate")">
                 <div class="card-header">
-                    <h2>Compiled nftables candidate</h2>
+                    <h2>@L["Compiled nftables candidate"]</h2>
                     <span class="badge badge-neutral mono">SHA-256 @Model.CandidateDigest</span>
                 </div>
                 <pre>@Model.CandidateText</pre>
@@ -843,16 +840,16 @@
 
         @if (!string.IsNullOrEmpty(Model.IntentDiff))
         {
-            <section class="card"><h2>Intent diff — enabled state and retained settings</h2>
-                <p class="hint">This includes dormant rules and pinned references, which cannot be reconstructed from kernel observations. A state change is still a draft until saved and applied.</p>
+            <section class="card" lang="@TextLanguage("Intent diff — enabled state and retained settings")"><h2>@L["Intent diff — enabled state and retained settings"]</h2>
+                <p class="hint">@L["This includes dormant rules and pinned references, which cannot be reconstructed from kernel observations. A state change is still a draft until saved and applied."]</p>
                 <pre class="diff-view">@Model.IntentDiff</pre>
             </section>
         }
         @if (!string.IsNullOrEmpty(Model.UnifiedDiff))
         {
-            <section class="card">
+            <section class="card" lang="@TextLanguage("Unified diff preview")">
                 <div class="card-header">
-                    <h2>Unified diff preview</h2>
+                    <h2>@L["Unified diff preview"]</h2>
                 </div>
                 <pre class="diff-view">@Model.UnifiedDiff</pre>
             </section>
@@ -860,40 +857,40 @@
     </div>
 
     <!-- TAB 5: ADVANCED JSON & SAVED REVISIONS -->
-    <div class="tab-panel" id="tab-json" tabindex="-1" data-tab-panel="tab-json">
+    <div class="tab-panel" id="tab-json" tabindex="-1" data-tab-panel="tab-json" lang="@TextLanguage("Advanced JSON bundle editor")">
         <section class="card">
             <div class="card-header">
-                <h2>Advanced JSON bundle editor</h2>
-                <span class="badge badge-neutral">Canonical FirewallPolicyBundle</span>
+                <h2>@L["Advanced JSON bundle editor"]</h2>
+                <span class="badge badge-neutral">@L["Canonical FirewallPolicyBundle"]</span>
             </div>
             <form method="post" action="@Url.Content("~/manage/policies/preview")">
                 @Html.AntiForgeryToken()
                 <div class="form-grid" style="margin-bottom: 0.9rem;">
                     <div class="field">
-                        <label>Compare against revision</label>
+                        <label>@L["Compare against revision"]</label>
                         <select name="compareToRevision">
-                            <option value="">(empty baseline)</option>
+                            <option value="">@L["(empty baseline)"]</option>
                             @foreach (var rev in Model.Revisions)
                             {
-                                <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">Revision @rev.Revision (@rev.CandidateDigest[..8])</option>
+                                <option value="@rev.Revision" selected="@(Model.CompareToRevision == rev.Revision)">@L["Revision {0} ({1})", rev.Revision, rev.CandidateDigest[..8]]</option>
                             }
                         </select>
                     </div>
                     <div class="field span-2">
-                        <label for="raw-summary">Summary</label>
+                        <label for="raw-summary">@L["Summary"]</label>
                         <input id="raw-summary" type="text" name="summary" value="@Model.Summary" maxlength="@Nergal.Web.PolicyEditorViewModel.MaximumSummaryLength" />
                     </div>
                 </div>
                 <div class="field">
-                    <label for="raw-bundle-json">Bundle JSON</label>
-                    <p id="bundle-editor-help" class="muted">JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics.</p>
-                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json" data-editor-label="Policy bundle JSON" aria-describedby="bundle-editor-help">@Model.BundleJson</textarea>
+                    <label for="raw-bundle-json">@L["Bundle JSON"]</label>
+                    <p id="bundle-editor-help" class="muted">@L["JSON syntax highlighting, folding and error markers. Use Ctrl+F (Cmd+F on Mac) to search. Tab moves to the next control. Preview validates policy semantics."]</p>
+                    <textarea id="raw-bundle-json" class="code-editor" name="bundleJson" data-code-editor="json" data-editor-label="@L["Policy bundle JSON"]" aria-describedby="bundle-editor-help">@Model.BundleJson</textarea>
                 </div>
                 <div class="btn-group mt-2">
-                    <button type="submit" class="btn btn-secondary">Preview compatibility &amp; nftables diff</button>
+                    <button type="submit" class="btn btn-secondary">@L["Preview compatibility & nftables diff"]</button>
                     @if (Model.CanMutate)
                     {
-                        <button type="submit" class="btn btn-success" formaction="@Url.Content("~/manage/policies/save")">Save policy revision</button>
+                        <button type="submit" class="btn btn-success" formaction="@Url.Content("~/manage/policies/save")">@L["Save policy revision"]</button>
                     }
                 </div>
             </form>
@@ -901,11 +898,11 @@
 
         <section class="card">
             <div class="card-header">
-                <h2>Saved policy revisions (@Model.Revisions.Count)</h2>
+                <h2>@L["Saved policy revisions ({0})", Model.Revisions.Count]</h2>
             </div>
             @if (Model.Revisions.Count == 0)
             {
-                <p class="muted mb-0">No policy revisions persisted yet.</p>
+                <p class="muted mb-0">@L["No policy revisions persisted yet."]</p>
             }
             else
             {
@@ -913,18 +910,18 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Revision</th>
-                                <th>Candidate SHA-256</th>
-                                <th>Created by</th>
-                                <th>Timestamp (local time)</th>
-                                <th>Summary</th>
+                                <th>@L["Revision"]</th>
+                                <th>@L["Candidate SHA-256"]</th>
+                                <th>@L["Created by"]</th>
+                                <th>@L["Timestamp (local time)"]</th>
+                                <th>@L["Summary"]</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var rev in Model.Revisions)
                             {
                                 <tr>
-                                    <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">Load Rev @rev.Revision</a></td>
+                                    <td><a class="btn btn-secondary btn-sm" href="@Url.Content($"~/manage/policies?revision={rev.Revision}")">@L["Load Rev {0}", rev.Revision]</a></td>
                                     <td><code>@rev.CandidateDigest</code></td>
                                     <td><code>@rev.CreatedByActor</code></td>
                                     <td class="mono">@await Html.PartialAsync("_LocalTime", rev.CreatedAtUtc)</td>

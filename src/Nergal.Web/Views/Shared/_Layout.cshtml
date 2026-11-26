@@ -5,21 +5,24 @@
 @{
     var branding = ViewData["Branding"] as Nergal.Core.Controller.BrandingSettings ?? Nergal.Core.Controller.SystemSettingsSnapshot.Default.Branding;
     var appName = string.IsNullOrWhiteSpace(branding.ApplicationName) ? "nergal" : branding.ApplicationName;
-    var title = ViewData["Title"] is string pageTitle ? L[pageTitle].Value : appName;
+    var title = ViewData["Title"] is string pageTitle ? L[pageTitle] : null;
     var actorRole = ViewData["ActorRole"] as string;
     var showNav = ViewData["ShowManageNav"] as bool? ?? false;
-    var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var locale = System.Globalization.CultureInfo.CurrentUICulture;
+    var culture = locale.Name;
     var english = Nergal.Web.UiLocalization.DefaultCulture.Name;
-    var bodyLanguage = culture != english && ViewData["LocalizedContent"] is not true ? english : null;
+    var bodyLanguage = Nergal.Web.UiLocalization.HasLocalizedBody(locale, ViewData["LocalizedContent"] is true,
+        ViewData["LocalizedForAllLanguages"] is true) ? null : english;
+    var direction = locale.TextInfo.IsRightToLeft ? "rtl" : "ltr";
     Context.Response.Headers.ContentLanguage = culture;
     Context.Response.Headers.Append("Vary", "Cookie");
 }
 <!doctype html>
-<html lang="@culture" data-ui-locale="@culture" data-accent="@branding.AccentColor" data-default-theme="@branding.DefaultTheme">
+<html lang="@culture" dir="@direction" data-ui-locale="@culture" data-accent="@branding.AccentColor" data-default-theme="@branding.DefaultTheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@title · @appName</title>
+    <title lang="@(title?.ResourceNotFound == true && culture != english ? english : null)">@(title?.Value ?? appName) · @appName</title>
     <link rel="icon" type="image/png" sizes="1254x1254" href="@Url.Content("~/brand/guardian.png")" asp-append-version="true" />
     <link rel="icon" type="image/svg+xml" sizes="any" href="@Url.Content("~/brand/guardian.svg")" asp-append-version="true" />
     <script src="@Url.Content("~/js/theme.js")" asp-append-version="true"></script>
@@ -58,10 +61,10 @@
             <aside class="appliance-sidebar" id="management-navigation">
                 @await Html.PartialAsync("_ManagementNavigation")
             </aside>
-            <div class="appliance-content" lang="@bodyLanguage">@RenderBody()</div>
+            <div class="appliance-content" lang="@bodyLanguage" dir="@(bodyLanguage is null ? null : "ltr")">@RenderBody()</div>
         </div>
     }
-    else if (bodyLanguage is not null) { <div lang="@bodyLanguage">@RenderBody()</div> }
+    else if (bodyLanguage is not null) { <div lang="@bodyLanguage" dir="ltr">@RenderBody()</div> }
     else { @RenderBody() }
 
     <script src="@Url.Content("~/js/local-time.js")" asp-append-version="true" defer></script>

@@ -55,6 +55,10 @@ def exercise(temp):
         select_language(browser, {"culture": "es-ES"}, 400)
         select_language(browser, {**fields, "culture": "es"}, 400)
         select_language(browser, [*fields.items(), ("culture", "en-US")], 400)
+        assert select_language(browser, {**fields, "culture": "ar"}, 302) == "/login"
+        arabic = unescape(browser.request("/login", 200))
+        assert '<html lang="ar" dir="rtl"' in arabic and 'كلمة المرور' in arabic
+        assert '<div lang="en-US"' not in arabic
         assert select_language(browser, {**fields, "returnPath": "//example.invalid/"}, 302) == "/"
         assert select_language(browser, fields, 302) == "/login"
         browser.login()
@@ -82,6 +86,22 @@ def exercise(temp):
         utc = re.search(r'data-local-time datetime="(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)" title="Hora almacenada en UTC: ([^"]+)"', audit)
         assert utc and utc[1] == utc[2]
 
+        sources = unescape(browser.request("/manage/sources", 200))
+        assert "Biblioteca de fuentes nativas" in sources and 'class="appliance-content" lang=' not in sources
+        apply = unescape(browser.request("/manage/apply", 200))
+        assert 'lang="es-ES"' in apply and "Aplicación confirmada en dos fases" in apply
+        assert 'class="appliance-content" lang="en-US" dir="ltr"' in apply
+
+        for locale, direction in (("fr-FR", "ltr"), ("ja-JP", "ltr"), ("ar", "rtl"), ("he-IL", "rtl")):
+            assert select_language(browser, {"culture": locale, "returnPath": HOSTS,
+                                             "__RequestVerificationToken": browser.token(HOSTS)}, 302) == HOSTS
+            current = unescape(browser.request(HOSTS, 200))
+            assert f'<html lang="{locale}" dir="{direction}"' in current
+            assert 'class="appliance-content" lang="en-US" dir="ltr"' in current
+            assert f'<h1 lang="{locale}" dir="auto">' in current
+            assert 'Register agent host' in current and 'aria-label="Primary navigation"' not in current
+            assert browser.last_headers["content-language"] == locale
+
         assert select_language(browser, {"culture": "en-US", "returnPath": HOSTS,
                                          "__RequestVerificationToken": browser.token(HOSTS)}, 302) == HOSTS
         english = browser.request(HOSTS, 200)
@@ -92,4 +112,4 @@ def exercise(temp):
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory(prefix="nergal-localization-") as directory:
         exercise(Path(directory))
-    print("PASS: MVC language selection, validation, host status, and audit UTC across English and Spanish")
+    print("PASS: MVC locale selection, extended Spanish coverage, English fallback, RTL/LTR direction and UTC audit")

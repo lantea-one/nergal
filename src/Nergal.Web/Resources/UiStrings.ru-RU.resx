@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>Перейти к содержимому</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>Меню</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>Мой профиль ({0})</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>Администратор</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>Аудитор</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>Тема</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>Светлый режим</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>Тёмный режим</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>Переключиться на светлую тему</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>Переключиться на тёмную тему</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>Язык</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>Язык интерфейса</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>Установить язык</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>Основная навигация</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>Панель управления</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>Обзор</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>Узлы</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>Межсетевой экран</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>Правила</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>Сетевой мост</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>Просмотреть и экспортировать</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>Псевдонимы и списки IP-адресов</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>Конфигурация</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>Импортировать nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>Просмотреть и применить</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>Система</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>Активность и аудит</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Настройки</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>Локальные пользователи</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>Мой профиль и сеанс</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>Часовой пояс</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (местное время недоступно)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>Время, сохранённое в UTC: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>Войти</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>Имя пользователя</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>Пароль</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>Не удалось войти. Проверьте учётные данные и повторите попытку.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>Войдите, чтобы управлять зарегистрированными узлами межсетевого экрана, версиями политик и применением изменений с подтверждением.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>Вход через службу каталогов</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>Имя пользователя в каталоге</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>Пароль для службы каталогов</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>Войти через LDAP</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>Воспользоваться разрешением на восстановление доступа</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>Войти через OAuth</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>Войти через поставщика удостоверений</value>
+    </data>
+</root>

@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>본문으로 건너뛰기</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>메뉴</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>내 프로필({0})</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>관리자</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>감사자</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>테마</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>라이트 모드</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>다크 모드</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>라이트 테마로 전환</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>다크 테마로 전환</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>언어</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>표시 언어</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>언어 설정</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>주 탐색 메뉴</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>대시보드</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>개요</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>호스트</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>방화벽</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>규칙</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>브리지</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>검토 및 내보내기</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>별칭 및 IP 주소 목록</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>구성</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>nftables.conf 가져오기</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>검토 및 적용</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>시스템</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>활동 및 감사</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>설정</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>로컬 사용자</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>내 프로필 및 세션</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>시간대:</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC(현지 시간 확인 불가)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>저장된 UTC 시각: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>로그인</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>사용자 이름</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>비밀번호</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>로그인하지 못했습니다. 로그인 정보를 확인한 후 다시 시도하세요.</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>로그인하여 등록된 방화벽 호스트, 정책 개정본 및 확인이 필요한 적용 작업을 관리하세요.</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>디렉터리 로그인</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>디렉터리 사용자 이름</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>디렉터리 비밀번호</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>LDAP로 로그인</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>복구 승인 사용</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>OAuth로 로그인</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>ID 공급자로 로그인</value>
+    </data>
+</root>

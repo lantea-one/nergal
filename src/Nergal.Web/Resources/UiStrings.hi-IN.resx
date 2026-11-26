@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>सामग्री पर जाएँ</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>मेनू</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>{0} के लिए मेरी प्रोफ़ाइल</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>प्रशासक</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>लेखापरीक्षक</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>थीम</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>हल्का मोड</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>गहरा मोड</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>हल्की थीम पर जाएँ</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>गहरी थीम पर जाएँ</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>भाषा</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>प्रदर्शन की भाषा</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>भाषा सेट करें</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>मुख्य नेविगेशन</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>डैशबोर्ड</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>अवलोकन</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>होस्ट</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>फ़ायरवॉल</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>नियम</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>नेटवर्क ब्रिज</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>समीक्षा और निर्यात</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>उपनाम और IP सूचियाँ</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>कॉन्फ़िगरेशन</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>nftables.conf आयात करें</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>समीक्षा और लागू करना</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>सिस्टम</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>गतिविधि और ऑडिट</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>सेटिंग्स</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>स्थानीय उपयोगकर्ता</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>मेरी प्रोफ़ाइल और सत्र</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>समय क्षेत्र:</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC (स्थानीय समय उपलब्ध नहीं है)</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>UTC में संग्रहीत समय: {0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>साइन इन करें</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>उपयोगकर्ता नाम</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>पासवर्ड</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>साइन इन नहीं हो सका। अपनी साइन-इन जानकारी जाँचें और फिर से कोशिश करें।</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>पंजीकृत फ़ायरवॉल होस्ट, नीति संशोधन और पुष्टि के साथ नीति लागू करने की कार्रवाइयाँ प्रबंधित करने के लिए साइन इन करें।</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>डायरेक्टरी खाते से साइन इन</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>डायरेक्टरी उपयोगकर्ता नाम</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>डायरेक्टरी पासवर्ड</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>LDAP से साइन इन करें</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>रिकवरी प्राधिकरण का उपयोग करें</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>OAuth से साइन इन करें</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>पहचान प्रदाता से साइन इन करें</value>
+    </data>
+</root>

@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>本文へスキップ</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>メニュー</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>マイプロフィール（{0}）</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>管理者</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>監査担当者</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>テーマ</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>ライトモード</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>ダークモード</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>ライトテーマに切り替える</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>ダークテーマに切り替える</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>言語</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>表示言語</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>言語を設定</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>メインナビゲーション</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>ダッシュボード</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>概要</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>ホスト</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>ファイアウォール</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>ルール</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>ブリッジ</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>レビューとエクスポート</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>エイリアスと IP アドレスリスト</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>構成</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>nftables.conf をインポート</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>レビューと適用</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>システム</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>アクティビティと監査</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>設定</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>ローカルユーザー</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>マイプロフィールとセッション</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>タイムゾーン：</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC（現地時刻を取得できません）</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>保存時刻（UTC）：{0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>サインイン</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>ユーザー名</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>パスワード</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>サインインできませんでした。認証情報を確認して、もう一度お試しください。</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>サインインすると、登録済みのファイアウォールホスト、ポリシーのリビジョン、確認付きの適用操作を管理できます。</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>ディレクトリでのサインイン</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>ディレクトリのユーザー名</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>ディレクトリのパスワード</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>LDAP でサインイン</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>復旧用の承認を使用</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>OAuth でサインイン</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>ID プロバイダーでサインイン</value>
+    </data>
+</root>

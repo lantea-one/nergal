@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Skip to content" xml:space="preserve">
+        <value>跳转到正文</value>
+    </data>
+    <data name="Menu" xml:space="preserve">
+        <value>菜单</value>
+    </data>
+    <data name="My profile for {0}" xml:space="preserve">
+        <value>我的个人资料（{0}）</value>
+    </data>
+    <data name="Administrator" xml:space="preserve">
+        <value>管理员</value>
+    </data>
+    <data name="Auditor" xml:space="preserve">
+        <value>审计员</value>
+    </data>
+    <data name="Theme" xml:space="preserve">
+        <value>主题</value>
+    </data>
+    <data name="Light mode" xml:space="preserve">
+        <value>浅色模式</value>
+    </data>
+    <data name="Dark mode" xml:space="preserve">
+        <value>深色模式</value>
+    </data>
+    <data name="Switch to light theme" xml:space="preserve">
+        <value>切换到浅色主题</value>
+    </data>
+    <data name="Switch to dark theme" xml:space="preserve">
+        <value>切换到深色主题</value>
+    </data>
+    <data name="Language" xml:space="preserve">
+        <value>语言</value>
+    </data>
+    <data name="Display language" xml:space="preserve">
+        <value>显示语言</value>
+    </data>
+    <data name="Set language" xml:space="preserve">
+        <value>设置语言</value>
+    </data>
+    <data name="Primary navigation" xml:space="preserve">
+        <value>主导航</value>
+    </data>
+    <data name="Dashboard" xml:space="preserve">
+        <value>仪表板</value>
+    </data>
+    <data name="Overview" xml:space="preserve">
+        <value>概览</value>
+    </data>
+    <data name="Hosts" xml:space="preserve">
+        <value>主机</value>
+    </data>
+    <data name="Firewall" xml:space="preserve">
+        <value>防火墙</value>
+    </data>
+    <data name="Rules" xml:space="preserve">
+        <value>规则</value>
+    </data>
+    <data name="Bridge" xml:space="preserve">
+        <value>网桥</value>
+    </data>
+    <data name="Review &amp; export" xml:space="preserve">
+        <value>审阅与导出</value>
+    </data>
+    <data name="Aliases &amp; IP lists" xml:space="preserve">
+        <value>别名与 IP 地址列表</value>
+    </data>
+    <data name="Configuration" xml:space="preserve">
+        <value>配置</value>
+    </data>
+    <data name="Import nftables.conf" xml:space="preserve">
+        <value>导入 nftables.conf</value>
+    </data>
+    <data name="Review &amp; apply" xml:space="preserve">
+        <value>审阅与应用</value>
+    </data>
+    <data name="System" xml:space="preserve">
+        <value>系统</value>
+    </data>
+    <data name="Activity &amp; audit" xml:space="preserve">
+        <value>活动与审计</value>
+    </data>
+    <data name="Settings" xml:space="preserve">
+        <value>设置</value>
+    </data>
+    <data name="Local users" xml:space="preserve">
+        <value>本地用户</value>
+    </data>
+    <data name="My profile &amp; session" xml:space="preserve">
+        <value>我的个人资料与会话</value>
+    </data>
+    <data name="Timezone is" xml:space="preserve">
+        <value>时区：</value>
+    </data>
+    <data name="UTC (local time unavailable)" xml:space="preserve">
+        <value>UTC（无法获取本地时间）</value>
+    </data>
+    <data name="Stored UTC: {0}" xml:space="preserve">
+        <value>存储的 UTC 时间：{0}</value>
+    </data>
+    <data name="Sign in" xml:space="preserve">
+        <value>登录</value>
+    </data>
+    <data name="Username" xml:space="preserve">
+        <value>用户名</value>
+    </data>
+    <data name="Password" xml:space="preserve">
+        <value>密码</value>
+    </data>
+    <data name="Sign-in failed. Verify your credentials and try again." xml:space="preserve">
+        <value>登录失败。请检查登录凭据后重试。</value>
+    </data>
+    <data name="Sign in to manage enrolled firewall hosts, policy revisions, and confirmed applies." xml:space="preserve">
+        <value>登录后可管理已登记的防火墙主机、策略修订版本和需要确认的应用操作。</value>
+    </data>
+    <data name="Directory sign-in" xml:space="preserve">
+        <value>目录登录</value>
+    </data>
+    <data name="Directory username" xml:space="preserve">
+        <value>目录用户名</value>
+    </data>
+    <data name="Directory password" xml:space="preserve">
+        <value>目录密码</value>
+    </data>
+    <data name="Sign in with LDAP" xml:space="preserve">
+        <value>使用 LDAP 登录</value>
+    </data>
+    <data name="Use a recovery authorization" xml:space="preserve">
+        <value>使用恢复授权</value>
+    </data>
+    <data name="Sign in with OAuth" xml:space="preserve">
+        <value>使用 OAuth 登录</value>
+    </data>
+    <data name="Sign in with identity provider" xml:space="preserve">
+        <value>使用身份提供程序登录</value>
+    </data>
+</root>
