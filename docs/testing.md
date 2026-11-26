@@ -315,7 +315,10 @@ planning. The private inputs and topology stay outside the public fixtures.
 All five private snapshots produced complete plans with no gaps. Their compiled
 candidates independently passed `nft --check` in disposable namespaces after
 recompilation reproduced the plan digests. These checks establish conversion
-readiness and kernel validation. Private packet equivalence remains open.
+readiness and kernel validation. The accepted M8 evidence combines these
+read-only private checks with the synthetic packet fixtures above. Packet
+equivalence for the private topologies remains unverified. Publication of
+a supported release is a separate step.
 
 For release packaging, the package review workflow rebuilds Debian, Fedora RPM,
 and Arch artifacts from two source paths and compares the native files, portable
