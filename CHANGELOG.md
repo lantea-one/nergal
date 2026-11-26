@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## [2026.11.26] - 2026-11-26
+
+- Complete M8 release readiness for the supported Linux nftables workflows.
+  Verify host, router, bridge and dual-stack packet behavior on synthetic
+  networks. The five private snapshots passed read-only conversion and kernel
+  dry runs.
+- Ship multi-host controller and agent deployment, optional OIDC, OAuth and
+  LDAP connections, and shared local email/TOTP MFA and recovery.
+- Support the current controller schema on SQLite, PostgreSQL, MariaDB,
+  MySQL and SQL Server with verified backup and restore.
+- Provide Debian, RPM and Arch packages, controller and agent OCI images,
+  and release-tested AUR recipes.
 
 - Preserve supported native filter and bridge counters, wildcard interfaces,
   chain calls, raw tracking exceptions, static NAT maps, and route-derived MSS

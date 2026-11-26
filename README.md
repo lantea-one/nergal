@@ -63,7 +63,8 @@ MFA assurance. [Generic OAuth](docs/oauth-connection.md) uses an authenticated c
 For a persistent, isolated local controller and check-only source containers, see
 [the local sandbox guide](docs/local-sandbox.md). Private exports and credentials
 stay under ignored `artifacts/dev-stack/`; the public tests and screenshots use
-synthetic data. This work has not been published as a release.
+synthetic data. See [Forgejo releases](https://git.lantea.one/lantea-one/nergal/releases)
+for Linux packages, checksums and AUR recipes.
 
 ## Run locally
 
