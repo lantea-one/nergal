@@ -1,4 +1,4 @@
-// Observable theme behavior, including storage denial; no browser or network required.
+// Theme behavior and styling contract; no browser or network required.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -6,6 +6,7 @@ import vm from 'node:vm';
 
 const initial = await readFile(new URL('../pages/assets/theme.js', import.meta.url), 'utf8');
 const portal = await readFile(new URL('../pages/assets/portal.js', import.meta.url), 'utf8');
+const stylesheet = await readFile(new URL('../pages/assets/nergal-theme.css', import.meta.url), 'utf8');
 function fixture({ preference = null, systemDark = false, denyStorage = false } = {}) {
   const attributes = new Map([['data-default-theme', 'system']]);
   const events = new Map();
@@ -49,4 +50,10 @@ test('storage denial preserves theme switching and accessible labels', () => {
   assert.doesNotThrow(f.click);
   assert.equal(f.attributes.get('data-theme'), 'dark');
   assert.equal(f.button.textContent, 'Light mode');
+});
+
+test('the masthead theme toggle opts out of the shared button background transition', () => {
+  const instantThemeChange = /\.docs-topbar\s+\[data-theme-toggle\]\s*\{[^}]*\btransition:\s*none\s*;/;
+  assert.ok(instantThemeChange.test(stylesheet),
+    'Toggle text and background must change in the same frame');
 });

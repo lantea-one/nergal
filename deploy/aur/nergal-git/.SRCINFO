@@ -6,6 +6,7 @@ pkgbase = nergal-git
 	arch = x86_64
 	license = MIT
 	makedepends = git
+	makedepends = python
 	depends = dotnet-runtime-10.0
 	depends = aspnet-runtime-10.0
 	depends = nftables

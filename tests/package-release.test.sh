@@ -1,10 +1,43 @@
 #!/usr/bin/env bash
-# Exercise package layout/metadata with a synthetic publish payload and real dpkg-deb.
+# Exercise package layout with a synthetic publish payload, or use --reproducibility
+# to compare two real portable archives built under different source paths.
 set -euo pipefail
 repo=$(cd "$(dirname "$0")/.." && pwd)
-command -v dpkg-deb >/dev/null || { echo 'SKIP: dpkg-deb unavailable' >&2; exit 0; }
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
+
+if [[ ${1:-} == --reproducibility && $# == 1 ]]; then
+    commit=$(git -C "$repo" rev-parse HEAD)
+    export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(git -C "$repo" show -s --format=%ct "$commit")}
+    mkdir "$tmp/build-inputs"
+    cp "$repo/scripts/package-release.sh" "$repo/scripts/collect-nuget-notices.py" "$repo/deploy/LinuxRelease.targets" "$tmp/build-inputs/"
+    cp -R "$repo/scripts/nuget-license-texts" "$tmp/build-inputs/"
+    for build in first 'second checkout'; do
+        checkout="$tmp/$build"
+        git clone --quiet --no-local --no-checkout "$repo" "$checkout"
+        git -C "$checkout" -c advice.detachedHead=false checkout --quiet "$commit"
+        # Test the packaging script under review against the exact tracked build inputs.
+        cp "$tmp/build-inputs/package-release.sh" "$tmp/build-inputs/collect-nuget-notices.py" "$checkout/scripts/"
+        cp -R "$tmp/build-inputs/nuget-license-texts" "$checkout/scripts/"
+        cp "$tmp/build-inputs/LinuxRelease.targets" "$checkout/deploy/"
+        (
+            cd "$checkout"
+            dotnet restore Nergal.slnx --locked-mode
+            bash scripts/package-release.sh --format tar --verify --output-dir "$tmp/$build.packages"
+        )
+    done
+    cmp "$tmp/first.packages/SHA256SUMS" "$tmp/second checkout.packages/SHA256SUMS"
+    cmp "$tmp/first.packages/"*.tar.gz "$tmp/second checkout.packages/"*.tar.gz
+    cat "$tmp/first.packages/SHA256SUMS"
+    echo 'PASS: portable archive is byte-identical across independent source paths'
+    exit 0
+fi
+if (($#)); then
+    echo 'Usage: package-release.test.sh [--reproducibility]' >&2
+    exit 2
+fi
+
+command -v dpkg-deb >/dev/null || { echo 'SKIP: dpkg-deb unavailable' >&2; exit 0; }
 mkdir -p "$tmp/bin"
 cat > "$tmp/bin/dotnet" <<'EOF'
 #!/usr/bin/env bash
@@ -40,6 +73,7 @@ grep -q '/usr/lib/systemd/system/nergal-agent.service' <<< "$contents"
 grep -q '/usr/lib/systemd/system/nergal-agent-reconcile.service' <<< "$contents"
 grep -q '/usr/bin/nergal-agent' <<< "$contents"
 dpkg-deb --extract "$deb" "$tmp/extracted"
+test -s "$tmp/extracted/usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt"
 [[ $(stat -c '%a' "$tmp/extracted/opt/nergal/web") == 755 ]]
 [[ $(stat -c '%a' "$tmp/extracted/opt/nergal/web/Nergal.Web.dll") == 644 ]]
 web_unit=$(dpkg-deb --fsys-tarfile "$deb" | tar -xOf - ./usr/lib/systemd/system/nergal-web.service)

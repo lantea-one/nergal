@@ -64,15 +64,22 @@ feed](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-
 before installation. Ubuntu 26.04, Fedora and Arch use their distribution feeds.
 Check the included file with `sha256sum -c SHA256SUMS` in the artifact directory.
 
-To build locally after locked restore, select `--format deb`, `rpm`, or
+To build locally, install Python 3 for the package notice generator. After
+locked restore, select `--format deb`, `rpm`, or
 `arch`. Use `--format all` on a build machine with all three tools.
 Set `SOURCE_DATE_EPOCH` to the source revision's Unix timestamp for a release
 build. Each format also produces a Linux tar archive from the same staged layout.
+Packages and container images include Nergal's license, a NuGet package inventory,
+and the corresponding license and notice files under `/usr/share/licenses/nergal`.
+Linux release artifacts omit Windows-only runtime binaries.
 
 ```sh
 dotnet restore Nergal.slnx --locked-mode
 bash scripts/package-release.sh --format deb --verify
 ```
+
+Run `bash tests/package-release.test.sh --reproducibility` to compare portable
+archives from two independent source checkouts at the same revision.
 
 The packages install vendor units, CLI launchers and systemd account and
 directory definitions. They leave service activation, credentials and firewall

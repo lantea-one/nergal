@@ -6,9 +6,12 @@ on:
       - 'deploy/aur/**'
       - 'deploy/container/release-version.py'
       - 'deploy/systemd/**'
+      - 'deploy/LinuxRelease.targets'
       - 'Directory.Build.props'
       - 'global.json'
       - 'scripts/package-release.sh'
+      - 'scripts/collect-nuget-notices.py'
+      - 'scripts/nuget-license-texts/**'
       - 'tests/aur-*.test.*'
   release:
     types: [published]

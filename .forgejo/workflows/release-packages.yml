@@ -7,7 +7,10 @@ on:
     paths:
       - '.forgejo/workflows/release-packages.yml'
       - 'deploy/systemd/**'
+      - 'deploy/LinuxRelease.targets'
       - 'scripts/package-release.sh'
+      - 'scripts/collect-nuget-notices.py'
+      - 'scripts/nuget-license-texts/**'
   workflow_dispatch:
 jobs:
   packages:
@@ -60,10 +63,12 @@ jobs:
         env:
           PACKAGE_FORMAT: ${{ matrix.format }}
           NERGAL_PACKAGE_USER: nergal-builder
+          NERGAL_ARCH_BUILD_DIRECTORY: /tmp/nergal-arch-release
         run: |
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
           bash scripts/package-release.sh --verify --format "$PACKAGE_FORMAT" --output-dir artifacts/release
           if [ "$PACKAGE_FORMAT" = deb ]; then
+            python3 -B tests/collect-nuget-notices.test.py
             bash tests/package-release.test.sh
           fi
       - uses: https://code.forgejo.org/forgejo/upload-artifact@cb8afe72b42edc798abfb8fcb556cf660d894245 # v5

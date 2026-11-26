@@ -3,7 +3,7 @@
 set -euo pipefail
 # Package directory permissions must be independent of the build runner's umask.
 umask 022
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd -P "$(dirname "${BASH_SOURCE[0]}")/.."
 
 VERIFY=0
 ALLOW_MISSING=0
@@ -38,9 +38,39 @@ mkdir -p "$ROOT/opt/nergal/agent" "$ROOT/opt/nergal/web" "$ROOT/opt/nergal/admin
 
 # Keep framework-dependent binaries on the pinned .NET 10 target. Runtime packages
 # declare the shared runtime; no network-dependent package scripts are used.
-dotnet publish src/Nergal.Agent/Nergal.Agent.csproj -c Release --no-restore -o "$ROOT/opt/nergal/agent" >/dev/null
-dotnet publish src/Nergal.Web/Nergal.Web.csproj -c Release --no-restore -o "$ROOT/opt/nergal/web" >/dev/null
-dotnet publish src/Nergal.Admin/Nergal.Admin.csproj -c Release --no-restore -o "$ROOT/opt/nergal/admin" >/dev/null
+# Isolate compilation from ordinary Release outputs while reusing the locked restore.
+# Razor includes physical input paths in generated C# before PathMap takes effect.
+# Give those inputs a stable, process-local filename and map it back to the source
+# tree for portable PDBs. Build servers cannot inherit this invocation's descriptor.
+cat > "$STAGE/package-build.props" <<'EOF'
+<Project>
+  <PropertyGroup>
+    <OutputPath>$(NergalPackageBuild)/bin/$(MSBuildProjectName)/</OutputPath>
+    <IntermediateOutputPath>$(NergalPackageBuild)/obj/$(MSBuildProjectName)/</IntermediateOutputPath>
+    <PathMap>$(NergalPackageSource)/=/_/,$(NergalPackageBuild)/=/_/package-build/,/proc/self/fd/23/=/_/src/Nergal.Web/</PathMap>
+  </PropertyGroup>
+  <Target Name="UseStableRazorPaths" AfterTargets="_PrepareRazorSourceGenerators" Condition="'$(MSBuildProjectName)' == 'Nergal.Web'">
+    <ItemGroup>
+      <_PackageRazorFiles Include="@(AdditionalFiles)" Condition="'%(AdditionalFiles.Extension)' == '.cshtml' Or '%(AdditionalFiles.Extension)' == '.razor'">
+        <PackageRelativePath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(AdditionalFiles.FullPath)'))</PackageRelativePath>
+      </_PackageRazorFiles>
+      <AdditionalFiles Remove="@(_PackageRazorFiles)" />
+      <AdditionalFiles Include="@(_PackageRazorFiles->'/proc/self/fd/23/%(PackageRelativePath)')" />
+    </ItemGroup>
+  </Target>
+</Project>
+EOF
+publish() {
+    local project=$1
+    local destination=$2
+    NergalPackageBuild="$STAGE/build" NergalPackageSource="$PWD" \
+        dotnet publish "src/$project/$project.csproj" -c Release --no-restore --disable-build-servers \
+        "-p:CustomAfterMicrosoftCommonProps=$STAGE/package-build.props" \
+        "-p:CustomAfterMicrosoftCommonTargets=$PWD/deploy/LinuxRelease.targets" -o "$ROOT/opt/nergal/$destination" >&2
+}
+publish Nergal.Agent agent
+publish Nergal.Web web 23<src/Nergal.Web
+publish Nergal.Admin admin
 for app in agent admin; do
     cat > "$ROOT/usr/bin/nergal-$app" <<EOF
 #!/bin/sh
@@ -55,7 +85,12 @@ install -m 0644 deploy/systemd/nergal.tmpfiles "$ROOT/usr/lib/tmpfiles.d/nergal.
 install -D -m 0755 deploy/systemd/nergal-local-agent "$ROOT/usr/lib/nergal/nergal-local-agent"
 install -m 0644 deploy/systemd/nergal-agent-enroll.service "$ROOT/usr/lib/systemd/system/nergal-agent-enroll.service"
 install -m 0644 deploy/systemd/nergal-agent-reconcile.service "$ROOT/usr/lib/systemd/system/nergal-agent-reconcile.service"
-install -D -m 0644 LICENSE "$ROOT/usr/share/licenses/nergal/LICENSE"
+licenses="$ROOT/usr/share/licenses/nergal"
+python3 -B scripts/collect-nuget-notices.py --output "$licenses" \
+    --assets src/Nergal.Agent/obj/project.assets.json \
+    --assets src/Nergal.Web/obj/project.assets.json \
+    --assets src/Nergal.Admin/obj/project.assets.json
+install -D -m 0644 LICENSE "$licenses/LICENSE"
 web_endpoints="$ROOT/opt/nergal/web/Nergal.Web.staticwebassets.endpoints.json"
 if [[ -f "$web_endpoints" ]]; then
     modified=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" '+%a, %d %b %Y %T GMT')
@@ -112,6 +147,8 @@ if [[ "$FORMAT" == all || "$FORMAT" == rpm ]]; then
         cat > "$STAGE/rpm/SPECS/nergal.spec" <<EOF
 %global debug_package %{nil}
 %global __os_install_post %{nil}
+%global _buildhost nergal.release.invalid
+%global use_source_date_epoch_as_buildtime 1
 Name: nergal
 Version: ${VERSION}
 Release: 1
@@ -142,7 +179,7 @@ systemd-tmpfiles --create /usr/lib/tmpfiles.d/nergal.conf
 /usr/lib/systemd/system/nergal-web.service
 /usr/lib/sysusers.d/nergal.conf
 /usr/lib/tmpfiles.d/nergal.conf
-%license /usr/share/licenses/nergal/LICENSE
+%license /usr/share/licenses/nergal
 EOF
         rpmbuild --define "_topdir $STAGE/rpm" -bb "$STAGE/rpm/SPECS/nergal.spec" >/dev/null
         cp "$STAGE/rpm/RPMS/x86_64/nergal-${VERSION}-1.x86_64.rpm" "$OUT_DIR/"
@@ -152,7 +189,12 @@ fi
 
 if [[ "$FORMAT" == all || "$FORMAT" == arch ]]; then
     if need_tool makepkg arch; then
-        p="$STAGE/arch"; mkdir -p "$p"
+        p=${NERGAL_ARCH_BUILD_DIRECTORY:-"$STAGE/arch"}
+        # makepkg records its absolute working directory in .BUILDINFO.
+        # A disposable release container can supply a stable, new directory.
+        [[ "$p" == /* ]] || { echo 'Arch build directory must be absolute' >&2; exit 2; }
+        mkdir -m 0700 "$p"
+        trap 'rm -rf "$STAGE" "$p"' EXIT
         cp "$OUT_DIR/nergal_${VERSION}_linux-x64.tar.gz" "$p/payload.tar.gz"
         payload_hash=$(sha256sum "$p/payload.tar.gz" | cut -d' ' -f1)
         cat > "$p/PKGBUILD" <<EOF
@@ -193,6 +235,11 @@ if ((VERIFY)); then
     grep -qx './usr/lib/systemd/system/nergal-agent-enroll.service' <<< "$archive_contents"
     grep -qx './usr/lib/systemd/system/nergal-agent-reconcile.service' <<< "$archive_contents"
     grep -qx './usr/lib/nergal/nergal-local-agent' <<< "$archive_contents"
+    grep -qx './usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt' <<< "$archive_contents"
+    if grep -q '/runtimes/win' <<< "$archive_contents"; then
+        echo 'Windows runtime files are not part of a Linux release' >&2
+        exit 1
+    fi
     for f in "${BUILT[@]}"; do
         case "$f" in
             *.deb)
@@ -200,14 +247,19 @@ if ((VERIFY)); then
                 contents=$(dpkg-deb --contents "$OUT_DIR/$f")
                 grep -q 'aspnetcore-runtime-10.0' <<< "$deps"
                 grep -q '/usr/lib/systemd/system/nergal-agent.service' <<< "$contents"
+                grep -q '/usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt' <<< "$contents"
                 ;;
             *.rpm)
                 deps=$(rpm -qp --requires "$OUT_DIR/$f")
                 grep -qx 'aspnetcore-runtime-10.0' <<< "$deps"
+                contents=$(rpm -qpl "$OUT_DIR/$f")
+                grep -qx '/usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt' <<< "$contents"
                 ;;
             *.pkg.tar.*)
                 metadata=$(tar -xOf "$OUT_DIR/$f" .PKGINFO)
                 grep -qx 'depend = aspnet-runtime-10.0' <<< "$metadata"
+                contents=$(tar -tf "$OUT_DIR/$f")
+                grep -qx 'usr/share/licenses/nergal/THIRD-PARTY-NOTICES.txt' <<< "$contents"
                 ;;
         esac
     done
