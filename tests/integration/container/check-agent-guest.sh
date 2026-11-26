@@ -260,9 +260,9 @@ with socket.create_connection(('127.0.0.1', int(port)), timeout=8) as tcp:
                 data = stream.read(size)
                 assert len(data) == size
                 reply = json.loads(data)
-    except (ConnectionResetError, ssl.SSLEOFError, ssl.SSLError) as error:
+    except (BrokenPipeError, ConnectionResetError, ssl.SSLError) as error:
         if action != 'denied' or isinstance(error, ssl.SSLCertVerificationError):
-            raise
+            raise RuntimeError(f'TLS {action} request failed') from error
         sys.exit(0)
 if action == 'prepare':
     assert reply['outcome'] == 'appliedPendingConfirmation' and reply['operationId'] == operation, reply
@@ -283,6 +283,7 @@ deny_ipv6() {
 
 tls_request status
 tls_request denied
+printf 'Pinned TLS 1.3 client matched revision 1. Unpinned client received no status frame\n'
 probe 127.0.0.1
 probe ::1
 tls_request prepare

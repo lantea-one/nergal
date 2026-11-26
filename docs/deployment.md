@@ -253,7 +253,7 @@ sh deploy/container/build.sh
 
 ```sh
 # Or select and pull a published release tag.
-export NERGAL_IMAGE=git.lantea.one/lantea-one/nergal/controller:vVERSION
+export NERGAL_IMAGE=git.lantea.one/lantea-one/nergal/controller:CALVER
 docker compose pull controller
 ```
 
@@ -304,7 +304,7 @@ NERGAL_COMPONENT=agent sh deploy/container/build.sh
 
 ```sh
 # Or select a published release tag.
-export NERGAL_AGENT_IMAGE=git.lantea.one/lantea-one/nergal/agent:vVERSION
+export NERGAL_AGENT_IMAGE=git.lantea.one/lantea-one/nergal/agent:CALVER
 ```
 
 Prepare the agent server certificate and controller client fingerprint as
@@ -335,7 +335,9 @@ docker compose -f deploy/container/docker-compose.agent.yml up -d --no-build age
 ```
 
 Register the endpoint and the agent's server certificate fingerprint in the
-controller and check the authenticated status. After a reboot, run
+controller and check the authenticated status. When both roles run on one host,
+use a management address reachable from the controller's Compose network.
+After a reboot, run
 `docker compose -f deploy/container/docker-compose.agent.yml run --rm agent reconcile /var/lib/nergal/agent`
 before starting the listener. The image's launcher drops to UID/GID 1654 with
 only `CAP_NET_ADMIN` and the agent's TLS bind is read-only. The Compose stop grace
@@ -346,11 +348,17 @@ procedure and verify the observed policy before resuming control.
 ## Publishing the container images
 
 The **Release Docker images** workflow builds Linux AMD64 controller and agent
-images on the shared rootless CI engine. A version tag such as `vVERSION` publishes
-both images under that tag in the Forgejo Registry.
+images on the shared rootless CI engine. Push a Git tag that matches the project's
+CalVer in `Directory.Build.props`, such as `2026.11.21.1` or `v2026.11.21.1`.
+Use the `v` prefix to trigger the native release package workflow as well. The
+image tags use the bare CalVer.
 
-- `git.lantea.one/lantea-one/nergal/controller:vVERSION`
-- `git.lantea.one/lantea-one/nergal/agent:vVERSION`
+- `git.lantea.one/lantea-one/nergal/controller:2026.11.21.1`
+- `git.lantea.one/lantea-one/nergal/agent:2026.11.21.1`
+
+The newest CalVer present for both roles also carries `latest`. The workflow
+compares the calendar date and revision, so rebuilding an older release keeps
+the newest pair selected. Use a CalVer tag or digest to pin a deployment.
 
 Set the repository variable `REGISTRY_USERNAME` to a publishing account with
 write access to the organization's packages. Store a Forgejo access token

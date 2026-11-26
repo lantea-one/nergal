@@ -25,7 +25,8 @@ if [[ ! -f $base || ! -f $engine || ! $digest =~ ^[0-9a-f]{64}$ ||
 fi
 
 fixture=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-work=$(mktemp -d /tmp/nergal-agent-container.XXXXXXXX)
+work_root=$(realpath -e -- "${TMPDIR:-/tmp}")
+work=$(mktemp -d "$work_root/nergal-agent-container.XXXXXXXX")
 printf 'Guest serial log %s/check.log\n' "$work"
 mkdir "$work/media"
 install -m 0644 -- "$engine" "$work/media/docker.tgz"
@@ -44,12 +45,13 @@ printf '%s\n' "$image" > "$work/media/image-name"
 docker image save --platform linux/amd64 --output "$work/media/agent.tar" -- "$image"
 sha256sum "$work/media/agent.tar"
 xorriso -as mkisofs -quiet -R -V NERGAL_TEST -o "$work/check.iso" "$work/media"
-qemu-img create -f qcow2 -F qcow2 -b "$base" "$work/debian-test.qcow2"
+overlay="$work/debian-test.qcow2"
+qemu-img create -f qcow2 -F qcow2 -b "$base" "$overlay"
 
 if ! timeout --kill-after=10s 10m qemu-system-x86_64 \
     -machine "accel=$accelerator" -cpu "$cpu" -smp 2 -m 3072 \
     -nodefaults -no-user-config -display none -monitor none -serial stdio -nic none -no-reboot \
-    -drive "if=virtio,format=qcow2,file=$work/debian-test.qcow2" -cdrom "$work/check.iso" \
+    -drive "if=virtio,format=qcow2,file=${overlay//,/,,}" -cdrom "$work/check.iso" \
     > "$work/check.log" 2>&1 ||
     ! grep -Eq 'NERGAL_AGENT_CONTAINER_PASS[[:space:]]*$' "$work/check.log" ||
     ! grep -Eq 'NERGAL_INSTALLED_RESULT=0[[:space:]]*$' "$work/check.log"; then

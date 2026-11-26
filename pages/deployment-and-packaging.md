@@ -28,8 +28,10 @@ or use pinned mutual TLS for a remote host.
 ## Container images and Compose
 
 Version tags build and publish Linux AMD64 images for both roles to the Forgejo
-Registry. Use the same release tag for `git.lantea.one/lantea-one/nergal/controller`
-and `git.lantea.one/lantea-one/nergal/agent`, or select the recorded image digests.
+Registry. Both images carry the project's bare CalVer, such as `2026.11.21.1`.
+The newest complete pair also carries `latest`. Select a CalVer or digest for
+`git.lantea.one/lantea-one/nergal/controller` and `git.lantea.one/lantea-one/nergal/agent`
+to pin a deployment.
 
 Run the controller with the repository-root `docker-compose.yml`. The controller
 runs as a dedicated non-root user with zero Linux capabilities, private state and

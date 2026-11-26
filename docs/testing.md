@@ -312,7 +312,9 @@ with no external network or host mounts. It starts Docker in an isolated guest
 network namespace and checks explicit enrollment, effective capabilities,
 pinned TLS and packet restoration after graceful container shutdown. Supply a
 static AMD64 Compose executable as the last argument to run the checked-in agent
-Compose example in the guest.
+Compose example in the guest. Set `TMPDIR` to a disk-backed directory with
+room for the ISO and copy-on-write disk when the default temporary filesystem
+has limited space.
 
 ```sh
 NERGAL_COMPONENT=agent sh deploy/container/build.sh
