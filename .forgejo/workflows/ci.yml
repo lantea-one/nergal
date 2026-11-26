@@ -49,4 +49,6 @@ jobs:
       - name: Verify Forgejo Pages documentation portal
         run: python3 -B scripts/verify-pages.py
       - name: Assemble and verify Linux release packages
-        run: bash scripts/package-release.sh --verify
+        run: |
+          bash tests/package-release.test.sh
+          bash scripts/package-release.sh --format deb --verify

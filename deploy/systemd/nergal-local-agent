@@ -1,0 +1,11 @@
+#!/bin/sh
+# Resolve the installed service identities at startup. The agent validates the
+# resulting numeric identifiers and enforces them on its Unix control socket.
+set -eu
+web_uid=$(id -u nergal-web)
+socket_group=$(getent group nergal-ctl)
+socket_gid=${socket_group#*:*:}
+socket_gid=${socket_gid%%:*}
+
+exec /usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll control-serve \
+    /var/lib/nergal/agent /run/nergal/control.sock "$web_uid" "$socket_gid"

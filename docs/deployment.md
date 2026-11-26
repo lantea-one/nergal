@@ -45,42 +45,62 @@ sudo systemd-sysusers /usr/lib/sysusers.d/nergal.conf
 sudo systemd-tmpfiles --create /usr/lib/tmpfiles.d/nergal.conf
 ```
 
-## Release packages
+## Install a release package
 
-Reproducible Linux release archives (`.tar.gz`, `.deb` when `dpkg-deb` is available,
-and `SHA256SUMS`) can be built and verified from source with:
+The **Build Linux release packages** workflow runs for version tags, packaging
+pull requests, and on demand.
+It builds AMD64 packages with native tools on the shared organization CI runner.
+Each run publishes the files and their SHA-256 manifest as CI artifacts.
+
+| Distribution | Package | Install |
+| --- | --- | --- |
+| Debian and Ubuntu | `.deb` | `sudo apt install ./nergal_VERSION_amd64.deb` |
+| Fedora | `.rpm` | `sudo dnf install ./nergal-VERSION-1.x86_64.rpm` |
+| Arch Linux | `.pkg.tar.zst` | `sudo pacman -U ./nergal-VERSION-1-x86_64.pkg.tar.zst` |
+
+Each package requires its distribution's .NET 10 runtime, ASP.NET Core 10
+runtime, systemd and nftables. On Debian 13, configure the [Microsoft APT
+feed](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-13)
+before installation. Ubuntu 26.04, Fedora and Arch use their distribution feeds.
+Check the included file with `sha256sum -c SHA256SUMS` in the artifact directory.
+
+To build locally after locked restore, select `--format deb`, `rpm`, or
+`arch`. Use `--format all` on a build machine with all three tools.
+Set `SOURCE_DATE_EPOCH` to the source revision's Unix timestamp for a release
+build. Each format also produces a Linux tar archive from the same staged layout.
 
 ```sh
-bash scripts/package-release.sh --verify
+dotnet restore Nergal.slnx --locked-mode
+bash scripts/package-release.sh --format deb --verify
 ```
 
-## Offline initialization
+The packages install vendor units, CLI launchers and systemd account and
+directory definitions. They leave service activation, credentials and firewall
+enrollment to the operator.
+The [Debian QEMU fixture](../tests/integration/installed-system/README.md)
+checks the installed services and agent rollback in an isolated guest.
 
-Publish the release binaries cleanly for the host runtime (`.NET 10`):
+## Initialize a new single host
 
-```sh
-dotnet publish src/Nergal.Agent/Nergal.Agent.csproj -c Release -o /opt/nergal/agent
-dotnet publish src/Nergal.Admin/Nergal.Admin.csproj -c Release -o /opt/nergal/admin
-dotnet publish src/Nergal.Web/Nergal.Web.csproj -c Release -o /opt/nergal/web
-```
-
-1. **Enroll the host agent** (backs up/binds an empty `inet nergal_filter` baseline without modifying unrelated tables):
+1. Create the private web state subdirectories and initialize the offline stores.
 
    ```sh
-   sudo -u nergal-agent dotnet /opt/nergal/agent/nergal-agent.dll enroll /var/lib/nergal/agent
+   sudo install -d -o nergal-web -g nergal-web -m 0700 \
+     /var/lib/nergal/web/accounts /var/lib/nergal/web/controller /var/lib/nergal/web/keys
+   sudo -u nergal-web nergal-admin account init /var/lib/nergal/web/accounts
+   sudo -u nergal-web nergal-admin account provision /var/lib/nergal/web/accounts admin
+   sudo -u nergal-web nergal-admin controller init /var/lib/nergal/web/controller
    ```
 
-2. **Initialize controller state and local administrator account** (interactive password prompt without terminal echo):
+2. Install the HTTPS certificate and key plus an independent wrapping PKCS#12
+   certificate with a private key. Place them under `/etc/nergal/web/` using
+   owner-only permissions for private key files. Create the wrapping certificate
+   directory with `sudo install -d -o nergal-web -g nergal-web -m 0700 /etc/nergal/web/private`.
+   Install `wrapping.pfx` there with owner `nergal-web` and mode `0600`.
 
-   ```sh
-   sudo -u nergal-web dotnet /opt/nergal/admin/nergal-admin.dll account init /var/lib/nergal/web/accounts
-   sudo -u nergal-web dotnet /opt/nergal/admin/nergal-admin.dll account provision /var/lib/nergal/web/accounts admin
-   sudo -u nergal-web dotnet /opt/nergal/admin/nergal-admin.dll controller init /var/lib/nergal/web/controller
-   ```
-
-   Create an owner-only (`0600`) wrapping PKCS#12 file `/etc/nergal/web/wrapping.pfx` for persistent Data Protection keys and Kestrel TLS certificates owned by `nergal-web`.
-
-3. **Configure `/etc/nergal/web/env`** (`0600`, owned by `nergal-web`):
+3. Set these values in the private service environment file
+   `/etc/nergal/web/env`. Choose a browser-trusted HTTPS certificate for the
+   host name and the appropriate listening address.
 
    ```ini
    ASPNETCORE_URLS=https://127.0.0.1:8443
@@ -89,12 +109,28 @@ dotnet publish src/Nergal.Web/Nergal.Web.csproj -c Release -o /opt/nergal/web
    LocalSessions__Enabled=true
    LocalSessions__AccountDirectory=/var/lib/nergal/web/accounts
    LocalSessions__KeyDirectory=/var/lib/nergal/web/keys
-   LocalSessions__CertificateFile=/etc/nergal/web/wrapping.pfx
+   LocalSessions__CertificateFile=/etc/nergal/web/private/wrapping.pfx
    ControllerState__Enabled=true
    ControllerState__Directory=/var/lib/nergal/web/controller
    ```
 
-   Add `ControllerState__TlsClientCertificatePath` and `ControllerState__TlsClientKeyPath` (`0600`, owned by `nergal-web`) when managing remote `tls-serve` agents, and `Oidc__*` variables when using federated group RBAC (`Oidc:AdministratorGroups`, `Oidc:AuditorGroups`).
+4. Enroll the host explicitly. This creates the owned `inet nergal_filter`
+   baseline. The enrollment unit runs with `CAP_NET_ADMIN` under the same
+   dedicated account that owns the protected agent journal.
+
+   ```sh
+   sudo systemctl start nergal-agent-enroll.service
+   sudo systemctl enable --now nergal-agent.service nergal-web.service
+   ```
+
+5. Sign in at `/manage`. Open **Hosts** and register a local Unix connection
+   at `/run/nergal/control.sock` using the UID from `id -u nergal-agent`.
+   Use the `nergal-ctl` group ID when pinning the socket group. Check the
+   authenticated status before reviewing a candidate change.
+
+For a source or archive installation, install the same vendor units and
+`/usr/lib/nergal/nergal-local-agent` launcher, run the account and directory
+setup above, and reload systemd before starting services.
 
 ## Remote TLS 1.3 mutual-authentication agents (`tls-serve`)
 
@@ -102,26 +138,49 @@ On remote managed hosts:
 
 1. Generate dedicated leaf ECDSA P-256 or RSA server and controller client certificates with explicit EKUs (`serverAuth` on the agent server cert, `clientAuth` on the controller cert, `CA:FALSE`) and `0600` private keys.
 2. Compute each certificate's lowercase SHA-256 DER thumbprint (`openssl x509 -in cert.crt -outform DER | sha256sum`).
-3. Configure the remote agent unit `ExecStart`:
+3. Use `sudo systemctl edit nergal-agent.service` to configure the remote listener in a drop-in:
 
    ```sh
+   [Service]
+   ExecStart=
    ExecStart=/usr/bin/dotnet /opt/nergal/agent/nergal-agent.dll tls-serve /var/lib/nergal/agent 192.0.2.10:9443 /etc/nergal/agent/server.crt /etc/nergal/agent/server.key <CLIENT_SHA256>
    ```
 
 4. Register the remote host in `/manage` using its `<ip>:<port>` and pinned server SHA-256 thumbprint.
 
-## Installing the systemd units
+## Containerized controller
 
-1. Substitute `WEB_UID` (`id -u nergal-web`) and `SOCKET_GROUP_GID` (`getent group nergal-ctl | cut -d: -f3`) in `/etc/systemd/system/nergal-agent.service`.
-2. Copy `deploy/systemd/nergal-web.service` to `/etc/systemd/system/nergal-web.service`.
-3. Reload and start:
+Build the unprivileged controller image from this checkout and initialize its
+private named volumes with the offline administrator service.
 
-   ```sh
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now nergal-agent.service nergal-web.service
-   ```
+```sh
+sh deploy/container/build.sh
+docker compose -f deploy/container/compose.yaml run --rm admin account init /var/lib/nergal/state/accounts
+docker compose -f deploy/container/compose.yaml run --rm admin account provision /var/lib/nergal/state/accounts admin
+docker compose -f deploy/container/compose.yaml run --rm admin controller init /var/lib/nergal/state/controller
+```
 
-## Operational boundaries in release 2026.11.21
+Set `NERGAL_CREDENTIALS_DIR` to a directory containing `https.crt`,
+`https.key`, and `wrapping.pfx`. Give the private files mode `0600` and
+ownership by UID/GID 1654 as seen from the container. The mount is read-only.
+Use `NERGAL_SETTINGS_FILE` for private deployment overrides. The example
+publishes the HTTPS port on IPv4 loopback. For remote browser access, configure
+the intended HTTPS entry point and hostname.
+
+```sh
+docker compose -f deploy/container/compose.yaml up -d --no-build controller
+```
+
+The controller has no Linux capabilities and uses separate volumes for
+application state and the encrypted session key ring. Preserve both volumes
+and the wrapping certificate when replacing the container. Run the privileged
+agent as its own service on each managed Linux host and connect over pinned
+mutual TLS. Configure the controller's client certificate and private key as
+read-only files in the credentials directory using
+`ControllerState__TlsClientCertificatePath` and
+`ControllerState__TlsClientKeyPath`.
+
+## Operational boundaries
 
 - Native `nftables` on Linux is the sole firewall target. Other firewall adapters
   and Windows-native service deployments are outside scope (ADR 0051).

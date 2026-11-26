@@ -7,35 +7,33 @@ and other firewall adapters are outside scope. Browser clients do not run the
 controller or agent services. See
 [the platform decision](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/decisions/0051-nftables-only-linux-product.md).
 
-## Systemd Units & Provisioning
+## Release packages
 
-Repository artifacts under `deploy/systemd/`:
-- `nergal-agent.service`: Runs `/opt/nergal/agent/nergal-agent.dll` under `User=nergal-agent` with `CAP_NET_ADMIN` only (no full root shell, private tmp, strict filesystem protections).
-- `nergal-web.service`: Runs `/opt/nergal/web/Nergal.Web.dll` as unprivileged user `nergal-web` with zero capabilities (`CapabilityBoundingSet=`).
-- `nergal.sysusers` & `nergal.tmpfiles`: Declaratively create the `nergal-web`, `nergal-agent`, and `nergal-ctl` accounts/groups plus private `0700` state directories (`/var/lib/nergal/agent`, `/var/lib/nergal/web`) and `/run/nergal` (`2710`).
+The tagged release build produces Linux AMD64 packages for Debian and Ubuntu
+(`.deb`), Fedora (`.rpm`), and Arch Linux (`.pkg.tar.zst`). It also produces a
+tar archive and `SHA256SUMS`. Packages require .NET 10, the ASP.NET Core 10
+runtime, systemd, and nftables. Install the native format with the target
+distribution's package manager.
 
-## Initial Host Setup
+## Install and enroll
 
-1. **Initialize offline local administrator & controller state**:
-   ```bash
-   nergal-admin account init /var/lib/nergal/web/accounts
-   nergal-admin account provision /var/lib/nergal/web/accounts admin --role administrator
-   nergal-admin controller init /var/lib/nergal/web/state
-   ```
-2. **Enroll the host agent** (creates owned `inet nergal_filter` and binds `journal.db`):
-   ```bash
-   nergal-agent enroll /var/lib/nergal/agent
-   ```
-3. **Configure TLS certificates**:
-   - Kestrel HTTPS certificate/key for `Nergal.Web`
-   - Pinned TLS 1.3 mTLS server/client certificates (`0600` private keys) for remote `nergal-agent tls-serve` hosts, or Unix `control-serve` for co-located hosts.
+The package installs the offline administration tools, dedicated accounts and
+directories, and systemd units. The controller and agent use different service
+users. Prepare the HTTPS and wrapping certificates, initialize the controller
+and account databases, then provision the first Administrator. Run
+`systemctl start nergal-agent-enroll.service` to enroll the local agent before
+enabling its control service. Register the local Unix socket in the controller
+or use pinned mutual TLS for a remote host.
 
-## Release Packages
+## Containerized controller
 
-Release builds produce reproducible Linux `x64` artifacts via `scripts/package-release.sh`:
-- `nergal_<version>_linux-x64.tar.gz`: Self-contained layout installing binaries under `/opt/nergal/{agent,web,admin}`, CLI wrappers in `/usr/local/sbin/`, and systemd/sysusers/tmpfiles definitions.
-- `nergal_<version>_amd64.deb`: Debian/Ubuntu package built with `dpkg-deb --root-owner-group` installing `/opt/nergal/`, `/usr/local/sbin/` wrappers, and `systemd`/`sysusers.d`/`tmpfiles.d` units.
-- `SHA256SUMS`: Cryptographic checksums for all release archives.
+Build the image from the repository and use Compose with private persistent
+application and session key volumes and read-only HTTPS credentials. The web
+container runs as a dedicated non-root UID with zero Linux capabilities.
+Managed hosts run the separate native agent and connect over pinned mutual TLS.
+
+Follow the [deployment guide](https://git.lantea.one/lantea-one/nergal/src/branch/main/docs/deployment.md)
+for exact package, bootstrap, and container commands.
 
 ## Unreleased router and settings work
 
