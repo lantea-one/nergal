@@ -37,6 +37,7 @@ for dep in dotnet-runtime-10.0 aspnetcore-runtime-10.0 nftables systemd; do
 done
 contents=$(dpkg-deb --contents "$deb")
 grep -q '/usr/lib/systemd/system/nergal-agent.service' <<< "$contents"
+grep -q '/usr/lib/systemd/system/nergal-agent-reconcile.service' <<< "$contents"
 grep -q '/usr/bin/nergal-agent' <<< "$contents"
 web_unit=$(dpkg-deb --fsys-tarfile "$deb" | tar -xOf - ./usr/lib/systemd/system/nergal-web.service)
 grep -Fxq 'Environment=ASPNETCORE_WEBROOT=/opt/nergal/web/wwwroot' <<< "$web_unit"

@@ -21,8 +21,8 @@ bash tests/integration/installed-system/check.sh check \
     /path/to/nergal_amd64.deb /path/to/dotnet-runtime-debs
 ```
 
-The first command prints the installed base disk path. The second uses a fresh
-copy-on-write overlay so the base can serve multiple runs. Add
+The first command prints the installed base disk path. The second boots a fresh
+copy-on-write overlay twice so the base can serve multiple runs. Add
 `NERGAL_QEMU_ACCELERATOR=kvm` to both commands if QEMU can open `/dev/kvm`.
 The default is TCG. Both commands print their serial log paths under `/tmp`.
 The fixture retains the disks, attached media, and logs there for inspection.
@@ -38,6 +38,8 @@ independent watchdog restores both packet flows and the last confirmed revision.
 The fixture then puts the controller and enrolled agent in two guest namespaces
 joined by a private veth pair. It registers and queries the remote service over
 pinned mutual TLS and verifies that a wrong server fingerprint yields no revision.
-This exercises package bootstrap and basic installed native behavior. Routed
-forwarding, NAT, web-initiated policy apply, and reconciliation after guest
-reboot have separate acceptance boundaries.
+It powers off while a second candidate is applied and unconfirmed. On the next
+boot it starts the packaged reconcile unit, verifies the previous revision and
+both IPv4 and IPv6 packet flows, and checks that the interrupted operation cannot
+be confirmed and reconciliation cannot run twice in the same boot.
+Routed forwarding, NAT, and web-initiated apply have separate acceptance boundaries.
