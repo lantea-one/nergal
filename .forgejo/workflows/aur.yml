@@ -36,11 +36,21 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || '' }}
       - name: Verify release selection and stage recipes
+        env:
+          AUR_RELEASE_ID: ${{ github.event.release.id }}
         run: |
           python3 -B scripts/test-ci-runner-policy.py
           python3 -B tests/aur-release.test.py
           python3 -B tests/aur-attachment.test.py
-          stage="$(mktemp -d)"
+          if [[ "$GITHUB_EVENT_NAME" == release ]]; then
+            [[ "${AUR_RELEASE_ID:?Missing release ID}" =~ ^[1-9][0-9]*$ ]]
+            # Compiled debug metadata includes build paths. Use the same path
+            # in each disposable job container so the archive survives retries.
+            stage="/tmp/nergal-aur-release-$AUR_RELEASE_ID"
+            mkdir -m 0700 "$stage"
+          else
+            stage="$(mktemp -d)"
+          fi
           cp -R deploy/aur/nergal-bin deploy/aur/nergal-git deploy/aur/update-bin.py "$stage/"
           chown -R nergal-builder "$stage"
           echo "AUR_STAGE=$stage" >> "$GITHUB_ENV"

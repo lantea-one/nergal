@@ -24,9 +24,11 @@ its verified `nergal_<CalVer>_linux-x64.tar.gz` and `SHA256SUMS`. It then
 downloads and verifies the published archive, builds the binary package, checks
 installation of both variants, and attaches `nergal-aur-recipes.zip`. The
 recipe archive contains `PKGBUILD`, `.SRCINFO`, and `LICENSE` for each variant.
-The binary recipe pins that release's exact archive and checksum. The Git recipe records the version
-computed from the tested release commit and resolves current Forgejo `main` on
-future builds. Each release keeps its own recipe archive, including backfills.
+The binary recipe pins that release's exact archive and checksum. The Git recipe
+records the version computed from the tested release commit and resolves current
+Forgejo `main` on future builds. Each release keeps its own recipe archive,
+including backfills. A retry preserves published assets and resumes an
+interrupted archive upload when its existing files match the build.
 
 Run the workflow on demand to build against current Git `main` and prepare a
 fresh `nergal-aur-recipes` CI artifact with the latest stable binary release.
