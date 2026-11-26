@@ -294,7 +294,7 @@ if (mode == "verify-constructs" && args.Length == 5)
 if (mode == "schema1")
 {
     var rules = new List<FilterRule?>();
-    foreach (var family in Enum.GetValues<IpFamily>())
+    foreach (var family in new[] { IpFamily.IPv4, IpFamily.IPv6 })
     {
         var address = family == IpFamily.IPv4 ? "192.0.2.1/32" : "2001:db8::1/128";
         rules.Add(new(family, FilterProtocol.Tcp, FilterVerdict.Drop, DestinationPort: 18082));
@@ -306,7 +306,7 @@ if (mode == "schema1")
     var result = NftFilterCompiler.Compile(new(1, FilterVerdict.Drop, rules));
     if (!result.IsSuccess)
     {
-        throw new InvalidOperationException("The fixed fixture policy must compile.");
+        throw new InvalidOperationException("Schema-1 fixture policy failed: " + string.Join(", ", result.Diagnostics));
     }
 
     Console.Write(result.Candidate);
