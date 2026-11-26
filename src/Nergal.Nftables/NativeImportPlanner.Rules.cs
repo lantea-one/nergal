@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Nergal.Core.Policy;
 using Nergal.Core.Controller;
@@ -212,11 +213,21 @@ public static partial class NativeImportPlanner
             rule.Family = family.Text == "ip" ? "ipv4" : "ipv6";
             Require(set is null || set.DynamicFamily == (family.Text == "ip" ? "ipv4_addr" : "ipv6_addr"), family, "import.meterFamilyUnsupported");
             var key = m.Take(); Require(key.Text is "saddr" or "daddr", key, "import.meterKeyUnsupported");
-            m.Expect("timeout"); var timeout = m.Take(); Require(timeout.Text.EndsWith('s') && int.TryParse(timeout.Text[..^1], out _), timeout, "import.meterTimeoutRequired");
+            m.Expect("timeout"); var timeout = m.Take(); var timeoutSeconds = MeterTimeoutSeconds(timeout);
             m.Expect("limit"); m.Expect("rate"); var rate = m.Take(); var parts = rate.Text.Split('/');
             Require(parts.Length == 2 && int.TryParse(parts[0], out _) && parts[1] is "second" or "minute", rate, "import.meterRateUnsupported");
             m.Expect("burst"); var burst = m.Take(); m.Expect("packets"); Require(m.End, m.Peek, "import.meterTrailingInput");
-            rule.Data["rateLimit"] = new JsonObject { ["packetsPerWindow"] = int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), ["windowUnit"] = parts[1], ["burst"] = Integer(burst), ["entryTimeoutSeconds"] = int.Parse(timeout.Text[..^1], System.Globalization.CultureInfo.InvariantCulture), ["keyKind"] = key.Text == "saddr" ? "sourceAddress" : "destinationAddress", ["refreshEntryTimeout"] = refresh };
+            rule.Data["rateLimit"] = new JsonObject { ["packetsPerWindow"] = int.Parse(parts[0], CultureInfo.InvariantCulture), ["windowUnit"] = parts[1], ["burst"] = Integer(burst), ["entryTimeoutSeconds"] = timeoutSeconds, ["keyKind"] = key.Text == "saddr" ? "sourceAddress" : "destinationAddress", ["refreshEntryTimeout"] = refresh };
+        }
+
+        private static int MeterTimeoutSeconds(Term term)
+        {
+            var text = term.Text;
+            var secondsPerUnit = text.EndsWith('s') ? 1 : text.EndsWith('m') ? 60 : 0;
+            Require(secondsPerUnit != 0, term, "import.meterTimeoutRequired");
+            Require(int.TryParse(text.AsSpan(0, text.Length - 1), NumberStyles.None, CultureInfo.InvariantCulture, out var duration)
+                && duration > 0 && duration <= int.MaxValue / secondsPerUnit, term, "import.meterTimeoutRequired");
+            return duration * secondsPerUnit;
         }
     }
 }

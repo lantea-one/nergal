@@ -285,6 +285,34 @@ TLS 1.3 pinned mTLS explicit rollback and confirmation, and multi-table
 (`inet nergal_filter` + `inet nergal_nat` + `bridge nergal_bridge`) watchdog
 rollback and confirmed persistence while preserving foreign tables.
 
+## M8 independent packet acceptance
+
+Run these fixtures after a locked Release build. Each fixture creates fresh
+user and network namespaces and validates the namespace identities before
+performing native firewall work.
+
+```sh
+bash tests/integration/nftables/check.sh
+bash tests/integration/nftables/check-router-constructs.sh
+bash tests/integration/nftables/check-rule-states.sh
+bash tests/integration/nftables/check-native-import.sh
+bash tests/integration/enrollment/check-auxiliary-apply.sh
+NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --agent
+NERGAL_NATIVE_IMPORT_ACCEPTANCE=1 bash tests/integration/enrollment/check-auxiliary-apply.sh --named-sets
+```
+
+The host and routed cases verify admitted and denied TCP, UDP and ICMP in both IP
+families, IPv6 Neighbor Discovery, stateful replies, rate limiting, and DNAT
+and SNAT. The bridge cases verify L2 forwarding, filtering and atomic replacement
+with foreign tables still present. The import cases compare packets from
+independently authored native sources with packets from converted intent.
+The agent cases also check confirmation, independent timed rollback and denial
+when native drift or a foreign collision makes a change unsafe.
+
+The initial M8 pass ran these fixtures on Linux 7.3.5 with nftables 1.1.7.
+Private conversion readiness is evaluated separately with read-only source
+planning. The private inputs and topology stay outside the public fixtures.
+
 ## Installed Linux acceptance
 
 The [installed-system fixtures](../tests/integration/installed-system/README.md)

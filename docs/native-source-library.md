@@ -35,11 +35,12 @@ include path is opened, and no import action contacts an agent.
    disabled rules and pinned snapshots. Host ownership and runtime state are not
    exported. Applying and confirming remain separate authorized workflows.
 
-A source-wide `flush ruleset` before table definitions requires a recorded choice
-restricting it to the selected managed-resource scope. The source stays intact;
-a global flush is never generated or executed. A later flush, other deletion/live
-commands, or unsupported expressions remain blocking gaps, without an approval
-option that discards them.
+A source-wide `flush ruleset` before table definitions, or a leading
+`destroy table FAMILY NAME` for an explicitly selected table recreated in the
+source, requires a recorded choice to restrict cleanup to managed resources.
+The planner accounts for those statements in the report and generates create-only
+intent. An unselected destroy target, a destroy after its table definition, a
+later global flush, and other deletion and live commands remain blocking gaps.
 
 ## Declared conversion grammar
 
@@ -58,9 +59,9 @@ Counters, logging, maps, concatenations, arbitrary/dynamic objects, unsupported
 control flow, unknown flags, wildcard/escaped matchers, service names, unsupported
 repeated restrictions and trailing input are explicit gaps. The narrowly supported
 dynamic set form is a private implementation of one bounded meter, with exact
-flags/size, key, per-entry timeout, rate and burst; shared arbitrary dynamic sets
-are unsupported. Conversion does not claim that every private server export is
-supported. Full private migration acceptance remains M8.
+flags/size, key, per-entry timeout, rate and burst. Whole-second and whole-minute
+timeouts map to bounded seconds in managed policy. Shared arbitrary dynamic sets
+are unsupported. Full private migration acceptance remains M8.
 
 Native inline `meter` and explicit `update @set` refresh an entry's expiry on
 matching attempts; explicit `add @set` retains creation-based expiry. Conversion

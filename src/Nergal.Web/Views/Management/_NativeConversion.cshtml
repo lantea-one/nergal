@@ -64,7 +64,7 @@
             </fieldset>
         }
         <details class="disclosure mt-2"><summary>Source-wide operations and ownership scope</summary>
-            <label><input type="checkbox" name="Conversion.RestrictGlobalOperations" value="true" checked="@form.RestrictGlobalOperations" /> Restrict any source-wide flush to the selected managed resources.</label>
+            <label><input type="checkbox" name="Conversion.RestrictGlobalOperations" value="true" checked="@form.RestrictGlobalOperations" /> Restrict source cleanup to the selected managed resources.</label>
             <p class="hint">The original remains intact. A global flush is never executed; foreign tables are preserved. This decision is recorded in the plan. Unsupported commands and rules cannot be approved away.</p>
         </details>
         <div class="mt-2"><button type="submit" name="operation" value="refresh" class="btn btn-secondary">Refresh include and table choices</button> <button type="submit" name="operation" value="review" class="btn">Save conversion plan for review</button></div>

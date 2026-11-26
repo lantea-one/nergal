@@ -55,7 +55,7 @@ public sealed class NativeImportRequest
     public IReadOnlyList<NativeImportTableBinding> Tables { get; }
     /// <summary>Gets exact include bindings; no ambient search is allowed.</summary>
     public IReadOnlyList<NativeImportIncludeBinding> Includes { get; }
-    /// <summary>Gets explicit consent to replace a source-wide flush with selected managed-resource scope only.</summary>
+    /// <summary>Gets explicit consent to restrict supported source cleanup to selected managed resources.</summary>
     public bool RestrictGlobalOperations { get; }
     /// <summary>Omits private source identifiers and mapping contents.</summary>
     public override string ToString() => "Native import request";

@@ -32,7 +32,7 @@ if (mode == "compile-import-json" && args.Length == 2)
     if (!result.IsSuccess) { throw new InvalidOperationException("Synthetic import compilation failed."); }
     Console.Write(result.Candidate); return 0;
 }
-if (mode == "import-native" && args.Length == 4)
+if (mode == "import-native" && (args.Length == 4 || args is [_, _, _, _, "--restrict-cleanup"]))
 {
     var content = new Nergal.Core.Controller.NativeSourceContent("synthetic-import", File.ReadAllText(args[1]));
     var sourceId = Guid.Parse("00000000-0000-0000-0000-000000000061");
@@ -42,7 +42,7 @@ if (mode == "import-native" && args.Length == 4)
         var parts = item.Split('='); var name = parts[1].Split('/');
         return new NativeImportTableBinding(name[0], name[1], Enum.Parse<NativeImportTableRole>(parts[0]));
     }).ToArray();
-    var plan = NativeImportPlanner.Plan(new(sourceId, bindings, []), [source]);
+    var plan = NativeImportPlanner.Plan(new(sourceId, bindings, [], restrictGlobalOperations: args.Length == 5), [source]);
     if (!plan.CanCreateRevision) { throw new InvalidOperationException("Native conversion blocked: " + string.Join(",", plan.Gaps.Select(g => g.Code))); }
     var bundle = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!;
     var output = args[2] switch

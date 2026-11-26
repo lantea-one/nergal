@@ -105,6 +105,42 @@ public sealed class NativeImportPlannerTests
         Assert.Contains(denied.Gaps, g => g.Code == "import.flushOrderUnsupported");
     }
 
+    /// <summary>A leading destroy can only describe the replacement of a selected, recreated table.</summary>
+    [Fact]
+    public void LeadingDestroyOfSelectedTable_PreservesCreateOnlyCandidate()
+    {
+        const string definition = "table inet sample { chain input { type filter hook input priority 0; policy drop; } }";
+        var source = Source($"destroy table inet sample\n{definition}");
+        var clean = Source(definition);
+        var mapping = new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter);
+        var explicitPlan = NativeImportPlanner.Plan(new(source.Summary.Id, [mapping], [], true), [source]);
+        var cleanPlan = NativeImportPlanner.Plan(Request(clean, mapping), [clean]);
+
+        Assert.True(explicitPlan.CanCreateRevision, Codes(explicitPlan));
+        Assert.Equal(cleanPlan.CandidateDigest, explicitPlan.CandidateDigest);
+        Assert.Contains(explicitPlan.Mappings, m => m.Disposition == "scope-restricted" && m.Span.Line == 1);
+        var missingConsent = NativeImportPlanner.Plan(Request(source, mapping), [source]);
+        Assert.Contains(missingConsent.Gaps, g => g.Code == "import.scopeDecisionRequired");
+        Assert.Null(missingConsent.PolicyJson);
+    }
+
+    /// <summary>Cleanup cannot discard selected source clauses or touch a foreign target.</summary>
+    [Theory]
+    [InlineData("destroy table inet foreign\ntable inet sample { chain input { type filter hook input priority 0; policy drop; } }", "import.tableMappingRequired")]
+    [InlineData("table inet sample { chain input { type filter hook input priority 0; policy drop; } }\ndestroy table inet sample", "import.destroyOrderUnsupported")]
+    [InlineData("destroy table inet sample", "import.tableMappingUnused")]
+    [InlineData("destroy chain inet sample input", "import.commandUnsupported")]
+    public void UnsafeDestroy_DeniesWholeCandidate(string native, string code)
+    {
+        var source = Source(native);
+        var mapping = new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter);
+        var plan = NativeImportPlanner.Plan(new(source.Summary.Id, [mapping], [], true), [source]);
+
+        Assert.Contains(plan.Gaps, g => g.Code == code);
+        Assert.Null(plan.PolicyJson);
+        Assert.Null(plan.CandidateDigest);
+    }
+
     /// <summary>Named static sets remain pinned references rather than collapsing into anonymous IP-only accepts.</summary>
     [Fact]
     public void NamedSet_ProducesPinnedObjectAndRejectsUnusedOrDynamicOptions()
@@ -125,15 +161,33 @@ public sealed class NativeImportPlannerTests
     }
 
     /// <summary>Native meter syntax uses timeout refresh, while explicit add retains creation-based expiry.</summary>
-    [Fact]
-    public void InlineMeter_PreservesUpdateRatherThanWeakeningToAdd()
+    [Theory]
+    [InlineData("60s")]
+    [InlineData("1m")]
+    public void InlineMeter_PreservesUpdateRatherThanWeakeningToAdd(string duration)
     {
-        var source = Source("table inet sample { chain forward { type filter hook forward priority 0; policy drop; udp dport 19001 meter bucket { ip daddr timeout 60s limit rate 1/minute burst 1 packets } accept; } }");
+        var source = Source("table inet sample { chain forward { type filter hook forward priority 0; policy drop; udp dport 19001 meter bucket { ip daddr timeout " + duration + " limit rate 1/minute burst 1 packets } accept; } }");
         var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
         Assert.True(plan.CanCreateRevision, Codes(plan));
         var policy = PolicyBundleJsonCodec.DecodeBundle(plan.PolicyJson!).Value!;
-        Assert.True(Assert.Single(policy.Filter.Rules)!.RateLimit!.RefreshEntryTimeout);
+        var limit = Assert.Single(policy.Filter.Rules)!.RateLimit!;
+        Assert.True(limit.RefreshEntryTimeout);
+        Assert.Equal(60, limit.EntryTimeoutSeconds);
         Assert.Contains("update @", NftPolicyBundleCompiler.Compile(policy).Candidate!);
+    }
+
+    /// <summary>Source durations that cannot be represented exactly never yield a candidate.</summary>
+    [Theory]
+    [InlineData("0m")]
+    [InlineData("1ms")]
+    [InlineData("2147483647m")]
+    public void InlineMeter_RejectsUnrepresentableDuration(string duration)
+    {
+        var source = Source("table inet sample { chain forward { type filter hook forward priority 0; policy drop; udp dport 19001 meter bucket { ip daddr timeout " + duration + " limit rate 1/minute burst 1 packets } accept; } }");
+        var plan = NativeImportPlanner.Plan(Request(source, new NativeImportTableBinding("inet", "sample", NativeImportTableRole.Filter)), [source]);
+
+        Assert.Contains(plan.Gaps, gap => gap.Code == "import.meterTimeoutRequired");
+        Assert.Null(plan.PolicyJson);
     }
 
     /// <summary>Include cycles and missing definitions remain explicit, and callers cannot mutate saved choices/results.</summary>
