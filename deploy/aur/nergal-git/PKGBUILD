@@ -1,0 +1,53 @@
+# Maintainer: Nergal maintainers <noreply@lantea.one>
+pkgname=nergal-git
+pkgver=2026.11.21.1.r238.g42e8e1e
+pkgrel=1
+pkgdesc='Self-hosted native nftables firewall controller and host agent (development version)'
+arch=('x86_64')
+url='https://git.lantea.one/lantea-one/nergal'
+license=('MIT')
+depends=('dotnet-runtime-10.0' 'aspnet-runtime-10.0' 'nftables' 'systemd')
+makedepends=('git')
+provides=("nergal=$pkgver")
+conflicts=('nergal')
+options=('!strip' '!debug')
+
+# Arch's .NET 10 SDK is built from a different feature band. Supply the
+# upstream SDK from global.json as a checksummed makepkg source.
+_sdkver=10.0.404
+_sdkarchive="dotnet-sdk-$_sdkver-linux-x64.tar.gz"
+source=("git+$url.git#branch=main"
+        "https://builds.dotnet.microsoft.com/dotnet/Sdk/$_sdkver/$_sdkarchive")
+noextract=("$_sdkarchive")
+sha512sums=('SKIP'
+            '577d0eb17fec33d029104c5c63a1ab0accc3e28776274abef2218dbac5af18d2109b5406d26b31d76f5c245215e3ba0926a94c20246c672c41847c9e1eb1dc50')
+
+pkgver() {
+    cd "$srcdir/nergal"
+    local version
+    version=$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' Directory.Build.props)
+    [[ "$version" =~ ^[0-9]+(\.[0-9]+){2,3}$ ]] || return 1
+    printf '%s.r%s.g%s\n' "$version" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+    install -d "$srcdir/dotnet"
+    tar --no-same-owner -xzf "$srcdir/$_sdkarchive" -C "$srcdir/dotnet"
+}
+
+build() {
+    cd "$srcdir/nergal"
+    export DOTNET_ROOT="$srcdir/dotnet"
+    export PATH="$DOTNET_ROOT:$PATH"
+    local version
+    version=$(dotnet --version) || return 1
+    [[ "$version" == "$_sdkver" ]] || return 1
+    dotnet restore Nergal.slnx --locked-mode
+    bash scripts/package-release.sh --verify --format tar --output-dir "$srcdir/payload"
+}
+
+package() {
+    local version=${pkgver%.r*}
+    tar --no-same-owner -xzf "$srcdir/payload/nergal_${version}_linux-x64.tar.gz" -C "$pkgdir"
+    mv "$pkgdir/usr/share/licenses/"{nergal,"$pkgname"}
+}

@@ -1,0 +1,23 @@
+pkgbase = nergal-git
+	pkgdesc = Self-hosted native nftables firewall controller and host agent (development version)
+	pkgver = 2026.11.21.1.r238.g42e8e1e
+	pkgrel = 1
+	url = https://git.lantea.one/lantea-one/nergal
+	arch = x86_64
+	license = MIT
+	makedepends = git
+	depends = dotnet-runtime-10.0
+	depends = aspnet-runtime-10.0
+	depends = nftables
+	depends = systemd
+	provides = nergal=2026.11.21.1.r238.g42e8e1e
+	conflicts = nergal
+	noextract = dotnet-sdk-10.0.404-linux-x64.tar.gz
+	options = !strip
+	options = !debug
+	source = git+https://git.lantea.one/lantea-one/nergal.git#branch=main
+	source = https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-linux-x64.tar.gz
+	sha512sums = SKIP
+	sha512sums = 577d0eb17fec33d029104c5c63a1ab0accc3e28776274abef2218dbac5af18d2109b5406d26b31d76f5c245215e3ba0926a94c20246c672c41847c9e1eb1dc50
+
+pkgname = nergal-git
