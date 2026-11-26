@@ -18,23 +18,29 @@ installed package with `pacman -R` before installing the other variant.
 
 ## Maintain the AUR repositories
 
-Copy `PKGBUILD`, `.SRCINFO`, and `LICENSE` from each recipe directory into its
-corresponding AUR Git repository. Follow the [AUR submission
-guidelines](https://wiki.archlinux.org/title/AUR_submission_guidelines) to
-review, commit, and push the files with a maintainer account.
-
 Attach `nergal_<CalVer>_linux-x64.tar.gz` and its matching `SHA256SUMS` from the
 Linux release packaging job to the Forgejo release before publishing. The
-**Verify Arch User Repository packages** workflow then selects the newest stable
-CalVer, verifies the archive against the published manifest, checks that both
-packages build and install, and produces a `nergal-bin-aur-recipe` artifact for
-maintainer review and submission. The workflow can also run on demand.
+**Verify Arch User Repository packages** workflow then verifies the published
+archive, builds and installs both packages, and attaches
+`nergal-aur-recipes.zip` to that stable release. The archive contains
+`PKGBUILD`, `.SRCINFO`, and `LICENSE` for each variant. The binary recipe pins that
+release's exact archive and checksum. The Git recipe records the version
+computed from the tested release commit and resolves current Forgejo `main` on
+future builds. Each release keeps its own recipe archive, including backfills.
+
+Run the workflow on demand to build against current Git `main` and prepare a
+fresh `nergal-aur-recipes` CI artifact with the latest stable binary release.
+For AUR submission, review and copy the matching recipe directory into its AUR
+Git repository, then follow the [AUR submission
+guidelines](https://wiki.archlinux.org/title/AUR_submission_guidelines). A
+`nergal-git` commit is warranted when recipe metadata or build logic changes.
 
 On Arch, maintainers can prepare the same binary update locally by running
 `python deploy/aur/update-bin.py` in a Nergal checkout. Pass a local
 `nergal-bin` AUR checkout as the optional directory argument to update its
-`PKGBUILD` and `.SRCINFO` directly. A published release without the expected
-archive or a matching checksum causes the update to fail.
+`PKGBUILD` and `.SRCINFO` directly. Pass `--tag` to select a specific published
+stable release. A release without the expected archive or a matching checksum
+causes the update to fail.
 
 For `nergal-git`, update the SDK source URL and SHA-512 alongside a change to
 `global.json`. Use the [Microsoft .NET release

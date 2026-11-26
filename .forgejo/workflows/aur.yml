@@ -10,11 +10,14 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+concurrency:
+  group: aur-${{ github.event_name }}-${{ github.event.release.id || github.ref }}
+  cancel-in-progress: false
 jobs:
   aur:
     if: >-
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
-      (github.event_name != 'release' || github.event.release.prerelease == false)
+      (github.event_name != 'release' || (github.event.release.prerelease == false && github.event.release.draft == false))
     runs-on: asgard-ci
     timeout-minutes: 25
     container:
@@ -22,28 +25,37 @@ jobs:
     steps:
       - name: Install Arch packaging and runtime dependencies
         run: |
-          pacman -Syu --needed --noconfirm ca-certificates git nodejs python dotnet-runtime-10.0 aspnet-runtime-10.0 nftables systemd
+          pacman -Syu --needed --noconfirm ca-certificates curl git nodejs python dotnet-runtime-10.0 aspnet-runtime-10.0 nftables systemd
           useradd --system --create-home nergal-builder
       - uses: https://github.com/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || '' }}
       - name: Verify release selection and stage recipes
         run: |
           python3 -B scripts/test-ci-runner-policy.py
           python3 -B tests/aur-release.test.py
+          python3 -B tests/aur-attachment.test.py
           stage="$(mktemp -d)"
           cp -R deploy/aur/nergal-bin deploy/aur/nergal-git deploy/aur/update-bin.py "$stage/"
           chown -R nergal-builder "$stage"
           echo "AUR_STAGE=$stage" >> "$GITHUB_ENV"
       - name: Refresh the binary recipe from the published release
         if: github.event_name != 'pull_request'
-        run: runuser -u nergal-builder -- python3 -B "$AUR_STAGE/update-bin.py"
-      - name: Verify current package recipe builds this revision
-        if: github.event_name == 'pull_request'
+        env:
+          AUR_RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          # The public VCS URL remains in the AUR recipe. For PR testing only,
-          # supply the checked-out revision through a temporary local Git remote.
+          selection=()
+          if [[ "$GITHUB_EVENT_NAME" == release ]]; then
+            selection=(--tag "${AUR_RELEASE_TAG:?Missing release tag}")
+          fi
+          runuser -u nergal-builder -- python3 -B "$AUR_STAGE/update-bin.py" "${selection[@]}"
+      - name: Verify current package recipe builds this revision
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          # Resolve the tested PR or release revision through a temporary mirror.
+          # The exported AUR recipe retains the public VCS URL.
           git clone --no-local --bare "$GITHUB_WORKSPACE" "$AUR_STAGE/candidate"
           git --git-dir="$AUR_STAGE/candidate" update-ref refs/heads/main "$(git rev-parse HEAD)"
           chown -R nergal-builder "$AUR_STAGE/candidate"
@@ -53,17 +65,32 @@ jobs:
       - name: Build both variants with makepkg and install with pacman
         run: |
           bash tests/aur-packages.test.sh "$AUR_STAGE" nergal-builder
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+          if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch ]]; then
             built=$(runuser -u nergal-builder -- git -C "$AUR_STAGE/nergal-git/src/nergal" rev-parse HEAD)
             test "$built" = "$(git rev-parse HEAD)"
           fi
+      - name: Stage both tested recipes
+        if: github.event_name != 'pull_request'
+        run: |
+          cd "$AUR_STAGE"
+          # makepkg computes the VCS pkgver in PKGBUILD during the test build.
+          (cd nergal-git && runuser -u nergal-builder -- makepkg --printsrcinfo > .SRCINFO)
+          for package in nergal-bin nergal-git; do
+            install -D -m 0644 "$package/PKGBUILD" "recipes/$package/PKGBUILD"
+            install -m 0644 "$package/.SRCINFO" "$package/LICENSE" "recipes/$package/"
+          done
+          (cd recipes && python3 -m zipfile -c ../nergal-aur-recipes.zip nergal-bin nergal-git)
       - uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e # v4
         if: github.event_name != 'pull_request'
         with:
-          name: nergal-bin-aur-recipe
-          path: |
-            ${{ env.AUR_STAGE }}/nergal-bin/PKGBUILD
-            ${{ env.AUR_STAGE }}/nergal-bin/.SRCINFO
-            ${{ env.AUR_STAGE }}/nergal-bin/LICENSE
+          name: nergal-aur-recipes
+          path: ${{ env.AUR_STAGE }}/recipes/
           include-hidden-files: true
           if-no-files-found: error
+      - name: Attach the tested recipes to the Forgejo release
+        if: github.event_name == 'release'
+        env:
+          AUR_RELEASE_ID: ${{ github.event.release.id }}
+          AUR_RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TOKEN: ${{ forgejo.token }}
+        run: bash deploy/aur/attach-recipes.sh "$AUR_STAGE/nergal-aur-recipes.zip"
