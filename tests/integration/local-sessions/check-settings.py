@@ -1,6 +1,6 @@
 """Real HTTPS settings validation, SQLite backup/restore, and native-source RBAC.
 
-Uses only disposable application stores and a synthetic source; no firewall commands.
+Uses disposable stores, a synthetic source and synthetic host observations.
 """
 from contextlib import closing
 import hashlib
@@ -21,6 +21,8 @@ SETTINGS = '/manage/settings'
 SAVE = SETTINGS + '/save'
 CSRF = '__RequestVerificationToken'
 TOKEN = 'settingsToken'
+OBSERVATION_FIXTURE = (Path(__file__).resolve().parents[1] / 'controller-sql' / 'bin' / 'Release' /
+                       'net10.0' / 'Nergal.ControllerSql.Fixture.dll')
 
 
 class Fields(HTMLParser):
@@ -102,7 +104,9 @@ def read_history(db):
         FROM audit_log ORDER BY sequence
     ''').fetchall()
     objects = db.execute('SELECT * FROM reusable_object_versions ORDER BY object_id, version').fetchall()
-    return versions, audit, objects
+    hosts = db.execute('SELECT * FROM hosts ORDER BY id').fetchall()
+    observations = db.execute('SELECT * FROM host_observations ORDER BY host_id').fetchall()
+    return versions, audit, objects, hosts, observations
 
 
 def history(database):
@@ -111,7 +115,7 @@ def history(database):
 
 
 def assert_settings_history(snapshot, names):
-    versions, audit, _ = snapshot
+    versions, audit = snapshot[:2]
     assert [row[0] for row in versions] == list(range(len(names)))
     assert [json.loads(row[2])['branding']['applicationName'] for row in versions] == names
     assert len({row[1] for row in versions}) == len(names), 'Each settings version must have its own token'
@@ -181,13 +185,17 @@ def backup_controller(source, destination, before, committed):
     # A pinned reader keeps the pre-save snapshot available in the main file.
     # Read the backup source through a different connection so it can see the new commit.
     with open_readonly(source, main_file_only=True) as main_file:
-        assert read_history(main_file) == before, 'Fixture must keep new settings, versions, and audit in the WAL'
+        assert read_history(main_file) == before, 'Fixture must keep new controller records in the WAL'
     destination.touch(mode=0o600, exist_ok=False)
     with open_readonly(source) as live, closing(sqlite3.connect(destination)) as backup:
         assert live.execute('PRAGMA journal_mode').fetchone() == ('wal',)
         live.backup(backup)
     with open_readonly(destination, main_file_only=True) as backup:
         assert read_history(backup) == committed, 'The standalone backup must include committed WAL changes'
+
+
+def check_observation_fixture(phase, directory):
+    subprocess.run(['dotnet', OBSERVATION_FIXTURE, 'sqlite-observations', phase, directory], check=True, timeout=30)
 
 
 def check_immutable_history(database, expected):
@@ -216,9 +224,10 @@ def check_restored_writes(root, tls, settings, browser, source, backup, backed_u
     database.chmod(0o600)
     assert list(restored.iterdir()) == [database]
     with open_readonly(database, main_file_only=True) as db:
-        assert db.execute('PRAGMA user_version').fetchone() == (5,)
+        assert db.execute('PRAGMA user_version').fetchone() == (6,)
         assert db.execute('PRAGMA quick_check').fetchall() == [('ok',)]
         assert db.execute('PRAGMA foreign_key_check').fetchall() == []
+    check_observation_fixture('verify', restored)
     check_immutable_history(database, backed_up)
 
     source_parent = settings_fields(browser)
@@ -240,8 +249,8 @@ def check_restored_writes(root, tls, settings, browser, source, backup, backed_u
         restored_form = settings_fields(restored_browser)
         divergent_history = history(database)
         assert_settings_history(divergent_history, ['nergal', 'Synthetic Console', 'Restored Branch'])
-        for versions, audit, objects in (source_history, divergent_history):
-            assert (versions[:-1], audit[:-1], objects) == backed_up
+        for versions, audit, *records in (source_history, divergent_history):
+            assert (versions[:-1], audit[:-1], *records) == backed_up
         assert source_history[0][-1][:2] == (2, source_form[TOKEN])
         assert divergent_history[0][-1][:2] == (2, restored_form[TOKEN])
         assert source_form[TOKEN] != restored_form[TOKEN], 'Equal versions on divergent histories must have different tokens'
@@ -254,7 +263,7 @@ def check_restored_writes(root, tls, settings, browser, source, backup, backed_u
         post(restored_browser, {**restored_form, 'applicationName': 'Restored Console'}, 302)
         final = history(database)
         assert_settings_history(final, ['nergal', 'Synthetic Console', 'Restored Branch', 'Restored Console'])
-        assert (final[0][:-1], final[1][:-1], final[2]) == divergent_history
+        assert (final[0][:-1], final[1][:-1], *final[2:]) == divergent_history
         saved_form = settings_fields(restored_browser)
         assert (saved_form['applicationName'], saved_form[TOKEN]) == ('Restored Console', final[0][-1][1])
 
@@ -267,6 +276,7 @@ def check_restored_writes(root, tls, settings, browser, source, backup, backed_u
 
 
 def main():
+    assert OBSERVATION_FIXTURE.is_file(), 'Build the Release controller SQL fixture first'
     with tempfile.TemporaryDirectory(prefix='ng-settings-') as directory:
         root = Path(directory)
         root.chmod(0o700)
@@ -286,11 +296,14 @@ def main():
             with open_readonly(database) as pinned:
                 pinned.execute('BEGIN')
                 before = read_history(pinned)
+                assert before[3:] == ([], []), 'The pinned snapshot must predate host registration and observation'
                 check_initial_save(browser, database)
                 object_path = save_object_history(browser)
+                check_observation_fixture('seed', state)
                 backed_up = history(database)
                 assert [row[1] for row in backed_up[2]] == [1, 2]
-                assert [row[4] for row in backed_up[1]] == ['settings.update', 'object.create', 'object.version']
+                assert [row[4] for row in backed_up[1]] == ['settings.update', 'object.create', 'object.version', 'host.register']
+                assert [len(rows) for rows in backed_up[3:]] == [1, 1], 'The backup must capture the registered host and its observation'
                 backup_controller(database, backup, before, backed_up)
             check_restored_writes(root, tls, settings, browser, database, backup, backed_up, object_path)
             source_fields = settings_fields(browser)
@@ -307,7 +320,7 @@ def main():
             browser.request('/manage/sources', 403)
             post(browser, {**source_fields, CSRF: readonly_fields.fields[CSRF]}, 403)
         assert history(database) == before_auditor, 'Auditor attempts must leave source history unchanged'
-    print('PASS: HTTPS settings validation, CSRF and RBAC, immutable versions and audit, WAL backup, restored writes and divergent stale forms')
+    print('PASS: HTTPS settings validation, CSRF and RBAC, immutable versions and audit, WAL observation backup, restored writes and divergent stale forms')
 
 
 if __name__ == '__main__':

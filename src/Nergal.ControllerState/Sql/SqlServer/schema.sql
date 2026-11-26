@@ -3,7 +3,7 @@
 --
 -- The runtime principal needs database VIEW DEFINITION for the catalog check,
 -- SELECT on the controller tables, INSERT on the data tables, UPDATE on
--- hosts.last_known_revision, and DELETE on hosts. Keep it outside owner, DDL,
+-- hosts.last_known_revision and host_observations, and DELETE on hosts. Keep it outside owner, DDL,
 -- and bulk-administration roles and with no ALTER or CONTROL on these objects
 -- or their containing schema/database. TRUNCATE bypasses DML triggers and
 -- requires ALTER. The settings trigger also depends on ordinary DML firing.
@@ -40,6 +40,14 @@ CREATE TABLE dbo.hosts (
         (transport_kind = N'unix' AND DATALENGTH(transport_kind) = 8)
         OR (transport_kind = N'tls' AND DATALENGTH(transport_kind) = 6)
     )
+);
+-- nergal:statement
+CREATE TABLE dbo.host_observations (
+    host_id nvarchar(36) COLLATE Latin1_General_100_BIN2 NOT NULL PRIMARY KEY,
+    state int NOT NULL CHECK (state BETWEEN 1 AND 5),
+    reported_revision nvarchar(20),
+    observed_at_utc nvarchar(40) NOT NULL,
+    CONSTRAINT fk_host_observations_host FOREIGN KEY (host_id) REFERENCES dbo.hosts(id) ON DELETE CASCADE
 );
 -- nergal:statement
 CREATE TABLE dbo.policy_revisions (

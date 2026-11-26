@@ -128,9 +128,10 @@ On remote managed hosts:
 - Two-phase agent control (`prepare-apply`, `confirm`, `rollback`) supports the owned filter, NAT, bridge and early inet bundle slice under [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md), with complete native receipt verification and coordinated rollback. Unsupported native semantics still fail closed; imported source text is not an agent payload.
 - Run `nergal-agent reconcile /var/lib/nergal/agent` manually or from a pre-start dependency after host reboots when explicit new-boot reconciliation of owned tables is required.
 
-## Unreleased controller schema 5
+## Unreleased controller schema 6
 
-Controller schema 5 includes immutable settings versions and their audit bindings.
+Controller schema 6 includes immutable settings versions and their audit bindings,
+plus the latest authenticated usable observation for each registered host.
 Initialize a fresh directory with `nergal-admin controller init`. Startup rejects
 older development schemas and initialization refuses to replace an existing
 store. Handle retained development data separately. The account store and

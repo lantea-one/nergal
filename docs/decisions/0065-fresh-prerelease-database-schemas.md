@@ -15,6 +15,18 @@ version across controller databases and divergent restores. This decision
 authorizes no data reset or live operation. Existing development data can be
 preserved or used with the build that created it.
 
+For the M6 prerelease baseline, initialize fresh controller stores at schema 6.
+Schema 6 adds a latest-only authenticated usable host observation associated
+with each registered host. Successful usable observations replace that host's
+prior value when their UTC receipt time is newer. Failed authentication and
+unavailable samples leave the last usable value intact. Unregistering the host
+removes its observation. Store observation instants in UTC and let the browser
+display them in the viewer's local timezone
+with an explicit indication. Overview identifies older saved observations
+separately from live replies. Each engine enforces the host relationship and
+equivalent constraints. Status replies can synchronize a host's last-known
+revision if the revision read before dispatch is still current.
+
 The controller, account store and protected agent journal keep separate owners.
 The controller stores desired policy, exact native-source inputs, pinned reusable
 objects, conversion evidence and operator audit. Current policy revisions are

@@ -1144,67 +1144,43 @@ public sealed partial class ManagementController(ControllerStateStore store, App
         var healthList = new List<HostHealthSummary>(hosts.Count);
         foreach (var host in hosts)
         {
-            if (applyWorkflow is null)
+            var currentHost = host;
+            HostObservation? currentObservation = null;
+            var observationSuperseded = false;
+            string? errorCode = null;
+            if (applyWorkflow is not null)
             {
-                healthList.Add(new HostHealthSummary
+                try
                 {
-                    Host = host,
-                    Reachable = false,
-                    StateLabel = "unqueried",
-                    ReportedRevision = host.LastKnownRevision > 0 ? host.LastKnownRevision : null,
-                });
-                continue;
-            }
-
-            try
-            {
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(2));
-                var status = await applyWorkflow.QueryHostStatusAsync(host.Id, cts.Token);
-                var reply = status.Reply;
-                if (reply is null || reply.Outcome is AgentControlOutcome.Unavailable or AgentControlOutcome.Rejected or AgentControlOutcome.Denied)
-                {
-                    healthList.Add(new HostHealthSummary
-                    {
-                        Host = status.Host ?? host,
-                        Reachable = false,
-                        StateLabel = "unavailable",
-                        ReportedRevision = host.LastKnownRevision > 0 ? host.LastKnownRevision : null,
-                        ErrorCode = reply?.ErrorCode ?? "unreachable",
-                    });
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cts.CancelAfter(TimeSpan.FromSeconds(2));
+                    var status = await applyWorkflow.QueryHostStatusAsync(host.Id, cts.Token);
+                    currentHost = status.Host ?? host;
+                    currentObservation = status.Observation;
+                    observationSuperseded = status.ObservationSuperseded;
+                    errorCode = currentObservation is null && !observationSuperseded ? status.Reply?.ErrorCode ?? "unreachable" : null;
                 }
-                else
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    var stateLabel = reply.OperationId.HasValue || reply.Outcome == AgentControlOutcome.AppliedPendingConfirmation
-                        ? "pending"
-                        : reply.Outcome switch
-                        {
-                            AgentControlOutcome.Matched or AgentControlOutcome.Confirmed => "matched",
-                            AgentControlOutcome.Drift => "drift",
-                            AgentControlOutcome.Unbound => "missing",
-                            _ => "online",
-                        };
-
-                    healthList.Add(new HostHealthSummary
-                    {
-                        Host = status.Host ?? host,
-                        Reachable = true,
-                        StateLabel = stateLabel,
-                        ReportedRevision = reply.Revision,
-                    });
+                    errorCode = "timeout";
                 }
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+
+            healthList.Add(new HostHealthSummary
             {
-                healthList.Add(new HostHealthSummary
-                {
-                    Host = host,
-                    Reachable = false,
-                    StateLabel = "unavailable",
-                    ReportedRevision = host.LastKnownRevision > 0 ? host.LastKnownRevision : null,
-                    ErrorCode = "timeout",
-                });
-            }
+                Host = currentHost,
+                Reachable = currentObservation is not null || observationSuperseded,
+                StateLabel = currentObservation is not null
+                    ? HostHealthSummary.ObservationLabel(currentObservation.State)
+                    : observationSuperseded ? "Status superseded"
+                    : applyWorkflow is null ? "unqueried" : "unavailable",
+                ReportedRevision = currentObservation is not null
+                    ? currentObservation.ReportedRevision
+                    : currentHost.LastKnownRevision > 0 ? currentHost.LastKnownRevision : null,
+                CurrentObservation = currentObservation,
+                PreviousObservation = currentObservation is null ? store.ReadHostObservation(host.Id) : null,
+                ErrorCode = errorCode,
+            });
         }
 
         return new FleetDashboardViewModel

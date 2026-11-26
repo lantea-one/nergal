@@ -107,6 +107,7 @@ public sealed class NativeSourceStoreTests
     [InlineData(2)]
     [InlineData(3)]
     [InlineData(4)]
+    [InlineData(5)]
     [InlineData(99)]
     public void ObsoleteSchema_IsRejectedAndKeptIntact(int version)
     {
@@ -123,7 +124,7 @@ public sealed class NativeSourceStoreTests
                 command.CommandText = "PRAGMA user_version";
                 Assert.Equal((long)version, command.ExecuteScalar());
             }
-            Sql(path, "PRAGMA user_version=5;");
+            Sql(path, "PRAGMA user_version=6;");
             var reopened = ControllerStateStore.Open(new(path));
             Assert.Equal("accept", reopened.ReadNativeSource(source.Id)!.Content.Text);
             Assert.Single(reopened.ListAuditEntries());

@@ -14,12 +14,35 @@ static class Program
     private const string NativeText = "# Synthetic 界🧪\r\n# Embedded\0NUL\rtable inet fixture { }\n";
     private static readonly string Actor = ControllerActorIdentity.FromLocalAccount(
         Guid.Parse("de56ea26-d74d-401c-b15d-d7c13029ed78"));
+    private static readonly Guid HostId = Guid.Parse("d62f2aaa-2748-47f8-988a-cb8d31af32ac");
+    private static readonly DateTimeOffset ObservationTime = new(2026, 11, 20, 12, 34, 56, TimeSpan.Zero);
+    private static readonly HostObservation CapturedObservation = new(HostId, HostObservationState.Drift,
+        ulong.MaxValue, ObservationTime);
 
     private static async Task<int> Main(string[] args)
     {
         try
         {
-            Require(args.Length == 3, "Expected provider, phase, and snapshot path.");
+            Require(args.Length == 3, "Expected provider, phase, and fixture path.");
+            if (args[0] == "sqlite-observations")
+            {
+                var store = ControllerStateStore.Open(new ControllerStateOptions(args[2]));
+                switch (args[1])
+                {
+                    case "seed":
+                        SeedHostObservation(store);
+                        break;
+                    case "verify":
+                        VerifyHostObservation(store);
+                        break;
+                    default:
+                        throw new FixtureFailure("Unknown SQLite observation fixture phase.");
+                }
+
+                Console.WriteLine($"SQLite: controller host observation {args[1]} passed");
+                return 0;
+            }
+
             var provider = Enum.Parse<ControllerDatabaseProvider>(args[0]);
             var sourceOptions = Options(provider, "SOURCE");
             var restoredOptions = Options(provider, "RESTORED");
@@ -68,7 +91,8 @@ static class Program
             "Fresh settings must start at version zero.");
         Require(SystemSettingsVersion.IsValidFormToken(original.FormToken), "Fresh settings require a valid form token.");
         Require(source.ListAuditEntries().Count == 0 && source.ListReusableObjects().Count == 0 &&
-            source.ListNativeSources().Count == 0, "Fresh stores must have no audit entries, objects, or native sources.");
+            source.ListNativeSources().Count == 0 && source.ListHosts().Count == 0,
+            "Fresh stores must have no audit entries, objects, native sources, or registered hosts.");
 
         var other = ControllerStateStore.Open(sourceOptions);
         Require(other.ReadSystemSettingsVersion() == original, "Independent handles must read the same fresh state.");
@@ -112,15 +136,17 @@ static class Program
         {
             new PolicyObjectUsage(1, "filter.rules[0].sourceObject", 1),
         }), "Saved policy usage must pin the historical object version.");
+        SeedHostObservation(saved);
         audit = saved.ListAuditEntries();
         Require(audit.Select(entry => entry.Action)
-            .SequenceEqual(new[] { "policy.save", "source.import", "object.version", "object.create", "settings.update" }),
-            "Each successful controller write must add its audit entry, with no entries for denied writes.");
-        Require(audit.Take(4).All(entry => entry.ActorId == Actor && entry.ActorRole == NergalRoles.Administrator &&
+            .SequenceEqual(new[] { "host.register", "policy.save", "source.import", "object.version", "object.create", "settings.update" }),
+            "Operator changes must add their audit entries independently of host observations and denied writes.");
+        Require(audit.Take(5).All(entry => entry.ActorId == Actor && entry.ActorRole == NergalRoles.Administrator &&
             entry.Outcome == "succeeded" && entry.TimestampUtc.Offset == TimeSpan.Zero) &&
-            audit[0].Target == "bundle" && audit[0].Revision == revision.Revision &&
-            audit[1].Target == imported.Id.ToString("D") &&
-            audit.Skip(2).Take(2).All(entry => entry.Target == created.Id.ToString("D")),
+            audit[0].Target == FixtureHost().Name && audit[0].Revision is null &&
+            audit[1].Target == "bundle" && audit[1].Revision == revision.Revision &&
+            audit[2].Target == imported.Id.ToString("D") &&
+            audit.Skip(3).Take(2).All(entry => entry.Target == created.Id.ToString("D")),
             "Audit entries must retain their actor, target, revision where applicable, and UTC timestamp.");
         var snapshot = Snapshot(saved, created.Id, imported.Id);
         Denied(() => ControllerStateStore.Initialize(sourceOptions), "controller.exists");
@@ -136,6 +162,7 @@ static class Program
         var source = ControllerStateStore.Open(sourceOptions);
         var restored = ControllerStateStore.Open(restoredOptions);
         Denied(() => ControllerStateStore.Initialize(restoredOptions), "controller.exists");
+        VerifyHostObservation(restored);
         Require(Snapshot(source, expected.ObjectId, expected.NativeSourceId) == expected.State &&
             Snapshot(restored, expected.ObjectId, expected.NativeSourceId) == expected.State, "Backup must preserve the controller snapshot on reopen.");
 
@@ -160,6 +187,10 @@ static class Program
             Actor, NergalRoles.Administrator);
         var originalRevision = restored.GetPolicyRevision(1);
         var revisedPolicy = SavePolicy(restored, revisedObject);
+        var revisedObservation = new HostObservation(HostId, HostObservationState.Matched,
+            revisedPolicy.Revision, ObservationTime.AddSeconds(1));
+        Require(restored.RecordHostObservation(revisedObservation, updateLastKnownRevision: true),
+            "The restored host must accept a newer matched observation.");
         restored = ControllerStateStore.Open(restoredOptions);
         Require(final.Version == 3 && restored.ReadSystemSettingsVersion() == final,
             "The next restored settings update must survive reopening.");
@@ -182,8 +213,47 @@ static class Program
             "Restored writes must append to the original audit and advance sequence numbers.");
         CheckSettingsAudit(final, audit[2], 3);
         CheckSettingsAudit(restoredBranch, audit[3], 2);
+        Require(restored.ReadHostObservation(HostId) == revisedObservation &&
+            restored.GetHost(HostId) == FixtureHost(revisedPolicy.Revision),
+            "Both restored observation and last-known revision must survive reopening.");
         Require(Snapshot(ControllerStateStore.Open(sourceOptions), expected.ObjectId, expected.NativeSourceId) == sourceSnapshot,
             "Recipient writes and the reverse stale denial must leave the source branch unchanged.");
+        Require(restored.DeleteHost(HostId, Actor, NergalRoles.Administrator) &&
+            restored.ReadHostObservation(HostId) is null &&
+            !restored.RecordHostObservation(revisedObservation with { ObservedAtUtc = ObservationTime.AddSeconds(2) }),
+            "Removing the restored host must cascade its observation and deny an orphaned reply.");
+        VerifyHostObservation(source);
+    }
+
+    private static ManagedHostRecord FixtureHost(ulong lastKnownRevision = 0) =>
+        new(HostId, "synthetic-backup-host", AgentTransportKind.Unix, "/run/nergal-fixture/control.sock",
+            expectedServerUserId: 1000, socketGroupId: 1001, lastKnownRevision: lastKnownRevision,
+            createdAtUtc: ObservationTime.AddMinutes(-1));
+
+    private static void SeedHostObservation(ControllerStateStore store)
+    {
+        Require(store.ReadHostObservation(HostId) is null,
+            "An unregistered host must have no observation.");
+        Require(!store.RecordHostObservation(CapturedObservation) && store.ReadHostObservation(HostId) is null,
+            "An observation must not register a host or create orphan state.");
+        store.RegisterHost(FixtureHost(), Actor, NergalRoles.Administrator);
+        Require(store.ReadHostObservation(HostId) is null, "A new registration must have no observation.");
+        var matched = new HostObservation(HostId, HostObservationState.Matched, 1, ObservationTime.AddSeconds(-1));
+        Require(store.RecordHostObservation(matched, updateLastKnownRevision: true),
+            "A registered host must accept its first matched observation.");
+        Require(store.RecordHostObservation(CapturedObservation), "A newer drift observation must be retained.");
+        Require(!store.RecordHostObservation(matched with { ReportedRevision = 99 }, updateLastKnownRevision: true),
+            "An older reply must not change the retained observation or last-known revision.");
+        VerifyHostObservation(store);
+    }
+
+    private static void VerifyHostObservation(ControllerStateStore store)
+    {
+        var actual = store.ReadHostObservation(HostId);
+        Require(actual == CapturedObservation && actual?.ObservedAtUtc.Offset == TimeSpan.Zero,
+            "The fixture host must retain its observation state, reported revision and UTC timestamp.");
+        Require(store.ListHosts().SequenceEqual(new[] { FixtureHost(lastKnownRevision: 1) }),
+            "The fixture host registration must retain its exact fields and previously matched revision.");
     }
 
     private static Task<SystemSettingsVersion?> WriteAfterGate(ControllerStateStore store, SystemSettingsVersion original,
@@ -248,6 +318,8 @@ static class Program
             NativeSource = source,
             PolicyRevisions = store.ListPolicyRevisions(),
             PolicyObjectUsage = store.ListPolicyObjectUsage(objectId),
+            Hosts = store.ListHosts(),
+            Observation = store.ReadHostObservation(HostId),
         });
     }
 

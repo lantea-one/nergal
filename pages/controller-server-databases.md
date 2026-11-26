@@ -2,17 +2,18 @@
 
 Choose the controller database when deploying a new controller. SQLite remains
 the default. PostgreSQL, MariaDB, MySQL and Microsoft SQL Server each use a
-fresh controller schema 5 in a dedicated database. MariaDB and MySQL share a
+fresh controller schema 6 in a dedicated database. MariaDB and MySQL share a
 client library and have separate schemas and restore checks.
 The controller restore fixture targets PostgreSQL 19.0, MariaDB 13.1.2,
 MySQL 26.10.0.1 and SQL Server 2025 CU11 (17.0.5065.9).
 
 The controller database contains managed hosts, desired policy revisions,
-native sources and conversion plans, reusable objects, System settings and
-controller audit. The local identity store, Data Protection keys and protected
-agent journal retain their own persistence and recovery requirements. Restoring
-a controller database does not reconcile the host's applied policy or authorize
-dispatch to an agent.
+latest authenticated usable host observations, native sources and conversion
+plans, reusable objects, System settings and controller audit. The local
+identity store (including account and profile mapping state), Data Protection
+keys and protected agent journal retain their own persistence and recovery
+requirements. Restoring a controller database does not reconcile the host's
+applied policy or authorize dispatch to an agent.
 
 ## Initialize an empty database
 
@@ -44,7 +45,8 @@ definitions. PostgreSQL additionally requires the privileges used by
 `SELECT … FOR UPDATE` on `controller_metadata`. MariaDB and MySQL expose
 trigger definitions only to an account with the database's `TRIGGER`
 privilege. SQL Server needs definition visibility and a default schema of
-`dbo`. Reserve database ownership, DDL and backup administration for
+`dbo`. Its runtime principal needs `INSERT` and `UPDATE` on
+`dbo.host_observations` to retain newer authenticated replies. Reserve database ownership, DDL and backup administration for
 operators wherever the engine's metadata permissions permit it.
 On MySQL with binary logging enabled, have the database administrator
 authorize trigger creation during initialization and logical restore.

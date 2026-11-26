@@ -1,11 +1,16 @@
 # Host observations in Overview
 
-The Host status card summarizes the authenticated status requests already made
-when Overview loads. The configured fleet connection uses Unix peer identity or
-pinned mutual TLS. Each bar counts registered hosts with a usable classification
-in that page load. All bars use the full registered fleet as their common scale.
-The values are host counts for one page load and carry no packet, byte, throughput
-or historical measurements.
+The Host status chart counts authenticated, usable replies from the current
+Overview load. It uses the registered fleet as its scale. Connections use Unix
+peer identity or pinned mutual TLS.
+
+The controller saves the latest usable observation for each registered host.
+Each host row shows the time of a current reply or labels the saved state as a
+previous observation. The browser displays UTC instants in the viewer's local
+time with an explicit timezone indication. A failed authentication or an
+unavailable result leaves the saved observation intact. Unregistering a host
+removes its observation. Status requests use the existing Overview and host
+review flows.
 
 - **Baseline matches** means the agent reported a match with its protected
   baseline receipt. The controller’s latest saved revision can differ.
@@ -21,12 +26,13 @@ unrecognized summary. Those hosts still contribute to the registered fleet size.
 When every entry is a gap, the card explains the missing classifications and
 omits the bars. An empty registration list shows the first-use host guidance.
 
-The chart is a read-only projection of the existing Overview results. It adds no
-requests, sampling schedule, observation storage or agent protocol changes.
+Desired revisions and controller observations live in the controller database.
+The agent's protected receipts and local rollback journal remain the authority
+for observed kernel ownership and rollback decisions.
 
-The DashboardHostObservations unit tests cover mixed fleets, no registrations,
-and unavailable, unqueried, unknown and ambiguous inputs. The appliance
-navigation HTTPS fixture covers the first-use and unavailable states. The
-single-mapping namespace check in the [test guide](testing-and-conformance.md#m5-console-acceptance)
-uses a real agent and pinned mutual TLS to verify a populated bar and the
-coverage gap that appears when the agent becomes unavailable.
+Unit and integration tests cover late arrivals, failure handling, host deletion,
+and UTC persistence. The single-mapping namespace fixture uses a real pinned
+mutual TLS agent, then stops the listener and restarts the controller to verify
+that Overview shows a coverage gap alongside the previous observation.
+The database fixtures verify that the stored observation survives native backup
+and restore on all five engines.

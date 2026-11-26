@@ -970,7 +970,8 @@ when a settings-only restore leaves newer or mismatched settings audit behind.
 It also checks that settings which exceed the serialized size bound cannot be saved.
 `check-settings.py` exercises the HTTPS settings form and copies a real
 controller database using the SQLite backup API. It checks committed WAL data,
-restored settings and audit, and subsequent saves. A token from another
+restored settings, audit and an authenticated observation record, and subsequent
+saves. A token from another
 database history with the same numerical version must still be rejected.
 
 After a Release build, run:
@@ -992,3 +993,9 @@ ports. It tests the controller store on all four engines and exercises each
 engine's native backup and restore tools. See
 [controller server databases](controller-server-databases.md) for the operator
 procedure.
+
+The fixtures verify that a host registration and its latest authenticated
+observation survive backup and restore with the reported revision and UTC time
+intact. The restored database accepts a newer observation independently of the
+source. The [Overview namespace fixture](#m5-console-acceptance) also exercises
+the real pinned agent, agent disconnection, and controller restart.
