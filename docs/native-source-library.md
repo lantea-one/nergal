@@ -105,6 +105,11 @@ unkeyed packet-rate limits per second or minute. The rate limit follows the
 rule's other matches and precedes its counter and verdict. A family-neutral
 rule keeps one token bucket shared across both IP families and all sources.
 
+Raw inet and bridge rules can retain an inline counter immediately before a
+supported verdict. Raw inet rules also retain literal source and destination
+address sets. Raw prerouting and bridge rules distinguish an exact `iif`
+index binding from an `iifname` match in both the compiled rule and its receipt.
+
 Inline address sets remove redundant CIDRs and merge aligned siblings when
 the resulting network covers exactly the same addresses. When adjacent
 nonmergeable CIDRs appear as one interval in a kernel receipt, the observer

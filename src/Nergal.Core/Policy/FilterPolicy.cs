@@ -139,6 +139,11 @@ public sealed record PerSourceRateLimit(
 /// <param name="Notrack">Disable connection tracking for matching packets and continue to the next rule. Requires the Continue verdict.</param>
 /// <param name="OutputInterface">Optional exact egress interface name in the raw output hook.</param>
 /// <param name="NegateOutputInterface">Negates the egress interface matcher when present.</param>
+/// <param name="CountPackets">Keep one anonymous packet/byte counter immediately before the action.</param>
+/// <param name="BindInputInterfaceIndex">Resolve the exact ingress name to its kernel index at installation.</param>
+/// <param name="SourcePrefixes">Optional same-family literal source set, exclusive with Source.</param>
+/// <param name="Destination">Optional same-family destination prefix.</param>
+/// <param name="DestinationPrefixes">Optional same-family literal destination set, exclusive with Destination.</param>
 public sealed record RpFilterRule(
     FilterVerdict Verdict,
     IpFamily? Family = null,
@@ -154,7 +159,12 @@ public sealed record RpFilterRule(
     bool Enabled = true,
     bool Notrack = false,
     string? OutputInterface = null,
-    bool NegateOutputInterface = false);
+    bool NegateOutputInterface = false,
+    bool CountPackets = false,
+    bool BindInputInterfaceIndex = false,
+    IReadOnlyList<NetworkPrefix>? SourcePrefixes = null,
+    NetworkPrefix? Destination = null,
+    IReadOnlyList<NetworkPrefix>? DestinationPrefixes = null);
 
 /// <summary>Configuration for one optional raw base chain in an owned inet filter table.</summary>
 public sealed class RpFilterPolicy
@@ -167,7 +177,11 @@ public sealed class RpFilterPolicy
     {
         ArgumentNullException.ThrowIfNull(rules);
         DefaultVerdict = defaultVerdict;
-        Rules = Array.AsReadOnly(rules.ToArray());
+        Rules = Array.AsReadOnly(rules.Select(rule => rule is null ? null : rule with
+        {
+            SourcePrefixes = rule.SourcePrefixes is null ? null : Array.AsReadOnly(rule.SourcePrefixes.ToArray()),
+            DestinationPrefixes = rule.DestinationPrefixes is null ? null : Array.AsReadOnly(rule.DestinationPrefixes.ToArray())
+        }).ToArray());
     }
 
     /// <summary>Gets the base chain default policy.</summary>
@@ -495,9 +509,10 @@ public sealed class FilterPolicy
         if (Rules.Any(rule => rule?.Ipv6HopLimit is not null)) { features.Add(FirewallFeature.Ipv6HopLimit); }
         if (Rules.Any(rule => rule?.PacketLimit is not null)) { features.Add(FirewallFeature.RulePacketRateLimiting); }
         if (RegularChains.Count > 0) { features.Add(FirewallFeature.FilterChainCalls); }
-        if (Rules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
+        var rawRules = (RpFilter?.Rules ?? []).Concat(RawOutput?.Rules ?? []);
+        if (Rules.Any(rule => rule?.CountPackets == true) || rawRules.Any(rule => rule?.CountPackets == true)) { features.Add(FirewallFeature.InlineFilterCounters); }
         if (Rules.Any(rule => rule?.UsesNativeSelectors == true)) { features.Add(FirewallFeature.FilterSelectorSets); }
-        if (Rules.Any(rule => rule?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
+        if (Rules.Any(rule => rule?.BindInputInterfaceIndex == true) || rawRules.Any(rule => rule?.BindInputInterfaceIndex == true)) { features.Add(FirewallFeature.InputInterfaceIndexBinding); }
         if (Rules.Any(rule => rule?.Verdict == FilterVerdict.ClampRouteMss)) { features.Add(FirewallFeature.RouteDerivedMss); }
         if (RpFilter is not null || RawOutput is not null || ForwardTcpMssClamp is not null || Rules.Any(r => r is not null &&
             (r.SourceMac is not null || r.SourceMacs is not null || r.NegateSource || r.NegateDestination || r.NegateInputInterface || r.NegateOutputInterface || r.Verdict is FilterVerdict.Reject or FilterVerdict.RejectPortUnreachable)))

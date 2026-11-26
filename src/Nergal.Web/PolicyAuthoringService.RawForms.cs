@@ -44,7 +44,19 @@ internal static partial class PolicyAuthoringService
             var rule = new RpFilterRule(verdict, family, protocol, source, input.NegateSource, EmptyToNull(input.InputInterface),
                 input.NegateInputInterface, input.SourcePort, input.DestinationPort, input.MatchFibUnreachable, description,
                 index is not { } i || rules[i]!.Enabled, Notrack: verdict == FilterVerdict.Continue);
-            if (index is { } existing) { rules[existing] = rule; } else { rules.Add(rule); }
+            if (index is { } existing)
+            {
+                var previous = rules[existing]!;
+                rules[existing] = rule with
+                {
+                    CountPackets = previous.CountPackets,
+                    BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
+                    SourcePrefixes = previous.SourcePrefixes,
+                    Destination = previous.Destination,
+                    DestinationPrefixes = previous.DestinationPrefixes
+                };
+            }
+            else { rules.Add(rule); }
         }
         return TryCompileRawSettings(bundle, new(bundle.Filter.RpFilter?.DefaultVerdict ?? FilterVerdict.Accept, rules),
             bundle.Filter.ForwardTcpMssClamp, bundle.Filter.ForwardTcpMssClampEnabled, out updated, out diagnostics);

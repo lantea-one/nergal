@@ -829,6 +829,16 @@ omitted burst. The limit follows every match and precedes any inline counter or
 verdict. Inversion, byte rates, multiple buckets, and alternatives requiring a
 shared bucket to be split block the whole import.
 
+## Raw and bridge import
+
+Run `bash tests/integration/nftables/check-raw-bridge.sh` after a Release build.
+The single synthetic snapshot includes a raw prerouting chain and a bridge
+regular chain. Independent source and converted policies run in separate
+disposable namespaces. UDP datagrams and Ethernet frames exercise both address
+families, prefix members and misses, counter placement, and index binding after
+a bridge port rename. A handle-bearing echo and post-traffic listings must
+produce the same complete receipt and reconstruct the exact candidate.
+
 ## Inet filter regular-chain calls
 
 Run `bash tests/integration/nftables/check-filter-calls.sh` after a Release

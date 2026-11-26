@@ -1114,6 +1114,7 @@ internal static partial class PolicyAuthoringService
         rules[ruleIndex] = previous with
         {
             EtherType = rule.EtherType,
+            BindInputInterfaceIndex = previous.BindInputInterfaceIndex && rule.InputInterface is not null,
             Verdict = rule.Verdict,
             InputInterface = rule.InputInterface,
             OutputInterface = rule.OutputInterface,

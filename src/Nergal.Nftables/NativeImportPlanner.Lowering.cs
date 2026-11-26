@@ -58,7 +58,7 @@ public static partial class NativeImportPlanner
                                 foreach (var rule in ReadRules(table, origin, terms))
                                 {
                                     Require(rule.Action is "accept" or "drop" or "notrack", origin, "import.rawActionUnsupported");
-                                    Allowed(rule, origin, "source", "negateSource", "inputInterface", "negateInputInterface", "outputInterface", "negateOutputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description");
+                                    Allowed(rule, origin, "source", "negateSource", "inputInterface", "negateInputInterface", "outputInterface", "negateOutputInterface", "sourcePort", "destinationPort", "matchFibUnreachable", "description", "countPackets", "bindInputInterfaceIndex", "sourcePrefixes", "destination", "destinationPrefixes");
                                     var data = rule.Data;
                                     data["verdict"] = rule.Action == "notrack" ? "continue" : rule.Action;
                                     if (rule.Action == "notrack") { data["notrack"] = true; }
@@ -229,7 +229,7 @@ public static partial class NativeImportPlanner
                         {
                             Require(rule.Family is not null || rule.Protocol == "any" || rule.ExplicitTransport, origin, "import.bridgeProtocolContextRequired");
                             Require(rule.Action is "accept" or "drop" or "return" or "jump", origin, "import.bridgeActionUnsupported");
-                            Allowed(rule, origin, "inputInterface", "outputInterface", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "etherType", "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "description");
+                            Allowed(rule, origin, "inputInterface", "bindInputInterfaceIndex", "countPackets", "outputInterface", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "etherType", "source", "destination", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject", "destinationPort", "destinationPorts", "destinationPortObject", "description");
                             var data = rule.Data; data["verdict"] = rule.Action is "accept" or "drop" ? rule.Action : "drop";
                             if (rule.Action == "return") { data["return"] = true; }
                             if (rule.Action == "jump") { Require(rule.Jump is not null && names.ContainsKey(rule.Jump), origin, "import.jumpTargetUnresolved"); data["jumpTarget"] = names[rule.Jump!]; }

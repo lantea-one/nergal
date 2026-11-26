@@ -1046,9 +1046,7 @@ public sealed partial class NftTableObservation
         var countPackets = matchEnd > 0 && Properties(expressions[matchEnd - 1], "counter");
         if (countPackets)
         {
-            var counter = expressions[matchEnd - 1].GetProperty("counter");
-            if (!allowCounter || !Properties(counter, "packets", "bytes") ||
-                !IsCounterValue(counter.GetProperty("packets")) || !IsCounterValue(counter.GetProperty("bytes")))
+            if (!allowCounter || !IsAnonymousCounter(expressions[matchEnd - 1]))
             {
                 return null;
             }
@@ -1414,6 +1412,11 @@ public sealed partial class NftTableObservation
             array.GetArrayLength() != 2 || array.EnumerateArray().Any(v => v.ValueKind != JsonValueKind.String)) { return false; }
         return (array[0].GetString(), array[1].GetString()) is ("tcp", "udp") or ("udp", "tcp");
     }
+
+    internal static bool IsAnonymousCounter(JsonElement expression) =>
+        Properties(expression, "counter") && Properties(expression.GetProperty("counter"), "packets", "bytes") &&
+        IsCounterValue(expression.GetProperty("counter").GetProperty("packets")) &&
+        IsCounterValue(expression.GetProperty("counter").GetProperty("bytes"));
 
     private static bool IsCounterValue(JsonElement value) => value.ValueKind == JsonValueKind.Number && value.TryGetUInt64(out _);
 

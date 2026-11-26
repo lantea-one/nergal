@@ -56,6 +56,17 @@ Bypasses are explicit ordered policy, never automatic compiler exemptions. Evalu
 IPv6 control traffic and the actual routing design before using a reverse-path
 filter. The example is a contract illustration, not a deployable gateway policy.
 
+Raw rules can match a source or destination prefix, or a literal set in
+`sourcePrefixes` or `destinationPrefixes`, within one IPv4 or IPv6 family.
+Raw prerouting and bridge rules can bind an exact input interface name to its
+index at installation with `bindInputInterfaceIndex`. This match follows the
+interface across a rename. The default `iifname` match follows the name.
+Raw accept/drop and bridge accept/drop/jump/return support `countPackets`.
+An anonymous counter runs once after all predicates, immediately before the
+action. Observations validate its two unsigned totals and bind its presence
+and position in the receipt. Bridge IP payload predicates imply the matching
+EtherType. An explicit bridge `meta nfproto` guard blocks conversion.
+
 A filter rule may pair `sourceMac: "02:00:00:00:00:01"` and
 `source: "192.0.2.2/32"`; both restrictions are emitted. `negateSourceMac: true`
 requires a MAC matcher. `reject` is an inet rule action, not a base-chain policy.

@@ -84,7 +84,7 @@ public sealed partial class NftTableObservation
 
     private static RpFilterRule? ParseRawRule(JsonElement expr, bool output)
     {
-        if (expr.ValueKind != JsonValueKind.Array || expr.GetArrayLength() is < 1 or > 8) { return null; }
+        if (expr.ValueKind != JsonValueKind.Array || expr.GetArrayLength() is < 1 or > 10) { return null; }
         var terminal = expr[expr.GetArrayLength() - 1];
         var accept = Properties(terminal, "accept") && terminal.GetProperty("accept").ValueKind == JsonValueKind.Null;
         var drop = Properties(terminal, "drop") && terminal.GetProperty("drop").ValueKind == JsonValueKind.Null;
@@ -92,7 +92,10 @@ public sealed partial class NftTableObservation
         if (!accept && !drop && !notrack) { return null; }
         IpFamily? family = null;
         NetworkPrefix? source = null;
+        NetworkPrefix? destination = null;
+        IReadOnlyList<NetworkPrefix>? sources = null, destinations = null;
         string? iface = null;
+        var bindIndex = false;
         var protocol = FilterProtocol.Any;
         int? sport = null;
         int? dport = null;
@@ -100,7 +103,11 @@ public sealed partial class NftTableObservation
         var negateInterface = false;
         var fib = false;
         var stage = -1;
-        for (var i = 0; i < expr.GetArrayLength() - 1; i++)
+        var end = expr.GetArrayLength() - 1;
+        var countPackets = end > 0 && IsAnonymousCounter(expr[end - 1]);
+        if (countPackets && notrack) { return null; }
+        if (countPackets) { end--; }
+        for (var i = 0; i < end; i++)
         {
             if (!Properties(expr[i], "match")) { return null; }
             var match = expr[i].GetProperty("match");
@@ -111,7 +118,8 @@ public sealed partial class NftTableObservation
             var right = match.GetProperty("right");
             if (Properties(left, "meta") && Properties(left.GetProperty("meta"), "key"))
             {
-                switch (left.GetProperty("meta").GetProperty("key").GetString())
+                var key = left.GetProperty("meta").GetProperty("key").GetString();
+                switch (key)
                 {
                     case "nfproto":
                         if (stage >= 0 || op != "==") { return null; }
@@ -119,16 +127,19 @@ public sealed partial class NftTableObservation
                         if (family is null) { return null; }
                         stage = 0;
                         break;
+                    case "iif" when !output:
                     case "iifname" when !output:
                     case "oifname" when output:
                         if (stage >= 1 || right.ValueKind != JsonValueKind.String || !FilterPolicyValidation.IsValidInterfaceName(right.GetString())) { return null; }
+                        bindIndex = key == "iif";
+                        if (bindIndex && right.GetString()!.All(char.IsAsciiDigit)) { return null; }
                         iface = right.GetString(); negateInterface = op == "!="; stage = 1;
                         break;
                     case "l4proto":
-                        if (stage >= 3 || op != "==") { return null; }
+                        if (stage >= 4 || op != "==") { return null; }
                         protocol = right.GetString() switch { "tcp" => FilterProtocol.Tcp, "udp" => FilterProtocol.Udp, _ => FilterProtocol.Any };
                         if (protocol == FilterProtocol.Any) { return null; }
-                        stage = 5;
+                        stage = 6;
                         break;
                     default: return null;
                 }
@@ -138,17 +149,31 @@ public sealed partial class NftTableObservation
                 var payload = left.GetProperty("payload");
                 var proto = payload.GetProperty("protocol").GetString();
                 var field = payload.GetProperty("field").GetString();
-                if (proto is "ip" or "ip6" && field == "saddr")
+                if (proto is "ip" or "ip6" && field is "saddr" or "daddr")
                 {
-                    if (stage >= 2) { return null; }
+                    var isSource = field == "saddr";
+                    var rank = isSource ? 2 : 3;
                     var implied = proto == "ip" ? IpFamily.IPv4 : IpFamily.IPv6;
-                    if (family is { } f && f != implied) { return null; }
-                    family = implied; source = ParseNetworkPrefix(right, implied); ns = op == "!="; stage = 2;
-                    if (source is null) { return null; }
+                    if (stage >= rank || (!isSource && op != "==") || (family.HasValue && family != implied)) { return null; }
+                    family = implied;
+                    if (Properties(right, "set"))
+                    {
+                        var set = ParseNetworkPrefixSet(right.GetProperty("set"), implied);
+                        if (set is null) { return null; }
+                        if (isSource) { sources = set; } else { destinations = set; }
+                    }
+                    else
+                    {
+                        var scalar = ParseNetworkPrefix(right, implied);
+                        if (scalar is null) { return null; }
+                        if (isSource) { source = scalar; } else { destination = scalar; }
+                    }
+                    if (isSource) { ns = op == "!="; }
+                    stage = rank;
                 }
                 else if (proto is "tcp" or "udp" && field is "sport" or "dport")
                 {
-                    var next = field == "sport" ? 3 : 4;
+                    var next = field == "sport" ? 4 : 5;
                     var implied = proto == "tcp" ? FilterProtocol.Tcp : FilterProtocol.Udp;
                     if (stage >= next || op != "==" || (protocol != FilterProtocol.Any && protocol != implied) ||
                         !right.TryGetInt32(out var port) || port is < 1 or > 65535) { return null; }
@@ -161,16 +186,17 @@ public sealed partial class NftTableObservation
             else if (Properties(left, "fib") && Properties(left.GetProperty("fib"), "result", "flags"))
             {
                 var lookup = left.GetProperty("fib");
-                if (output || stage >= 6 || op != "==" || lookup.GetProperty("result").GetString() != "oif" ||
+                if (output || stage >= 7 || op != "==" || lookup.GetProperty("result").GetString() != "oif" ||
                     lookup.GetProperty("flags").ValueKind != JsonValueKind.Array ||
                     !lookup.GetProperty("flags").EnumerateArray().Select(e => e.GetString()).SequenceEqual(new[] { "saddr", "iif" }) ||
                     right.ValueKind != JsonValueKind.String || right.GetString() != "0") { return null; }
-                fib = true; stage = 6;
+                fib = true; stage = 7;
             }
             else { return null; }
         }
         var verdict = accept ? FilterVerdict.Accept : drop ? FilterVerdict.Drop : FilterVerdict.Continue;
         return new(verdict, family, protocol, source, ns, output ? null : iface, !output && negateInterface, sport, dport, fib,
-            Notrack: notrack, OutputInterface: output ? iface : null, NegateOutputInterface: output && negateInterface);
+            Notrack: notrack, OutputInterface: output ? iface : null, NegateOutputInterface: output && negateInterface,
+            CountPackets: countPackets, BindInputInterfaceIndex: bindIndex, SourcePrefixes: sources, Destination: destination, DestinationPrefixes: destinations);
     }
 }

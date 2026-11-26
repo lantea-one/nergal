@@ -426,9 +426,10 @@ public static class NftFilterCompiler
         var result = sets.Finish(text.ToString());
         var hasNativeSelectors = policy.Rules.Any(r => r is { Enabled: true, UsesNativeSelectors: true });
         var hasPacketMatchers = policy.Rules.Any(r => r is { Enabled: true } && (r.Ipv6HopLimit.HasValue || r.PacketLimit is not null));
+        var extendedRaw = policy.RpFilter?.Rules.Any(r => r is { Enabled: true } && (r.Notrack || r.CountPackets ||
+            r.BindInputInterfaceIndex || r.SourcePrefixes is not null || r.Destination is not null || r.DestinationPrefixes is not null)) == true;
         if (result.Candidate is null || result.ObservationBudget > 0 ||
-            (!hasPacketMatchers && !hasNativeSelectors && policy.RegularChains.Count == 0 && policy.RawOutput is null &&
-             policy.RpFilter?.Rules.Any(r => r is { Enabled: true, Notrack: true }) != true))
+            (!hasPacketMatchers && !hasNativeSelectors && policy.RegularChains.Count == 0 && policy.RawOutput is null && !extendedRaw))
         {
             return result;
         }

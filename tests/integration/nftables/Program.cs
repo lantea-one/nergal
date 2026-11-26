@@ -57,6 +57,20 @@ if (mode == "import-native" && (args.Length == 4 || args is [_, _, _, _, "--rest
     Console.Write(output); return 0;
 }
 
+if (mode == "verify-raw-bridge" && args.Length == 5)
+{
+    var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, false, true, false);
+    var primary = NftTableObservation.Parse(File.ReadAllText(args[3]));
+    var bridge = NftBridgeTableObservation.Parse(File.ReadAllText(args[4]));
+    if (!echo.IsSuccess || !primary.IsSuccess || !bridge.IsSuccess)
+    { throw new InvalidOperationException($"Raw/bridge observation failed: {echo.ErrorCode} {primary.ErrorCode} {bridge.ErrorCode}"); }
+    var listing = NftTableObservation.Combine(primary.Observation!, bridge: bridge.Observation);
+    if (listing.StateDigest != echo.Observation!.StateDigest ||
+        NftPolicyBundleCompiler.Compile(listing.Bundle, routerIdentity).Candidate != File.ReadAllText(args[1]))
+    { throw new InvalidOperationException("Raw/bridge native round-trip diverged."); }
+    return 0;
+}
+
 if (mode == "verify-filter-calls" && args.Length == 5)
 {
     var echo = NftTableObservation.ParseBundleReplacementEcho(File.ReadAllText(args[2]), routerIdentity, false, false, true);

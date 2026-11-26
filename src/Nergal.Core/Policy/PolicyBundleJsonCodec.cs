@@ -561,7 +561,7 @@ public static partial class PolicyBundleJsonCodec
         foreach (var item in rulesEl.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object ||
-                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description", "bridgeName", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "family", "source", "destination", "protocol", "destinationPort", "destinationPorts", "jumpTarget", "return", "enabled", "destinationPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject") || !TryReadEnabled(item, out var enabled) ||
+                !HasOnlyProperties(item, "etherType", "verdict", "inputInterface", "outputInterface", "description", "bridgeName", "countPackets", "bindInputInterfaceIndex", "sourceMac", "destinationMac", "negateSourceMac", "negateDestinationMac", "family", "source", "destination", "protocol", "destinationPort", "destinationPorts", "jumpTarget", "return", "enabled", "destinationPortObject", "sourcePrefixes", "destinationPrefixes", "sourceObject", "destinationObject") || !TryReadEnabled(item, out var enabled) ||
                 !item.TryGetProperty("etherType", out var etEl) || etEl.ValueKind != JsonValueKind.String ||
                 !item.TryGetProperty("verdict", out var verdEl) || ParseVerdict(verdEl) is not { } verdict)
             {

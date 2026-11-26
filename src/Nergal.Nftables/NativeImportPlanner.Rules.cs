@@ -135,6 +135,8 @@ public static partial class NativeImportPlanner
                         Require(c.Peek.Text is "accept" or "drop" or "reject" or "dnat" or "snat" or "masquerade" or "return" or "jump", first, "import.counterPlacementUnsupported");
                         break;
                     case "nfproto":
+                        // A bridge hook's protocol family and the frame's EtherType are different selectors.
+                        Require(table.Role != NativeImportTableRole.Bridge, first, "import.bridgeFamilyGuardUnsupported");
                         Require(qualified, first, "import.metaKeywordRequired");
                         Require(!c.Negation(), first, "import.negationUnsupported");
                         var families = c.SelectorValues();
