@@ -132,6 +132,20 @@ For a source or archive installation, install the same vendor units and
 `/usr/lib/nergal/nergal-local-agent` launcher, run the account and directory
 setup above, and reload systemd before starting services.
 
+## Reconcile a managed host after reboot
+
+Run `sudo systemctl start nergal-agent-reconcile.service` on an enrolled host
+after a reboot, and then recheck the authenticated agent status. The unit runs
+the journaled recovery command under `nergal-agent` with `CAP_NET_ADMIN`. It
+recreates the last confirmed policy, verifies its native receipt, and marks any
+unfinished operation from the previous boot interrupted. Repeating the unit
+on the same boot returns `reconcile.sameBoot`. If another ruleset already uses
+the enrolled table names, inspect the conflict before continuing.
+
+The package leaves this unit inactive. An installation can order an explicit
+start before the agent listener once its boot-time firewall ownership and
+ordering have been established.
+
 ## Remote TLS 1.3 mutual-authentication agents (`tls-serve`)
 
 1. Generate a dedicated ECDSA P-256 or RSA leaf certificate for each agent and
@@ -173,8 +187,9 @@ docker compose -f deploy/container/compose.yaml run --rm admin controller init /
 ```
 
 Set `NERGAL_CREDENTIALS_DIR` to a directory containing `https.crt`,
-`https.key`, and `wrapping.pfx`. Give the private files mode `0600` and
-ownership by UID/GID 1654 as seen from the container. The mount is read-only.
+`https.key`, and `wrapping.pfx`. Give the directory mode `0700` and the private
+files mode `0600`. Both must be owned by UID/GID 1654 as seen from the container.
+The mount is read-only.
 Use `NERGAL_SETTINGS_FILE` for private deployment overrides. The example
 publishes the HTTPS port on IPv4 loopback. For remote browser access, configure
 the intended HTTPS entry point and hostname.
@@ -197,7 +212,6 @@ read-only files in the credentials directory using
 - Native `nftables` on Linux is the sole firewall target. Other firewall adapters
   and Windows-native service deployments are outside scope (ADR 0051).
 - Two-phase agent control (`prepare-apply`, `confirm`, `rollback`) supports the owned filter, NAT, bridge and early inet bundle slice under [ADR 0036](decisions/0036-complete-bundle-observation-and-rollback.md), with complete native receipt verification and coordinated rollback. Unsupported native semantics still fail closed; imported source text is not an agent payload.
-- Run `nergal-agent reconcile /var/lib/nergal/agent` manually or from a pre-start dependency after host reboots when explicit new-boot reconciliation of owned tables is required.
 
 ## Unreleased controller schema 6
 

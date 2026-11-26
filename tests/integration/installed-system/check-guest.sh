@@ -15,16 +15,64 @@ agent_state=/var/lib/nergal/agent
 web_state=/var/lib/nergal/web
 config=/etc/nergal/web
 namespace=nergal-installed-test
+reboot_state=/var/lib/nergal-installed-fixture
 
 diagnose() {
     result=$?
     if (( result != 0 )); then
         systemctl list-jobs --no-pager
-        journalctl --no-pager -n 45 -u nergal-agent-enroll.service \
+        journalctl --no-pager -n 45 -u nergal-agent-enroll.service -u nergal-agent-reconcile.service \
             -u nergal-agent.service -u nergal-web.service
     fi
 }
 trap diagnose EXIT
+
+make_agent_namespace() {
+    ip netns add "$namespace"
+    test "$(stat -Lc %i /run/netns/"$namespace")" != "$(stat -Lc %i /proc/self/ns/net)"
+    ip -n "$namespace" link set lo up
+    test -z "$(ip netns exec "$namespace" /usr/sbin/nft list tables)"
+}
+
+agent() {
+    ip netns exec "$namespace" setpriv --reuid=nergal-agent --regid=nergal-agent --init-groups \
+        --inh-caps=-all,+net_admin --ambient-caps=-all,+net_admin --bounding-set=-all,+net_admin \
+        --no-new-privs /usr/bin/nergal-agent "$1" "$agent_state" "${@:2}"
+}
+
+probe() {
+    ip netns exec "$namespace" ping -q -c 1 -W 1 "$1" >/dev/null
+}
+
+if [[ -d $reboot_state ]]; then
+    test "$(cat "$reboot_state/boot-id")" != "$(cat /proc/sys/kernel/random/boot_id)"
+    make_agent_namespace
+    for unit in nergal-agent-reconcile nergal-agent; do
+        dropin=/run/systemd/system/$unit.service.d/fixture.conf
+        install -d "${dropin%/*}"
+        printf '[Service]\nNetworkNamespacePath=/run/netns/%s\n' "$namespace" > "$dropin"
+    done
+    systemctl daemon-reload
+    systemctl start nergal-agent-reconcile.service
+    systemctl start nergal-agent.service
+    timeout 20s bash -c 'until test -S /run/nergal/control.sock; do sleep .1; done'
+    runuser -u nergal-web -- python3 -B - matched "$(id -u nergal-agent)" < "$media/check-protocol.py"
+    probe 127.0.0.1
+    probe ::1
+    if confirmation=$(agent confirm "$(cat "$reboot_state/operation")" "$(cat "$reboot_state/watchdog")" 2>&1); then
+        printf 'An operation from the previous boot could still be confirmed\n' >&2
+        exit 1
+    fi
+    grep -qx phase.terminal <<< "$confirmation"
+    if systemctl start nergal-agent-reconcile.service; then
+        printf 'Reconciliation unexpectedly ran twice on the same boot\n' >&2
+        exit 1
+    fi
+    journalctl -u nergal-agent-reconcile.service -o cat --no-pager > /run/reconciliation-log
+    grep -qx reconcile.sameBoot /run/reconciliation-log
+    printf 'Reboot reconciliation restored revision 1 and both packet flows; the interrupted operation could not be confirmed\n'
+    exit 0
+fi
 
 # shellcheck disable=SC1091
 . /etc/os-release
@@ -49,10 +97,7 @@ test ! -e "$agent_state/journal.db"
 printf 'Package installed with private service identities and no automatic service start or enrollment\n'
 
 # All packet traffic and agent mutations use a separate network namespace inside the air-gapped VM.
-ip netns add "$namespace"
-test "$(stat -Lc %i /run/netns/"$namespace")" != "$(stat -Lc %i /proc/self/ns/net)"
-ip -n "$namespace" link set lo up
-test -z "$(ip netns exec "$namespace" /usr/sbin/nft list tables)"
+make_agent_namespace
 for unit in nergal-agent-enroll nergal-agent nergal-web; do
     dropin=/run/systemd/system/$unit.service.d/fixture.conf
     install -d "${dropin%/*}"
@@ -127,29 +172,24 @@ python3 -B "$media/check-protocol.py" denied "$agent_uid"
 printf 'Packaged services started, HTTPS login succeeded, and Unix status enforced peer UID\n'
 
 # Exercise a real packet denial followed by watchdog rollback with the installed agent.
-agent() {
-    ip netns exec "$namespace" setpriv --reuid=nergal-agent --regid=nergal-agent --init-groups \
-        --inh-caps=-all,+net_admin --ambient-caps=-all,+net_admin --bounding-set=-all,+net_admin \
-        --no-new-privs /usr/bin/nergal-agent "$1" "$agent_state" "${@:2}"
-}
-probe() {
-    ip netns exec "$namespace" ping -q -c 1 -W 1 "$1" >/dev/null
+start_watch() {
+    agent prepare "$operation" "$1" drop
+    agent watch "$operation" "$watchdog" > /run/nergal-fixture-watch.log 2>&1 &
+    watch_process=$!
+    for ((attempt = 0; attempt < 100; attempt++)); do
+        if grep -qx WATCHING /run/nergal-fixture-watch.log; then
+            return 0
+        fi
+        kill -0 "$watch_process"
+        sleep .1
+    done
+    return 1
 }
 probe 127.0.0.1
 probe ::1
 operation=$(cat /proc/sys/kernel/random/uuid)
 watchdog=$(cat /proc/sys/kernel/random/uuid)
-agent prepare "$operation" 25 drop
-agent watch "$operation" "$watchdog" > /run/nergal-fixture-watch.log 2>&1 &
-watch_process=$!
-for ((attempt = 0; attempt < 100; attempt++)); do
-    if grep -qx WATCHING /run/nergal-fixture-watch.log; then
-        break
-    fi
-    kill -0 "$watch_process"
-    sleep .1
-done
-grep -qx WATCHING /run/nergal-fixture-watch.log
+start_watch 25
 agent apply "$operation" "$watchdog"
 for address in 127.0.0.1 ::1; do
     probe_result=0
@@ -210,3 +250,18 @@ systemctl start nergal-agent.service
 systemctl start --no-block nergal-web.service
 ip netns exec "$web_namespace" python3 -B "$media/check-protocol.py" remote "$server_pin"
 rm /run/nergal-fixture-password
+
+# Leave a real applied but unconfirmed operation when the fixture powers off.
+systemctl disable --now nergal-web.service nergal-agent.service
+operation=$(cat /proc/sys/kernel/random/uuid)
+watchdog=$(cat /proc/sys/kernel/random/uuid)
+start_watch 120
+agent apply "$operation" "$watchdog"
+probe_result=0
+probe 127.0.0.1 || probe_result=$?
+test "$probe_result" = 1
+mkdir -m 0700 "$reboot_state"
+cp /proc/sys/kernel/random/boot_id "$reboot_state/boot-id"
+printf '%s\n' "$operation" > "$reboot_state/operation"
+printf '%s\n' "$watchdog" > "$reboot_state/watchdog"
+printf 'Powering down with an unconfirmed operation\n'

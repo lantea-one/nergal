@@ -53,14 +53,18 @@ check() {
     xorriso -as mkisofs -quiet -R -V NERGAL_TEST -o "$work/check.iso" "$work/media"
     sha256sum "$package"
     qemu-img create -f qcow2 -F qcow2 -b "$base" "$work/debian-test.qcow2"
-    timeout --kill-after=10s 8m "${qemu[@]}" \
-        -drive "if=virtio,format=qcow2,file=$work/debian-test.qcow2" -cdrom "$work/check.iso" \
-        > "$work/check.log" 2>&1
-    if ! grep -q 'NERGAL_INSTALLED_RESULT=0' "$work/check.log"; then
-        printf 'Installed-system check failed. Serial log %s/check.log\n' "$work" >&2
-        return 1
-    fi
-    printf 'Installed-system check passed. Serial log %s/check.log\n' "$work"
+    local phase
+    for phase in check reboot; do
+        timeout --kill-after=10s 8m "${qemu[@]}" \
+            -drive "if=virtio,format=qcow2,file=$work/debian-test.qcow2" -cdrom "$work/check.iso" \
+            > "$work/$phase.log" 2>&1
+        if ! grep -q 'NERGAL_INSTALLED_RESULT=0' "$work/$phase.log"; then
+            printf 'Installed-system %s failed. Serial log %s/%s.log\n' "$phase" "$work" "$phase" >&2
+            return 1
+        fi
+        printf 'Installed-system %s passed. Serial log %s/%s.log\n' "$phase" "$work" "$phase"
+    done
+    grep -q 'Reboot reconciliation restored revision 1' "$work/reboot.log"
 }
 
 case "${1:-}" in

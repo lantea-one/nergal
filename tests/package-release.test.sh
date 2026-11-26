@@ -37,6 +37,7 @@ for dep in dotnet-runtime-10.0 aspnetcore-runtime-10.0 nftables systemd; do
 done
 contents=$(dpkg-deb --contents "$deb")
 grep -q '/usr/lib/systemd/system/nergal-agent.service' <<< "$contents"
+grep -q '/usr/lib/systemd/system/nergal-agent-reconcile.service' <<< "$contents"
 grep -q '/usr/bin/nergal-agent' <<< "$contents"
 dpkg-deb --extract "$deb" "$tmp/extracted"
 [[ $(stat -c '%a' "$tmp/extracted/opt/nergal/web") == 755 ]]

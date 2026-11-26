@@ -54,6 +54,7 @@ install -m 0644 deploy/systemd/nergal.sysusers "$ROOT/usr/lib/sysusers.d/nergal.
 install -m 0644 deploy/systemd/nergal.tmpfiles "$ROOT/usr/lib/tmpfiles.d/nergal.conf"
 install -D -m 0755 deploy/systemd/nergal-local-agent "$ROOT/usr/lib/nergal/nergal-local-agent"
 install -m 0644 deploy/systemd/nergal-agent-enroll.service "$ROOT/usr/lib/systemd/system/nergal-agent-enroll.service"
+install -m 0644 deploy/systemd/nergal-agent-reconcile.service "$ROOT/usr/lib/systemd/system/nergal-agent-reconcile.service"
 install -D -m 0644 LICENSE "$ROOT/usr/share/licenses/nergal/LICENSE"
 web_endpoints="$ROOT/opt/nergal/web/Nergal.Web.staticwebassets.endpoints.json"
 if [[ -f "$web_endpoints" ]]; then
@@ -137,6 +138,7 @@ systemd-tmpfiles --create /usr/lib/tmpfiles.d/nergal.conf
 /usr/lib/nergal
 /usr/lib/systemd/system/nergal-agent.service
 /usr/lib/systemd/system/nergal-agent-enroll.service
+/usr/lib/systemd/system/nergal-agent-reconcile.service
 /usr/lib/systemd/system/nergal-web.service
 /usr/lib/sysusers.d/nergal.conf
 /usr/lib/tmpfiles.d/nergal.conf
@@ -189,6 +191,7 @@ if ((VERIFY)); then
     (cd "$OUT_DIR" && sha256sum -c SHA256SUMS)
     archive_contents=$(tar -tzf "$OUT_DIR/nergal_${VERSION}_linux-x64.tar.gz")
     grep -qx './usr/lib/systemd/system/nergal-agent-enroll.service' <<< "$archive_contents"
+    grep -qx './usr/lib/systemd/system/nergal-agent-reconcile.service' <<< "$archive_contents"
     grep -qx './usr/lib/nergal/nergal-local-agent' <<< "$archive_contents"
     for f in "${BUILT[@]}"; do
         case "$f" in
