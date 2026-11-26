@@ -29,6 +29,35 @@ a separate cookie, group authorization and session registry. The host suppresses
 separate default key-ring preload so that authentication, antiforgery and page
 protection use the selected provider without creating a second profile key ring.
 
+## Rotate and recover the wrapping credential
+
+1. Provision a new private PKCS#12 wrapping credential alongside the current
+   one. Use a distinct filename and the same owner and mode requirements.
+2. With the controller stopped, back up the account store, the complete
+   protected key directory, and the current and retained wrapping credentials.
+   Keep the copies private and preserve ownership and mode on restoration.
+3. Set `LocalSessions__CertificateFile` to the new credential. Add the previous
+   credential to `LocalSessions__RetainedCertificateFiles__0`, or to the next
+   free index if there are already retained credentials. Retain the credentials
+   referenced by every stored descriptor. Restart the controller and check a
+   pre-existing session and a fresh sign-in using the configured HTTPS hostname.
+
+The active credential wraps newly generated Data Protection keys. Existing
+descriptors keep their original envelopes, and the startup check refuses a ring
+with missing wrapping credentials. If a credential change fails startup, stop
+the service and restore its prior credential configuration with the relevant
+retained credentials. When recovering onto a clean installation, restore the
+account store, protected key directory and PKCS#12 files together while the
+controller is stopped. Preserve the configured application discriminator and
+restore the expected HTTPS hostname before checking a pre-existing session.
+
+The loopback [rotation and recovery fixture](../tests/integration/local-sessions/check-wrapping-recovery.py)
+checks startup refusal when history is absent and verifies an existing cookie
+after both rotation and recovery from separate paths. Controller database and
+host-agent recovery are separate procedures.
+
+## Sign in and sign out
+
 Open `/` to reach `/login` and submit the antiforgery-protected form. Successful
 local or OIDC sign-in opens the overview at `/manage` when controller state is
 enabled. Authenticated visits to `/` or `/login` also open the overview. A

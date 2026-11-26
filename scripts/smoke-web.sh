@@ -11,8 +11,10 @@ app_pid=$!
 trap 'kill "$app_pid" 2>/dev/null || true; wait "$app_pid" 2>/dev/null || true' EXIT
 curl --fail --silent --show-error --retry 20 --retry-delay 1 --retry-connrefused \
   http://127.0.0.1:5191/healthz >/dev/null
-curl --fail --silent http://127.0.0.1:5191/ | grep -q '<h1>nergal</h1>'
-curl --fail --silent http://127.0.0.1:5191/backend-decision | grep -q 'Native nftables on Linux'
+home=$(curl --fail --silent --show-error http://127.0.0.1:5191/)
+grep -q '<h1>nergal</h1>' <<< "$home"
+backend_decision=$(curl --fail --silent --show-error http://127.0.0.1:5191/backend-decision)
+grep -q 'Native nftables on Linux' <<< "$backend_decision"
 curl --fail --silent http://127.0.0.1:5191/_framework/blazor.web.js >artifacts/blazor.web.js
 [[ -s artifacts/blazor.web.js ]]
 write_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
