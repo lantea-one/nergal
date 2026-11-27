@@ -4,7 +4,7 @@
     <ProjectReference Include="../Nergal.Core/Nergal.Core.csproj" />
     <ProjectReference Include="../Nergal.Linux/Nergal.Linux.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="8.0.0" />
     <PackageReference Include="MySqlConnector" Version="3.0.0" />
     <PackageReference Include="Npgsql" Version="11.0.0" />
     <EmbeddedResource Include="Sql/**/*.sql" />
