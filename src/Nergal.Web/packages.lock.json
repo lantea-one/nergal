@@ -27,42 +27,41 @@
       },
       "Microsoft.Bcl.Cryptography": {
         "type": "Transitive",
-        "resolved": "10.0.2",
-        "contentHash": "LG9Yll3B5aNpxv0+D47g6LiOiKBIlodhcHdQwcYzo8VeexFLGqx5ymetmA2aBRyo9cCcWsQWrFsdbsr8LvmWDw=="
+        "resolved": "10.0.15",
+        "contentHash": "hJw6ERV3MBPjI/nhGPAUQMLBhc0xu2UPxcUuKPgrhsGiV0uKEcZknXICvo14PL+v37U9SdZFCUYo19qbkvLg3A=="
       },
       "Microsoft.Data.SqlClient": {
         "type": "Transitive",
-        "resolved": "7.1.2",
-        "contentHash": "guqzpThPuZhyrNAKLyNRB0NtuR87gw5iZbF5QniyKZXtESAP3kcPEN9bwJ0ZVYXjfXbSCIv15S0kRh9YTrz0sQ==",
+        "resolved": "8.0.0",
+        "contentHash": "vsUutdiXip2B7d5f6x+WeqNYjMqxDO8nLoJPMAwH8Wr1Yxqi84EtuM+zQP54Lj7ohqk2TKbKmHMjZ1zk9OPmPg==",
         "dependencies": {
-          "Microsoft.Bcl.Cryptography": "9.0.21",
-          "Microsoft.Data.SqlClient.Extensions.Abstractions": "[7.1.2, 8.0.0)",
-          "Microsoft.Data.SqlClient.Internal.Logging": "[7.1.2, 8.0.0)",
-          "Microsoft.Data.SqlClient.SNI.runtime": "[7.1.2, 8.0.0)",
-          "Microsoft.IdentityModel.JsonWebTokens": "8.16.0",
-          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.16.0",
+          "Microsoft.Bcl.Cryptography": "10.0.15",
+          "Microsoft.Data.SqlClient.Extensions.Abstractions": "[8.0.0, 9.0.0)",
+          "Microsoft.Data.SqlClient.Internal.Logging": "[8.0.0, 9.0.0)",
+          "Microsoft.Data.SqlClient.SNI.runtime": "[8.0.0, 9.0.0)",
           "Microsoft.SqlServer.Server": "[1.0.0, 2.0.0)",
-          "System.Configuration.ConfigurationManager": "9.0.21",
-          "System.Security.Cryptography.Pkcs": "9.0.21"
+          "System.Configuration.ConfigurationManager": "10.0.15",
+          "System.Security.Cryptography.Pkcs": "10.0.15"
         }
       },
       "Microsoft.Data.SqlClient.Extensions.Abstractions": {
         "type": "Transitive",
-        "resolved": "7.1.2",
-        "contentHash": "UaHg/zJIaJRF+Qu6ywK9s66CL3digE+X640sfjUsF8TCY5gGapNXgHgm+HJ5VWnKgQF1ksHygRRKc8aV6orlJQ==",
+        "resolved": "8.0.0",
+        "contentHash": "c6E9UrGlGM//yaKIGxAozf+5vSvSCttxLKFk5ZagkAF0UyJTyInyBUwCpEgz4e2VGGLzsOBDY4bCUuHrVyUMoQ==",
         "dependencies": {
-          "Microsoft.Data.SqlClient.Internal.Logging": "[7.1.2, 8.0.0)"
+          "Microsoft.Data.SqlClient.Internal.Logging": "[8.0.0, 9.0.0)",
+          "System.Configuration.ConfigurationManager": "10.0.15"
         }
       },
       "Microsoft.Data.SqlClient.Internal.Logging": {
         "type": "Transitive",
-        "resolved": "7.1.2",
-        "contentHash": "Ed+xxBVIUJPJNQGg6EnmIOsULBMl/xBXFouVGzc23/PpJx2EGuZtVu00pTOoaPXJB/J9pNnVOshpjKn63Xnvgw=="
+        "resolved": "8.0.0",
+        "contentHash": "zaInxU/AozYWza/uw9aIlWyCug38eqFIjA5nvSuYKgyslFFoqSmM1YbJ898YMypa8pWioPyr559LVuwYBIqLPg=="
       },
       "Microsoft.Data.SqlClient.SNI.runtime": {
         "type": "Transitive",
-        "resolved": "7.1.2",
-        "contentHash": "t5AECn7LT/VuS56mCQ+ps9LQy9ZJ23nIGoOfBpXfC35E4/sM4D9fbE0KnCqqKHemtwuFhe/QuTnneGChs5ez4Q=="
+        "resolved": "8.0.0",
+        "contentHash": "GIQahNAtlJB47El7zclYbCK0dIluwhvpK6qS+MDzF5m3Ed/i6WO/XEuKOa3C0beZgSB9XQdZd+99lM/N9m9Z/Q=="
       },
       "Microsoft.Data.Sqlite": {
         "type": "Transitive",
@@ -245,10 +244,10 @@
       },
       "System.Configuration.ConfigurationManager": {
         "type": "Transitive",
-        "resolved": "9.0.21",
-        "contentHash": "q9yXPb2WrT/TtIXdIjM2OBCQIQO2lc1NmgWKdRlZZGHYNED5GKkk3UlGbcYFaqLRGw8Y2glC0A3//hvvnAE1ag==",
+        "resolved": "10.0.15",
+        "contentHash": "AIJMj3a6xpgisz8lkBetOJB0gwVcX5EbKi282IkBnDISubkPnY3BIUxztARim3+mwTMF84+/z81cBAvXdy1l6A==",
         "dependencies": {
-          "System.Security.Cryptography.ProtectedData": "9.0.21"
+          "System.Security.Cryptography.ProtectedData": "10.0.15"
         }
       },
       "System.Diagnostics.DiagnosticSource": {
@@ -267,22 +266,22 @@
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
-        "resolved": "9.0.21",
-        "contentHash": "KD+oHoYIxwNCajjVe58WVwq9cRpum+Pg3tRveDRtkcaw6w3oc7sNBoMRtb5P5OehI3bgv1ucMpgjf8lpj5J96A=="
+        "resolved": "10.0.15",
+        "contentHash": "4jEv/lXDuQkh60lPU3hlwASErXdv1ZMKmsxVuBfZWiVKT5Q2QGo58kTa6rN519+PU+m4Hsj1m3yT8fN+Xw0XZw=="
       },
       "System.Security.Cryptography.ProtectedData": {
         "type": "Transitive",
-        "resolved": "9.0.21",
-        "contentHash": "zyXIA630BG8DQnWzzS6WATjnnzXdelvJaW9U/qajt+09JV7Xvu8YuvQdwLldmPF4W5jYS76811eGcDdXxGYmfw=="
+        "resolved": "10.0.15",
+        "contentHash": "AG49oTxB0R4YQJzeIIHRgqyaI3SOT8Q8vEfGUcju2WxOvsBkDJU4FKTQ8gYQAYCxmHOHqyJL0UDGcCf8nzRoiw=="
       },
       "nergal.controllerstate": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Data.SqlClient": "[7.1.2, )",
+          "Microsoft.Data.SqlClient": "[8.0.0, )",
           "Microsoft.Data.Sqlite": "[10.0.15, )",
           "MySqlConnector": "[3.0.0, )",
-          "Nergal.Core": "[2026.11.21.1, )",
-          "Nergal.Linux": "[2026.11.21.1, )",
+          "Nergal.Core": "[2026.11.26, )",
+          "Nergal.Linux": "[2026.11.26, )",
           "Npgsql": "[11.0.0, )"
         }
       },
@@ -294,8 +293,8 @@
         "dependencies": {
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.15, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.15, )",
-          "Nergal.Core": "[2026.11.21.1, )",
-          "Nergal.Linux": "[2026.11.21.1, )"
+          "Nergal.Core": "[2026.11.26, )",
+          "Nergal.Linux": "[2026.11.26, )"
         }
       },
       "nergal.linux": {
@@ -304,20 +303,20 @@
       "nergal.localtransport": {
         "type": "Project",
         "dependencies": {
-          "Nergal.Core": "[2026.11.21.1, )",
-          "Nergal.Linux": "[2026.11.21.1, )"
+          "Nergal.Core": "[2026.11.26, )",
+          "Nergal.Linux": "[2026.11.26, )"
         }
       },
       "nergal.nftables": {
         "type": "Project",
         "dependencies": {
-          "Nergal.Core": "[2026.11.21.1, )"
+          "Nergal.Core": "[2026.11.26, )"
         }
       },
       "nergal.remotetransport": {
         "type": "Project",
         "dependencies": {
-          "Nergal.Core": "[2026.11.21.1, )"
+          "Nergal.Core": "[2026.11.26, )"
         }
       }
     }
